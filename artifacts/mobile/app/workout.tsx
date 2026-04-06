@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -20,6 +19,7 @@ export default function WorkoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { currentWorkout, exercises, endWorkout } = useWorkout();
+  const [confirming, setConfirming] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 80 : insets.bottom + 90;
@@ -56,22 +56,14 @@ export default function WorkoutScreen() {
   }
 
   function handleFinish() {
-    Alert.alert(
-      "Terminer la séance ?",
-      "La séance sera sauvegardée.",
-      [
-        { text: "Annuler", style: "cancel" },
-        {
-          text: "Terminer",
-          style: "destructive",
-          onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            router.replace("/");
-            endWorkout();
-          },
-        },
-      ]
-    );
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setConfirming(true);
+  }
+
+  function handleConfirmFinish() {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    router.replace("/");
+    endWorkout();
   }
 
   const currentExercises = currentWorkout.exercises
@@ -187,7 +179,7 @@ export default function WorkoutScreen() {
         )}
       </ScrollView>
 
-      {/* Finish button */}
+      {/* Finish button / inline confirmation */}
       <View
         style={[
           styles.footer,
@@ -198,16 +190,43 @@ export default function WorkoutScreen() {
           },
         ]}
       >
-        <TouchableOpacity
-          style={[styles.finishBtn, { borderColor: colors.destructive }]}
-          onPress={handleFinish}
-          activeOpacity={0.85}
-        >
-          <Feather name="check-square" size={18} color={colors.destructive} />
-          <Text style={[styles.finishBtnText, { color: colors.destructive }]}>
-            Terminer la séance
-          </Text>
-        </TouchableOpacity>
+        {confirming ? (
+          <View style={styles.confirmRow}>
+            <Text style={[styles.confirmText, { color: colors.foreground }]}>
+              Terminer la séance ?
+            </Text>
+            <View style={styles.confirmBtns}>
+              <TouchableOpacity
+                style={[styles.confirmCancel, { borderColor: colors.border }]}
+                onPress={() => setConfirming(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.confirmCancelText, { color: colors.foreground }]}>
+                  Annuler
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmOk, { backgroundColor: colors.destructive }]}
+                onPress={handleConfirmFinish}
+                activeOpacity={0.85}
+              >
+                <Feather name="check" size={16} color="#fff" />
+                <Text style={styles.confirmOkText}>Terminer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.finishBtn, { borderColor: colors.destructive }]}
+            onPress={handleFinish}
+            activeOpacity={0.85}
+          >
+            <Feather name="check-square" size={18} color={colors.destructive} />
+            <Text style={[styles.finishBtnText, { color: colors.destructive }]}>
+              Terminer la séance
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -312,6 +331,44 @@ const styles = StyleSheet.create({
   finishBtnText: {
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
+  },
+  confirmRow: {
+    gap: 12,
+  },
+  confirmText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    textAlign: "center",
+  },
+  confirmBtns: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  confirmCancel: {
+    flex: 1,
+    paddingVertical: 13,
+    borderRadius: 12,
+    borderWidth: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  confirmCancelText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  confirmOk: {
+    flex: 1,
+    flexDirection: "row",
+    paddingVertical: 13,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  confirmOkText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
   },
   emptyTitle: {
     fontSize: 20,
