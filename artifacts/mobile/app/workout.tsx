@@ -66,8 +66,8 @@ export default function WorkoutScreen() {
           style: "destructive",
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            endWorkout();
             router.replace("/");
+            endWorkout();
           },
         },
       ]
