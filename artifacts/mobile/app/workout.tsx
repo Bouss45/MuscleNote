@@ -15,6 +15,142 @@ import { useColors } from "@/hooks/useColors";
 import { useWorkout } from "@/context/WorkoutContext";
 import ExerciseCard from "@/components/ExerciseCard";
 
+const WARMUP_ITEMS = [
+  { icon: "wind",       label: "Cardio léger",         detail: "5-10 min vélo ou rameur" },
+  { icon: "rotate-cw", label: "Rotation des épaules",  detail: "15 reps chaque côté" },
+  { icon: "move",       label: "Mobilité des hanches",  detail: "10 reps cercles" },
+  { icon: "arrow-down", label: "Étirements dynamiques", detail: "1 min jambes & dos" },
+  { icon: "activity",   label: "Squats à vide",         detail: "15 reps lents" },
+];
+
+function WarmupCard() {
+  const colors = useColors();
+  const [checked, setChecked] = useState<Set<number>>(new Set());
+  const [collapsed, setCollapsed] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  if (dismissed) return null;
+
+  const allDone = checked.size === WARMUP_ITEMS.length;
+
+  function toggle(i: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  }
+
+  return (
+    <View style={[
+      warmupStyles.card,
+      {
+        backgroundColor: allDone ? colors.primary + "18" : colors.card,
+        borderColor: allDone ? colors.primary : colors.border,
+      },
+    ]}>
+      {/* Header row */}
+      <TouchableOpacity
+        style={warmupStyles.cardHeader}
+        onPress={() => setCollapsed((c) => !c)}
+        activeOpacity={0.8}
+      >
+        <View style={warmupStyles.cardHeaderLeft}>
+          <View style={[warmupStyles.iconCircle, { backgroundColor: colors.primary + "20" }]}>
+            <Feather name="zap" size={14} color={colors.primary} />
+          </View>
+          <View>
+            <Text style={[warmupStyles.cardTitle, { color: colors.foreground }]}>
+              Échauffement
+            </Text>
+            <Text style={[warmupStyles.cardSub, { color: colors.mutedForeground }]}>
+              {checked.size}/{WARMUP_ITEMS.length} exercices
+            </Text>
+          </View>
+        </View>
+        <View style={warmupStyles.cardHeaderRight}>
+          {allDone && (
+            <View style={[warmupStyles.doneBadge, { backgroundColor: colors.primary }]}>
+              <Feather name="check" size={11} color="#fff" />
+              <Text style={warmupStyles.doneBadgeText}>Fait !</Text>
+            </View>
+          )}
+          <TouchableOpacity
+            onPress={() => setDismissed(true)}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="x" size={16} color={colors.mutedForeground} />
+          </TouchableOpacity>
+          <Feather
+            name={collapsed ? "chevron-down" : "chevron-up"}
+            size={16}
+            color={colors.mutedForeground}
+          />
+        </View>
+      </TouchableOpacity>
+
+      {/* Progress bar */}
+      <View style={[warmupStyles.progressBar, { backgroundColor: colors.muted }]}>
+        <View style={[
+          warmupStyles.progressFill,
+          {
+            backgroundColor: colors.primary,
+            width: `${(checked.size / WARMUP_ITEMS.length) * 100}%`,
+          },
+        ]} />
+      </View>
+
+      {/* Items list */}
+      {!collapsed && (
+        <View style={warmupStyles.itemsList}>
+          {WARMUP_ITEMS.map((item, i) => {
+            const done = checked.has(i);
+            return (
+              <TouchableOpacity
+                key={i}
+                style={[
+                  warmupStyles.item,
+                  { borderBottomColor: colors.border },
+                  i === WARMUP_ITEMS.length - 1 && { borderBottomWidth: 0 },
+                ]}
+                onPress={() => toggle(i)}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  warmupStyles.checkbox,
+                  {
+                    borderColor: done ? colors.primary : colors.border,
+                    backgroundColor: done ? colors.primary : "transparent",
+                  },
+                ]}>
+                  {done && <Feather name="check" size={11} color="#fff" />}
+                </View>
+                <View style={warmupStyles.itemText}>
+                  <Text style={[
+                    warmupStyles.itemLabel,
+                    { color: done ? colors.mutedForeground : colors.foreground },
+                    done && warmupStyles.strikethrough,
+                  ]}>
+                    {item.label}
+                  </Text>
+                  <Text style={[warmupStyles.itemDetail, { color: colors.mutedForeground }]}>
+                    {item.detail}
+                  </Text>
+                </View>
+                <View style={[warmupStyles.itemIconCircle, { backgroundColor: colors.muted }]}>
+                  <Feather name={item.icon as any} size={13} color={colors.mutedForeground} />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
 export default function WorkoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -141,6 +277,9 @@ export default function WorkoutScreen() {
         contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
       >
+        {/* Warmup card — always shown at top */}
+        <WarmupCard />
+
         {currentExercises.map(({ we, exercise }) => (
           <ExerciseCard
             key={exercise.id}
@@ -171,7 +310,7 @@ export default function WorkoutScreen() {
 
         {currentExercises.length === 0 && (
           <View style={styles.emptyExercises}>
-            <Feather name="dumbbell" size={36} color={colors.mutedForeground} />
+            <Feather name="activity" size={36} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               Ajoute des exercices pour commencer
             </Text>
@@ -231,6 +370,109 @@ export default function WorkoutScreen() {
     </View>
   );
 }
+
+const warmupStyles = StyleSheet.create({
+  card: {
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+    overflow: "hidden",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 14,
+  },
+  cardHeaderLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  iconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cardTitle: {
+    fontSize: 14,
+    fontFamily: "Inter_600SemiBold",
+  },
+  cardSub: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  cardHeaderRight: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  doneBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  doneBadgeText: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    color: "#fff",
+  },
+  progressBar: {
+    height: 3,
+    width: "100%",
+  },
+  progressFill: {
+    height: 3,
+  },
+  itemsList: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  item: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  itemText: {
+    flex: 1,
+  },
+  itemLabel: {
+    fontSize: 13,
+    fontFamily: "Inter_500Medium",
+  },
+  strikethrough: {
+    textDecorationLine: "line-through",
+    opacity: 0.5,
+  },
+  itemDetail: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
+  },
+  itemIconCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
 
 const styles = StyleSheet.create({
   container: {
