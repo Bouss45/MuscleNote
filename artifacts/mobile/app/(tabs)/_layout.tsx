@@ -1,27 +1,40 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
+// NativeTabs with liquid glass is iOS 26+ only — guard strictly
+let isLiquidGlass = false;
+if (Platform.OS === "ios") {
+  try {
+    const glassEffect = require("expo-glass-effect");
+    isLiquidGlass = glassEffect.isLiquidGlassAvailable?.() ?? false;
+  } catch {
+    isLiquidGlass = false;
+  }
+}
+
 function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Accueil</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="progress">
-        <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
-        <Label>Progrès</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
+  try {
+    const { Icon, Label, NativeTabs } = require("expo-router/unstable-native-tabs");
+    return (
+      <NativeTabs>
+        <NativeTabs.Trigger name="index">
+          <Icon sf={{ default: "house", selected: "house.fill" }} />
+          <Label>Accueil</Label>
+        </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="progress">
+          <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
+          <Label>Progrès</Label>
+        </NativeTabs.Trigger>
+      </NativeTabs>
+    );
+  } catch {
+    return <ClassicTabLayout />;
+  }
 }
 
 function ClassicTabLayout() {
@@ -66,24 +79,18 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Accueil",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
-            ) : (
-              <Feather name="home" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Feather name="home" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="progress"
         options={{
           title: "Progrès",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="chart.line.uptrend.xyaxis" tintColor={color} size={24} />
-            ) : (
-              <Feather name="trending-up" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Feather name="trending-up" size={22} color={color} />
+          ),
         }}
       />
     </Tabs>
@@ -91,7 +98,7 @@ function ClassicTabLayout() {
 }
 
 export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
+  if (isLiquidGlass) {
     return <NativeTabLayout />;
   }
   return <ClassicTabLayout />;
