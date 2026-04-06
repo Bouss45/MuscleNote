@@ -174,15 +174,33 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, [currentWorkout]);
 
   const addExerciseToWorkout = useCallback((exerciseId: string) => {
+    // Find the most recent past workout that contains this exercise
+    const lastSession = workouts.find((w) =>
+      w.exercises.some((e) => e.exerciseId === exerciseId)
+    );
+    const lastSets = lastSession
+      ? lastSession.exercises.find((e) => e.exerciseId === exerciseId)?.sets ?? []
+      : [];
+
+    // Pre-fill with last session's sets (reset completed to false)
+    const defaultSets: Set[] = lastSets.length > 0
+      ? lastSets.map((s) => ({
+          id: generateId(),
+          reps: s.reps,
+          weight: s.weight,
+          completed: false,
+        }))
+      : [];
+
     setCurrentWorkout((prev) => {
       if (!prev) return prev;
       if (prev.exercises.find((e) => e.exerciseId === exerciseId)) return prev;
       return {
         ...prev,
-        exercises: [...prev.exercises, { exerciseId, sets: [] }],
+        exercises: [...prev.exercises, { exerciseId, sets: defaultSets }],
       };
     });
-  }, []);
+  }, [workouts]);
 
   const removeExerciseFromWorkout = useCallback((exerciseId: string) => {
     setCurrentWorkout((prev) => {
