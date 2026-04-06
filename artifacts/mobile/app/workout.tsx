@@ -235,16 +235,25 @@ export default function WorkoutScreen() {
         ]}
       >
         <View style={styles.headerTop}>
-          <View>
-            <Text style={[styles.sessionLabel, { color: colors.mutedForeground }]}>
-              Séance en cours
-            </Text>
-            <Text style={[styles.bodyWeight, { color: colors.foreground }]}>
-              {currentWorkout.name}
-            </Text>
-            <Text style={[styles.sessionWeight, { color: colors.mutedForeground }]}>
-              {currentWorkout.bodyWeight} kg
-            </Text>
+          <View style={styles.headerLeft}>
+            <TouchableOpacity
+              onPress={() => router.replace("/")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={styles.backBtn}
+            >
+              <Feather name="chevron-left" size={22} color={colors.foreground} />
+            </TouchableOpacity>
+            <View>
+              <Text style={[styles.sessionLabel, { color: colors.mutedForeground }]}>
+                Séance en cours
+              </Text>
+              <Text style={[styles.bodyWeight, { color: colors.foreground }]}>
+                {currentWorkout.name}
+              </Text>
+              <Text style={[styles.sessionWeight, { color: colors.mutedForeground }]}>
+                {currentWorkout.bodyWeight} kg
+              </Text>
+            </View>
           </View>
           <View style={styles.timerBadge}>
             <Feather name="clock" size={14} color={colors.primary} />
@@ -486,8 +495,19 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "flex-end",
+    alignItems: "center",
     marginBottom: 12,
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  backBtn: {
+    width: 34,
+    height: 34,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sessionLabel: {
     fontSize: 12,
