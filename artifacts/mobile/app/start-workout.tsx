@@ -4,6 +4,7 @@ import { router } from "expo-router";
 import React, { useState } from "react";
 import {
   Platform,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +15,21 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useWorkout } from "@/context/WorkoutContext";
 
+const PRESET_GROUPS = [
+  {
+    label: "PPL",
+    presets: ["Push", "Pull", "Legs"],
+  },
+  {
+    label: "Split",
+    presets: ["Pecs / Triceps", "Dos / Biceps", "Épaules", "Jambes", "Bras"],
+  },
+  {
+    label: "Autre",
+    presets: ["Full Body", "Isolation", "Cardio"],
+  },
+];
+
 export default function StartWorkoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -21,19 +37,38 @@ export default function StartWorkoutScreen() {
   const [bodyWeight, setBodyWeight] = useState(
     workouts.length > 0 ? workouts[0].bodyWeight.toString() : ""
   );
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+  const [customName, setCustomName] = useState("");
+  const [step, setStep] = useState<"name" | "weight">("name");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 20;
 
+  const finalName = selectedName === "__custom__"
+    ? customName.trim()
+    : selectedName ?? "";
+
+  function handleSelectPreset(name: string) {
+    Haptics.selectionAsync();
+    setSelectedName(name);
+    setCustomName("");
+  }
+
+  function handleNext() {
+    if (!finalName) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setStep("weight");
+  }
+
   function handleStart() {
     const w = parseFloat(bodyWeight);
-    if (!w || w <= 0) return;
+    if (!w || w <= 0 || !finalName) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    startWorkout(w);
+    startWorkout(w, finalName);
     router.replace("/workout");
   }
 
-  const quickWeights = [60, 65, 70, 75, 80, 85, 90, 95, 100];
+  const quickWeights = [55, 60, 65, 70, 75, 80, 85, 90, 95, 100];
 
   return (
     <View
@@ -43,119 +78,254 @@ export default function StartWorkoutScreen() {
       ]}
     >
       <TouchableOpacity
-        onPress={() => router.back()}
-        style={[styles.backBtn, { marginLeft: 20 }]}
+        onPress={() => {
+          if (step === "weight") {
+            setStep("name");
+          } else {
+            router.back();
+          }
+        }}
+        style={styles.backBtn}
       >
-        <Feather name="x" size={22} color={colors.foreground} />
+        <Feather
+          name={step === "weight" ? "arrow-left" : "x"}
+          size={22}
+          color={colors.foreground}
+        />
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={[styles.title, { color: colors.foreground }]}>
-          Nouvelle séance
-        </Text>
-        <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          Ton poids de corps aujourd'hui ?
-        </Text>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {step === "name" ? (
+          <>
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              Type de séance
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+              Choisis ou nomme ta séance
+            </Text>
 
-        <View style={styles.weightContainer}>
-          <TextInput
-            style={[
-              styles.weightInput,
-              {
-                color: colors.foreground,
-                backgroundColor: colors.card,
-                borderColor: colors.primary,
-              },
-            ]}
-            value={bodyWeight}
-            onChangeText={setBodyWeight}
-            keyboardType="decimal-pad"
-            placeholder="75"
-            placeholderTextColor={colors.mutedForeground}
-            autoFocus
-            maxLength={6}
-          />
-          <Text style={[styles.kgLabel, { color: colors.mutedForeground }]}>
-            kg
-          </Text>
-        </View>
+            {PRESET_GROUPS.map((group) => (
+              <View key={group.label} style={styles.group}>
+                <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>
+                  {group.label}
+                </Text>
+                <View style={styles.presetRow}>
+                  {group.presets.map((name) => {
+                    const active = selectedName === name;
+                    return (
+                      <TouchableOpacity
+                        key={name}
+                        style={[
+                          styles.presetChip,
+                          {
+                            backgroundColor: active ? colors.primary : colors.card,
+                            borderColor: active ? colors.primary : colors.border,
+                          },
+                        ]}
+                        onPress={() => handleSelectPreset(name)}
+                        activeOpacity={0.75}
+                      >
+                        <Text
+                          style={[
+                            styles.presetChipText,
+                            { color: active ? colors.primaryForeground : colors.foreground },
+                          ]}
+                        >
+                          {name}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              </View>
+            ))}
 
-        <View style={styles.quickPicks}>
-          {quickWeights.map((w) => (
+            {/* Custom name */}
+            <View style={styles.group}>
+              <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>
+                Personnalisé
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.customNameBox,
+                  {
+                    backgroundColor: selectedName === "__custom__" ? colors.primary + "15" : colors.card,
+                    borderColor: selectedName === "__custom__" ? colors.primary : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setSelectedName("__custom__");
+                }}
+                activeOpacity={0.85}
+              >
+                <Feather
+                  name="edit-2"
+                  size={15}
+                  color={selectedName === "__custom__" ? colors.primary : colors.mutedForeground}
+                />
+                {selectedName === "__custom__" ? (
+                  <TextInput
+                    style={[styles.customNameInput, { color: colors.foreground }]}
+                    value={customName}
+                    onChangeText={setCustomName}
+                    placeholder="Ex: Épaules / Mollets"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoFocus
+                    maxLength={30}
+                  />
+                ) : (
+                  <Text style={[styles.customNamePlaceholder, { color: colors.mutedForeground }]}>
+                    Nom personnalisé...
+                  </Text>
+                )}
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity
-              key={w}
               style={[
-                styles.quickBtn,
+                styles.nextBtn,
                 {
-                  backgroundColor:
-                    bodyWeight === w.toString()
-                      ? colors.primary
-                      : colors.card,
-                  borderColor:
-                    bodyWeight === w.toString()
-                      ? colors.primary
-                      : colors.border,
+                  backgroundColor: finalName ? colors.primary : colors.muted,
+                  marginTop: 8,
                 },
               ]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setBodyWeight(w.toString());
-              }}
+              onPress={handleNext}
+              disabled={!finalName}
+              activeOpacity={0.85}
             >
               <Text
                 style={[
-                  styles.quickBtnText,
+                  styles.nextBtnText,
+                  { color: finalName ? colors.primaryForeground : colors.mutedForeground },
+                ]}
+              >
+                Suivant
+              </Text>
+              <Feather
+                name="arrow-right"
+                size={18}
+                color={finalName ? colors.primaryForeground : colors.mutedForeground}
+              />
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <View style={[styles.selectedNameBadge, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "55" }]}>
+              <Text style={[styles.selectedNameText, { color: colors.primary }]}>
+                {finalName}
+              </Text>
+            </View>
+
+            <Text style={[styles.title, { color: colors.foreground }]}>
+              Poids de corps
+            </Text>
+            <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
+              Ton poids aujourd'hui ?
+            </Text>
+
+            <View style={styles.weightContainer}>
+              <TextInput
+                style={[
+                  styles.weightInput,
+                  {
+                    color: colors.foreground,
+                    backgroundColor: colors.card,
+                    borderColor: colors.primary,
+                  },
+                ]}
+                value={bodyWeight}
+                onChangeText={setBodyWeight}
+                keyboardType="decimal-pad"
+                placeholder="75"
+                placeholderTextColor={colors.mutedForeground}
+                autoFocus
+                maxLength={6}
+              />
+              <Text style={[styles.kgLabel, { color: colors.mutedForeground }]}>
+                kg
+              </Text>
+            </View>
+
+            <View style={styles.quickPicks}>
+              {quickWeights.map((w) => (
+                <TouchableOpacity
+                  key={w}
+                  style={[
+                    styles.quickBtn,
+                    {
+                      backgroundColor:
+                        bodyWeight === w.toString() ? colors.primary : colors.card,
+                      borderColor:
+                        bodyWeight === w.toString() ? colors.primary : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    Haptics.selectionAsync();
+                    setBodyWeight(w.toString());
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.quickBtnText,
+                      {
+                        color:
+                          bodyWeight === w.toString()
+                            ? colors.primaryForeground
+                            : colors.foreground,
+                      },
+                    ]}
+                  >
+                    {w}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              style={[
+                styles.nextBtn,
+                {
+                  backgroundColor:
+                    bodyWeight && parseFloat(bodyWeight) > 0
+                      ? colors.primary
+                      : colors.muted,
+                },
+              ]}
+              onPress={handleStart}
+              disabled={!bodyWeight || parseFloat(bodyWeight) <= 0}
+              activeOpacity={0.85}
+            >
+              <Feather
+                name="play"
+                size={18}
+                color={
+                  bodyWeight && parseFloat(bodyWeight) > 0
+                    ? colors.primaryForeground
+                    : colors.mutedForeground
+                }
+              />
+              <Text
+                style={[
+                  styles.nextBtnText,
                   {
                     color:
-                      bodyWeight === w.toString()
+                      bodyWeight && parseFloat(bodyWeight) > 0
                         ? colors.primaryForeground
-                        : colors.foreground,
+                        : colors.mutedForeground,
                   },
                 ]}
               >
-                {w}
+                Commencer
               </Text>
             </TouchableOpacity>
-          ))}
-        </View>
-
-        <TouchableOpacity
-          style={[
-            styles.startBtn,
-            {
-              backgroundColor: bodyWeight && parseFloat(bodyWeight) > 0
-                ? colors.primary
-                : colors.muted,
-            },
-          ]}
-          onPress={handleStart}
-          disabled={!bodyWeight || parseFloat(bodyWeight) <= 0}
-          activeOpacity={0.85}
-        >
-          <Feather
-            name="play"
-            size={20}
-            color={
-              bodyWeight && parseFloat(bodyWeight) > 0
-                ? colors.primaryForeground
-                : colors.mutedForeground
-            }
-          />
-          <Text
-            style={[
-              styles.startBtnText,
-              {
-                color:
-                  bodyWeight && parseFloat(bodyWeight) > 0
-                    ? colors.primaryForeground
-                    : colors.mutedForeground,
-              },
-            ]}
-          >
-            Commencer
-          </Text>
-        </TouchableOpacity>
-      </View>
+          </>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -165,21 +335,91 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   backBtn: {
-    marginBottom: 32,
+    marginLeft: 24,
+    marginBottom: 24,
   },
-  content: {
+  scrollContent: {
     paddingHorizontal: 24,
+    paddingBottom: 40,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontFamily: "Inter_700Bold",
     letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Inter_400Regular",
-    marginBottom: 40,
+    marginBottom: 28,
+  },
+  group: {
+    marginBottom: 20,
+  },
+  groupLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_600SemiBold",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  presetRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  presetChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 11,
+    borderRadius: 12,
+    borderWidth: 1.5,
+  },
+  presetChipText: {
+    fontSize: 15,
+    fontFamily: "Inter_600SemiBold",
+  },
+  customNameBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  customNameInput: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_500Medium",
+  },
+  customNamePlaceholder: {
+    flex: 1,
+    fontSize: 15,
+    fontFamily: "Inter_400Regular",
+  },
+  nextBtn: {
+    borderRadius: 14,
+    paddingVertical: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 10,
+  },
+  nextBtnText: {
+    fontSize: 17,
+    fontFamily: "Inter_700Bold",
+  },
+  selectedNameBadge: {
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignSelf: "flex-start",
+    marginBottom: 24,
+  },
+  selectedNameText: {
+    fontSize: 14,
+    fontFamily: "Inter_700Bold",
   },
   weightContainer: {
     flexDirection: "row",
@@ -210,25 +450,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   quickBtn: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
   },
   quickBtnText: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Inter_600SemiBold",
-  },
-  startBtn: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-  },
-  startBtnText: {
-    fontSize: 17,
-    fontFamily: "Inter_700Bold",
   },
 });

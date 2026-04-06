@@ -37,6 +37,7 @@ export interface WorkoutExercise {
 
 export interface Workout {
   id: string;
+  name: string;
   date: string;
   bodyWeight: number;
   exercises: WorkoutExercise[];
@@ -93,7 +94,7 @@ interface WorkoutContextType {
   exercises: Exercise[];
   workouts: Workout[];
   currentWorkout: Workout | null;
-  startWorkout: (bodyWeight: number) => void;
+  startWorkout: (bodyWeight: number, name: string) => void;
   endWorkout: () => void;
   addExerciseToWorkout: (exerciseId: string) => void;
   removeExerciseFromWorkout: (exerciseId: string) => void;
@@ -150,9 +151,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(w));
   }
 
-  const startWorkout = useCallback((bodyWeight: number) => {
+  const startWorkout = useCallback((bodyWeight: number, name: string) => {
     const w: Workout = {
       id: generateId(),
+      name,
       date: new Date().toISOString(),
       bodyWeight,
       exercises: [],

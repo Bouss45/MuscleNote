@@ -112,6 +112,9 @@ export default function WorkoutScreen() {
               Séance en cours
             </Text>
             <Text style={[styles.bodyWeight, { color: colors.foreground }]}>
+              {currentWorkout.name}
+            </Text>
+            <Text style={[styles.sessionWeight, { color: colors.mutedForeground }]}>
               {currentWorkout.bodyWeight} kg
             </Text>
           </View>
@@ -231,8 +234,13 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   bodyWeight: {
-    fontSize: 24,
+    fontSize: 20,
     fontFamily: "Inter_700Bold",
+  },
+  sessionWeight: {
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    marginTop: 1,
   },
   timerBadge: {
     flexDirection: "row",

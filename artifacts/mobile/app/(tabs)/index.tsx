@@ -73,10 +73,10 @@ export default function HomeScreen() {
             <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
             <View>
               <Text style={[styles.activeTitle, { color: colors.primary }]}>
-                Séance en cours
+                {currentWorkout.name}
               </Text>
               <Text style={[styles.activeSubtitle, { color: colors.mutedForeground }]}>
-                {currentWorkout.exercises.length} exercice{currentWorkout.exercises.length !== 1 ? "s" : ""} • {currentWorkout.bodyWeight} kg
+                {currentWorkout.exercises.length} exercice{currentWorkout.exercises.length !== 1 ? "s" : ""} • {currentWorkout.bodyWeight} kg corps
               </Text>
             </View>
           </View>
@@ -142,10 +142,10 @@ export default function HomeScreen() {
               <View style={styles.workoutCardTop}>
                 <View>
                   <Text style={[styles.workoutDate, { color: colors.foreground }]}>
-                    {formatDate(workout.date)}
+                    {workout.name || formatDate(workout.date)}
                   </Text>
                   <Text style={[styles.workoutTime, { color: colors.mutedForeground }]}>
-                    {formatTime(workout.date)}{workout.durationMinutes ? ` • ${workout.durationMinutes} min` : ""}
+                    {formatDate(workout.date)} · {formatTime(workout.date)}{workout.durationMinutes ? ` · ${workout.durationMinutes} min` : ""}
                   </Text>
                 </View>
                 <View style={styles.workoutRight}>
