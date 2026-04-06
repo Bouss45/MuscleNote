@@ -109,6 +109,8 @@ interface WorkoutContextType {
   toggleSetComplete: (exerciseId: string, setId: string) => void;
   getExerciseHistory: (exerciseId: string) => ExerciseHistory[];
   addCustomExercise: (name: string, muscleGroup: MuscleGroup) => void;
+  updateWorkoutDate: (workoutId: string, newDate: string) => void;
+  deleteWorkout: (workoutId: string) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -310,6 +312,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     [workouts]
   );
 
+  const updateWorkoutDate = useCallback((workoutId: string, newDate: string) => {
+    setWorkouts((prev) => {
+      const updated = prev
+        .map((w) => (w.id === workoutId ? { ...w, date: newDate } : w))
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      saveWorkouts(updated);
+      return updated;
+    });
+  }, []);
+
+  const deleteWorkout = useCallback((workoutId: string) => {
+    setWorkouts((prev) => {
+      const updated = prev.filter((w) => w.id !== workoutId);
+      saveWorkouts(updated);
+      return updated;
+    });
+  }, []);
+
   const addCustomExercise = useCallback(
     async (name: string, muscleGroup: MuscleGroup) => {
       const newEx: Exercise = {
@@ -345,6 +365,8 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         toggleSetComplete,
         getExerciseHistory,
         addCustomExercise,
+        updateWorkoutDate,
+        deleteWorkout,
       }}
     >
       {children}
