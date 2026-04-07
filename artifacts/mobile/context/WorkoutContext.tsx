@@ -86,6 +86,7 @@ const DEFAULT_EXERCISES: Exercise[] = [
   { id: "calfraize", name: "Mollets debout", muscleGroup: "jambes" },
   { id: "adductorpress", name: "Adducteur press", muscleGroup: "jambes" },
   { id: "abductorpress", name: "Abducteur press", muscleGroup: "jambes" },
+  { id: "calfsit", name: "Mollets assis", muscleGroup: "jambes" },
   // Épaules
   { id: "ohp", name: "Développé militaire", muscleGroup: "épaules" },
   { id: "lateralraise", name: "Élévations latérales", muscleGroup: "épaules" },
