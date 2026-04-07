@@ -64,7 +64,7 @@ export default function SettingsScreen() {
         setStatus({ type: "success", message: "Fichier téléchargé avec succès !" });
       } else {
         // Mobile: write to temp file and share
-        const FileSystem = require("expo-file-system");
+        const FileSystem = require("expo-file-system/legacy");
         const Sharing = require("expo-sharing");
         const path = FileSystem.cacheDirectory + filename;
         await FileSystem.writeAsStringAsync(path, json, { encoding: "utf8" });
@@ -129,7 +129,7 @@ export default function SettingsScreen() {
         setImporting(false);
         return;
       }
-      const FileSystem = require("expo-file-system");
+      const FileSystem = require("expo-file-system/legacy");
       const json = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: "utf8" });
       pendingImportRef.current = json;
       setImporting(false);
