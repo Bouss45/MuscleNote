@@ -202,6 +202,13 @@ export default function HomeScreen() {
                       {workout.bodyWeight} kg
                     </Text>
                     <TouchableOpacity
+                      onPress={() => router.push({ pathname: "/edit-workout", params: { workoutId: workout.id } })}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      style={[styles.iconBtn, { borderColor: colors.border }]}
+                    >
+                      <Feather name="edit-2" size={14} color={colors.mutedForeground} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
                       onPress={() => openEditDate(workout)}
                       hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                       style={[styles.iconBtn, { borderColor: colors.border }]}
