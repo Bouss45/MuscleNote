@@ -67,7 +67,7 @@ export default function SettingsScreen() {
         const FileSystem = require("expo-file-system");
         const Sharing = require("expo-sharing");
         const path = FileSystem.cacheDirectory + filename;
-        await FileSystem.writeAsStringAsync(path, json, { encoding: FileSystem.EncodingType.UTF8 });
+        await FileSystem.writeAsStringAsync(path, json, { encoding: "utf8" });
         const canShare = await Sharing.isAvailableAsync();
         if (canShare) {
           await Sharing.shareAsync(path, { mimeType: "application/json", dialogTitle: "Exporter mes données GymTracker" });
@@ -130,7 +130,7 @@ export default function SettingsScreen() {
         return;
       }
       const FileSystem = require("expo-file-system");
-      const json = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
+      const json = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: "utf8" });
       pendingImportRef.current = json;
       setImporting(false);
       setConfirmImport(true);
