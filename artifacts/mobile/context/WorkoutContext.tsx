@@ -111,6 +111,7 @@ interface WorkoutContextType {
   addCustomExercise: (name: string, muscleGroup: MuscleGroup) => void;
   updateWorkoutDate: (workoutId: string, newDate: string) => void;
   deleteWorkout: (workoutId: string) => void;
+  patchWorkout: (workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => void;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -330,6 +331,14 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const patchWorkout = useCallback((workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => {
+    setWorkouts((prev) => {
+      const updated = prev.map((w) => w.id === workoutId ? { ...w, ...updates } : w);
+      saveWorkouts(updated);
+      return updated;
+    });
+  }, []);
+
   const addCustomExercise = useCallback(
     async (name: string, muscleGroup: MuscleGroup) => {
       const newEx: Exercise = {
@@ -367,6 +376,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         addCustomExercise,
         updateWorkoutDate,
         deleteWorkout,
+        patchWorkout,
       }}
     >
       {children}
