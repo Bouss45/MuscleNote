@@ -30,6 +30,10 @@ function NativeTabLayout() {
           <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
           <Label>Progrès</Label>
         </NativeTabs.Trigger>
+        <NativeTabs.Trigger name="supplements">
+          <Icon sf={{ default: "pills", selected: "pills.fill" }} />
+          <Label>Compléments</Label>
+        </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
           <Label>Paramètres</Label>
@@ -94,6 +98,15 @@ function ClassicTabLayout() {
           title: "Progrès",
           tabBarIcon: ({ color }) => (
             <Feather name="trending-up" size={22} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="supplements"
+        options={{
+          title: "Compléments",
+          tabBarIcon: ({ color }) => (
+            <Feather name="activity" size={22} color={color} />
           ),
         }}
       />
