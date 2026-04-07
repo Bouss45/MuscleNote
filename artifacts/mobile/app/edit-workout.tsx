@@ -91,8 +91,9 @@ const setStyles = StyleSheet.create({
   inputs: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
   group: { flexDirection: "row", alignItems: "center", gap: 4 },
   input: {
-    width: 52, height: 36, borderRadius: 8, borderWidth: 1,
+    width: 52, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
     textAlign: "center", fontSize: 15, fontFamily: "Inter_600SemiBold",
+    includeFontPadding: false,
   },
   unit: { fontSize: 11, fontFamily: "Inter_400Regular" },
   x: { fontSize: 14, fontFamily: "Inter_400Regular" },

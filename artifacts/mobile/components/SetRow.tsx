@@ -152,12 +152,13 @@ const styles = StyleSheet.create({
   },
   input: {
     width: 52,
-    height: 36,
+    paddingVertical: 8,
     borderRadius: 8,
     borderWidth: 1,
     textAlign: "center",
     fontSize: 15,
     fontFamily: "Inter_600SemiBold",
+    includeFontPadding: false,
   },
   unit: {
     fontSize: 11,
