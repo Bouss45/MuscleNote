@@ -109,6 +109,9 @@ interface WorkoutContextType {
   toggleSetComplete: (exerciseId: string, setId: string) => void;
   getExerciseHistory: (exerciseId: string) => ExerciseHistory[];
   addCustomExercise: (name: string, muscleGroup: MuscleGroup) => void;
+  updateCustomExercise: (id: string, name: string, muscleGroup: MuscleGroup) => void;
+  deleteCustomExercise: (id: string) => void;
+  isCustomExercise: (id: string) => boolean;
   updateWorkoutDate: (workoutId: string, newDate: string) => void;
   deleteWorkout: (workoutId: string) => void;
   patchWorkout: (workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => void;
@@ -358,6 +361,32 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const updateCustomExercise = useCallback(
+    (id: string, name: string, muscleGroup: MuscleGroup) => {
+      setExercises((prev) => {
+        const updated = prev.map((e) => e.id === id ? { ...e, name, muscleGroup } : e);
+        const custom = updated.filter((e) => !DEFAULT_EXERCISES.find((d) => d.id === e.id));
+        AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(custom));
+        return updated;
+      });
+    },
+    []
+  );
+
+  const deleteCustomExercise = useCallback((id: string) => {
+    setExercises((prev) => {
+      const updated = prev.filter((e) => e.id !== id);
+      const custom = updated.filter((e) => !DEFAULT_EXERCISES.find((d) => d.id === e.id));
+      AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(custom));
+      return updated;
+    });
+  }, []);
+
+  const isCustomExercise = useCallback(
+    (id: string) => !DEFAULT_EXERCISES.find((e) => e.id === id),
+    []
+  );
+
   return (
     <WorkoutContext.Provider
       value={{
@@ -374,6 +403,9 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         toggleSetComplete,
         getExerciseHistory,
         addCustomExercise,
+        updateCustomExercise,
+        deleteCustomExercise,
+        isCustomExercise,
         updateWorkoutDate,
         deleteWorkout,
         patchWorkout,
