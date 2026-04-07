@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
@@ -16,6 +16,120 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
+
+// ── Streak computation ────────────────────────────────────────────────────────
+/** Returns ISO week key "YYYY-WW" for a given Date */
+function getWeekKey(d: Date): string {
+  const date = new Date(d);
+  date.setHours(12, 0, 0, 0);
+  const day = date.getDay() || 7;
+  date.setDate(date.getDate() + 4 - day); // anchor on Thursday
+  const yearStart = new Date(date.getFullYear(), 0, 1);
+  const weekNo = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${date.getFullYear()}-${String(weekNo).padStart(2, "0")}`;
+}
+
+/** Returns the week key for N weeks before a given key */
+function shiftWeek(key: string, delta: number): string {
+  const [y, w] = key.split("-").map(Number);
+  // Monday of ISO week 1 of year y
+  const jan4 = new Date(y, 0, 4); // Jan 4 is always in week 1
+  const dayOfWeek = jan4.getDay() || 7;
+  const monday1 = new Date(jan4);
+  monday1.setDate(jan4.getDate() - (dayOfWeek - 1));
+  // Monday of week w
+  const target = new Date(monday1);
+  target.setDate(monday1.getDate() + (w - 1) * 7 + delta * 7);
+  return getWeekKey(target);
+}
+
+interface StreakResult {
+  current: number;   // qualifying weeks in current streak
+  best: number;      // best streak ever
+  isAlive: boolean;  // streak still going (not broken yet)
+  lastWeeks: Array<"active" | "pause" | "empty">; // last 8 weeks status
+}
+
+function computeStreak(workouts: Workout[]): StreakResult {
+  // Count sessions per week
+  const weekCounts = new Map<string, number>();
+  for (const w of workouts) {
+    const key = getWeekKey(new Date(w.date));
+    weekCounts.set(key, (weekCounts.get(key) || 0) + 1);
+  }
+  if (weekCounts.size === 0) return { current: 0, best: 0, isAlive: false, lastWeeks: [] };
+
+  const nowKey = getWeekKey(new Date());
+
+  // Walk backwards from current week to compute current streak
+  // Rules: count only weeks with ≥ 3 sessions; allow at most 1 consecutive miss
+  let current = 0;
+  let consecutiveMisses = 0;
+  let isAlive = true;
+  let week = nowKey;
+  const earliest = Array.from(weekCounts.keys()).sort()[0];
+
+  while (week >= earliest) {
+    const count = weekCounts.get(week) || 0;
+    if (count >= 3) {
+      current++;
+      consecutiveMisses = 0;
+    } else {
+      // Current week in progress: skip without penalty
+      if (week === nowKey) {
+        week = shiftWeek(week, -1);
+        continue;
+      }
+      consecutiveMisses++;
+      if (consecutiveMisses > 1) {
+        isAlive = false;
+        break;
+      }
+    }
+    week = shiftWeek(week, -1);
+  }
+
+  // Compute best streak by scanning all weeks forward
+  const allWeeks = new Set<string>();
+  for (const key of weekCounts.keys()) allWeeks.add(key);
+  // Add all weeks in range
+  let scan = Array.from(allWeeks).sort()[0];
+  while (scan <= nowKey) {
+    allWeeks.add(scan);
+    scan = shiftWeek(scan, 1);
+  }
+  const sortedWeeks = Array.from(allWeeks).sort();
+
+  let best = 0;
+  let tempCount = 0;
+  let tempMisses = 0;
+  for (const k of sortedWeeks) {
+    const count = weekCounts.get(k) || 0;
+    if (k === nowKey) break; // don't include current week in best
+    if (count >= 3) {
+      tempCount++;
+      tempMisses = 0;
+      best = Math.max(best, tempCount);
+    } else {
+      tempMisses++;
+      if (tempMisses > 1) { tempCount = 0; tempMisses = 0; }
+    }
+  }
+  best = Math.max(best, current);
+
+  // Last 8 weeks status for mini calendar
+  const lastWeeks: Array<"active" | "pause" | "empty"> = [];
+  for (let i = 7; i >= 0; i--) {
+    const k = shiftWeek(nowKey, -i);
+    const count = weekCounts.get(k) || 0;
+    if (k === nowKey && count < 3) lastWeeks.push("empty"); // current week in progress
+    else if (count >= 3) lastWeeks.push("active");
+    else if (weekCounts.has(k)) lastWeeks.push("pause");
+    else lastWeeks.push("empty");
+  }
+
+  return { current, best, isAlive, lastWeeks };
+}
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -35,6 +149,7 @@ export default function HomeScreen() {
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const recentWorkouts = workouts.slice(0, 20);
+  const streak = useMemo(() => computeStreak(workouts), [workouts]);
 
   function formatDate(iso: string) {
     const d = new Date(iso);
@@ -144,6 +259,76 @@ export default function HomeScreen() {
               Nouvelle séance
             </Text>
           </TouchableOpacity>
+        )}
+
+        {/* Streak card */}
+        {workouts.length > 0 && (
+          <View style={[
+            styles.streakCard,
+            {
+              backgroundColor: streak.current > 0 && streak.isAlive
+                ? colors.primary + "15"
+                : colors.card,
+              borderColor: streak.current > 0 && streak.isAlive
+                ? colors.primary
+                : colors.border,
+            },
+          ]}>
+            <View style={styles.streakTop}>
+              <View style={styles.streakLeft}>
+                <View style={[styles.streakIconCircle, { backgroundColor: streak.current > 0 && streak.isAlive ? colors.primary + "25" : colors.muted }]}>
+                  <Feather name="zap" size={18} color={streak.current > 0 && streak.isAlive ? colors.primary : colors.mutedForeground} />
+                </View>
+                <View>
+                  <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>Série en cours</Text>
+                  <View style={styles.streakCountRow}>
+                    <Text style={[styles.streakCount, { color: streak.current > 0 && streak.isAlive ? colors.primary : colors.foreground }]}>
+                      {streak.current}
+                    </Text>
+                    <Text style={[styles.streakUnit, { color: colors.mutedForeground }]}>
+                      semaine{streak.current !== 1 ? "s" : ""}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.streakRight}>
+                <Text style={[styles.streakBestLabel, { color: colors.mutedForeground }]}>Meilleure</Text>
+                <Text style={[styles.streakBest, { color: colors.foreground }]}>
+                  {streak.best} sem.
+                </Text>
+              </View>
+            </View>
+
+            {/* Mini week calendar */}
+            {streak.lastWeeks.length > 0 && (
+              <View style={styles.weeksRow}>
+                {streak.lastWeeks.map((status, i) => (
+                  <View key={i} style={styles.weekDot}>
+                    <View style={[
+                      styles.weekDotCircle,
+                      {
+                        backgroundColor:
+                          status === "active" ? colors.primary :
+                          status === "pause" ? colors.primary + "44" :
+                          colors.muted,
+                      },
+                    ]} />
+                    {i === streak.lastWeeks.length - 1 && (
+                      <Text style={[styles.weekDotLabel, { color: colors.mutedForeground }]}>S.</Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )}
+
+            <Text style={[styles.streakHint, { color: colors.mutedForeground }]}>
+              {streak.current === 0
+                ? "Fais 3 séances cette semaine pour démarrer une série"
+                : streak.isAlive
+                ? "Minimum 3 séances/semaine · 1 pause autorisée"
+                : "Série terminée — recommence cette semaine !"}
+            </Text>
+          </View>
         )}
 
         {/* Stats row */}
@@ -472,6 +657,26 @@ const styles = StyleSheet.create({
     fontSize: 14, fontFamily: "Inter_400Regular",
     textAlign: "center", lineHeight: 22,
   },
+  // Streak card
+  streakCard: {
+    marginHorizontal: 20, borderRadius: 16, borderWidth: 1.5,
+    padding: 16, marginBottom: 16, gap: 12,
+  },
+  streakTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  streakLeft: { flexDirection: "row", alignItems: "center", gap: 12 },
+  streakIconCircle: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  streakLabel: { fontSize: 11, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  streakCountRow: { flexDirection: "row", alignItems: "baseline", gap: 4 },
+  streakCount: { fontSize: 28, fontFamily: "Inter_700Bold" },
+  streakUnit: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  streakRight: { alignItems: "flex-end" },
+  streakBestLabel: { fontSize: 10, fontFamily: "Inter_400Regular", marginBottom: 2 },
+  streakBest: { fontSize: 16, fontFamily: "Inter_700Bold" },
+  weeksRow: { flexDirection: "row", gap: 6, alignItems: "center" },
+  weekDot: { alignItems: "center", gap: 3 },
+  weekDotCircle: { width: 10, height: 10, borderRadius: 5 },
+  weekDotLabel: { fontSize: 9, fontFamily: "Inter_400Regular" },
+  streakHint: { fontSize: 11, fontFamily: "Inter_400Regular" },
   // Modal
   modalOverlay: {
     flex: 1, backgroundColor: "rgba(0,0,0,0.6)",
