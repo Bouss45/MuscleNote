@@ -16,7 +16,7 @@ import { useColors } from "@/hooks/useColors";
 import { Exercise, MuscleGroup, useWorkout } from "@/context/WorkoutContext";
 import MuscleGroupBadge, { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
 
-const ALL_GROUPS: MuscleGroup[] = ["dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio"];
+const ALL_GROUPS: MuscleGroup[] = ["dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras"];
 
 export default function ExercisePickerScreen() {
   const colors = useColors();

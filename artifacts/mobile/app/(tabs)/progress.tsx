@@ -18,7 +18,7 @@ import LineChart, { DataPoint } from "@/components/LineChart";
 type Tab = "weight" | MuscleGroup;
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
-  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio",
+  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras",
 ];
 
 const MUSCLE_COLORS: Record<MuscleGroup, string> = {
@@ -30,6 +30,7 @@ const MUSCLE_COLORS: Record<MuscleGroup, string> = {
   épaules: "#f59e0b",
   abdos: "#ef4444",
   cardio: "#ec4899",
+  "avant-bras": "#14b8a6",
 };
 
 // Slightly different shades for multiple exercise charts

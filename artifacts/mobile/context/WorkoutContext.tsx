@@ -15,7 +15,8 @@ export type MuscleGroup =
   | "jambes"
   | "épaules"
   | "abdos"
-  | "cardio";
+  | "cardio"
+  | "avant-bras";
 
 export interface Exercise {
   id: string;
@@ -57,11 +58,16 @@ const DEFAULT_EXERCISES: Exercise[] = [
   { id: "pullup", name: "Traction", muscleGroup: "dos" },
   { id: "row", name: "Rowing barre", muscleGroup: "dos" },
   { id: "latpull", name: "Tirage vertical", muscleGroup: "dos" },
+  { id: "tiragebucheron", name: "Tirage bûcheron", muscleGroup: "dos" },
+  { id: "tirageh", name: "Tirage horizontale", muscleGroup: "dos" },
   // Pecs
   { id: "bench", name: "Développé couché", muscleGroup: "pecs" },
   { id: "incline", name: "Développé incliné", muscleGroup: "pecs" },
   { id: "fly", name: "Écarté haltères", muscleGroup: "pecs" },
   { id: "dips", name: "Dips", muscleGroup: "pecs" },
+  { id: "dbench", name: "Développé couché haltères", muscleGroup: "pecs" },
+  { id: "dincline", name: "Développé incliné haltères", muscleGroup: "pecs" },
+  { id: "pecfly", name: "Pec Fly", muscleGroup: "pecs" },
   // Biceps
   { id: "curl", name: "Curl barre", muscleGroup: "biceps" },
   { id: "hammercurl", name: "Curl marteau", muscleGroup: "biceps" },
@@ -70,6 +76,7 @@ const DEFAULT_EXERCISES: Exercise[] = [
   { id: "pushdown", name: "Pushdown câble", muscleGroup: "triceps" },
   { id: "overheadtri", name: "Extension nuque", muscleGroup: "triceps" },
   { id: "skullcrusher", name: "Skull crusher", muscleGroup: "triceps" },
+  { id: "barfront", name: "Barre au front", muscleGroup: "triceps" },
   // Jambes
   { id: "squat", name: "Squat", muscleGroup: "jambes" },
   { id: "legpress", name: "Presse à cuisses", muscleGroup: "jambes" },
@@ -77,6 +84,8 @@ const DEFAULT_EXERCISES: Exercise[] = [
   { id: "legext", name: "Leg extension", muscleGroup: "jambes" },
   { id: "lunges", name: "Fentes", muscleGroup: "jambes" },
   { id: "calfraize", name: "Mollets debout", muscleGroup: "jambes" },
+  { id: "adductorpress", name: "Adducteur press", muscleGroup: "jambes" },
+  { id: "abductorpress", name: "Abducteur press", muscleGroup: "jambes" },
   // Épaules
   { id: "ohp", name: "Développé militaire", muscleGroup: "épaules" },
   { id: "lateralraise", name: "Élévations latérales", muscleGroup: "épaules" },
@@ -88,6 +97,12 @@ const DEFAULT_EXERCISES: Exercise[] = [
   // Cardio
   { id: "treadmill", name: "Tapis roulant", muscleGroup: "cardio" },
   { id: "bike", name: "Vélo", muscleGroup: "cardio" },
+  // Avant-bras
+  { id: "wristcurl", name: "Curl poignet", muscleGroup: "avant-bras" },
+  { id: "wristext", name: "Extension poignet", muscleGroup: "avant-bras" },
+  { id: "reversecurl", name: "Curl inversé", muscleGroup: "avant-bras" },
+  { id: "pinchgrip", name: "Pince (grip)", muscleGroup: "avant-bras" },
+  { id: "farmerwalk", name: "Farmer's walk", muscleGroup: "avant-bras" },
 ];
 
 interface WorkoutContextType {

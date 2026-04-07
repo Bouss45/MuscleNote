@@ -26,7 +26,7 @@ type Status = { type: "success" | "error"; message: string } | null;
 export default function SettingsScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { workouts, exercises } = useWorkout();
+  const { workouts, exercises, isCustomExercise } = useWorkout();
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState<Status>(null);
@@ -196,7 +196,7 @@ export default function SettingsScreen() {
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.foreground }]}>
-                {exercises.filter((e) => !["deadlift","pullup","row","latpull","bench","incline","fly","dips","curl","hammercurl","concentcurl","pushdown","overheadtri","skullcrusher","squat","legpress","legcurl","legext","lunges","calfraize","ohp","lateralraise","frontraise","crunch","plank","legrise","treadmill","bike"].includes(e.id)).length}
+                {exercises.filter((e) => isCustomExercise(e.id)).length}
               </Text>
               <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>exercices perso</Text>
             </View>

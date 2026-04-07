@@ -12,6 +12,7 @@ const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
   épaules: "#f59e0b",
   abdos: "#ef4444",
   cardio: "#ec4899",
+  "avant-bras": "#14b8a6",
 };
 
 export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
@@ -23,6 +24,7 @@ export const MUSCLE_GROUP_LABELS: Record<MuscleGroup, string> = {
   épaules: "Épaules",
   abdos: "Abdos",
   cardio: "Cardio",
+  "avant-bras": "Avant-bras",
 };
 
 interface Props {
