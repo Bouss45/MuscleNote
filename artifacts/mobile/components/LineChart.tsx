@@ -14,6 +14,7 @@ interface Props {
   unit?: string;
   height?: number;
   formatValue?: (v: number) => string;
+  goalLine?: number;
 }
 
 const PADDING_LEFT = 44;
@@ -21,7 +22,7 @@ const PADDING_RIGHT = 16;
 const PADDING_TOP = 16;
 const PADDING_BOTTOM = 36;
 
-export default function LineChart({ data, color, unit = "", height = 180, formatValue }: Props) {
+export default function LineChart({ data, color, unit = "", height = 180, formatValue, goalLine }: Props) {
   const colors = useColors();
   const chartColor = color ?? colors.primary;
   const screenW = Dimensions.get("window").width - 48;
@@ -44,8 +45,8 @@ export default function LineChart({ data, color, unit = "", height = 180, format
   }
 
   const values = data.map((d) => d.value);
-  const maxVal = Math.max(...values);
-  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values, ...(goalLine != null ? [goalLine] : []));
+  const minVal = Math.min(...values, ...(goalLine != null ? [goalLine] : []));
   const range = maxVal - minVal || 1;
 
   // Map data to SVG coordinates
@@ -130,6 +131,33 @@ export default function LineChart({ data, color, unit = "", height = 180, format
           {fmt(tick)}
         </SvgText>
       ))}
+
+      {/* Goal line */}
+      {goalLine != null && (
+        <>
+          <Line
+            x1={PADDING_LEFT}
+            y1={getY(goalLine)}
+            x2={W - PADDING_RIGHT}
+            y2={getY(goalLine)}
+            stroke={chartColor}
+            strokeWidth={1.5}
+            strokeDasharray="6 4"
+            strokeOpacity={0.5}
+          />
+          <SvgText
+            x={W - PADDING_RIGHT}
+            y={getY(goalLine) - 4}
+            fontSize={9}
+            fill={chartColor}
+            textAnchor="end"
+            fontFamily="Inter_600SemiBold"
+            fillOpacity={0.7}
+          >
+            Objectif
+          </SvgText>
+        </>
+      )}
 
       {/* Fill area */}
       <Path d={buildFill()} fill="url(#fillGrad)" />

@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -10,12 +10,25 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
 import { MuscleGroup, useWorkout } from "@/context/WorkoutContext";
 import { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
 import LineChart, { DataPoint } from "@/components/LineChart";
 
-type Tab = "weight" | MuscleGroup;
+type Tab = "weight" | "calories" | "eau" | MuscleGroup;
+
+interface DailyTracker {
+  calorieGoal: number;
+  waterGoal: number;
+  caloriesLog: { [date: string]: number };
+  waterLog: { [date: string]: number };
+}
+
+const TRACKER_KEY = "@gymtracker_daily_tracker";
+const DEFAULT_TRACKER: DailyTracker = { calorieGoal: 2000, waterGoal: 8, caloriesLog: {}, waterLog: {} };
+
+function todayStr() { return new Date().toISOString().slice(0, 10); }
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
   "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras",
@@ -46,6 +59,13 @@ export default function ProgressScreen() {
   const insets = useSafeAreaInsets();
   const { workouts, exercises } = useWorkout();
   const [activeTab, setActiveTab] = useState<Tab>("weight");
+  const [tracker, setTracker] = useState<DailyTracker>(DEFAULT_TRACKER);
+
+  useEffect(() => {
+    AsyncStorage.getItem(TRACKER_KEY).then((raw) => {
+      if (raw) setTracker({ ...DEFAULT_TRACKER, ...JSON.parse(raw) });
+    }).catch(() => {});
+  }, []);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top + 10;
   const bottomPad = Platform.OS === "web" ? 34 + 84 : insets.bottom + 100;
@@ -64,6 +84,45 @@ export default function ProgressScreen() {
     const first = vals[0], last = vals[vals.length - 1];
     return { current: last, diff: last - first, min: Math.min(...vals), max: Math.max(...vals) };
   }, [bodyWeightData]);
+
+  // ── Nutrition data ────────────────────────────────────────────────────────
+  const calData: DataPoint[] = useMemo(() => {
+    return Object.entries(tracker.caloriesLog)
+      .filter(([, v]) => v > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-30)
+      .map(([date, value]) => ({ label: formatShortDate(date), value }));
+  }, [tracker]);
+
+  const waterData: DataPoint[] = useMemo(() => {
+    return Object.entries(tracker.waterLog)
+      .filter(([, v]) => v > 0)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-30)
+      .map(([date, value]) => ({ label: formatShortDate(date), value }));
+  }, [tracker]);
+
+  const calStats = useMemo(() => {
+    if (calData.length === 0) return null;
+    const vals = calData.map((d) => d.value);
+    const last7 = calData.slice(-7).map((d) => d.value);
+    const avg7 = last7.length > 0 ? Math.round(last7.reduce((a, b) => a + b, 0) / last7.length) : 0;
+    const best = Math.max(...vals);
+    const todayVal = tracker.caloriesLog[todayStr()] ?? 0;
+    const daysHit = vals.filter((v) => v >= tracker.calorieGoal).length;
+    return { today: todayVal, avg7, best, daysHit, total: vals.length };
+  }, [calData, tracker]);
+
+  const waterStats = useMemo(() => {
+    if (waterData.length === 0) return null;
+    const vals = waterData.map((d) => d.value);
+    const last7 = waterData.slice(-7).map((d) => d.value);
+    const avg7 = last7.length > 0 ? Math.round((last7.reduce((a, b) => a + b, 0) / last7.length) * 10) / 10 : 0;
+    const best = Math.max(...vals);
+    const todayVal = tracker.waterLog[todayStr()] ?? 0;
+    const daysHit = vals.filter((v) => v >= tracker.waterGoal).length;
+    return { today: todayVal, avg7, best, daysHit, total: vals.length };
+  }, [waterData, tracker]);
 
   // ── Sessions count per muscle group (for tab badges) ─────────────────────
   const muscleSessionCount = useMemo(() => {
@@ -125,7 +184,7 @@ export default function ProgressScreen() {
   }, [workouts, exercises]);
 
   // Summary stats for active muscle group
-  const activeMuscleGroup = activeTab !== "weight" ? activeTab as MuscleGroup : null;
+  const activeMuscleGroup = (activeTab !== "weight" && activeTab !== "calories" && activeTab !== "eau") ? activeTab as MuscleGroup : null;
   const muscleTopExercises = activeMuscleGroup ? topExercisesByGroup[activeMuscleGroup] : [];
 
   const muscleStats = useMemo(() => {
@@ -150,7 +209,11 @@ export default function ProgressScreen() {
 
   const tabColor = activeTab === "weight"
     ? colors.info
-    : MUSCLE_COLORS[activeTab as MuscleGroup] ?? colors.primary;
+    : activeTab === "calories"
+      ? "#e85a0a"
+      : activeTab === "eau"
+        ? "#3b82f6"
+        : MUSCLE_COLORS[activeTab as MuscleGroup] ?? colors.primary;
 
   return (
     <ScrollView
@@ -170,6 +233,34 @@ export default function ProgressScreen() {
           <Text style={[styles.tabText, { color: activeTab === "weight" ? colors.info : colors.mutedForeground }]}>
             Poids corps
           </Text>
+        </TouchableOpacity>
+
+        {/* Calories tab */}
+        <TouchableOpacity
+          style={[styles.tab, { backgroundColor: activeTab === "calories" ? "#e85a0a22" : colors.card, borderColor: activeTab === "calories" ? "#e85a0a" : colors.border }]}
+          onPress={() => setActiveTab("calories")}
+        >
+          <Text style={{ fontSize: 13, lineHeight: 16 }}>🔥</Text>
+          <Text style={[styles.tabText, { color: activeTab === "calories" ? "#e85a0a" : colors.mutedForeground }]}>Calories</Text>
+          {(calStats?.total ?? 0) > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: activeTab === "calories" ? "#e85a0a" : colors.muted }]}>
+              <Text style={[styles.tabBadgeText, { color: activeTab === "calories" ? "#fff" : colors.mutedForeground }]}>{calStats!.total}</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        {/* Eau tab */}
+        <TouchableOpacity
+          style={[styles.tab, { backgroundColor: activeTab === "eau" ? "#3b82f622" : colors.card, borderColor: activeTab === "eau" ? "#3b82f6" : colors.border }]}
+          onPress={() => setActiveTab("eau")}
+        >
+          <Text style={{ fontSize: 13, lineHeight: 16 }}>💧</Text>
+          <Text style={[styles.tabText, { color: activeTab === "eau" ? "#3b82f6" : colors.mutedForeground }]}>Eau</Text>
+          {(waterStats?.total ?? 0) > 0 && (
+            <View style={[styles.tabBadge, { backgroundColor: activeTab === "eau" ? "#3b82f6" : colors.muted }]}>
+              <Text style={[styles.tabBadgeText, { color: activeTab === "eau" ? "#fff" : colors.mutedForeground }]}>{waterStats!.total}</Text>
+            </View>
+          )}
         </TouchableOpacity>
 
         {MUSCLE_GROUPS.map((g) => {
@@ -237,8 +328,138 @@ export default function ProgressScreen() {
         </>
       )}
 
+      {/* ── Calories ── */}
+      {activeTab === "calories" && (
+        <>
+          {calStats ? (
+            <View style={styles.statsRow}>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.today.toLocaleString("fr-FR")}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.avg7.toLocaleString("fr-FR")}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Moy. 7 jours</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.daysHit}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Jours objectif{"\n"}atteint</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={{ fontSize: 36 }}>🔥</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucune donnée</Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Commence à saisir tes calories dans l'onglet Nutrition pour voir leur évolution ici
+              </Text>
+            </View>
+          )}
+          {calData.length >= 2 && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.chartHeader}>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Calories (kcal)</Text>
+                <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>
+                  {calData.length} jours · Objectif {tracker.calorieGoal.toLocaleString("fr-FR")} kcal
+                </Text>
+              </View>
+              <LineChart
+                data={calData}
+                color="#e85a0a"
+                unit=" kcal"
+                height={200}
+                goalLine={tracker.calorieGoal}
+                formatValue={(v) => v >= 1000 ? `${Math.round(v / 100) / 10}k` : `${Math.round(v)}`}
+              />
+            </View>
+          )}
+          {calStats && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>Récapitulatif</Text>
+              <View style={styles.recapRow}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Objectif quotidien</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{tracker.calorieGoal.toLocaleString("fr-FR")} kcal</Text>
+              </View>
+              <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Meilleure journée</Text>
+                <Text style={[styles.recapVal, { color: "#e85a0a" }]}>{calStats.best.toLocaleString("fr-FR")} kcal</Text>
+              </View>
+              <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Jours suivis</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{calStats.total}</Text>
+              </View>
+            </View>
+          )}
+        </>
+      )}
+
+      {/* ── Eau ── */}
+      {activeTab === "eau" && (
+        <>
+          {waterStats ? (
+            <View style={styles.statsRow}>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.today}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui{"\n"}(verres)</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.avg7}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Moy. 7 jours</Text>
+              </View>
+              <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.daysHit}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Jours objectif{"\n"}atteint</Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={{ fontSize: 36 }}>💧</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucune donnée</Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                Commence à suivre ton hydratation dans l'onglet Nutrition pour voir son évolution ici
+              </Text>
+            </View>
+          )}
+          {waterData.length >= 2 && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={styles.chartHeader}>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Hydratation (verres)</Text>
+                <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>
+                  {waterData.length} jours · Objectif {tracker.waterGoal} verres/jour
+                </Text>
+              </View>
+              <LineChart
+                data={waterData}
+                color="#3b82f6"
+                unit=" verres"
+                height={200}
+                goalLine={tracker.waterGoal}
+                formatValue={(v) => `${v}`}
+              />
+            </View>
+          )}
+          {waterStats && (
+            <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>Récapitulatif</Text>
+              <View style={styles.recapRow}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Objectif quotidien</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{tracker.waterGoal} verres</Text>
+              </View>
+              <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Meilleure journée</Text>
+                <Text style={[styles.recapVal, { color: "#3b82f6" }]}>{waterStats.best} verres</Text>
+              </View>
+              <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Jours suivis</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{waterStats.total}</Text>
+              </View>
+            </View>
+          )}
+        </>
+      )}
+
       {/* ── Muscle group ── */}
-      {activeTab !== "weight" && activeMuscleGroup && (
+      {activeTab !== "weight" && activeTab !== "calories" && activeTab !== "eau" && activeMuscleGroup && (
         <>
           {/* Summary stats */}
           {muscleStats ? (
@@ -443,4 +664,7 @@ const styles = StyleSheet.create({
   emptyState: { alignItems: "center", paddingHorizontal: 40, paddingVertical: 40, gap: 10 },
   emptyTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginTop: 4 },
   emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20 },
+  recapRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11 },
+  recapLabel: { fontSize: 13, fontFamily: "Inter_400Regular" },
+  recapVal: { fontSize: 14, fontFamily: "Inter_700Bold" },
 });
