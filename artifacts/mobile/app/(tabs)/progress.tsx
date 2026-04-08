@@ -47,7 +47,7 @@ const MUSCLE_COLORS: Record<MuscleGroup, string> = {
 };
 
 // Slightly different shades for multiple exercise charts
-const CHART_PALETTE = ["#0070FF", "#a855f7", "#22c55e", "#f59e0b", "#ec4899"];
+const CHART_PALETTE = ["#16A34A", "#3b82f6", "#a855f7", "#f59e0b", "#ec4899"];
 
 function formatShortDate(iso: string) {
   const d = new Date(iso);
