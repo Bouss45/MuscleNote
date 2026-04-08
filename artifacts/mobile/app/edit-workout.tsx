@@ -14,7 +14,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { Exercise, MuscleGroup, Set, WorkoutExercise, useWorkout } from "@/context/WorkoutContext";
+import { Exercise, MuscleGroup, Set, SetUpdate, WorkoutExercise, useWorkout } from "@/context/WorkoutContext";
 import MuscleGroupBadge from "@/components/MuscleGroupBadge";
 import { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
 
@@ -23,57 +23,82 @@ function generateId() {
 }
 
 const MUSCLE_GROUPS: MuscleGroup[] = [
-  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio",
+  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras",
 ];
 
 // ── Inline set editor ────────────────────────────────────────────────────────
 interface SetEditorProps {
   set: Set;
   index: number;
-  onChange: (reps: number, weight: number) => void;
+  isCardio?: boolean;
+  onChange: (data: SetUpdate) => void;
   onRemove: () => void;
 }
-function SetEditor({ set, index, onChange, onRemove }: SetEditorProps) {
+function SetEditor({ set, index, isCardio, onChange, onRemove }: SetEditorProps) {
   const colors = useColors();
-  const [reps, setReps] = useState(String(set.reps));
-  const [weight, setWeight] = useState(String(set.weight));
+  const [reps, setReps] = useState(String(set.reps || ""));
+  const [weight, setWeight] = useState(String(set.weight || ""));
+  const [duration, setDuration] = useState(set.duration != null ? String(set.duration) : "");
+  const [distance, setDistance] = useState(set.distance != null ? String(set.distance) : "");
+  const [speed, setSpeed] = useState(set.speed != null ? String(set.speed) : "");
+  const [incline, setIncline] = useState(set.incline != null ? String(set.incline) : "");
 
   function commit() {
-    const r = parseInt(reps) || 0;
-    const w = parseFloat(weight) || 0;
-    onChange(r, w);
+    if (isCardio) {
+      onChange({
+        duration: parseFloat(duration) || 0,
+        distance: parseFloat(distance) || 0,
+        speed: parseFloat(speed) || 0,
+        incline: parseFloat(incline) || 0,
+      });
+    } else {
+      onChange({ reps: parseInt(reps) || 0, weight: parseFloat(weight) || 0 });
+    }
   }
+
+  const inp = [setStyles.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }] as const;
 
   return (
     <View style={[setStyles.row, { backgroundColor: colors.background, borderColor: colors.border }]}>
       <Text style={[setStyles.idx, { color: colors.mutedForeground }]}>{index + 1}</Text>
-      <View style={setStyles.inputs}>
-        <View style={setStyles.group}>
-          <TextInput
-            style={[setStyles.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-            value={reps}
-            onChangeText={setReps}
-            onBlur={commit}
-            keyboardType="number-pad"
-            maxLength={3}
-            selectTextOnFocus
-          />
-          <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>reps</Text>
+
+      {isCardio ? (
+        <View style={setStyles.cardioGrid}>
+          <View style={setStyles.cardioRow}>
+            <View style={setStyles.group}>
+              <TextInput style={inp} value={duration} onChangeText={setDuration} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>min</Text>
+            </View>
+            <View style={setStyles.group}>
+              <TextInput style={inp} value={distance} onChangeText={setDistance} onBlur={commit} keyboardType="decimal-pad" maxLength={5} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>km</Text>
+            </View>
+          </View>
+          <View style={setStyles.cardioRow}>
+            <View style={setStyles.group}>
+              <TextInput style={inp} value={speed} onChangeText={setSpeed} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>km/h</Text>
+            </View>
+            <View style={setStyles.group}>
+              <TextInput style={inp} value={incline} onChangeText={setIncline} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>% inc.</Text>
+            </View>
+          </View>
         </View>
-        <Text style={[setStyles.x, { color: colors.mutedForeground }]}>×</Text>
-        <View style={setStyles.group}>
-          <TextInput
-            style={[setStyles.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-            value={weight}
-            onChangeText={setWeight}
-            onBlur={commit}
-            keyboardType="decimal-pad"
-            maxLength={6}
-            selectTextOnFocus
-          />
-          <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>kg</Text>
+      ) : (
+        <View style={setStyles.inputs}>
+          <View style={setStyles.group}>
+            <TextInput style={inp} value={reps} onChangeText={setReps} onBlur={commit} keyboardType="number-pad" maxLength={3} selectTextOnFocus />
+            <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>reps</Text>
+          </View>
+          <Text style={[setStyles.x, { color: colors.mutedForeground }]}>×</Text>
+          <View style={setStyles.group}>
+            <TextInput style={inp} value={weight} onChangeText={setWeight} onBlur={commit} keyboardType="decimal-pad" maxLength={6} selectTextOnFocus />
+            <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>kg</Text>
+          </View>
         </View>
-      </View>
+      )}
+
       <TouchableOpacity onPress={onRemove} style={setStyles.del}>
         <Feather name="trash-2" size={14} color={colors.destructive} />
       </TouchableOpacity>
@@ -84,10 +109,10 @@ function SetEditor({ set, index, onChange, onRemove }: SetEditorProps) {
 const setStyles = StyleSheet.create({
   row: {
     flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 12, paddingVertical: 8,
-    borderRadius: 10, borderWidth: 1, marginBottom: 8, gap: 8,
+    paddingHorizontal: 10, paddingVertical: 8,
+    borderRadius: 10, borderWidth: 1, marginBottom: 8, gap: 6,
   },
-  idx: { width: 20, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  idx: { width: 18, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
   inputs: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
   group: { flexDirection: "row", alignItems: "center", gap: 4 },
   input: {
@@ -98,6 +123,8 @@ const setStyles = StyleSheet.create({
   unit: { fontSize: 11, fontFamily: "Inter_400Regular" },
   x: { fontSize: 14, fontFamily: "Inter_400Regular" },
   del: { padding: 6 },
+  cardioGrid: { flex: 1, gap: 4 },
+  cardioRow: { flexDirection: "row", gap: 8 },
 });
 
 // ── Exercise picker modal ────────────────────────────────────────────────────
@@ -243,25 +270,25 @@ export default function EditWorkoutScreen() {
     setLocalExercises((prev) => prev.filter((e) => e.exerciseId !== exerciseId));
   }
 
-  function addSet(exerciseId: string) {
+  function addSet(exerciseId: string, isCardio = false) {
     setLocalExercises((prev) =>
       prev.map((e) => {
         if (e.exerciseId !== exerciseId) return e;
         const last = e.sets[e.sets.length - 1];
-        return {
-          ...e,
-          sets: [...e.sets, { id: generateId(), reps: last?.reps ?? 10, weight: last?.weight ?? 20, completed: true }],
-        };
+        const newSet = isCardio
+          ? { id: generateId(), reps: 0, weight: 0, completed: true, duration: last?.duration ?? 30, distance: last?.distance ?? 0, speed: last?.speed ?? 0, incline: last?.incline ?? 0 }
+          : { id: generateId(), reps: last?.reps ?? 10, weight: last?.weight ?? 20, completed: true };
+        return { ...e, sets: [...e.sets, newSet] };
       })
     );
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 
-  function updateSet(exerciseId: string, setId: string, reps: number, weight: number) {
+  function updateSet(exerciseId: string, setId: string, data: SetUpdate) {
     setLocalExercises((prev) =>
       prev.map((e) => {
         if (e.exerciseId !== exerciseId) return e;
-        return { ...e, sets: e.sets.map((s) => s.id === setId ? { ...s, reps, weight } : s) };
+        return { ...e, sets: e.sets.map((s) => s.id === setId ? { ...s, ...data } : s) };
       })
     );
   }
@@ -328,7 +355,8 @@ export default function EditWorkoutScreen() {
                       key={set.id}
                       set={set}
                       index={idx}
-                      onChange={(r, w) => updateSet(ex.id, set.id, r, w)}
+                      isCardio={ex.muscleGroup === "cardio"}
+                      onChange={(data) => updateSet(ex.id, set.id, data)}
                       onRemove={() => removeSet(ex.id, set.id)}
                     />
                   ))}
@@ -337,7 +365,7 @@ export default function EditWorkoutScreen() {
                 {/* Add set button */}
                 <TouchableOpacity
                   style={[styles.addSetBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}
-                  onPress={() => addSet(ex.id)}
+                  onPress={() => addSet(ex.id, ex.muscleGroup === "cardio")}
                 >
                   <Feather name="plus" size={15} color={colors.primary} />
                   <Text style={[styles.addSetText, { color: colors.primary }]}>Ajouter une série</Text>

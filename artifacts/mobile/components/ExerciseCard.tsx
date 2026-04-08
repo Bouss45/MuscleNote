@@ -24,10 +24,21 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
   const { addSet, updateSet, removeSet, toggleSetComplete, removeExerciseFromWorkout } = useWorkout();
   const [collapsed, setCollapsed] = useState(false);
 
+  const isCardio = exercise.muscleGroup === "cardio";
+
   function handleAddSet() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const lastSet = workoutExercise.sets[workoutExercise.sets.length - 1];
-    addSet(exercise.id, lastSet?.reps ?? 10, lastSet?.weight ?? 20);
+    if (isCardio) {
+      addSet(exercise.id, 0, 0, {
+        duration: lastSet?.duration ?? 30,
+        distance: lastSet?.distance ?? 0,
+        speed: lastSet?.speed ?? 0,
+        incline: lastSet?.incline ?? 0,
+      });
+    } else {
+      addSet(exercise.id, lastSet?.reps ?? 10, lastSet?.weight ?? 20);
+    }
   }
 
   const completedSets = workoutExercise.sets.filter((s) => s.completed).length;
@@ -78,8 +89,9 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
               key={set.id}
               set={set}
               index={idx}
+              isCardio={isCardio}
               onToggle={() => toggleSetComplete(exercise.id, set.id)}
-              onUpdate={(reps, weight) => updateSet(exercise.id, set.id, reps, weight)}
+              onUpdate={(data) => updateSet(exercise.id, set.id, data)}
               onRemove={() => removeSet(exercise.id, set.id)}
             />
           ))}

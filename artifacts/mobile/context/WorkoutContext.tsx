@@ -29,7 +29,14 @@ export interface Set {
   reps: number;
   weight: number;
   completed: boolean;
+  // Cardio fields (optional)
+  duration?: number;  // minutes
+  distance?: number;  // km
+  speed?: number;     // km/h
+  incline?: number;   // %
 }
+
+export type SetUpdate = Partial<Pick<Set, "reps" | "weight" | "duration" | "distance" | "speed" | "incline">>;
 
 export interface WorkoutExercise {
   exerciseId: string;
@@ -114,13 +121,8 @@ interface WorkoutContextType {
   endWorkout: () => void;
   addExerciseToWorkout: (exerciseId: string) => void;
   removeExerciseFromWorkout: (exerciseId: string) => void;
-  addSet: (exerciseId: string, reps: number, weight: number) => void;
-  updateSet: (
-    exerciseId: string,
-    setId: string,
-    reps: number,
-    weight: number
-  ) => void;
+  addSet: (exerciseId: string, reps: number, weight: number, extras?: SetUpdate) => void;
+  updateSet: (exerciseId: string, setId: string, data: SetUpdate) => void;
   removeSet: (exerciseId: string, setId: string) => void;
   toggleSetComplete: (exerciseId: string, setId: string) => void;
   getExerciseHistory: (exerciseId: string) => ExerciseHistory[];
@@ -235,7 +237,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addSet = useCallback(
-    (exerciseId: string, reps: number, weight: number) => {
+    (exerciseId: string, reps: number, weight: number, extras?: SetUpdate) => {
       setCurrentWorkout((prev) => {
         if (!prev) return prev;
         return {
@@ -247,6 +249,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
               reps,
               weight,
               completed: false,
+              ...extras,
             };
             return { ...e, sets: [...e.sets, newSet] };
           }),
@@ -257,7 +260,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   );
 
   const updateSet = useCallback(
-    (exerciseId: string, setId: string, reps: number, weight: number) => {
+    (exerciseId: string, setId: string, data: SetUpdate) => {
       setCurrentWorkout((prev) => {
         if (!prev) return prev;
         return {
@@ -267,7 +270,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
             return {
               ...e,
               sets: e.sets.map((s) =>
-                s.id === setId ? { ...s, reps, weight } : s
+                s.id === setId ? { ...s, ...data } : s
               ),
             };
           }),
