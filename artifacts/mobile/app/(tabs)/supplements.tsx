@@ -457,18 +457,6 @@ export default function NutritionScreen() {
               / {tracker.waterGoal} verres
             </Text>
 
-            {/* Dots */}
-            <View style={s.waterDots}>
-              {waterDots.map((_, i) => (
-                <TouchableOpacity key={i} onPress={() => addWater(i < todayWater ? -(todayWater - i) : i + 1 - todayWater)}>
-                  <View style={[
-                    s.waterDot,
-                    { backgroundColor: i < todayWater ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
-                  ]} />
-                </TouchableOpacity>
-              ))}
-            </View>
-
             {editWaterGoal ? (
               <View style={[s.goalEditRow, { marginTop: 10 }]}>
                 <TextInput
@@ -486,21 +474,33 @@ export default function NutritionScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={s.waterBtns}>
-                <TouchableOpacity
-                  style={[s.waterBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                  onPress={() => addWater(-1)}
-                  disabled={todayWater === 0}
-                >
-                  <Feather name="minus" size={18} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.foreground} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.waterBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                  onPress={() => addWater(1)}
-                >
-                  <Feather name="plus" size={18} color="#fff" />
-                </TouchableOpacity>
-              </View>
+              <>
+                <View style={s.waterDots}>
+                  {waterDots.map((_, i) => (
+                    <TouchableOpacity key={i} onPress={() => addWater(i < todayWater ? -(todayWater - i) : i + 1 - todayWater)}>
+                      <View style={[
+                        s.waterDot,
+                        { backgroundColor: i < todayWater ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
+                      ]} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                <View style={s.waterBtns}>
+                  <TouchableOpacity
+                    style={[s.waterBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                    onPress={() => addWater(-1)}
+                    disabled={todayWater === 0}
+                  >
+                    <Feather name="minus" size={18} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.foreground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.waterBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                    onPress={() => addWater(1)}
+                  >
+                    <Feather name="plus" size={18} color="#fff" />
+                  </TouchableOpacity>
+                </View>
+              </>
             )}
           </View>
         </View>
