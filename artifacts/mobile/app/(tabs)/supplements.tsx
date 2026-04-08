@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -17,26 +17,31 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
+interface Reminder {
+  id: string;
+  hour: number;
+  minute: number;
+  notifId?: string;
+}
+
 interface Supplement {
   id: string;
   name: string;
   dosage: string;
   unit: string;
   reminderEnabled: boolean;
-  reminderHour: number;
-  reminderMinute: number;
-  notifId?: string;
+  reminders: Reminder[];
 }
 
 interface TakenRecord {
-  [supplementId: string]: string; // ISO date string "YYYY-MM-DD"
+  [supplementId: string]: string;
 }
 
 const STORAGE_KEY = "@gymtracker_supplements";
 const TAKEN_KEY = "@gymtracker_supplements_taken";
 const UNITS = ["g", "mg", "ml", "caps", "cp", "dose", "ui"];
 
-function generateId() {
+function genId() {
   return Date.now().toString() + Math.random().toString(36).substr(2, 6);
 }
 
@@ -48,51 +53,121 @@ function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-// ─── Notification helpers (mobile only) ───────────────────────────────────────
+// ─── Notification helpers ─────────────────────────────────────────────────────
 async function requestNotifPermission(): Promise<boolean> {
   if (Platform.OS === "web") return false;
   try {
-    const Notifications = require("expo-notifications");
-    const { status: existing } = await Notifications.getPermissionsAsync();
+    const N = require("expo-notifications");
+    const { status: existing } = await N.getPermissionsAsync();
     if (existing === "granted") return true;
-    const { status } = await Notifications.requestPermissionsAsync();
+    const { status } = await N.requestPermissionsAsync();
     return status === "granted";
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
-async function scheduleSupplementNotif(sup: Supplement): Promise<string | undefined> {
+async function scheduleReminder(sup: Supplement, r: Reminder): Promise<string | undefined> {
   if (Platform.OS === "web" || !sup.reminderEnabled) return undefined;
   try {
-    const Notifications = require("expo-notifications");
+    const N = require("expo-notifications");
     const granted = await requestNotifPermission();
     if (!granted) return undefined;
-    const id = await Notifications.scheduleNotificationAsync({
+    return await N.scheduleNotificationAsync({
       content: {
         title: `💊 ${sup.name}`,
         body: `N'oublie pas ta dose${sup.dosage ? ` (${sup.dosage} ${sup.unit})` : ""} !`,
         sound: true,
       },
-      trigger: {
-        type: "daily",
-        hour: sup.reminderHour,
-        minute: sup.reminderMinute,
-      },
+      trigger: { type: "daily", hour: r.hour, minute: r.minute },
     });
-    return id;
-  } catch {
-    return undefined;
-  }
+  } catch { return undefined; }
 }
 
 async function cancelNotif(notifId?: string) {
   if (!notifId || Platform.OS === "web") return;
   try {
-    const Notifications = require("expo-notifications");
-    await Notifications.cancelScheduledNotificationAsync(notifId);
+    const N = require("expo-notifications");
+    await N.cancelScheduledNotificationAsync(notifId);
   } catch {}
 }
+
+async function cancelAllReminders(reminders: Reminder[]) {
+  for (const r of reminders) await cancelNotif(r.notifId);
+}
+
+async function scheduleAllReminders(sup: Supplement): Promise<Reminder[]> {
+  return Promise.all(
+    sup.reminders.map(async (r) => ({ ...r, notifId: await scheduleReminder(sup, r) }))
+  );
+}
+
+// ─── Migrate old format ───────────────────────────────────────────────────────
+function migrateSup(raw: any): Supplement {
+  if (raw.reminders) return raw as Supplement;
+  const reminder: Reminder = {
+    id: genId(),
+    hour: raw.reminderHour ?? 8,
+    minute: raw.reminderMinute ?? 0,
+    notifId: raw.notifId,
+  };
+  return {
+    id: raw.id,
+    name: raw.name,
+    dosage: raw.dosage ?? "",
+    unit: raw.unit ?? "g",
+    reminderEnabled: raw.reminderEnabled ?? false,
+    reminders: raw.reminderEnabled ? [reminder] : [],
+  };
+}
+
+// ─── Time picker row ──────────────────────────────────────────────────────────
+function TimePicker({
+  hour, minute, onHour, onMinute, onRemove, showRemove,
+}: {
+  hour: number; minute: number;
+  onHour: (h: number) => void;
+  onMinute: (m: number) => void;
+  onRemove?: () => void;
+  showRemove: boolean;
+}) {
+  const colors = useColors();
+  return (
+    <View style={[tpStyles.row, { backgroundColor: colors.input, borderColor: colors.border }]}>
+      <Feather name="clock" size={13} color={colors.mutedForeground} />
+      <TouchableOpacity onPress={() => onHour((hour + 23) % 24)} style={tpStyles.arrow}>
+        <Feather name="chevron-left" size={15} color={colors.foreground} />
+      </TouchableOpacity>
+      <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(hour)}</Text>
+      <TouchableOpacity onPress={() => onHour((hour + 1) % 24)} style={tpStyles.arrow}>
+        <Feather name="chevron-right" size={15} color={colors.foreground} />
+      </TouchableOpacity>
+      <Text style={[tpStyles.sep, { color: colors.mutedForeground }]}>:</Text>
+      <TouchableOpacity onPress={() => onMinute((minute + 45) % 60)} style={tpStyles.arrow}>
+        <Feather name="chevron-left" size={15} color={colors.foreground} />
+      </TouchableOpacity>
+      <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(minute)}</Text>
+      <TouchableOpacity onPress={() => onMinute((minute + 15) % 60)} style={tpStyles.arrow}>
+        <Feather name="chevron-right" size={15} color={colors.foreground} />
+      </TouchableOpacity>
+      <View style={{ flex: 1 }} />
+      {showRemove && onRemove && (
+        <TouchableOpacity onPress={onRemove} style={tpStyles.remove}>
+          <Feather name="x" size={14} color={colors.destructive} />
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+}
+
+const tpStyles = StyleSheet.create({
+  row: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8,
+  },
+  arrow: { padding: 2 },
+  val: { fontSize: 17, fontFamily: "Inter_700Bold", minWidth: 26, textAlign: "center" },
+  sep: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  remove: { padding: 4 },
+});
 
 // ─── Component ───────────────────────────────────────────────────────────────
 export default function SupplementsScreen() {
@@ -104,20 +179,20 @@ export default function SupplementsScreen() {
   const [taken, setTaken] = useState<TakenRecord>({});
   const [loading, setLoading] = useState(true);
 
-  // Add form state
+  // Add form
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDosage, setFormDosage] = useState("");
   const [formUnit, setFormUnit] = useState("g");
-  const [formHour, setFormHour] = useState(8);
-  const [formMinute, setFormMinute] = useState(0);
   const [formReminder, setFormReminder] = useState(true);
+  const [formReminders, setFormReminders] = useState<Array<{ id: string; hour: number; minute: number }>>([
+    { id: genId(), hour: 8, minute: 0 },
+  ]);
 
-  // Edit state
-  const [editingId, setEditingId] = useState<string | null>(null);
+  // Card state
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [expandedRemId, setExpandedRemId] = useState<string | null>(null);
 
-  // Load from storage
   useEffect(() => {
     async function load() {
       try {
@@ -125,7 +200,7 @@ export default function SupplementsScreen() {
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(TAKEN_KEY),
         ]);
-        if (supsRaw) setSupplements(JSON.parse(supsRaw));
+        if (supsRaw) setSupplements((JSON.parse(supsRaw) as any[]).map(migrateSup));
         if (takenRaw) setTaken(JSON.parse(takenRaw));
       } catch {}
       setLoading(false);
@@ -143,45 +218,99 @@ export default function SupplementsScreen() {
     await AsyncStorage.setItem(TAKEN_KEY, JSON.stringify(record));
   }
 
-  // ── Add supplement ──
-  async function handleAdd() {
-    if (!formName.trim()) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const newSup: Supplement = {
-      id: generateId(),
-      name: formName.trim(),
-      dosage: formDosage.trim(),
-      unit: formUnit,
-      reminderEnabled: formReminder,
-      reminderHour: formHour,
-      reminderMinute: formMinute,
-    };
-    if (formReminder) {
-      newSup.notifId = await scheduleSupplementNotif(newSup);
-    }
-    await saveSups([...supplements, newSup]);
-    setShowForm(false);
-    resetForm();
+  // ── Form helpers ──
+  function addFormReminder() {
+    const last = formReminders[formReminders.length - 1];
+    setFormReminders((prev) => [...prev, { id: genId(), hour: (last?.hour ?? 8 + 2) % 24, minute: last?.minute ?? 0 }]);
+  }
+
+  function removeFormReminder(id: string) {
+    setFormReminders((prev) => prev.filter((r) => r.id !== id));
+  }
+
+  function updateFormReminder(id: string, field: "hour" | "minute", val: number) {
+    setFormReminders((prev) => prev.map((r) => r.id === id ? { ...r, [field]: val } : r));
   }
 
   function resetForm() {
     setFormName(""); setFormDosage(""); setFormUnit("g");
-    setFormHour(8); setFormMinute(0); setFormReminder(true);
+    setFormReminder(true);
+    setFormReminders([{ id: genId(), hour: 8, minute: 0 }]);
   }
 
-  // ── Toggle reminder ──
-  async function toggleReminder(sup: Supplement) {
+  // ── Add supplement ──
+  async function handleAdd() {
+    if (!formName.trim()) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const base: Supplement = {
+      id: genId(),
+      name: formName.trim(),
+      dosage: formDosage.trim(),
+      unit: formUnit,
+      reminderEnabled: formReminder,
+      reminders: formReminder
+        ? formReminders.map((r) => ({ ...r, notifId: undefined }))
+        : [],
+    };
+    const withNotifs: Supplement = {
+      ...base,
+      reminders: await scheduleAllReminders(base),
+    };
+    await saveSups([...supplements, withNotifs]);
+    setShowForm(false);
+    resetForm();
+  }
+
+  // ── Toggle master reminder switch ──
+  async function toggleMasterReminder(sup: Supplement) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    let updated: Supplement;
     if (sup.reminderEnabled) {
-      await cancelNotif(sup.notifId);
-      updated = { ...sup, reminderEnabled: false, notifId: undefined };
+      await cancelAllReminders(sup.reminders);
+      await saveSups(supplements.map((s) =>
+        s.id === sup.id
+          ? { ...s, reminderEnabled: false, reminders: s.reminders.map((r) => ({ ...r, notifId: undefined })) }
+          : s
+      ));
     } else {
-      const newSup = { ...sup, reminderEnabled: true };
-      newSup.notifId = await scheduleSupplementNotif(newSup);
-      updated = newSup;
+      const updated: Supplement = { ...sup, reminderEnabled: true };
+      const reminders = await scheduleAllReminders(updated);
+      await saveSups(supplements.map((s) => s.id === sup.id ? { ...updated, reminders } : s));
     }
-    await saveSups(supplements.map((s) => s.id === sup.id ? updated : s));
+  }
+
+  // ── Add reminder to existing supplement ──
+  async function addReminderToSup(sup: Supplement) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const last = sup.reminders[sup.reminders.length - 1];
+    const newR: Reminder = { id: genId(), hour: ((last?.hour ?? 8) + 2) % 24, minute: last?.minute ?? 0 };
+    if (sup.reminderEnabled) newR.notifId = await scheduleReminder(sup, newR);
+    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: [...s.reminders, newR] } : s));
+  }
+
+  // ── Update reminder time on existing supplement ──
+  async function updateReminderOnSup(sup: Supplement, remId: string, field: "hour" | "minute", val: number) {
+    const updatedReminders = await Promise.all(
+      sup.reminders.map(async (r) => {
+        if (r.id !== remId) return r;
+        const newR = { ...r, [field]: val };
+        if (sup.reminderEnabled) {
+          await cancelNotif(r.notifId);
+          newR.notifId = await scheduleReminder(sup, newR);
+        }
+        return newR;
+      })
+    );
+    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: updatedReminders } : s));
+  }
+
+  // ── Remove one reminder from existing supplement ──
+  async function removeReminderFromSup(sup: Supplement, remId: string) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const rem = sup.reminders.find((r) => r.id === remId);
+    if (rem) await cancelNotif(rem.notifId);
+    await saveSups(supplements.map((s) =>
+      s.id === sup.id ? { ...s, reminders: s.reminders.filter((r) => r.id !== remId) } : s
+    ));
   }
 
   // ── Mark taken ──
@@ -189,18 +318,15 @@ export default function SupplementsScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const today = todayStr();
     const newTaken = { ...taken };
-    if (newTaken[supId] === today) {
-      delete newTaken[supId];
-    } else {
-      newTaken[supId] = today;
-    }
+    if (newTaken[supId] === today) delete newTaken[supId];
+    else newTaken[supId] = today;
     await saveTaken(newTaken);
   }
 
-  // ── Delete ──
+  // ── Delete supplement ──
   async function handleDelete(sup: Supplement) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await cancelNotif(sup.notifId);
+    await cancelAllReminders(sup.reminders);
     await saveSups(supplements.filter((s) => s.id !== sup.id));
     setDeletingId(null);
   }
@@ -219,7 +345,7 @@ export default function SupplementsScreen() {
       <View style={[styles.header, { paddingTop: topPad + 16, borderBottomColor: colors.border }]}>
         <Text style={[styles.title, { color: colors.foreground }]}>Compléments</Text>
         <TouchableOpacity
-          onPress={() => { setShowForm(!showForm); setEditingId(null); setDeletingId(null); }}
+          onPress={() => { setShowForm(!showForm); setDeletingId(null); setExpandedRemId(null); }}
           style={[styles.addBtn, { backgroundColor: colors.primary }]}
         >
           <Feather name={showForm ? "x" : "plus"} size={18} color={colors.primaryForeground} />
@@ -249,11 +375,11 @@ export default function SupplementsScreen() {
               autoFocus
             />
 
-            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Dosage</Text>
+            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Dosage par prise</Text>
             <View style={styles.dosageRow}>
               <TextInput
                 style={[styles.input, { flex: 1, color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-                placeholder="Ex : 5"
+                placeholder="Ex : 1"
                 placeholderTextColor={colors.mutedForeground}
                 value={formDosage}
                 onChangeText={setFormDosage}
@@ -274,36 +400,39 @@ export default function SupplementsScreen() {
               </ScrollView>
             </View>
 
+            {/* Reminder toggle */}
             <View style={styles.reminderRow}>
               <View style={styles.reminderLeft}>
                 <Feather name="bell" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>Rappel quotidien</Text>
+                <Text style={[styles.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>Rappels</Text>
               </View>
               <Switch
                 value={formReminder}
-                onValueChange={setFormReminder}
+                onValueChange={(v) => { setFormReminder(v); if (v && formReminders.length === 0) setFormReminders([{ id: genId(), hour: 8, minute: 0 }]); }}
                 trackColor={{ true: colors.primary, false: colors.muted }}
                 thumbColor="#fff"
               />
             </View>
 
             {formReminder && (
-              <View style={[styles.timeRow, { backgroundColor: colors.input, borderColor: colors.border }]}>
-                <Feather name="clock" size={14} color={colors.mutedForeground} />
-                <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>Heure :</Text>
-                <TouchableOpacity onPress={() => setFormHour((formHour + 23) % 24)} style={styles.timeArrow}>
-                  <Feather name="chevron-left" size={16} color={colors.foreground} />
-                </TouchableOpacity>
-                <Text style={[styles.timeValue, { color: colors.foreground }]}>{pad2(formHour)}:{pad2(formMinute)}</Text>
-                <TouchableOpacity onPress={() => setFormHour((formHour + 1) % 24)} style={styles.timeArrow}>
-                  <Feather name="chevron-right" size={16} color={colors.foreground} />
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setFormMinute((formMinute + 45) % 60)} style={styles.timeArrow}>
-                  <Feather name="chevron-left" size={16} color={colors.foreground} />
-                </TouchableOpacity>
-                <Text style={[styles.timeLabel, { color: colors.mutedForeground }]}>min</Text>
-                <TouchableOpacity onPress={() => setFormMinute((formMinute + 15) % 60)} style={styles.timeArrow}>
-                  <Feather name="chevron-right" size={16} color={colors.foreground} />
+              <View style={{ gap: 8 }}>
+                {formReminders.map((r, idx) => (
+                  <TimePicker
+                    key={r.id}
+                    hour={r.hour}
+                    minute={r.minute}
+                    onHour={(h) => updateFormReminder(r.id, "hour", h)}
+                    onMinute={(m) => updateFormReminder(r.id, "minute", m)}
+                    onRemove={() => removeFormReminder(r.id)}
+                    showRemove={formReminders.length > 1}
+                  />
+                ))}
+                <TouchableOpacity
+                  onPress={addFormReminder}
+                  style={[styles.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}
+                >
+                  <Feather name="plus" size={14} color={colors.primary} />
+                  <Text style={[styles.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -336,6 +465,8 @@ export default function SupplementsScreen() {
         {supplements.map((sup) => {
           const isTaken = taken[sup.id] === todayStr();
           const isDeleting = deletingId === sup.id;
+          const isExpanded = expandedRemId === sup.id;
+          const reminderCount = sup.reminders.length;
 
           return (
             <View key={sup.id}>
@@ -348,7 +479,6 @@ export default function SupplementsScreen() {
               ]}>
                 {/* Top row */}
                 <View style={styles.supTop}>
-                  {/* Taken button */}
                   <TouchableOpacity
                     onPress={() => toggleTaken(sup.id)}
                     style={[
@@ -362,20 +492,18 @@ export default function SupplementsScreen() {
                     {isTaken && <Feather name="check" size={14} color="#fff" />}
                   </TouchableOpacity>
 
-                  {/* Info */}
                   <View style={styles.supInfo}>
                     <Text style={[styles.supName, { color: colors.foreground }]}>{sup.name}</Text>
                     {(sup.dosage || sup.unit) && (
                       <Text style={[styles.supDosage, { color: colors.mutedForeground }]}>
-                        {sup.dosage} {sup.unit}
+                        {sup.dosage} {sup.unit} par prise
                       </Text>
                     )}
                   </View>
 
-                  {/* Actions */}
                   <View style={styles.supActions}>
                     <TouchableOpacity
-                      onPress={() => { setDeletingId(isDeleting ? null : sup.id); setEditingId(null); }}
+                      onPress={() => { setDeletingId(isDeleting ? null : sup.id); setExpandedRemId(null); }}
                       style={[styles.iconBtn, { borderColor: colors.border }]}
                       hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                     >
@@ -384,30 +512,72 @@ export default function SupplementsScreen() {
                   </View>
                 </View>
 
-                {/* Reminder row */}
-                <View style={styles.supReminder}>
-                  <View style={styles.supReminderLeft}>
-                    <Feather
-                      name={sup.reminderEnabled ? "bell" : "bell-off"}
-                      size={13}
-                      color={sup.reminderEnabled ? colors.primary : colors.mutedForeground}
+                {/* Reminder section */}
+                <View style={[styles.reminderSection, { borderTopColor: colors.border }]}>
+                  {/* Master toggle row */}
+                  <View style={styles.masterRow}>
+                    <TouchableOpacity
+                      style={styles.masterLeft}
+                      onPress={() => setExpandedRemId(isExpanded ? null : sup.id)}
+                      activeOpacity={0.7}
+                    >
+                      <Feather
+                        name={sup.reminderEnabled ? "bell" : "bell-off"}
+                        size={13}
+                        color={sup.reminderEnabled ? colors.primary : colors.mutedForeground}
+                      />
+                      <Text style={[styles.reminderSummary, { color: sup.reminderEnabled ? colors.primary : colors.mutedForeground }]}>
+                        {sup.reminderEnabled
+                          ? reminderCount === 0
+                            ? "Rappels activés (aucun horaire)"
+                            : reminderCount === 1
+                              ? `Rappel à ${pad2(sup.reminders[0].hour)}:${pad2(sup.reminders[0].minute)}`
+                              : `${reminderCount} rappels`
+                          : "Pas de rappel"}
+                      </Text>
+                      {reminderCount > 0 && (
+                        <Feather
+                          name={isExpanded ? "chevron-up" : "chevron-down"}
+                          size={13}
+                          color={colors.mutedForeground}
+                        />
+                      )}
+                    </TouchableOpacity>
+                    <Switch
+                      value={sup.reminderEnabled}
+                      onValueChange={() => toggleMasterReminder(sup)}
+                      trackColor={{ true: colors.primary, false: colors.muted }}
+                      thumbColor="#fff"
+                      style={{ transform: [{ scale: 0.8 }] }}
                     />
-                    <Text style={[styles.supReminderText, { color: sup.reminderEnabled ? colors.primary : colors.mutedForeground }]}>
-                      {sup.reminderEnabled
-                        ? `Rappel à ${pad2(sup.reminderHour)}:${pad2(sup.reminderMinute)}`
-                        : "Pas de rappel"}
-                    </Text>
                   </View>
-                  <Switch
-                    value={sup.reminderEnabled}
-                    onValueChange={() => toggleReminder(sup)}
-                    trackColor={{ true: colors.primary, false: colors.muted }}
-                    thumbColor="#fff"
-                    style={{ transform: [{ scale: 0.8 }] }}
-                  />
+
+                  {/* Expanded reminders list */}
+                  {isExpanded && (
+                    <View style={{ gap: 6, marginTop: 8 }}>
+                      {sup.reminders.map((r) => (
+                        <TimePicker
+                          key={r.id}
+                          hour={r.hour}
+                          minute={r.minute}
+                          onHour={(h) => updateReminderOnSup(sup, r.id, "hour", h)}
+                          onMinute={(m) => updateReminderOnSup(sup, r.id, "minute", m)}
+                          onRemove={() => removeReminderFromSup(sup, r.id)}
+                          showRemove={sup.reminders.length > 1}
+                        />
+                      ))}
+                      <TouchableOpacity
+                        onPress={() => addReminderToSup(sup)}
+                        style={[styles.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}
+                      >
+                        <Feather name="plus" size={14} color={colors.primary} />
+                        <Text style={[styles.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
                 </View>
 
-                {/* Taken status */}
+                {/* Taken badge */}
                 <View style={[styles.takenBadge, { backgroundColor: isTaken ? colors.primary + "20" : colors.muted + "44" }]}>
                   <Text style={[styles.takenText, { color: isTaken ? colors.primary : colors.mutedForeground }]}>
                     {isTaken ? "✓ Pris aujourd'hui" : "Non pris aujourd'hui"}
@@ -442,7 +612,7 @@ export default function SupplementsScreen() {
           );
         })}
 
-        {/* Notification note (mobile only) */}
+        {/* Notification note */}
         {supplements.some((s) => s.reminderEnabled) && Platform.OS !== "web" && (
           <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="info" size={13} color={colors.mutedForeground} />
@@ -473,7 +643,6 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, fontFamily: "Inter_700Bold" },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20 },
   addBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
-  // Form
   formCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },
   formTitle: { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 4 },
   inputLabel: { fontSize: 12, fontFamily: "Inter_500Medium", marginBottom: 4 },
@@ -483,32 +652,31 @@ const styles = StyleSheet.create({
   unitChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   reminderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
   reminderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  timeRow: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10 },
-  timeLabel: { fontSize: 13, fontFamily: "Inter_400Regular" },
-  timeValue: { fontSize: 18, fontFamily: "Inter_700Bold", minWidth: 52, textAlign: "center" },
-  timeArrow: { padding: 2 },
+  addReminderBtn: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderStyle: "dashed",
+  },
+  addReminderText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, padding: 14, marginTop: 4 },
   saveBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  // Empty
   emptyState: { alignItems: "center", paddingTop: 60, gap: 14 },
   emptyIcon: { width: 72, height: 72, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   emptyTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22, paddingHorizontal: 32 },
-  // Supplement card
   supCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
   supTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   takenCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   supInfo: { flex: 1 },
   supName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
-  supDosage: { fontSize: 13, fontFamily: "Inter_400Regular", marginTop: 2 },
+  supDosage: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
   supActions: { flexDirection: "row", gap: 6 },
   iconBtn: { width: 30, height: 30, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  supReminder: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  supReminderLeft: { flexDirection: "row", alignItems: "center", gap: 6 },
-  supReminderText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  reminderSection: { borderTopWidth: 1, paddingTop: 10 },
+  masterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  masterLeft: { flexDirection: "row", alignItems: "center", gap: 6, flex: 1 },
+  reminderSummary: { fontSize: 13, fontFamily: "Inter_500Medium" },
   takenBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start" },
   takenText: { fontSize: 12, fontFamily: "Inter_500Medium" },
-  // Delete
   deleteBox: { borderWidth: 1, borderTopWidth: 0, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, padding: 12, gap: 10 },
   deleteText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   deleteBtns: { flexDirection: "row", gap: 8 },
@@ -516,7 +684,6 @@ const styles = StyleSheet.create({
   deleteCancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   deleteOkBtn: { flex: 1, flexDirection: "row", gap: 6, borderRadius: 8, paddingVertical: 9, alignItems: "center", justifyContent: "center" },
   deleteOkText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
-  // Info
   infoBox: { flexDirection: "row", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, alignItems: "flex-start" },
   infoText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
 });
