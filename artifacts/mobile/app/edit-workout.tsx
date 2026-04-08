@@ -240,6 +240,9 @@ export default function EditWorkoutScreen() {
   const [localExercises, setLocalExercises] = useState<WorkoutExercise[]>(
     () => workout?.exercises ?? []
   );
+  const [localBodyWeight, setLocalBodyWeight] = useState(
+    workout?.bodyWeight > 0 ? String(workout.bodyWeight) : ""
+  );
   const [showPicker, setShowPicker] = useState(false);
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
@@ -304,7 +307,11 @@ export default function EditWorkoutScreen() {
   }
 
   function save() {
-    patchWorkout(workoutId, { exercises: localExercises });
+    const bw = parseFloat(localBodyWeight);
+    patchWorkout(workoutId, {
+      exercises: localExercises,
+      bodyWeight: isNaN(bw) ? workout.bodyWeight : bw,
+    });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   }
@@ -332,6 +339,26 @@ export default function EditWorkoutScreen() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
+
+          {/* Body weight card */}
+          <View style={[styles.bwCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Feather name="user" size={15} color={colors.mutedForeground} />
+            <Text style={[styles.bwLabel, { color: colors.mutedForeground }]}>Poids de corps</Text>
+            <View style={[styles.bwInputWrap, { backgroundColor: colors.input, borderColor: colors.border }]}>
+              <TextInput
+                style={[styles.bwInput, { color: colors.foreground }]}
+                value={localBodyWeight}
+                onChangeText={setLocalBodyWeight}
+                keyboardType="decimal-pad"
+                maxLength={6}
+                placeholder={workout.bodyWeight > 0 ? String(workout.bodyWeight) : "—"}
+                placeholderTextColor={colors.mutedForeground}
+                selectTextOnFocus
+              />
+              <Text style={[styles.bwUnit, { color: colors.mutedForeground }]}>kg</Text>
+            </View>
+          </View>
+
           {localExercises.map((we) => {
             const ex = exercises.find((e) => e.id === we.exerciseId);
             if (!ex) return null;
@@ -429,4 +456,19 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22 },
   empty: { fontSize: 16, fontFamily: "Inter_600SemiBold", marginBottom: 10 },
   backLink: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  bwCard: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderRadius: 12, borderWidth: 1, marginBottom: 14,
+  },
+  bwLabel: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  bwInputWrap: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 6,
+  },
+  bwInput: {
+    minWidth: 48, fontSize: 15, fontFamily: "Inter_700Bold",
+    textAlign: "right", includeFontPadding: false,
+  },
+  bwUnit: { fontSize: 12, fontFamily: "Inter_400Regular" },
 });
