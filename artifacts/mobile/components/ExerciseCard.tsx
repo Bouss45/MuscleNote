@@ -1,9 +1,10 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -13,6 +14,8 @@ import { useWorkout } from "@/context/WorkoutContext";
 import MuscleGroupBadge from "./MuscleGroupBadge";
 import SetRow from "./SetRow";
 
+const REST_SECONDS = 180; // 3 minutes
+
 interface Props {
   exercise: Exercise;
   workoutExercise: WorkoutExercise;
@@ -21,8 +24,54 @@ interface Props {
 
 export default function ExerciseCard({ exercise, workoutExercise, onNavigateHistory }: Props) {
   const colors = useColors();
-  const { addSet, updateSet, removeSet, toggleSetComplete, removeExerciseFromWorkout } = useWorkout();
+  const { addSet, updateSet, removeSet, toggleSetComplete, removeExerciseFromWorkout, updateExerciseNote } = useWorkout();
   const [collapsed, setCollapsed] = useState(false);
+
+  // Note
+  const [showNote, setShowNote] = useState(!!workoutExercise.note);
+  const [noteText, setNoteText] = useState(workoutExercise.note ?? "");
+
+  // Rest timer
+  const [restLeft, setRestLeft] = useState<number | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  function startRestTimer() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    setRestLeft(REST_SECONDS);
+    timerRef.current = setInterval(() => {
+      setRestLeft((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(timerRef.current!);
+          timerRef.current = null;
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          return null;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  function stopRestTimer() {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    setRestLeft(null);
+  }
+
+  function formatRest(s: number) {
+    return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
+  }
+
+  function getTimerColor() {
+    if (restLeft === null) return colors.primary;
+    const pct = restLeft / REST_SECONDS;
+    if (pct > 0.5) return "#16A34A";
+    if (pct > 0.25) return "#f59e0b";
+    return "#ef4444";
+  }
 
   const isCardio = exercise.muscleGroup === "cardio";
 
@@ -39,6 +88,11 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
     } else {
       addSet(exercise.id, lastSet?.reps ?? 10, lastSet?.weight ?? 20);
     }
+  }
+
+  function handleNoteBlur() {
+    updateExerciseNote(exercise.id, noteText);
+    if (!noteText.trim()) setShowNote(false);
   }
 
   const completedSets = workoutExercise.sets.filter((s) => s.completed).length;
@@ -67,6 +121,16 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
           </View>
         </View>
         <View style={styles.headerRight}>
+          <TouchableOpacity
+            onPress={() => {
+              setShowNote(true);
+              setCollapsed(false);
+            }}
+            style={styles.iconBtn}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Feather name="edit-3" size={15} color={noteText.trim() ? colors.primary : colors.mutedForeground} />
+          </TouchableOpacity>
           <TouchableOpacity onPress={onNavigateHistory} style={styles.iconBtn}>
             <Feather name="trending-up" size={16} color={colors.primary} />
           </TouchableOpacity>
@@ -84,6 +148,38 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
 
       {!collapsed && (
         <View style={styles.body}>
+          {/* Note input */}
+          {showNote && (
+            <View style={[styles.noteRow, { backgroundColor: colors.input, borderColor: colors.border }]}>
+              <Feather name="edit-3" size={13} color={colors.mutedForeground} style={{ marginTop: 2 }} />
+              <TextInput
+                style={[styles.noteInput, { color: colors.foreground }]}
+                value={noteText}
+                onChangeText={setNoteText}
+                onBlur={handleNoteBlur}
+                placeholder="Ajouter une note…"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                autoFocus={!noteText}
+                returnKeyType="done"
+                blurOnSubmit
+              />
+              {noteText.trim() ? null : (
+                <TouchableOpacity onPress={() => { setShowNote(false); }}>
+                  <Feather name="x" size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {!showNote && noteText.trim() !== "" && (
+            <TouchableOpacity onPress={() => setShowNote(true)} style={[styles.notePreview, { borderColor: colors.border }]}>
+              <Feather name="edit-3" size={11} color={colors.mutedForeground} />
+              <Text style={[styles.notePreviewText, { color: colors.mutedForeground }]} numberOfLines={1}>
+                {noteText}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           {workoutExercise.sets.map((set, idx) => (
             <SetRow
               key={set.id}
@@ -93,6 +189,7 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
               onToggle={() => toggleSetComplete(exercise.id, set.id)}
               onUpdate={(data) => updateSet(exercise.id, set.id, data)}
               onRemove={() => removeSet(exercise.id, set.id)}
+              onSetComplete={startRestTimer}
             />
           ))}
 
@@ -105,6 +202,26 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
               Ajouter une série
             </Text>
           </TouchableOpacity>
+
+          {/* Rest timer */}
+          {restLeft !== null && (
+            <View style={[styles.timerBanner, { backgroundColor: getTimerColor() + "22", borderColor: getTimerColor() + "55" }]}>
+              <View style={styles.timerLeft}>
+                <Feather name="clock" size={13} color={getTimerColor()} />
+                <Text style={[styles.timerLabel, { color: getTimerColor() }]}>Repos</Text>
+                <Text style={[styles.timerCount, { color: getTimerColor() }]}>
+                  {formatRest(restLeft)}
+                </Text>
+              </View>
+              <View style={[styles.timerProgress, { backgroundColor: colors.border }]}>
+                <View style={[styles.timerFill, { backgroundColor: getTimerColor(), width: `${(restLeft / REST_SECONDS) * 100}%` as any }]} />
+              </View>
+              <TouchableOpacity onPress={stopRestTimer} style={styles.timerSkip}>
+                <Feather name="skip-forward" size={13} color={getTimerColor()} />
+                <Text style={[styles.timerSkipText, { color: getTimerColor() }]}>Passer</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -156,6 +273,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingBottom: 14,
   },
+  // Note
+  noteRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  noteInput: {
+    flex: 1,
+    fontSize: 13,
+    fontFamily: "Inter_400Regular",
+    maxHeight: 80,
+  },
+  notePreview: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 2,
+    borderBottomWidth: 1,
+    marginBottom: 8,
+  },
+  notePreviewText: {
+    flex: 1,
+    fontSize: 12,
+    fontFamily: "Inter_400Regular",
+    fontStyle: "italic",
+  },
   addSetBtn: {
     flexDirection: "row",
     alignItems: "center",
@@ -168,6 +317,49 @@ const styles = StyleSheet.create({
   },
   addSetText: {
     fontSize: 13,
+    fontFamily: "Inter_600SemiBold",
+  },
+  // Rest timer
+  timerBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginTop: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  timerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  timerLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_400Regular",
+  },
+  timerCount: {
+    fontSize: 15,
+    fontFamily: "Inter_700Bold",
+  },
+  timerProgress: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    overflow: "hidden",
+  },
+  timerFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+  timerSkip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  timerSkipText: {
+    fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
 });

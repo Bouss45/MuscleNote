@@ -18,9 +18,10 @@ interface Props {
   onToggle: () => void;
   onUpdate: (data: SetUpdate) => void;
   onRemove: () => void;
+  onSetComplete?: () => void;
 }
 
-export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRemove }: Props) {
+export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRemove, onSetComplete }: Props) {
   const colors = useColors();
 
   // Strength fields
@@ -36,6 +37,7 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
   function handleToggle() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onToggle();
+    if (!set.completed) onSetComplete?.();
   }
 
   function handleBlur() {

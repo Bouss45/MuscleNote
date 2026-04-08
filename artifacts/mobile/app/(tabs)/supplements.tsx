@@ -39,20 +39,23 @@ interface TakenRecord {
 
 interface DailyTracker {
   calorieGoal: number;
-  waterGoal: number;
+  waterGoal: number;   // ml
   caloriesLog: { [date: string]: number };
-  waterLog: { [date: string]: number };
+  waterLog: { [date: string]: number };  // ml
+  bottleSize: number;  // ml per bottle
 }
 
 const STORAGE_KEY = "@gymtracker_supplements";
 const TAKEN_KEY = "@gymtracker_supplements_taken";
 const TRACKER_KEY = "@gymtracker_daily_tracker";
 const UNITS = ["g", "mg", "ml", "caps", "cp", "dose", "ui"];
+const BOTTLE_PRESETS = [250, 330, 500, 750, 1000];
 const DEFAULT_TRACKER: DailyTracker = {
   calorieGoal: 2000,
-  waterGoal: 8,
+  waterGoal: 2000,  // 2L in ml
   caloriesLog: {},
   waterLog: {},
+  bottleSize: 500,  // 500ml bottle
 };
 
 function genId() {
@@ -202,7 +205,19 @@ export default function NutritionScreen() {
         ]);
         if (supsRaw) setSupplements((JSON.parse(supsRaw) as any[]).map(migrateSup));
         if (takenRaw) setTaken(JSON.parse(takenRaw));
-        if (trackerRaw) setTracker({ ...DEFAULT_TRACKER, ...JSON.parse(trackerRaw) });
+        if (trackerRaw) {
+          const raw = JSON.parse(trackerRaw);
+          if (raw.bottleSize === undefined && raw.waterGoal !== undefined && raw.waterGoal <= 30) {
+            raw.waterGoal = raw.waterGoal * 250;
+            if (raw.waterLog) {
+              raw.waterLog = Object.fromEntries(
+                Object.entries(raw.waterLog).map(([k, v]) => [k, (v as number) * 250])
+              );
+            }
+            raw.bottleSize = 500;
+          }
+          setTracker({ ...DEFAULT_TRACKER, ...raw });
+        }
       } catch {}
       setLoading(false);
     }
@@ -239,14 +254,14 @@ export default function NutritionScreen() {
   }
 
   // ── Water ──
-  async function addWater(delta: number) {
+  async function addWater(deltaMl: number) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const updated = { ...tracker, waterLog: { ...tracker.waterLog, [today]: Math.max(0, todayWater + delta) } };
+    const updated = { ...tracker, waterLog: { ...tracker.waterLog, [today]: Math.max(0, todayWater + deltaMl) } };
     await saveTracker(updated);
   }
   async function saveWaterGoal() {
-    const v = parseInt(waterGoalInput);
-    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, waterGoal: v });
+    const v = parseFloat(waterGoalInput);
+    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, waterGoal: Math.round(v * 1000) });
     setEditWaterGoal(false);
   }
 
@@ -332,7 +347,10 @@ export default function NutritionScreen() {
 
   const calPct = Math.min(1, tracker.calorieGoal > 0 ? todayCalories / tracker.calorieGoal : 0);
   const calColor = calPct > 1.05 ? "#ef4444" : calPct >= 0.9 ? "#22c55e" : colors.primary;
-  const waterDots = Array.from({ length: Math.min(tracker.waterGoal, 12) });
+  const bottleSize = tracker.bottleSize ?? 500;
+  const totalDots = Math.min(Math.ceil(tracker.waterGoal / bottleSize), 12);
+  const waterDots = Array.from({ length: totalDots });
+  const filledDots = Math.floor(todayWater / bottleSize);
 
   if (loading) {
     return (
@@ -443,7 +461,7 @@ export default function NutritionScreen() {
               <Text style={{ fontSize: 18 }}>💧</Text>
               <Text style={[s.trackCardTitle, { color: colors.foreground }]}>Eau</Text>
               <TouchableOpacity
-                onPress={() => { setEditWaterGoal(!editWaterGoal); setWaterGoalInput(String(tracker.waterGoal)); setEditCalGoal(false); }}
+                onPress={() => { setEditWaterGoal(!editWaterGoal); setWaterGoalInput((tracker.waterGoal / 1000).toFixed(1)); setEditCalGoal(false); }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
               >
                 <Feather name="settings" size={12} color={colors.mutedForeground} />
@@ -451,10 +469,11 @@ export default function NutritionScreen() {
             </View>
 
             <Text style={[s.trackBigNum, { color: todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary }]}>
-              {todayWater}
+              {todayWater >= 1000 ? (todayWater / 1000).toFixed(1) : todayWater}
+              <Text style={{ fontSize: 18 }}>{todayWater >= 1000 ? " L" : " ml"}</Text>
             </Text>
             <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
-              / {tracker.waterGoal} verres
+              / {(tracker.waterGoal / 1000).toFixed(1)} L
             </Text>
 
             {editWaterGoal ? (
@@ -463,8 +482,8 @@ export default function NutritionScreen() {
                   style={[s.goalInput, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
                   value={waterGoalInput}
                   onChangeText={setWaterGoalInput}
-                  keyboardType="number-pad"
-                  placeholder="Objectif verres"
+                  keyboardType="decimal-pad"
+                  placeholder="Ex : 2.0 (en litres)"
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                   autoFocus
@@ -477,10 +496,13 @@ export default function NutritionScreen() {
               <>
                 <View style={s.waterDots}>
                   {waterDots.map((_, i) => (
-                    <TouchableOpacity key={i} onPress={() => addWater(i < todayWater ? -(todayWater - i) : i + 1 - todayWater)}>
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => addWater((i + 1) * bottleSize - todayWater)}
+                    >
                       <View style={[
                         s.waterDot,
-                        { backgroundColor: i < todayWater ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
+                        { backgroundColor: i < filledDots ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
                       ]} />
                     </TouchableOpacity>
                   ))}
@@ -488,17 +510,41 @@ export default function NutritionScreen() {
                 <View style={s.waterBtns}>
                   <TouchableOpacity
                     style={[s.waterBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                    onPress={() => addWater(-1)}
+                    onPress={() => addWater(-bottleSize)}
                     disabled={todayWater === 0}
                   >
                     <Feather name="minus" size={18} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.foreground} />
                   </TouchableOpacity>
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Text style={[{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground }]}>
+                      Gourde : {bottleSize < 1000 ? `${bottleSize} ml` : `${bottleSize / 1000} L`}
+                    </Text>
+                  </View>
                   <TouchableOpacity
                     style={[s.waterBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => addWater(1)}
+                    onPress={() => addWater(bottleSize)}
                   >
                     <Feather name="plus" size={18} color="#fff" />
                   </TouchableOpacity>
+                </View>
+                <View style={s.bottleSizeRow}>
+                  {BOTTLE_PRESETS.map((ml) => (
+                    <TouchableOpacity
+                      key={ml}
+                      onPress={() => saveTracker({ ...tracker, bottleSize: ml })}
+                      style={[
+                        s.bottleChip,
+                        {
+                          backgroundColor: bottleSize === ml ? colors.primary : colors.muted,
+                          borderColor: bottleSize === ml ? colors.primary : colors.border,
+                        },
+                      ]}
+                    >
+                      <Text style={[s.bottleChipText, { color: bottleSize === ml ? "#fff" : colors.mutedForeground }]}>
+                        {ml < 1000 ? `${ml}` : "1 L"}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
                 </View>
               </>
             )}
@@ -723,8 +769,11 @@ const s = StyleSheet.create({
   goalSaveBtn: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   waterDots: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
   waterDot: { width: 10, height: 10, borderRadius: 5 },
-  waterBtns: { flexDirection: "row", gap: 8, marginTop: 10 },
-  waterBtn: { flex: 1, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  waterBtns: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
+  waterBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  bottleSizeRow: { flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" },
+  bottleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
+  bottleChipText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
 
   // ── Form ──
   formCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },

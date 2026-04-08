@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Platform,
   ScrollView,
@@ -156,9 +156,23 @@ export default function WorkoutScreen() {
   const insets = useSafeAreaInsets();
   const { currentWorkout, exercises, endWorkout } = useWorkout();
   const [confirming, setConfirming] = useState(false);
+  const [elapsed, setElapsed] = useState("0:00");
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 + 80 : insets.bottom + 90;
+
+  useEffect(() => {
+    if (!currentWorkout) return;
+    function tick() {
+      const diff = Date.now() - new Date(currentWorkout!.date).getTime();
+      const min = Math.floor(diff / 60000);
+      const sec = Math.floor((diff % 60000) / 1000);
+      setElapsed(`${min}:${sec.toString().padStart(2, "0")}`);
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [currentWorkout?.date]);
 
   if (!currentWorkout) {
     return (
@@ -182,13 +196,6 @@ export default function WorkoutScreen() {
         </TouchableOpacity>
       </View>
     );
-  }
-
-  function getElapsed() {
-    const diff = Date.now() - new Date(currentWorkout!.date).getTime();
-    const min = Math.floor(diff / 60000);
-    const sec = Math.floor((diff % 60000) / 1000);
-    return `${min}:${sec.toString().padStart(2, "0")}`;
   }
 
   function handleFinish() {
@@ -258,7 +265,7 @@ export default function WorkoutScreen() {
           <View style={styles.timerBadge}>
             <Feather name="clock" size={14} color={colors.primary} />
             <Text style={[styles.timerText, { color: colors.primary }]}>
-              {getElapsed()}
+              {elapsed}
             </Text>
           </View>
         </View>

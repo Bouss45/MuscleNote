@@ -41,6 +41,7 @@ export type SetUpdate = Partial<Pick<Set, "reps" | "weight" | "duration" | "dist
 export interface WorkoutExercise {
   exerciseId: string;
   sets: Set[];
+  note?: string;
 }
 
 export interface Workout {
@@ -130,6 +131,7 @@ interface WorkoutContextType {
   updateCustomExercise: (id: string, name: string, muscleGroup: MuscleGroup) => void;
   deleteCustomExercise: (id: string) => void;
   isCustomExercise: (id: string) => boolean;
+  updateExerciseNote: (exerciseId: string, note: string) => void;
   updateWorkoutDate: (workoutId: string, newDate: string) => void;
   deleteWorkout: (workoutId: string) => void;
   patchWorkout: (workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => void;
@@ -314,6 +316,18 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const updateExerciseNote = useCallback((exerciseId: string, note: string) => {
+    setCurrentWorkout((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        exercises: prev.exercises.map((e) =>
+          e.exerciseId === exerciseId ? { ...e, note } : e
+        ),
+      };
+    });
+  }, []);
+
   const getExerciseHistory = useCallback(
     (exerciseId: string): ExerciseHistory[] => {
       const history: ExerciseHistory[] = [];
@@ -425,6 +439,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         updateCustomExercise,
         deleteCustomExercise,
         isCustomExercise,
+        updateExerciseNote,
         updateWorkoutDate,
         deleteWorkout,
         patchWorkout,

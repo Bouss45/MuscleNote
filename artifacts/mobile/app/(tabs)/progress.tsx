@@ -26,7 +26,7 @@ interface DailyTracker {
 }
 
 const TRACKER_KEY = "@gymtracker_daily_tracker";
-const DEFAULT_TRACKER: DailyTracker = { calorieGoal: 2000, waterGoal: 8, caloriesLog: {}, waterLog: {} };
+const DEFAULT_TRACKER: DailyTracker = { calorieGoal: 2000, waterGoal: 2000, caloriesLog: {}, waterLog: {} };
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
 
@@ -399,11 +399,11 @@ export default function ProgressScreen() {
           {waterStats ? (
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.today}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui{"\n"}(verres)</Text>
+                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{(waterStats.today / 1000).toFixed(1)}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui{"\n"}(L)</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.avg7}</Text>
+                <Text style={[styles.statValue, { color: "#3b82f6" }]}>{(waterStats.avg7 / 1000).toFixed(1)}</Text>
                 <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Moy. 7 jours</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -423,17 +423,17 @@ export default function ProgressScreen() {
           {waterData.length >= 2 && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.chartHeader}>
-                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Hydratation (verres)</Text>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Hydratation (L)</Text>
                 <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>
-                  {waterData.length} jours · Objectif {tracker.waterGoal} verres/jour
+                  {waterData.length} jours · Objectif {(tracker.waterGoal / 1000).toFixed(1)} L/jour
                 </Text>
               </View>
               <LineChart
-                data={waterData}
+                data={waterData.map((d) => ({ ...d, value: Math.round(d.value / 100) / 10 }))}
                 color="#3b82f6"
-                unit=" verres"
+                unit=" L"
                 height={200}
-                goalLine={tracker.waterGoal}
+                goalLine={tracker.waterGoal / 1000}
                 formatValue={(v) => `${v}`}
               />
             </View>
@@ -443,11 +443,11 @@ export default function ProgressScreen() {
               <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>Récapitulatif</Text>
               <View style={styles.recapRow}>
                 <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Objectif quotidien</Text>
-                <Text style={[styles.recapVal, { color: colors.foreground }]}>{tracker.waterGoal} verres</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{(tracker.waterGoal / 1000).toFixed(1)} L</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
                 <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Meilleure journée</Text>
-                <Text style={[styles.recapVal, { color: "#3b82f6" }]}>{waterStats.best} verres</Text>
+                <Text style={[styles.recapVal, { color: "#3b82f6" }]}>{(waterStats.best / 1000).toFixed(1)} L</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
                 <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Jours suivis</Text>
