@@ -31,8 +31,8 @@ function NativeTabLayout() {
           <Label>Progrès</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="supplements">
-          <Icon sf={{ default: "pills", selected: "pills.fill" }} />
-          <Label>Compléments</Label>
+          <Icon sf={{ default: "heart.text.square", selected: "heart.text.square.fill" }} />
+          <Label>Nutrition</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
@@ -104,9 +104,9 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="supplements"
         options={{
-          title: "Compléments",
+          title: "Nutrition",
           tabBarIcon: ({ color }) => (
-            <Feather name="activity" size={22} color={color} />
+            <Feather name="heart" size={22} color={color} />
           ),
         }}
       />

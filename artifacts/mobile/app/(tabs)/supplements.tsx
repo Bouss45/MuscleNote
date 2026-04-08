@@ -37,18 +37,30 @@ interface TakenRecord {
   [supplementId: string]: string;
 }
 
+interface DailyTracker {
+  calorieGoal: number;
+  waterGoal: number;
+  caloriesLog: { [date: string]: number };
+  waterLog: { [date: string]: number };
+}
+
 const STORAGE_KEY = "@gymtracker_supplements";
 const TAKEN_KEY = "@gymtracker_supplements_taken";
+const TRACKER_KEY = "@gymtracker_daily_tracker";
 const UNITS = ["g", "mg", "ml", "caps", "cp", "dose", "ui"];
+const DEFAULT_TRACKER: DailyTracker = {
+  calorieGoal: 2000,
+  waterGoal: 8,
+  caloriesLog: {},
+  waterLog: {},
+};
 
 function genId() {
   return Date.now().toString() + Math.random().toString(36).substr(2, 6);
 }
-
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
-
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -84,10 +96,7 @@ async function scheduleReminder(sup: Supplement, r: Reminder): Promise<string | 
 
 async function cancelNotif(notifId?: string) {
   if (!notifId || Platform.OS === "web") return;
-  try {
-    const N = require("expo-notifications");
-    await N.cancelScheduledNotificationAsync(notifId);
-  } catch {}
+  try { await require("expo-notifications").cancelScheduledNotificationAsync(notifId); } catch {}
 }
 
 async function cancelAllReminders(reminders: Reminder[]) {
@@ -100,108 +109,100 @@ async function scheduleAllReminders(sup: Supplement): Promise<Reminder[]> {
   );
 }
 
-// ─── Migrate old format ───────────────────────────────────────────────────────
 function migrateSup(raw: any): Supplement {
   if (raw.reminders) return raw as Supplement;
-  const reminder: Reminder = {
-    id: genId(),
-    hour: raw.reminderHour ?? 8,
-    minute: raw.reminderMinute ?? 0,
-    notifId: raw.notifId,
-  };
-  return {
-    id: raw.id,
-    name: raw.name,
-    dosage: raw.dosage ?? "",
-    unit: raw.unit ?? "g",
-    reminderEnabled: raw.reminderEnabled ?? false,
-    reminders: raw.reminderEnabled ? [reminder] : [],
-  };
+  const reminder: Reminder = { id: genId(), hour: raw.reminderHour ?? 8, minute: raw.reminderMinute ?? 0, notifId: raw.notifId };
+  return { id: raw.id, name: raw.name, dosage: raw.dosage ?? "", unit: raw.unit ?? "g", reminderEnabled: raw.reminderEnabled ?? false, reminders: raw.reminderEnabled ? [reminder] : [] };
 }
 
-// ─── Time picker row ──────────────────────────────────────────────────────────
-function TimePicker({
-  hour, minute, onHour, onMinute, onRemove, showRemove,
-}: {
+// ─── TimePicker sub-component ─────────────────────────────────────────────────
+function TimePicker({ hour, minute, onHour, onMinute, onRemove, showRemove }: {
   hour: number; minute: number;
-  onHour: (h: number) => void;
-  onMinute: (m: number) => void;
-  onRemove?: () => void;
-  showRemove: boolean;
+  onHour: (h: number) => void; onMinute: (m: number) => void;
+  onRemove?: () => void; showRemove: boolean;
 }) {
   const colors = useColors();
   return (
     <View style={[tpStyles.row, { backgroundColor: colors.input, borderColor: colors.border }]}>
       <Feather name="clock" size={13} color={colors.mutedForeground} />
-      <TouchableOpacity onPress={() => onHour((hour + 23) % 24)} style={tpStyles.arrow}>
-        <Feather name="chevron-left" size={15} color={colors.foreground} />
-      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onHour((hour + 23) % 24)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(hour)}</Text>
-      <TouchableOpacity onPress={() => onHour((hour + 1) % 24)} style={tpStyles.arrow}>
-        <Feather name="chevron-right" size={15} color={colors.foreground} />
-      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onHour((hour + 1) % 24)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.sep, { color: colors.mutedForeground }]}>:</Text>
-      <TouchableOpacity onPress={() => onMinute((minute + 45) % 60)} style={tpStyles.arrow}>
-        <Feather name="chevron-left" size={15} color={colors.foreground} />
-      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onMinute((minute + 45) % 60)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(minute)}</Text>
-      <TouchableOpacity onPress={() => onMinute((minute + 15) % 60)} style={tpStyles.arrow}>
-        <Feather name="chevron-right" size={15} color={colors.foreground} />
-      </TouchableOpacity>
+      <TouchableOpacity onPress={() => onMinute((minute + 15) % 60)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
       <View style={{ flex: 1 }} />
       {showRemove && onRemove && (
-        <TouchableOpacity onPress={onRemove} style={tpStyles.remove}>
-          <Feather name="x" size={14} color={colors.destructive} />
-        </TouchableOpacity>
+        <TouchableOpacity onPress={onRemove} style={tpStyles.remove}><Feather name="x" size={14} color={colors.destructive} /></TouchableOpacity>
       )}
     </View>
   );
 }
-
 const tpStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8,
-  },
+  row: { flexDirection: "row", alignItems: "center", gap: 4, borderRadius: 10, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 8 },
   arrow: { padding: 2 },
   val: { fontSize: 17, fontFamily: "Inter_700Bold", minWidth: 26, textAlign: "center" },
   sep: { fontSize: 17, fontFamily: "Inter_700Bold" },
   remove: { padding: 4 },
 });
 
-// ─── Component ───────────────────────────────────────────────────────────────
-export default function SupplementsScreen() {
+// ─── Progress bar ─────────────────────────────────────────────────────────────
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = Math.min(1, max > 0 ? value / max : 0);
+  return (
+    <View style={pbStyles.track}>
+      <View style={[pbStyles.fill, { width: `${Math.round(pct * 100)}%` as any, backgroundColor: color }]} />
+    </View>
+  );
+}
+const pbStyles = StyleSheet.create({
+  track: { height: 6, borderRadius: 3, backgroundColor: "#ffffff18", overflow: "hidden", marginTop: 8 },
+  fill: { height: 6, borderRadius: 3 },
+});
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function NutritionScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === "web" ? 67 : insets.top;
 
+  // ── Supplements ──
   const [supplements, setSupplements] = useState<Supplement[]>([]);
   const [taken, setTaken] = useState<TakenRecord>({});
   const [loading, setLoading] = useState(true);
-
-  // Add form
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDosage, setFormDosage] = useState("");
   const [formUnit, setFormUnit] = useState("g");
   const [formReminder, setFormReminder] = useState(true);
-  const [formReminders, setFormReminders] = useState<Array<{ id: string; hour: number; minute: number }>>([
-    { id: genId(), hour: 8, minute: 0 },
-  ]);
-
-  // Card state
+  const [formReminders, setFormReminders] = useState<Array<{ id: string; hour: number; minute: number }>>([{ id: genId(), hour: 8, minute: 0 }]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedRemId, setExpandedRemId] = useState<string | null>(null);
+
+  // ── Daily tracker ──
+  const [tracker, setTracker] = useState<DailyTracker>(DEFAULT_TRACKER);
+  const [editCalGoal, setEditCalGoal] = useState(false);
+  const [editWaterGoal, setEditWaterGoal] = useState(false);
+  const [calGoalInput, setCalGoalInput] = useState("");
+  const [waterGoalInput, setWaterGoalInput] = useState("");
+  const [calInput, setCalInput] = useState("");
+
+  const today = todayStr();
+  const todayCalories = tracker.caloriesLog[today] ?? 0;
+  const todayWater = tracker.waterLog[today] ?? 0;
 
   useEffect(() => {
     async function load() {
       try {
-        const [supsRaw, takenRaw] = await Promise.all([
+        const [supsRaw, takenRaw, trackerRaw] = await Promise.all([
           AsyncStorage.getItem(STORAGE_KEY),
           AsyncStorage.getItem(TAKEN_KEY),
+          AsyncStorage.getItem(TRACKER_KEY),
         ]);
         if (supsRaw) setSupplements((JSON.parse(supsRaw) as any[]).map(migrateSup));
         if (takenRaw) setTaken(JSON.parse(takenRaw));
+        if (trackerRaw) setTracker({ ...DEFAULT_TRACKER, ...JSON.parse(trackerRaw) });
       } catch {}
       setLoading(false);
     }
@@ -212,64 +213,76 @@ export default function SupplementsScreen() {
     setSupplements(list);
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list));
   }
-
   async function saveTaken(record: TakenRecord) {
     setTaken(record);
     await AsyncStorage.setItem(TAKEN_KEY, JSON.stringify(record));
   }
+  async function saveTracker(t: DailyTracker) {
+    setTracker(t);
+    await AsyncStorage.setItem(TRACKER_KEY, JSON.stringify(t));
+  }
 
-  // ── Form helpers ──
+  // ── Calories ──
+  async function addCalories(amount: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = { ...tracker, caloriesLog: { ...tracker.caloriesLog, [today]: Math.max(0, todayCalories + amount) } };
+    await saveTracker(updated);
+  }
+  async function setCaloriesToday(val: number) {
+    const updated = { ...tracker, caloriesLog: { ...tracker.caloriesLog, [today]: Math.max(0, val) } };
+    await saveTracker(updated);
+  }
+  async function saveCalGoal() {
+    const v = parseInt(calGoalInput);
+    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, calorieGoal: v });
+    setEditCalGoal(false);
+  }
+
+  // ── Water ──
+  async function addWater(delta: number) {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const updated = { ...tracker, waterLog: { ...tracker.waterLog, [today]: Math.max(0, todayWater + delta) } };
+    await saveTracker(updated);
+  }
+  async function saveWaterGoal() {
+    const v = parseInt(waterGoalInput);
+    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, waterGoal: v });
+    setEditWaterGoal(false);
+  }
+
+  // ── Supplement form helpers ──
   function addFormReminder() {
     const last = formReminders[formReminders.length - 1];
-    setFormReminders((prev) => [...prev, { id: genId(), hour: (last?.hour ?? 8 + 2) % 24, minute: last?.minute ?? 0 }]);
+    setFormReminders((prev) => [...prev, { id: genId(), hour: ((last?.hour ?? 8) + 2) % 24, minute: last?.minute ?? 0 }]);
   }
-
-  function removeFormReminder(id: string) {
-    setFormReminders((prev) => prev.filter((r) => r.id !== id));
-  }
-
+  function removeFormReminder(id: string) { setFormReminders((prev) => prev.filter((r) => r.id !== id)); }
   function updateFormReminder(id: string, field: "hour" | "minute", val: number) {
     setFormReminders((prev) => prev.map((r) => r.id === id ? { ...r, [field]: val } : r));
   }
-
   function resetForm() {
     setFormName(""); setFormDosage(""); setFormUnit("g");
-    setFormReminder(true);
-    setFormReminders([{ id: genId(), hour: 8, minute: 0 }]);
+    setFormReminder(true); setFormReminders([{ id: genId(), hour: 8, minute: 0 }]);
   }
 
-  // ── Add supplement ──
   async function handleAdd() {
     if (!formName.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const base: Supplement = {
-      id: genId(),
-      name: formName.trim(),
-      dosage: formDosage.trim(),
-      unit: formUnit,
+      id: genId(), name: formName.trim(), dosage: formDosage.trim(), unit: formUnit,
       reminderEnabled: formReminder,
-      reminders: formReminder
-        ? formReminders.map((r) => ({ ...r, notifId: undefined }))
-        : [],
+      reminders: formReminder ? formReminders.map((r) => ({ ...r, notifId: undefined })) : [],
     };
-    const withNotifs: Supplement = {
-      ...base,
-      reminders: await scheduleAllReminders(base),
-    };
+    const withNotifs = { ...base, reminders: await scheduleAllReminders(base) };
     await saveSups([...supplements, withNotifs]);
-    setShowForm(false);
-    resetForm();
+    setShowForm(false); resetForm();
   }
 
-  // ── Toggle master reminder switch ──
   async function toggleMasterReminder(sup: Supplement) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (sup.reminderEnabled) {
       await cancelAllReminders(sup.reminders);
       await saveSups(supplements.map((s) =>
-        s.id === sup.id
-          ? { ...s, reminderEnabled: false, reminders: s.reminders.map((r) => ({ ...r, notifId: undefined })) }
-          : s
+        s.id === sup.id ? { ...s, reminderEnabled: false, reminders: s.reminders.map((r) => ({ ...r, notifId: undefined })) } : s
       ));
     } else {
       const updated: Supplement = { ...sup, reminderEnabled: true };
@@ -278,7 +291,6 @@ export default function SupplementsScreen() {
     }
   }
 
-  // ── Add reminder to existing supplement ──
   async function addReminderToSup(sup: Supplement) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const last = sup.reminders[sup.reminders.length - 1];
@@ -287,43 +299,30 @@ export default function SupplementsScreen() {
     await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: [...s.reminders, newR] } : s));
   }
 
-  // ── Update reminder time on existing supplement ──
   async function updateReminderOnSup(sup: Supplement, remId: string, field: "hour" | "minute", val: number) {
-    const updatedReminders = await Promise.all(
-      sup.reminders.map(async (r) => {
-        if (r.id !== remId) return r;
-        const newR = { ...r, [field]: val };
-        if (sup.reminderEnabled) {
-          await cancelNotif(r.notifId);
-          newR.notifId = await scheduleReminder(sup, newR);
-        }
-        return newR;
-      })
-    );
+    const updatedReminders = await Promise.all(sup.reminders.map(async (r) => {
+      if (r.id !== remId) return r;
+      const newR = { ...r, [field]: val };
+      if (sup.reminderEnabled) { await cancelNotif(r.notifId); newR.notifId = await scheduleReminder(sup, newR); }
+      return newR;
+    }));
     await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: updatedReminders } : s));
   }
 
-  // ── Remove one reminder from existing supplement ──
   async function removeReminderFromSup(sup: Supplement, remId: string) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const rem = sup.reminders.find((r) => r.id === remId);
     if (rem) await cancelNotif(rem.notifId);
-    await saveSups(supplements.map((s) =>
-      s.id === sup.id ? { ...s, reminders: s.reminders.filter((r) => r.id !== remId) } : s
-    ));
+    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: s.reminders.filter((r) => r.id !== remId) } : s));
   }
 
-  // ── Mark taken ──
   async function toggleTaken(supId: string) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const today = todayStr();
     const newTaken = { ...taken };
-    if (newTaken[supId] === today) delete newTaken[supId];
-    else newTaken[supId] = today;
+    if (newTaken[supId] === today) delete newTaken[supId]; else newTaken[supId] = today;
     await saveTaken(newTaken);
   }
 
-  // ── Delete supplement ──
   async function handleDelete(sup: Supplement) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     await cancelAllReminders(sup.reminders);
@@ -331,279 +330,351 @@ export default function SupplementsScreen() {
     setDeletingId(null);
   }
 
+  const calPct = Math.min(1, tracker.calorieGoal > 0 ? todayCalories / tracker.calorieGoal : 0);
+  const calColor = calPct > 1.05 ? "#ef4444" : calPct >= 0.9 ? "#22c55e" : colors.primary;
+  const waterDots = Array.from({ length: Math.min(tracker.waterGoal, 12) });
+
   if (loading) {
     return (
-      <View style={[styles.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
+      <View style={[s.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
         <ActivityIndicator color={colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <View style={[s.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: topPad + 16, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Compléments</Text>
+      <View style={[s.header, { paddingTop: topPad + 16, borderBottomColor: colors.border }]}>
+        <Text style={[s.title, { color: colors.foreground }]}>Nutrition</Text>
         <TouchableOpacity
           onPress={() => { setShowForm(!showForm); setDeletingId(null); setExpandedRemId(null); }}
-          style={[styles.addBtn, { backgroundColor: colors.primary }]}
+          style={[s.addBtn, { backgroundColor: colors.primary }]}
         >
           <Feather name={showForm ? "x" : "plus"} size={18} color={colors.primaryForeground} />
-          <Text style={[styles.addBtnText, { color: colors.primaryForeground }]}>
-            {showForm ? "Annuler" : "Ajouter"}
+          <Text style={[s.addBtnText, { color: colors.primaryForeground }]}>
+            {showForm ? "Annuler" : "Complément"}
           </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* ── Add form ── */}
-        {showForm && (
-          <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.primary + "55" }]}>
-            <Text style={[styles.formTitle, { color: colors.foreground }]}>Nouveau complément</Text>
+      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
-            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Nom</Text>
+        {/* ══ SUIVI DU JOUR ══════════════════════════════════════════════════ */}
+        <Text style={[s.sectionLabel, { color: colors.mutedForeground }]}>SUIVI DU JOUR</Text>
+
+        <View style={s.trackingRow}>
+          {/* ── Calories card ── */}
+          <View style={[s.trackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.trackCardHeader}>
+              <Text style={{ fontSize: 18 }}>🔥</Text>
+              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>Calories</Text>
+              <TouchableOpacity
+                onPress={() => { setEditCalGoal(!editCalGoal); setCalGoalInput(String(tracker.calorieGoal)); setEditWaterGoal(false); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="settings" size={12} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[s.trackBigNum, { color: calColor }]}>
+              {todayCalories.toLocaleString("fr-FR")}
+            </Text>
+            <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
+              / {tracker.calorieGoal.toLocaleString("fr-FR")} kcal
+            </Text>
+            <ProgressBar value={todayCalories} max={tracker.calorieGoal} color={calColor} />
+
+            {editCalGoal ? (
+              <View style={[s.goalEditRow, { marginTop: 10 }]}>
+                <TextInput
+                  style={[s.goalInput, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
+                  value={calGoalInput}
+                  onChangeText={setCalGoalInput}
+                  keyboardType="number-pad"
+                  placeholder="Objectif kcal"
+                  placeholderTextColor={colors.mutedForeground}
+                  selectTextOnFocus
+                  autoFocus
+                />
+                <TouchableOpacity onPress={saveCalGoal} style={[s.goalSaveBtn, { backgroundColor: colors.primary }]}>
+                  <Feather name="check" size={14} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={[s.calBtnsRow, { marginTop: 10 }]}>
+                <View style={[s.calInputWrap, { backgroundColor: colors.input, borderColor: colors.border }]}>
+                  <TextInput
+                    style={[s.calDirectInput, { color: colors.foreground }]}
+                    value={calInput}
+                    onChangeText={setCalInput}
+                    keyboardType="number-pad"
+                    placeholder="Ajouter…"
+                    placeholderTextColor={colors.mutedForeground}
+                    returnKeyType="done"
+                    onSubmitEditing={() => {
+                      const v = parseInt(calInput);
+                      if (!isNaN(v)) { addCalories(v); setCalInput(""); }
+                    }}
+                  />
+                </View>
+                <TouchableOpacity
+                  style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
+                  onPress={() => {
+                    const v = parseInt(calInput);
+                    if (!isNaN(v) && v > 0) { addCalories(v); setCalInput(""); }
+                  }}
+                >
+                  <Feather name="plus" size={16} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCaloriesToday(0); }}
+                >
+                  <Feather name="rotate-ccw" size={14} color={colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+
+          {/* ── Water card ── */}
+          <View style={[s.trackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={s.trackCardHeader}>
+              <Text style={{ fontSize: 18 }}>💧</Text>
+              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>Eau</Text>
+              <TouchableOpacity
+                onPress={() => { setEditWaterGoal(!editWaterGoal); setWaterGoalInput(String(tracker.waterGoal)); setEditCalGoal(false); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Feather name="settings" size={12} color={colors.mutedForeground} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[s.trackBigNum, { color: todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary }]}>
+              {todayWater}
+            </Text>
+            <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
+              / {tracker.waterGoal} verres
+            </Text>
+
+            {/* Dots */}
+            <View style={s.waterDots}>
+              {waterDots.map((_, i) => (
+                <TouchableOpacity key={i} onPress={() => addWater(i < todayWater ? -(todayWater - i) : i + 1 - todayWater)}>
+                  <View style={[
+                    s.waterDot,
+                    { backgroundColor: i < todayWater ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
+                  ]} />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {editWaterGoal ? (
+              <View style={[s.goalEditRow, { marginTop: 10 }]}>
+                <TextInput
+                  style={[s.goalInput, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
+                  value={waterGoalInput}
+                  onChangeText={setWaterGoalInput}
+                  keyboardType="number-pad"
+                  placeholder="Objectif verres"
+                  placeholderTextColor={colors.mutedForeground}
+                  selectTextOnFocus
+                  autoFocus
+                />
+                <TouchableOpacity onPress={saveWaterGoal} style={[s.goalSaveBtn, { backgroundColor: colors.primary }]}>
+                  <Feather name="check" size={14} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={s.waterBtns}>
+                <TouchableOpacity
+                  style={[s.waterBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                  onPress={() => addWater(-1)}
+                  disabled={todayWater === 0}
+                >
+                  <Feather name="minus" size={18} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.foreground} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.waterBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
+                  onPress={() => addWater(1)}
+                >
+                  <Feather name="plus" size={18} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+        </View>
+
+        {/* ══ COMPLÉMENTS ════════════════════════════════════════════════════ */}
+        <View style={s.sectionHeaderRow}>
+          <Text style={[s.sectionLabel, { color: colors.mutedForeground }]}>
+            COMPLÉMENTS {supplements.length > 0 ? `(${supplements.length})` : ""}
+          </Text>
+        </View>
+
+        {/* Add form */}
+        {showForm && (
+          <View style={[s.formCard, { backgroundColor: colors.card, borderColor: colors.primary + "55" }]}>
+            <Text style={[s.formTitle, { color: colors.foreground }]}>Nouveau complément</Text>
+
+            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Nom</Text>
             <TextInput
-              style={[styles.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
+              style={[s.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
               placeholder="Ex : Créatine, Whey, Oméga-3..."
               placeholderTextColor={colors.mutedForeground}
-              value={formName}
-              onChangeText={setFormName}
-              autoFocus
+              value={formName} onChangeText={setFormName} autoFocus
             />
 
-            <Text style={[styles.inputLabel, { color: colors.mutedForeground }]}>Dosage par prise</Text>
-            <View style={styles.dosageRow}>
+            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Dosage par prise</Text>
+            <View style={s.dosageRow}>
               <TextInput
-                style={[styles.input, { flex: 1, color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-                placeholder="Ex : 1"
-                placeholderTextColor={colors.mutedForeground}
-                value={formDosage}
-                onChangeText={setFormDosage}
-                keyboardType="numeric"
+                style={[s.input, { flex: 1, color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
+                placeholder="Ex : 1" placeholderTextColor={colors.mutedForeground}
+                value={formDosage} onChangeText={setFormDosage} keyboardType="numeric"
               />
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: 8 }}>
                 <View style={{ flexDirection: "row", gap: 6 }}>
                   {UNITS.map((u) => (
-                    <TouchableOpacity
-                      key={u}
-                      onPress={() => setFormUnit(u)}
-                      style={[styles.unitChip, { backgroundColor: formUnit === u ? colors.primary : colors.card, borderColor: formUnit === u ? colors.primary : colors.border }]}
-                    >
-                      <Text style={[styles.unitChipText, { color: formUnit === u ? colors.primaryForeground : colors.foreground }]}>{u}</Text>
+                    <TouchableOpacity key={u} onPress={() => setFormUnit(u)}
+                      style={[s.unitChip, { backgroundColor: formUnit === u ? colors.primary : colors.card, borderColor: formUnit === u ? colors.primary : colors.border }]}>
+                      <Text style={[s.unitChipText, { color: formUnit === u ? colors.primaryForeground : colors.foreground }]}>{u}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
               </ScrollView>
             </View>
 
-            {/* Reminder toggle */}
-            <View style={styles.reminderRow}>
-              <View style={styles.reminderLeft}>
+            <View style={s.reminderRow}>
+              <View style={s.reminderLeft}>
                 <Feather name="bell" size={15} color={colors.mutedForeground} />
-                <Text style={[styles.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>Rappels</Text>
+                <Text style={[s.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>Rappels</Text>
               </View>
-              <Switch
-                value={formReminder}
+              <Switch value={formReminder}
                 onValueChange={(v) => { setFormReminder(v); if (v && formReminders.length === 0) setFormReminders([{ id: genId(), hour: 8, minute: 0 }]); }}
-                trackColor={{ true: colors.primary, false: colors.muted }}
-                thumbColor="#fff"
+                trackColor={{ true: colors.primary, false: colors.muted }} thumbColor="#fff"
               />
             </View>
 
             {formReminder && (
               <View style={{ gap: 8 }}>
-                {formReminders.map((r, idx) => (
-                  <TimePicker
-                    key={r.id}
-                    hour={r.hour}
-                    minute={r.minute}
+                {formReminders.map((r) => (
+                  <TimePicker key={r.id} hour={r.hour} minute={r.minute}
                     onHour={(h) => updateFormReminder(r.id, "hour", h)}
                     onMinute={(m) => updateFormReminder(r.id, "minute", m)}
                     onRemove={() => removeFormReminder(r.id)}
                     showRemove={formReminders.length > 1}
                   />
                 ))}
-                <TouchableOpacity
-                  onPress={addFormReminder}
-                  style={[styles.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}
-                >
+                <TouchableOpacity onPress={addFormReminder}
+                  style={[s.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}>
                   <Feather name="plus" size={14} color={colors.primary} />
-                  <Text style={[styles.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
+                  <Text style={[s.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
                 </TouchableOpacity>
               </View>
             )}
 
             <TouchableOpacity
-              style={[styles.saveBtn, { backgroundColor: !formName.trim() ? colors.muted : colors.primary }]}
-              onPress={handleAdd}
-              disabled={!formName.trim()}
+              style={[s.saveBtn, { backgroundColor: !formName.trim() ? colors.muted : colors.primary }]}
+              onPress={handleAdd} disabled={!formName.trim()}
             >
               <Feather name="check" size={16} color={colors.primaryForeground} />
-              <Text style={[styles.saveBtnText, { color: colors.primaryForeground }]}>Enregistrer</Text>
+              <Text style={[s.saveBtnText, { color: colors.primaryForeground }]}>Enregistrer</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* ── Empty state ── */}
+        {/* Empty state */}
         {supplements.length === 0 && !showForm && (
-          <View style={styles.emptyState}>
-            <View style={[styles.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={{ fontSize: 32 }}>💊</Text>
+          <View style={s.emptyState}>
+            <View style={[s.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <Text style={{ fontSize: 28 }}>💊</Text>
             </View>
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucun complément</Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+            <Text style={[s.emptyTitle, { color: colors.foreground }]}>Aucun complément</Text>
+            <Text style={[s.emptyText, { color: colors.mutedForeground }]}>
               Ajoute tes compléments alimentaires et configure des rappels pour ne jamais en oublier
             </Text>
           </View>
         )}
 
-        {/* ── Supplement cards ── */}
+        {/* Supplement cards */}
         {supplements.map((sup) => {
-          const isTaken = taken[sup.id] === todayStr();
+          const isTaken = taken[sup.id] === today;
           const isDeleting = deletingId === sup.id;
           const isExpanded = expandedRemId === sup.id;
           const reminderCount = sup.reminders.length;
 
           return (
             <View key={sup.id}>
-              <View style={[
-                styles.supCard,
-                {
-                  backgroundColor: isTaken ? colors.primary + "12" : colors.card,
-                  borderColor: isTaken ? colors.primary + "55" : colors.border,
-                },
-              ]}>
-                {/* Top row */}
-                <View style={styles.supTop}>
-                  <TouchableOpacity
-                    onPress={() => toggleTaken(sup.id)}
-                    style={[
-                      styles.takenCircle,
-                      {
-                        backgroundColor: isTaken ? colors.primary : "transparent",
-                        borderColor: isTaken ? colors.primary : colors.mutedForeground,
-                      },
-                    ]}
-                  >
+              <View style={[s.supCard, { backgroundColor: isTaken ? colors.primary + "12" : colors.card, borderColor: isTaken ? colors.primary + "55" : colors.border }]}>
+                <View style={s.supTop}>
+                  <TouchableOpacity onPress={() => toggleTaken(sup.id)}
+                    style={[s.takenCircle, { backgroundColor: isTaken ? colors.primary : "transparent", borderColor: isTaken ? colors.primary : colors.mutedForeground }]}>
                     {isTaken && <Feather name="check" size={14} color="#fff" />}
                   </TouchableOpacity>
-
-                  <View style={styles.supInfo}>
-                    <Text style={[styles.supName, { color: colors.foreground }]}>{sup.name}</Text>
+                  <View style={s.supInfo}>
+                    <Text style={[s.supName, { color: colors.foreground }]}>{sup.name}</Text>
                     {(sup.dosage || sup.unit) && (
-                      <Text style={[styles.supDosage, { color: colors.mutedForeground }]}>
-                        {sup.dosage} {sup.unit} par prise
-                      </Text>
+                      <Text style={[s.supDosage, { color: colors.mutedForeground }]}>{sup.dosage} {sup.unit} par prise</Text>
                     )}
                   </View>
-
-                  <View style={styles.supActions}>
-                    <TouchableOpacity
-                      onPress={() => { setDeletingId(isDeleting ? null : sup.id); setExpandedRemId(null); }}
-                      style={[styles.iconBtn, { borderColor: colors.border }]}
-                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-                    >
-                      <Feather name="trash-2" size={13} color={colors.destructive} />
-                    </TouchableOpacity>
-                  </View>
+                  <TouchableOpacity onPress={() => { setDeletingId(isDeleting ? null : sup.id); setExpandedRemId(null); }}
+                    style={[s.iconBtn, { borderColor: colors.border }]} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                    <Feather name="trash-2" size={13} color={colors.destructive} />
+                  </TouchableOpacity>
                 </View>
 
-                {/* Reminder section */}
-                <View style={[styles.reminderSection, { borderTopColor: colors.border }]}>
-                  {/* Master toggle row */}
-                  <View style={styles.masterRow}>
-                    <TouchableOpacity
-                      style={styles.masterLeft}
-                      onPress={() => setExpandedRemId(isExpanded ? null : sup.id)}
-                      activeOpacity={0.7}
-                    >
-                      <Feather
-                        name={sup.reminderEnabled ? "bell" : "bell-off"}
-                        size={13}
-                        color={sup.reminderEnabled ? colors.primary : colors.mutedForeground}
-                      />
-                      <Text style={[styles.reminderSummary, { color: sup.reminderEnabled ? colors.primary : colors.mutedForeground }]}>
+                <View style={[s.reminderSection, { borderTopColor: colors.border }]}>
+                  <View style={s.masterRow}>
+                    <TouchableOpacity style={s.masterLeft} onPress={() => setExpandedRemId(isExpanded ? null : sup.id)} activeOpacity={0.7}>
+                      <Feather name={sup.reminderEnabled ? "bell" : "bell-off"} size={13} color={sup.reminderEnabled ? colors.primary : colors.mutedForeground} />
+                      <Text style={[s.reminderSummary, { color: sup.reminderEnabled ? colors.primary : colors.mutedForeground }]}>
                         {sup.reminderEnabled
-                          ? reminderCount === 0
-                            ? "Rappels activés (aucun horaire)"
-                            : reminderCount === 1
-                              ? `Rappel à ${pad2(sup.reminders[0].hour)}:${pad2(sup.reminders[0].minute)}`
-                              : `${reminderCount} rappels`
+                          ? reminderCount === 0 ? "Rappels activés" : reminderCount === 1 ? `Rappel à ${pad2(sup.reminders[0].hour)}:${pad2(sup.reminders[0].minute)}` : `${reminderCount} rappels`
                           : "Pas de rappel"}
                       </Text>
-                      {reminderCount > 0 && (
-                        <Feather
-                          name={isExpanded ? "chevron-up" : "chevron-down"}
-                          size={13}
-                          color={colors.mutedForeground}
-                        />
-                      )}
+                      {reminderCount > 0 && <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color={colors.mutedForeground} />}
                     </TouchableOpacity>
-                    <Switch
-                      value={sup.reminderEnabled}
-                      onValueChange={() => toggleMasterReminder(sup)}
-                      trackColor={{ true: colors.primary, false: colors.muted }}
-                      thumbColor="#fff"
+                    <Switch value={sup.reminderEnabled} onValueChange={() => toggleMasterReminder(sup)}
+                      trackColor={{ true: colors.primary, false: colors.muted }} thumbColor="#fff"
                       style={{ transform: [{ scale: 0.8 }] }}
                     />
                   </View>
-
-                  {/* Expanded reminders list */}
                   {isExpanded && (
                     <View style={{ gap: 6, marginTop: 8 }}>
                       {sup.reminders.map((r) => (
-                        <TimePicker
-                          key={r.id}
-                          hour={r.hour}
-                          minute={r.minute}
+                        <TimePicker key={r.id} hour={r.hour} minute={r.minute}
                           onHour={(h) => updateReminderOnSup(sup, r.id, "hour", h)}
                           onMinute={(m) => updateReminderOnSup(sup, r.id, "minute", m)}
                           onRemove={() => removeReminderFromSup(sup, r.id)}
                           showRemove={sup.reminders.length > 1}
                         />
                       ))}
-                      <TouchableOpacity
-                        onPress={() => addReminderToSup(sup)}
-                        style={[styles.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}
-                      >
+                      <TouchableOpacity onPress={() => addReminderToSup(sup)}
+                        style={[s.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}>
                         <Feather name="plus" size={14} color={colors.primary} />
-                        <Text style={[styles.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
+                        <Text style={[s.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
                       </TouchableOpacity>
                     </View>
                   )}
                 </View>
 
-                {/* Taken badge */}
-                <View style={[styles.takenBadge, { backgroundColor: isTaken ? colors.primary + "20" : colors.muted + "44" }]}>
-                  <Text style={[styles.takenText, { color: isTaken ? colors.primary : colors.mutedForeground }]}>
+                <View style={[s.takenBadge, { backgroundColor: isTaken ? colors.primary + "20" : colors.muted + "44" }]}>
+                  <Text style={[s.takenText, { color: isTaken ? colors.primary : colors.mutedForeground }]}>
                     {isTaken ? "✓ Pris aujourd'hui" : "Non pris aujourd'hui"}
                   </Text>
                 </View>
               </View>
 
-              {/* Delete confirm */}
               {isDeleting && (
-                <View style={[styles.deleteBox, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "44" }]}>
-                  <Text style={[styles.deleteText, { color: colors.foreground }]}>
-                    Supprimer « {sup.name} » ?
-                  </Text>
-                  <View style={styles.deleteBtns}>
-                    <TouchableOpacity
-                      style={[styles.deleteCancelBtn, { borderColor: colors.border }]}
-                      onPress={() => setDeletingId(null)}
-                    >
-                      <Text style={[styles.deleteCancelText, { color: colors.foreground }]}>Annuler</Text>
+                <View style={[s.deleteBox, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "44" }]}>
+                  <Text style={[s.deleteText, { color: colors.foreground }]}>Supprimer « {sup.name} » ?</Text>
+                  <View style={s.deleteBtns}>
+                    <TouchableOpacity style={[s.deleteCancelBtn, { borderColor: colors.border }]} onPress={() => setDeletingId(null)}>
+                      <Text style={[s.deleteCancelText, { color: colors.foreground }]}>Annuler</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.deleteOkBtn, { backgroundColor: colors.destructive }]}
-                      onPress={() => handleDelete(sup)}
-                    >
+                    <TouchableOpacity style={[s.deleteOkBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDelete(sup)}>
                       <Feather name="trash-2" size={13} color="#fff" />
-                      <Text style={styles.deleteOkText}>Supprimer</Text>
+                      <Text style={s.deleteOkText}>Supprimer</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -612,20 +683,13 @@ export default function SupplementsScreen() {
           );
         })}
 
-        {/* Notification note */}
-        {supplements.some((s) => s.reminderEnabled) && Platform.OS !== "web" && (
-          <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {supplements.some((s) => s.reminderEnabled) && (
+          <View style={[s.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="info" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-              Les rappels sont des notifications locales. L'app doit avoir la permission d'envoyer des notifications.
-            </Text>
-          </View>
-        )}
-        {supplements.some((s) => s.reminderEnabled) && Platform.OS === "web" && (
-          <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Feather name="info" size={13} color={colors.mutedForeground} />
-            <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-              Les rappels par notification sont disponibles uniquement sur l'application mobile (Android / iOS).
+            <Text style={[s.infoText, { color: colors.mutedForeground }]}>
+              {Platform.OS === "web"
+                ? "Les rappels par notification sont disponibles uniquement sur l'application mobile (Android / iOS)."
+                : "Les rappels sont des notifications locales. L'app doit avoir la permission d'envoyer des notifications."}
             </Text>
           </View>
         )}
@@ -634,15 +698,35 @@ export default function SupplementsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1,
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-  },
+  header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { fontSize: 28, fontFamily: "Inter_700Bold" },
   addBtn: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20 },
   addBtnText: { fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  sectionLabel: { fontSize: 11, fontFamily: "Inter_600SemiBold", letterSpacing: 0.8, marginBottom: 2 },
+  sectionHeaderRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
+
+  // ── Tracking ──
+  trackingRow: { flexDirection: "row", gap: 10 },
+  trackCard: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 14 },
+  trackCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
+  trackCardTitle: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
+  trackBigNum: { fontSize: 30, fontFamily: "Inter_700Bold", lineHeight: 34 },
+  trackGoalText: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  calBtnsRow: { flexDirection: "row", gap: 6, alignItems: "center" },
+  calInputWrap: { flex: 1, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6 },
+  calDirectInput: { fontSize: 14, fontFamily: "Inter_600SemiBold", includeFontPadding: false },
+  calAddBtn: { width: 34, height: 34, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  goalEditRow: { flexDirection: "row", gap: 6, alignItems: "center" },
+  goalInput: { flex: 1, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 7, fontSize: 14, fontFamily: "Inter_600SemiBold" },
+  goalSaveBtn: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  waterDots: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
+  waterDot: { width: 10, height: 10, borderRadius: 5 },
+  waterBtns: { flexDirection: "row", gap: 8, marginTop: 10 },
+  waterBtn: { flex: 1, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+
+  // ── Form ──
   formCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },
   formTitle: { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 4 },
   inputLabel: { fontSize: 12, fontFamily: "Inter_500Medium", marginBottom: 4 },
@@ -652,24 +736,24 @@ const styles = StyleSheet.create({
   unitChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   reminderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
   reminderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
-  addReminderBtn: {
-    flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderStyle: "dashed",
-  },
+  addReminderBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 9, borderRadius: 10, borderWidth: 1, borderStyle: "dashed" },
   addReminderText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, padding: 14, marginTop: 4 },
   saveBtnText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
-  emptyState: { alignItems: "center", paddingTop: 60, gap: 14 },
-  emptyIcon: { width: 72, height: 72, borderRadius: 24, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  emptyTitle: { fontSize: 20, fontFamily: "Inter_700Bold" },
-  emptyText: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 22, paddingHorizontal: 32 },
+
+  // ── Empty ──
+  emptyState: { alignItems: "center", paddingTop: 20, paddingBottom: 20, gap: 10 },
+  emptyIcon: { width: 60, height: 60, borderRadius: 20, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  emptyTitle: { fontSize: 17, fontFamily: "Inter_700Bold" },
+  emptyText: { fontSize: 13, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, paddingHorizontal: 16 },
+
+  // ── Supplement card ──
   supCard: { borderRadius: 16, borderWidth: 1, padding: 14, gap: 10 },
   supTop: { flexDirection: "row", alignItems: "center", gap: 12 },
   takenCircle: { width: 28, height: 28, borderRadius: 14, borderWidth: 2, alignItems: "center", justifyContent: "center" },
   supInfo: { flex: 1 },
-  supName: { fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  supName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   supDosage: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: 2 },
-  supActions: { flexDirection: "row", gap: 6 },
   iconBtn: { width: 30, height: 30, borderRadius: 8, borderWidth: 1, alignItems: "center", justifyContent: "center" },
   reminderSection: { borderTopWidth: 1, paddingTop: 10 },
   masterRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
@@ -677,6 +761,8 @@ const styles = StyleSheet.create({
   reminderSummary: { fontSize: 13, fontFamily: "Inter_500Medium" },
   takenBadge: { borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, alignSelf: "flex-start" },
   takenText: { fontSize: 12, fontFamily: "Inter_500Medium" },
+
+  // ── Delete ──
   deleteBox: { borderWidth: 1, borderTopWidth: 0, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, padding: 12, gap: 10 },
   deleteText: { fontSize: 13, fontFamily: "Inter_500Medium" },
   deleteBtns: { flexDirection: "row", gap: 8 },
@@ -684,6 +770,8 @@ const styles = StyleSheet.create({
   deleteCancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   deleteOkBtn: { flex: 1, flexDirection: "row", gap: 6, borderRadius: 8, paddingVertical: 9, alignItems: "center", justifyContent: "center" },
   deleteOkText: { fontSize: 13, fontFamily: "Inter_600SemiBold", color: "#fff" },
+
+  // ── Info ──
   infoBox: { flexDirection: "row", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, alignItems: "flex-start" },
   infoText: { flex: 1, fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
 });
