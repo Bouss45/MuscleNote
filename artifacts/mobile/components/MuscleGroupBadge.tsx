@@ -5,7 +5,7 @@ import { MuscleGroup } from "@/context/WorkoutContext";
 
 const MUSCLE_GROUP_COLORS: Record<MuscleGroup, string> = {
   dos: "#3b82f6",
-  pecs: "#e85a0a",
+  pecs: "#f97316",
   biceps: "#a855f7",
   triceps: "#8b5cf6",
   jambes: "#22c55e",

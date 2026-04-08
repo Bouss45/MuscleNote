@@ -36,7 +36,7 @@ const MUSCLE_GROUPS: MuscleGroup[] = [
 
 const MUSCLE_COLORS: Record<MuscleGroup, string> = {
   dos: "#3b82f6",
-  pecs: "#e85a0a",
+  pecs: "#f97316",
   biceps: "#a855f7",
   triceps: "#8b5cf6",
   jambes: "#22c55e",
@@ -47,7 +47,7 @@ const MUSCLE_COLORS: Record<MuscleGroup, string> = {
 };
 
 // Slightly different shades for multiple exercise charts
-const CHART_PALETTE = ["#e85a0a", "#3b82f6", "#22c55e", "#a855f7", "#f59e0b"];
+const CHART_PALETTE = ["#0070FF", "#a855f7", "#22c55e", "#f59e0b", "#ec4899"];
 
 function formatShortDate(iso: string) {
   const d = new Date(iso);
