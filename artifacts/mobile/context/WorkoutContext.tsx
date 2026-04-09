@@ -131,6 +131,7 @@ interface WorkoutContextType {
   updateCustomExercise: (id: string, name: string, muscleGroup: MuscleGroup) => void;
   deleteCustomExercise: (id: string) => void;
   isCustomExercise: (id: string) => boolean;
+  reorderExercises: (ids: string[]) => void;
   updateExerciseNote: (exerciseId: string, note: string) => void;
   updateWorkoutDate: (workoutId: string, newDate: string) => void;
   deleteWorkout: (workoutId: string) => void;
@@ -316,6 +317,15 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  const reorderExercises = useCallback((ids: string[]) => {
+    setCurrentWorkout((prev) => {
+      if (!prev) return prev;
+      const map = new Map(prev.exercises.map((e) => [e.exerciseId, e]));
+      const reordered = ids.map((id) => map.get(id)).filter(Boolean) as typeof prev.exercises;
+      return { ...prev, exercises: reordered };
+    });
+  }, []);
+
   const updateExerciseNote = useCallback((exerciseId: string, note: string) => {
     setCurrentWorkout((prev) => {
       if (!prev) return prev;
@@ -439,6 +449,7 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         updateCustomExercise,
         deleteCustomExercise,
         isCustomExercise,
+        reorderExercises,
         updateExerciseNote,
         updateWorkoutDate,
         deleteWorkout,

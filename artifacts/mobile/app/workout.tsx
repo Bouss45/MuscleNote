@@ -4,7 +4,6 @@ import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,7 +12,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useWorkout } from "@/context/WorkoutContext";
-import ExerciseCard from "@/components/ExerciseCard";
+import SortableExerciseList from "@/components/SortableExerciseList";
 
 const WARMUP_ITEMS = [
   { icon: "wind",       label: "Cardio léger",         detail: "5-10 min vélo ou rameur" },
@@ -154,7 +153,7 @@ function WarmupCard() {
 export default function WorkoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { currentWorkout, exercises, endWorkout } = useWorkout();
+  const { currentWorkout, exercises, endWorkout, reorderExercises } = useWorkout();
   const [confirming, setConfirming] = useState(false);
   const [elapsed, setElapsed] = useState("0:00");
 
@@ -289,50 +288,35 @@ export default function WorkoutScreen() {
         )}
       </View>
 
-      <ScrollView
-        contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Warmup card — always shown at top */}
-        <WarmupCard />
-
-        {currentExercises.map(({ we, exercise }) => (
-          <ExerciseCard
-            key={exercise.id}
-            exercise={exercise}
-            workoutExercise={we}
-            onNavigateHistory={() =>
-              router.push({
-                pathname: "/exercise-history",
-                params: { exerciseId: exercise.id },
-              })
-            }
-          />
-        ))}
-
-        <TouchableOpacity
-          style={[
-            styles.addExerciseBtn,
-            { backgroundColor: colors.card, borderColor: colors.border },
-          ]}
-          onPress={() => router.push("/exercise-picker")}
-          activeOpacity={0.8}
-        >
-          <Feather name="plus-circle" size={20} color={colors.primary} />
-          <Text style={[styles.addExerciseBtnText, { color: colors.primary }]}>
-            Ajouter un exercice
-          </Text>
-        </TouchableOpacity>
-
-        {currentExercises.length === 0 && (
+      <SortableExerciseList
+        exercises={currentExercises}
+        onReorder={reorderExercises}
+        bottomPad={bottomPad}
+        header={<WarmupCard />}
+        footer={
+          <TouchableOpacity
+            style={[
+              styles.addExerciseBtn,
+              { backgroundColor: colors.card, borderColor: colors.border },
+            ]}
+            onPress={() => router.push("/exercise-picker")}
+            activeOpacity={0.8}
+          >
+            <Feather name="plus-circle" size={20} color={colors.primary} />
+            <Text style={[styles.addExerciseBtnText, { color: colors.primary }]}>
+              Ajouter un exercice
+            </Text>
+          </TouchableOpacity>
+        }
+        emptyState={
           <View style={styles.emptyExercises}>
             <Feather name="activity" size={36} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
               Ajoute des exercices pour commencer
             </Text>
           </View>
-        )}
-      </ScrollView>
+        }
+      />
 
       {/* Finish button / inline confirmation */}
       <View
