@@ -1,7 +1,10 @@
+// Disable React Compiler for this file — Reanimated worklets are incompatible with it
+"use no memo";
+
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useCallback, useRef, useState } from "react";
-import { ScrollView, StyleSheet } from "react-native";
+import React, { useCallback, useMemo, useRef, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
   runOnJS,
@@ -32,128 +35,71 @@ interface ItemProps {
   index: number;
   activeIdx: ReturnType<typeof useSharedValue<number>>;
   dragDelta: ReturnType<typeof useSharedValue<number>>;
-  heights: ReturnType<typeof useSharedValue<number[]>>;
   onDragStart: (index: number) => void;
-  onDrop: (from: number, to: number) => void;
+  onDrop: (from: number, deltaY: number) => void;
   children: React.ReactNode;
-}
-
-function computeProposedIdx(hs: number[], aIdx: number, delta: number, total: number): number {
-  "worklet";
-  let activeTopY = 0;
-  for (let i = 0; i < aIdx; i++) activeTopY += (hs[i] ?? 80) + ITEM_GAP;
-  const activeCenter = activeTopY + (hs[aIdx] ?? 80) / 2 + delta;
-
-  let cumY = 0;
-  let proposed = 0;
-  for (let i = 0; i < total; i++) {
-    const slotCenter = cumY + (hs[i] ?? 80) / 2;
-    if (activeCenter > slotCenter) proposed = i + 1;
-    cumY += (hs[i] ?? 80) + ITEM_GAP;
-  }
-  return Math.max(0, Math.min(total - 1, proposed));
 }
 
 function SortableExerciseItem({
   index,
   activeIdx,
   dragDelta,
-  heights,
   onDragStart,
   onDrop,
   children,
 }: ItemProps) {
-  const colors = useColors();
-
   const animStyle = useAnimatedStyle(() => {
-    const aIdx = activeIdx.value;
-    const isActive = aIdx === index;
-
-    if (aIdx === -1) {
-      return {
-        transform: [{ translateY: withSpring(0, { damping: 20, stiffness: 180 }) }, { scale: withSpring(1, { damping: 20 }) }],
-        zIndex: 1,
-        shadowOpacity: 0,
-        elevation: 0,
-      };
-    }
-
-    const hs = heights.value;
-    const delta = dragDelta.value;
-    const total = hs.length;
-    const proposed = computeProposedIdx(hs, aIdx, delta, total);
-    const activeH = (hs[aIdx] ?? 80) + ITEM_GAP;
-
-    let shift = 0;
+    const isActive = activeIdx.value === index;
     if (!isActive) {
-      if (aIdx < index && index <= proposed) shift = -activeH;
-      else if (proposed <= index && index < aIdx) shift = activeH;
+      return { transform: [{ translateY: 0 }, { scale: 1 }], zIndex: 1, opacity: 1 };
     }
-
     return {
       transform: [
-        {
-          translateY: isActive
-            ? delta
-            : withSpring(shift, { damping: 20, stiffness: 180 }),
-        },
-        {
-          scale: isActive
-            ? withSpring(1.04, { damping: 15 })
-            : withSpring(1, { damping: 15 }),
-        },
+        { translateY: dragDelta.value },
+        { scale: withSpring(1.04, { damping: 15, stiffness: 200 }) },
       ],
-      zIndex: isActive ? 999 : 1,
-      shadowColor: "#000",
-      shadowOpacity: isActive ? 0.3 : withSpring(0, { damping: 20 }) as any,
-      shadowRadius: isActive ? 14 : 0,
-      elevation: isActive ? 14 : 0,
+      zIndex: 999,
+      opacity: 0.95,
     };
   });
 
-  const gesture = Gesture.Pan()
-    .activateAfterLongPress(250)
-    .onStart(() => {
-      "worklet";
-      activeIdx.value = index;
-      dragDelta.value = 0;
-      runOnJS(onDragStart)(index);
-    })
-    .onUpdate((e) => {
-      "worklet";
-      if (activeIdx.value === index) dragDelta.value = e.translationY;
-    })
-    .onEnd(() => {
-      "worklet";
-      const aIdx = activeIdx.value;
-      if (aIdx !== index) return;
-      const proposed = computeProposedIdx(heights.value, aIdx, dragDelta.value, heights.value.length);
-      const from = aIdx;
-      activeIdx.value = -1;
-      dragDelta.value = 0;
-      if (proposed !== from) runOnJS(onDrop)(from, proposed);
-    })
-    .onFinalize(() => {
-      "worklet";
-      if (activeIdx.value === index) {
-        activeIdx.value = -1;
-        dragDelta.value = 0;
-      }
-    });
+  const gesture = useMemo(
+    () =>
+      Gesture.Pan()
+        .activateAfterLongPress(250)
+        .onStart(() => {
+          "worklet";
+          activeIdx.value = index;
+          dragDelta.value = 0;
+          runOnJS(onDragStart)(index);
+        })
+        .onUpdate((e) => {
+          "worklet";
+          if (activeIdx.value === index) {
+            dragDelta.value = e.translationY;
+          }
+        })
+        .onEnd(() => {
+          "worklet";
+          const from = activeIdx.value;
+          const delta = dragDelta.value;
+          activeIdx.value = -1;
+          dragDelta.value = 0;
+          if (from === index) runOnJS(onDrop)(from, delta);
+        })
+        .onFinalize(() => {
+          "worklet";
+          if (activeIdx.value === index) {
+            activeIdx.value = -1;
+            dragDelta.value = 0;
+          }
+        }),
+    [index]
+  );
 
   return (
     <GestureDetector gesture={gesture}>
-      <Animated.View
-        style={[animStyle, styles.item]}
-        onLayout={(e) => {
-          const h = e.nativeEvent.layout.height;
-          const cur = heights.value;
-          const next = [...cur];
-          while (next.length <= index) next.push(80);
-          next[index] = h;
-          heights.value = next;
-        }}
-      >
+      <Animated.View style={[animStyle, styles.item]}>
         {children}
       </Animated.View>
     </GestureDetector>
@@ -171,7 +117,9 @@ export default function SortableExerciseList({
   const [isDragging, setIsDragging] = useState(false);
   const activeIdx = useSharedValue(-1);
   const dragDelta = useSharedValue(0);
-  const heights = useSharedValue<number[]>([]);
+
+  // Track item heights and cumulative Y positions via onLayout
+  const heights = useRef<number[]>([]);
   const orderRef = useRef<string[]>([]);
   orderRef.current = exercises.map((e) => e.exercise.id);
 
@@ -180,10 +128,36 @@ export default function SortableExerciseList({
   }, []);
 
   const handleDrop = useCallback(
-    (from: number, to: number) => {
+    (from: number, deltaY: number) => {
       setIsDragging(false);
+
+      const hs = heights.current;
+      if (!hs.length) return;
+
+      // Compute cumulative Y positions for each slot
+      const tops: number[] = [];
+      let y = 0;
+      for (let i = 0; i < hs.length; i++) {
+        tops.push(y);
+        y += (hs[i] ?? 80) + ITEM_GAP;
+      }
+
+      // Absolute Y center of dragged item after move
+      const fromTop = tops[from] ?? 0;
+      const fromHeight = hs[from] ?? 80;
+      const newCenter = fromTop + fromHeight / 2 + deltaY;
+
+      // Find target slot
+      let to = from;
+      for (let i = 0; i < tops.length; i++) {
+        const slotCenter = (tops[i] ?? 0) + (hs[i] ?? 80) / 2;
+        if (newCenter > slotCenter) to = i;
+      }
+      to = Math.max(0, Math.min(hs.length - 1, to));
+
+      if (to === from) return;
+
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      if (from === to) return;
       const ids = [...orderRef.current];
       const [moved] = ids.splice(from, 1);
       ids.splice(to, 0, moved);
@@ -191,10 +165,6 @@ export default function SortableExerciseList({
     },
     [onReorder]
   );
-
-  const handleDragCancel = useCallback(() => {
-    setIsDragging(false);
-  }, []);
 
   return (
     <ScrollView
@@ -210,20 +180,25 @@ export default function SortableExerciseList({
           index={index}
           activeIdx={activeIdx}
           dragDelta={dragDelta}
-          heights={heights}
           onDragStart={handleDragStart}
           onDrop={handleDrop}
         >
-          <ExerciseCard
-            exercise={item.exercise}
-            workoutExercise={item.we}
-            onNavigateHistory={() =>
-              router.push({
-                pathname: "/exercise-history",
-                params: { exerciseId: item.exercise.id },
-              })
-            }
-          />
+          <View
+            onLayout={(e) => {
+              heights.current[index] = e.nativeEvent.layout.height;
+            }}
+          >
+            <ExerciseCard
+              exercise={item.exercise}
+              workoutExercise={item.we}
+              onNavigateHistory={() =>
+                router.push({
+                  pathname: "/exercise-history",
+                  params: { exerciseId: item.exercise.id },
+                })
+              }
+            />
+          </View>
         </SortableExerciseItem>
       ))}
 
