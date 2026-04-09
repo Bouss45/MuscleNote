@@ -190,15 +190,24 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const endWorkout = useCallback(() => {
-    if (!currentWorkout) return;
-    const finished = { ...currentWorkout, durationMinutes: Math.round((Date.now() - new Date(currentWorkout.date).getTime()) / 60000) };
-    setWorkouts((prev) => {
-      const updated = [finished, ...prev];
-      saveWorkouts(updated);
-      return updated;
+    // Use functional update so we always get the latest state,
+    // even if a set-complete / weight update was batched just before this call.
+    setCurrentWorkout((prevWorkout) => {
+      if (!prevWorkout) return null;
+      const finished = {
+        ...prevWorkout,
+        durationMinutes: Math.round(
+          (Date.now() - new Date(prevWorkout.date).getTime()) / 60000
+        ),
+      };
+      setWorkouts((prev) => {
+        const updated = [finished, ...prev];
+        saveWorkouts(updated);
+        return updated;
+      });
+      return null;
     });
-    setCurrentWorkout(null);
-  }, [currentWorkout]);
+  }, []);
 
   const addExerciseToWorkout = useCallback((exerciseId: string) => {
     // Find the most recent past workout that contains this exercise

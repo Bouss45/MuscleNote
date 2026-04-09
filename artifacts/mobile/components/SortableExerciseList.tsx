@@ -147,13 +147,18 @@ export default function SortableExerciseList({
       const fromHeight = hs[from] ?? 80;
       const newCenter = fromTop + fromHeight / 2 + deltaY;
 
-      // Find target slot
+      // Find the slot whose center is closest to the dragged item's new center.
+      // Using "closest center" works correctly for both upward and downward drags.
       let to = from;
-      for (let i = 0; i < tops.length; i++) {
+      let minDist = Infinity;
+      for (let i = 0; i < hs.length; i++) {
         const slotCenter = (tops[i] ?? 0) + (hs[i] ?? 80) / 2;
-        if (newCenter > slotCenter) to = i;
+        const dist = Math.abs(newCenter - slotCenter);
+        if (dist < minDist) {
+          minDist = dist;
+          to = i;
+        }
       }
-      to = Math.max(0, Math.min(hs.length - 1, to));
 
       if (to === from) return;
 
