@@ -143,6 +143,9 @@ const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
 
 const STORAGE_KEY = "@gymtracker_workouts";
 const EXERCISES_KEY = "@gymtracker_exercises";
+const CURRENT_WORKOUT_KEY = "@gymtracker_current_workout";
+
+const MAX_SESSION_MS = 24 * 60 * 60 * 1000; // auto-save after 24 h
 
 function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
@@ -163,18 +166,52 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
     loadData();
   }, []);
 
+  // Auto-persist currentWorkout on every change so it survives app closure
+  useEffect(() => {
+    if (currentWorkout) {
+      AsyncStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(currentWorkout)).catch(() => {});
+    } else {
+      AsyncStorage.removeItem(CURRENT_WORKOUT_KEY).catch(() => {});
+    }
+  }, [currentWorkout]);
+
   async function loadData() {
     try {
-      const [workoutsData, exercisesData] = await Promise.all([
+      const [workoutsData, exercisesData, currentData] = await Promise.all([
         AsyncStorage.getItem(STORAGE_KEY),
         AsyncStorage.getItem(EXERCISES_KEY),
+        AsyncStorage.getItem(CURRENT_WORKOUT_KEY),
       ]);
+
+      let restoredWorkouts: Workout[] = [];
       if (workoutsData) {
-        setWorkouts(JSON.parse(workoutsData));
+        restoredWorkouts = JSON.parse(workoutsData);
+        setWorkouts(restoredWorkouts);
       }
+
       if (exercisesData) {
         const custom = JSON.parse(exercisesData) as Exercise[];
         setExercises([...DEFAULT_EXERCISES, ...custom]);
+      }
+
+      if (currentData) {
+        const saved: Workout = JSON.parse(currentData);
+        const age = Date.now() - new Date(saved.date).getTime();
+
+        if (age > MAX_SESSION_MS) {
+          // Séance trop vieille (>24h) — on la sauvegarde automatiquement en historique
+          const finished: Workout = {
+            ...saved,
+            durationMinutes: Math.round(age / 60000),
+          };
+          const updated = [finished, ...restoredWorkouts];
+          setWorkouts(updated);
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+          await AsyncStorage.removeItem(CURRENT_WORKOUT_KEY);
+        } else {
+          // Séance récente — on la restaure comme séance active
+          setCurrentWorkout(saved);
+        }
       }
     } catch (e) {
       // ignore
