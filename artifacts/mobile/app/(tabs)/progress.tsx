@@ -72,7 +72,7 @@ export default function ProgressScreen() {
 
   // ── Body weight chart ────────────────────────────────────────────────────
   const bodyWeightData: DataPoint[] = useMemo(() => {
-    return [...workouts].reverse().slice(-20).map((w) => ({
+    return [...workouts].reverse().map((w) => ({
       label: formatShortDate(w.date),
       value: w.bodyWeight,
     }));
@@ -90,7 +90,6 @@ export default function ProgressScreen() {
     return Object.entries(tracker.caloriesLog)
       .filter(([, v]) => v > 0)
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-30)
       .map(([date, value]) => ({ label: formatShortDate(date), value }));
   }, [tracker]);
 
@@ -98,7 +97,6 @@ export default function ProgressScreen() {
     return Object.entries(tracker.waterLog)
       .filter(([, v]) => v > 0)
       .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-30)
       .map(([date, value]) => ({ label: formatShortDate(date), value }));
   }, [tracker]);
 
@@ -157,13 +155,13 @@ export default function ProgressScreen() {
           .reverse()
           .filter((w) => w.exercises.some((we) => we.exerciseId === ex.id && we.sets.length > 0));
 
-        const maxWeightData: DataPoint[] = relevantWorkouts.slice(-15).map((w) => {
+        const maxWeightData: DataPoint[] = relevantWorkouts.map((w) => {
           const we = w.exercises.find((e) => e.exerciseId === ex.id)!;
           const maxW = Math.max(...we.sets.map((s) => s.weight));
           return { label: formatShortDate(w.date), value: maxW };
         });
 
-        const volumeData: DataPoint[] = relevantWorkouts.slice(-15).map((w) => {
+        const volumeData: DataPoint[] = relevantWorkouts.map((w) => {
           const we = w.exercises.find((e) => e.exerciseId === ex.id)!;
           const vol = we.sets.reduce((s, set) => s + set.reps * set.weight, 0);
           return { label: formatShortDate(w.date), value: vol };
@@ -311,7 +309,7 @@ export default function ProgressScreen() {
           <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.chartHeader}>
               <Text style={[styles.chartTitle, { color: colors.foreground }]}>Poids de corps (kg)</Text>
-              <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>20 dernières séances</Text>
+              <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>{bodyWeightData.length} séance{bodyWeightData.length !== 1 ? "s" : ""}</Text>
             </View>
             <LineChart data={bodyWeightData} color={colors.info} unit=" kg" height={200} formatValue={(v) => `${v}`} />
           </View>
