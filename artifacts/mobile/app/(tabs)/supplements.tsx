@@ -190,6 +190,8 @@ export default function NutritionScreen() {
   const [calGoalInput, setCalGoalInput] = useState("");
   const [waterGoalInput, setWaterGoalInput] = useState("");
   const [calInput, setCalInput] = useState("");
+  const [calMode, setCalMode] = useState<"add" | "set">("add");
+  const [waterInput, setWaterInput] = useState("");
 
   const today = todayStr();
   const todayCalories = tracker.caloriesLog[today] ?? 0;
@@ -420,37 +422,60 @@ export default function NutritionScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <View style={[s.calBtnsRow, { marginTop: 10 }]}>
-                <View style={[s.calInputWrap, { backgroundColor: colors.input, borderColor: colors.border }]}>
-                  <TextInput
-                    style={[s.calDirectInput, { color: colors.foreground }]}
-                    value={calInput}
-                    onChangeText={setCalInput}
-                    keyboardType="number-pad"
-                    placeholder="Ajouter…"
-                    placeholderTextColor={colors.mutedForeground}
-                    returnKeyType="done"
-                    onSubmitEditing={() => {
+              <View style={{ marginTop: 10, gap: 6 }}>
+                <View style={[s.calBtnsRow]}>
+                  {/* Mode toggle: + (add) or = (set total) */}
+                  <TouchableOpacity
+                    onPress={() => setCalMode(calMode === "add" ? "set" : "add")}
+                    style={[s.calAddBtn, {
+                      backgroundColor: calMode === "set" ? colors.primary : colors.muted,
+                      borderColor: calMode === "set" ? colors.primary : colors.border,
+                    }]}
+                  >
+                    <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: calMode === "set" ? "#fff" : colors.mutedForeground, lineHeight: 20 }}>
+                      {calMode === "add" ? "+" : "="}
+                    </Text>
+                  </TouchableOpacity>
+                  <View style={[s.calInputWrap, { flex: 1, backgroundColor: colors.input, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[s.calDirectInput, { color: colors.foreground }]}
+                      value={calInput}
+                      onChangeText={setCalInput}
+                      keyboardType="number-pad"
+                      placeholder={calMode === "add" ? "Ajouter kcal…" : "Définir le total…"}
+                      placeholderTextColor={colors.mutedForeground}
+                      returnKeyType="done"
+                      onSubmitEditing={() => {
+                        const v = parseInt(calInput);
+                        if (!isNaN(v) && v >= 0) {
+                          calMode === "add" ? addCalories(v) : setCaloriesToday(v);
+                          setCalInput("");
+                        }
+                      }}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
+                    onPress={() => {
                       const v = parseInt(calInput);
-                      if (!isNaN(v)) { addCalories(v); setCalInput(""); }
+                      if (!isNaN(v) && v >= 0) {
+                        calMode === "add" ? addCalories(v) : setCaloriesToday(v);
+                        setCalInput("");
+                      }
                     }}
-                  />
+                  >
+                    <Feather name={calMode === "add" ? "plus" : "check"} size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCaloriesToday(0); }}
+                  >
+                    <Feather name="rotate-ccw" size={14} color={colors.mutedForeground} />
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity
-                  style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
-                  onPress={() => {
-                    const v = parseInt(calInput);
-                    if (!isNaN(v) && v > 0) { addCalories(v); setCalInput(""); }
-                  }}
-                >
-                  <Feather name="plus" size={16} color={colors.primary} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                  onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCaloriesToday(0); }}
-                >
-                  <Feather name="rotate-ccw" size={14} color={colors.mutedForeground} />
-                </TouchableOpacity>
+                <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
+                  {calMode === "add" ? "Mode + : ajoute au total" : "Mode = : remplace le total"}
+                </Text>
               </View>
             )}
           </View>
@@ -506,6 +531,40 @@ export default function NutritionScreen() {
                       ]} />
                     </TouchableOpacity>
                   ))}
+                </View>
+                {/* Custom ml input */}
+                <View style={[s.calBtnsRow, { marginTop: 8 }]}>
+                  <View style={[s.calInputWrap, { flex: 1, backgroundColor: colors.input, borderColor: colors.border }]}>
+                    <TextInput
+                      style={[s.calDirectInput, { color: colors.foreground }]}
+                      value={waterInput}
+                      onChangeText={setWaterInput}
+                      keyboardType="number-pad"
+                      placeholder="Quantité en ml…"
+                      placeholderTextColor={colors.mutedForeground}
+                      returnKeyType="done"
+                      onSubmitEditing={() => {
+                        const v = parseInt(waterInput);
+                        if (!isNaN(v) && v > 0) { addWater(v); setWaterInput(""); }
+                      }}
+                    />
+                  </View>
+                  <TouchableOpacity
+                    style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
+                    onPress={() => {
+                      const v = parseInt(waterInput);
+                      if (!isNaN(v) && v > 0) { addWater(v); setWaterInput(""); }
+                    }}
+                  >
+                    <Feather name="plus" size={16} color={colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); addWater(-todayWater); }}
+                    disabled={todayWater === 0}
+                  >
+                    <Feather name="rotate-ccw" size={14} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.mutedForeground} />
+                  </TouchableOpacity>
                 </View>
                 <View style={s.waterBtns}>
                   <TouchableOpacity
