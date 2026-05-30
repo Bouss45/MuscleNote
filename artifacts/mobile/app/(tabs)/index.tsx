@@ -217,7 +217,7 @@ export default function HomeScreen() {
         source={require("@/assets/images/logo-bg.png")}
         style={styles.bgLogo}
         resizeMode="cover"
-        blurRadius={18}
+        blurRadius={6}
       />
       <ScrollView
         style={[styles.container, { backgroundColor: "transparent" }]}
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: "100%",
-    opacity: 0.14,
+    opacity: 0.22,
   },
   activeCard: {
     marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5,
