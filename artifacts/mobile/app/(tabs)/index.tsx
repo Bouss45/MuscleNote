@@ -3,6 +3,7 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -211,9 +212,15 @@ export default function HomeScreen() {
   }
 
   return (
-    <>
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <Image
+        source={require("@/assets/images/logo-bg.png")}
+        style={styles.bgLogo}
+        resizeMode="cover"
+        blurRadius={18}
+      />
       <ScrollView
-        style={[styles.container, { backgroundColor: colors.background }]}
+        style={[styles.container, { backgroundColor: "transparent" }]}
         contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
       >
@@ -578,12 +585,22 @@ export default function HomeScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  bgLogo: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: "100%",
+    height: "100%",
+    opacity: 0.14,
+  },
   activeCard: {
     marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5,
     padding: 16, flexDirection: "row", alignItems: "center",
