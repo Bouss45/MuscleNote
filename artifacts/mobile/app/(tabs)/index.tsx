@@ -214,7 +214,7 @@ export default function HomeScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <Image
-        source={require("@/assets/images/logo-bg.png")}
+        source={require("@/assets/images/home-bg.png")}
         style={styles.bgLogo}
         resizeMode="cover"
         blurRadius={6}
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: "100%",
     height: "100%",
-    opacity: 0.22,
+    opacity: 0.35,
   },
   activeCard: {
     marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5,
