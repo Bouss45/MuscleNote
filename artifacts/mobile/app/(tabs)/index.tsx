@@ -149,7 +149,7 @@ export default function HomeScreen() {
   const [editMinute, setEditMinute] = useState("");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const recentWorkouts = workouts.slice(0, 20);
+  const recentWorkouts = workouts;
   const streak = useMemo(() => computeStreak(workouts), [workouts]);
 
   function formatDate(iso: string) {
