@@ -4,6 +4,7 @@ import React, {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -152,6 +153,12 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   const [workouts, setWorkouts] = useState<Workout[]>([]);
   const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null);
 
+  // Always-fresh ref so startWorkout can read workouts without stale closure
+  const workoutsRef = useRef<Workout[]>([]);
+  useEffect(() => {
+    workoutsRef.current = workouts;
+  }, [workouts]);
+
   useEffect(() => {
     loadData();
   }, []);
@@ -179,12 +186,35 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
   }
 
   const startWorkout = useCallback((bodyWeight: number, name: string) => {
+    // Find the most recent session with the same name (case-insensitive)
+    const lastSame = workoutsRef.current.find(
+      (w) => w.name.trim().toLowerCase() === name.trim().toLowerCase()
+    );
+
+    // Pre-load exercises from that session: same order, same weights/reps, sets reset to not done
+    const preloaded: WorkoutExercise[] = lastSame
+      ? lastSame.exercises.map((we) => ({
+          exerciseId: we.exerciseId,
+          note: we.note,
+          sets: we.sets.map((s) => ({
+            id: generateId(),
+            reps: s.reps,
+            weight: s.weight,
+            completed: false,
+            ...(s.duration != null ? { duration: s.duration } : {}),
+            ...(s.distance != null ? { distance: s.distance } : {}),
+            ...(s.speed   != null ? { speed:    s.speed    } : {}),
+            ...(s.incline != null ? { incline:  s.incline  } : {}),
+          })),
+        }))
+      : [];
+
     const w: Workout = {
       id: generateId(),
       name,
       date: new Date().toISOString(),
       bodyWeight,
-      exercises: [],
+      exercises: preloaded,
     };
     setCurrentWorkout(w);
   }, []);
