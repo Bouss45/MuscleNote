@@ -278,20 +278,26 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
 
   const addExerciseToWorkout = useCallback((exerciseId: string) => {
     // Find the most recent past workout that contains this exercise
-    const lastSession = workouts.find((w) =>
+    const lastSession = workoutsRef.current.find((w) =>
       w.exercises.some((e) => e.exerciseId === exerciseId)
     );
-    const lastSets = lastSession
-      ? lastSession.exercises.find((e) => e.exerciseId === exerciseId)?.sets ?? []
-      : [];
+    const lastExercise = lastSession
+      ? lastSession.exercises.find((e) => e.exerciseId === exerciseId)
+      : undefined;
+    const lastSets = lastExercise?.sets ?? [];
 
-    // Pre-fill with last session's sets (reset completed to false)
+    // Pre-fill with last session's sets (reset completed to false),
+    // carrying over cardio fields (duration/distance/speed/incline) too.
     const defaultSets: Set[] = lastSets.length > 0
       ? lastSets.map((s) => ({
           id: generateId(),
           reps: s.reps,
           weight: s.weight,
           completed: false,
+          ...(s.duration != null ? { duration: s.duration } : {}),
+          ...(s.distance != null ? { distance: s.distance } : {}),
+          ...(s.speed   != null ? { speed:    s.speed    } : {}),
+          ...(s.incline != null ? { incline:  s.incline  } : {}),
         }))
       : [];
 
@@ -300,10 +306,10 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
       if (prev.exercises.find((e) => e.exerciseId === exerciseId)) return prev;
       return {
         ...prev,
-        exercises: [...prev.exercises, { exerciseId, sets: defaultSets }],
+        exercises: [...prev.exercises, { exerciseId, sets: defaultSets, note: lastExercise?.note }],
       };
     });
-  }, [workouts]);
+  }, []);
 
   const removeExerciseFromWorkout = useCallback((exerciseId: string) => {
     setCurrentWorkout((prev) => {
