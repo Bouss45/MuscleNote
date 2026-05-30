@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useMemo, useState } from "react";
 import {
-  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -218,16 +217,6 @@ export default function HomeScreen() {
         contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Image
-            source={require("@/assets/images/logo-header.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-          <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-            {workouts.length} séance{workouts.length !== 1 ? "s" : ""} enregistrée{workouts.length !== 1 ? "s" : ""}
-          </Text>
-        </View>
 
         {currentWorkout ? (
           <TouchableOpacity
@@ -595,10 +584,6 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { paddingHorizontal: 20, marginBottom: 24, alignItems: "flex-start" },
-  logo: { width: 96, height: 96, marginLeft: -4, marginTop: -4, marginBottom: 2 },
-  appTitle: { fontSize: 32, fontFamily: "Inter_700Bold", letterSpacing: -0.5 },
-  subtitle: { fontSize: 14, fontFamily: "Inter_400Regular", marginTop: 2 },
   activeCard: {
     marginHorizontal: 20, borderRadius: 14, borderWidth: 1.5,
     padding: 16, flexDirection: "row", alignItems: "center",
