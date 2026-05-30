@@ -4,19 +4,19 @@ const colors = {
     tint: "#9B1C1C",
 
     background: "#080508",
-    foreground: "#F5F0F2",
+    foreground: "#F8F8F8",
 
     card: "#150A10",
-    cardForeground: "#F5F0F2",
+    cardForeground: "#F8F8F8",
 
     primary: "#9B1C1C",
     primaryForeground: "#ffffff",
 
     secondary: "#1E0E18",
-    secondaryForeground: "#D5C5C8",
+    secondaryForeground: "#D0D0D0",
 
     muted: "#120A10",
-    mutedForeground: "#7A5060",
+    mutedForeground: "#8A8A8A",
 
     accent: "#E11D48",
     accentForeground: "#ffffff",
