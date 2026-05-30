@@ -2,6 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  AppState,
+  AppStateStatus,
   StyleSheet,
   Text,
   TextInput,
@@ -31,33 +33,50 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
   const [showNote, setShowNote] = useState(!!workoutExercise.note);
   const [noteText, setNoteText] = useState(workoutExercise.note ?? "");
 
-  // Rest timer
+  // Rest timer — timestamp-based so it survives screen lock / background
   const [restLeft, setRestLeft] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const restEndRef = useRef<number | null>(null); // absolute timestamp when rest ends
 
+  // Recalculate remaining time from the stored end timestamp
+  function tick() {
+    if (restEndRef.current === null) return;
+    const left = Math.round((restEndRef.current - Date.now()) / 1000);
+    if (left <= 0) {
+      clearInterval(timerRef.current!);
+      timerRef.current = null;
+      restEndRef.current = null;
+      setRestLeft(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      setRestLeft(left);
+    }
+  }
+
+  // When app comes back to foreground, immediately recalculate
   useEffect(() => {
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
+      if (state === "active" && restEndRef.current !== null) {
+        tick();
+      }
+    });
+    return () => {
+      sub.remove();
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
   function startRestTimer() {
     if (timerRef.current) clearInterval(timerRef.current);
+    restEndRef.current = Date.now() + REST_SECONDS * 1000;
     setRestLeft(REST_SECONDS);
-    timerRef.current = setInterval(() => {
-      setRestLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          clearInterval(timerRef.current!);
-          timerRef.current = null;
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    timerRef.current = setInterval(tick, 1000);
   }
 
   function stopRestTimer() {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
+    restEndRef.current = null;
     setRestLeft(null);
   }
 
