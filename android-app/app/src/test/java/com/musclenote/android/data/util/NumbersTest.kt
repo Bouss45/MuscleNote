@@ -43,6 +43,24 @@ class NumbersTest {
     }
 
     @Test
+    fun `parseIntegerOrNull distingue une saisie illisible de 0`() {
+        val cases = mapOf(
+            "12" to 12,
+            "07" to 7,
+            "0" to 0,
+            "12,5" to 12,
+            " 8 " to 8,
+            "-4" to -4,
+            "" to null,
+            "  " to null,
+            "x" to null,
+            ",5" to null,
+            "99999999999" to null,
+        )
+        for ((input, expected) in cases) assertEquals("« $input »", expected, parseIntegerOrNull(input))
+    }
+
+    @Test
     fun `formatDecimal suit la locale sans zéros inutiles et se relit`() {
         assertEquals("62,5", formatDecimal(62.5, Locale.FRENCH))
         assertEquals("62.5", formatDecimal(62.5, Locale.ENGLISH))

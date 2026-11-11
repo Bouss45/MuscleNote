@@ -44,6 +44,22 @@ fun parseInstantOrNull(s: String, zone: ZoneId): Instant? {
     return null
 }
 
+/**
+ * Date-heure locale saisie par l'utilisateur (SPEC § 10.3), ou `null` si elle est invalide :
+ * valeur non entière (`null`, cf. [parseIntegerOrNull]), année hors de [2000, 2100], heure hors
+ * de [0, 23], minute hors de [0, 59], ou date inexistante (31/02, 31/04…). Jamais de report sur
+ * le jour ou le mois suivant, contrairement au constructeur `Date` de JS. [month] va de 1 à 12.
+ */
+fun buildLocalDate(year: Int?, month: Int?, day: Int?, hour: Int? = 12, minute: Int? = 0): LocalDateTime? {
+    if (year == null || month == null || day == null || hour == null || minute == null) return null
+    if (year !in 2000..2100 || hour !in 0..23 || minute !in 0..59) return null
+    return try {
+        LocalDateTime.of(year, month, day, hour, minute)
+    } catch (ignored: DateTimeException) {
+        null
+    }
+}
+
 /** Clé de jour local `"AAAA-MM-JJ"` (SPEC § 10.2 : jamais le jour UTC). */
 fun dayKey(date: LocalDate): String = date.toString()
 

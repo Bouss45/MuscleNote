@@ -27,6 +27,13 @@ fun parseInteger(s: String): Int {
 }
 
 /**
+ * Entier saisi, ou `null` si la saisie ne commence pas par un entier (comme `parseInt` en JS, qui
+ * donne `NaN`). Pour les champs où 0 est une valeur valide (heure, minute) : une saisie illisible
+ * ne doit pas y devenir 0 en silence. Hors des bornes d'un `Int` → `null`.
+ */
+fun parseIntegerOrNull(s: String): Int? = integerPrefix.find(s.trim())?.value?.toIntOrNull()
+
+/**
  * Nombre affiché ou prérempli dans un champ : séparateur décimal de la [locale] (`62,5` en
  * français), au plus [maxFractionDigits] décimales arrondies au plus proche (demis vers le
  * haut), pas de zéros inutiles (`78`, pas `78,0`) ni de séparateur de milliers. [parseDecimal]
