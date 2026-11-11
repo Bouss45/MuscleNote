@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -114,5 +115,20 @@ class RepositoryLoadTest {
         File(dataDir, "supplements_taken.json").writeText("""{"s1":"2026-03-14","s2":"2026-03-14","s3":"2026-03-13"}""")
         val c = container().also { it.awaitReady() }
         assertEquals(mapOf("s1" to "2026-03-14"), c.nutrition.taken.value)
+    }
+
+    @Test
+    fun `la carte de transfert masquée reste masquée, hors sauvegarde et malgré un import`() = runBlocking<Unit> {
+        val c = container().also { it.awaitReady() }
+        assertFalse(c.preferences.localPreferences.value.migrateCardDismissed)
+        c.preferences.dismissMigrateCard()
+
+        val read = BackupFixtures.reader().read(BackupFixtures.resource("v1_sample.json"))
+        c.importBackup((read as BackupReadResult.Success).data)
+        assertTrue(c.preferences.localPreferences.value.migrateCardDismissed)
+        assertFalse(c.exportBackupJson().contains("migrateCardDismissed"))
+
+        val restarted = container().also { it.awaitReady() }
+        assertTrue(restarted.preferences.localPreferences.value.migrateCardDismissed)
     }
 }

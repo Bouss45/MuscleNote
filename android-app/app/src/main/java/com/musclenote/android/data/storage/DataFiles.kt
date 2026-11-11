@@ -4,6 +4,7 @@ import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.Workout
@@ -42,5 +43,8 @@ class DataFiles(
     val supplementsTaken = document("supplements_taken.json", MapSerializer(String.serializer(), String.serializer()))
     val dailyTracker = document("daily_tracker.json", DailyTracker.serializer())
     val preferences = document("preferences.json", Preferences.serializer())
+
+    /** Préférences propres à l'appareil, jamais exportées ni remplacées par un import. */
+    val localPreferences = document("local_preferences.json", LocalPreferences.serializer())
     val meta = document("meta.json", StorageMeta.serializer())
 }

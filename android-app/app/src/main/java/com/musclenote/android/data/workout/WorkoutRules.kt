@@ -155,6 +155,19 @@ object WorkoutRules {
         if (hasCompletedSet(current)) WorkoutEnd.Finished(current.copy(durationMinutes = null)) else WorkoutEnd.Abandoned
 
     /**
+     * Enregistrement de l'éditeur de séance terminée (§ 2.9) : exercices, nom et préréglage
+     * remplacés ; un poids de corps ≤ 0 (champ vide ou illisible) garde l'ancien. L'id, la date et
+     * la durée ne changent pas.
+     */
+    fun patch(workout: Workout, exercises: List<WorkoutExercise>, bodyWeight: Double, name: String, preset: PresetId?): Workout =
+        workout.copy(
+            exercises = exercises,
+            bodyWeight = if (bodyWeight > 0) bodyWeight else workout.bodyWeight,
+            name = name.trim(),
+            preset = preset,
+        )
+
+    /**
      * Un exercice est référencé s'il apparaît dans la séance en cours ou dans au moins une séance
      * terminée, même sans série (§ 3.9) : sa suppression ne fait alors que l'archiver.
      */

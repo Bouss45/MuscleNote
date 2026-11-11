@@ -133,6 +133,19 @@ data class Preferences(
     }
 }
 
+/**
+ * Préférences locales à l'appareil, **hors sauvegarde** (§ 3.14) : carte de transfert de
+ * l'Accueil masquée (§ 2.2).
+ */
+@Serializable
+data class LocalPreferences(
+    val migrateCardDismissed: Boolean = false,
+) {
+    companion object {
+        val DEFAULT = LocalPreferences()
+    }
+}
+
 /** État du minuteur de repos (non sauvegardé, § 7.2). */
 @Serializable
 data class RestTimerState(

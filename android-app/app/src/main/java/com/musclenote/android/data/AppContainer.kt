@@ -36,7 +36,7 @@ class AppContainer(
 
     val workouts = WorkoutRepository(files.workouts, files.exercises, files.currentWorkout, time)
     val nutrition = NutritionRepository(files.bodyWeights, files.supplements, files.supplementsTaken, files.dailyTracker, time)
-    val preferences = PreferencesRepository(files.preferences)
+    val preferences = PreferencesRepository(files.preferences, files.localPreferences)
 
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))

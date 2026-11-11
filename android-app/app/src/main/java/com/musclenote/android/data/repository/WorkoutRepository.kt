@@ -5,9 +5,11 @@ import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.storage.JsonDocument
 import com.musclenote.android.data.util.TimeSource
+import com.musclenote.android.data.util.formatInstant
 import com.musclenote.android.data.util.newId
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.CustomExerciseDeletion
@@ -125,6 +127,38 @@ class WorkoutRepository(
         if (end is WorkoutEnd.Finished) commitWorkouts(sortedByDateDesc(listOf(end.workout) + _workouts.value))
         commitCurrent(null)
         return end
+    }
+
+    // ─── Séances terminées ────────────────────────────────────────────────────────
+
+    /** Nouvelle date d'une séance terminée (modale de l'Accueil, § 2.2) ; l'historique est retrié. */
+    suspend fun updateWorkoutDate(workoutId: String, date: Instant) = updateHistory { list ->
+        sortedByDateDesc(list.map { if (it.id == workoutId) it.copy(date = formatInstant(date)) else it })
+    }
+
+    /** Suppression définitive d'une séance terminée (confirmée en ligne sur l'Accueil). */
+    suspend fun deleteWorkout(workoutId: String) = updateHistory { list -> list.filterNot { it.id == workoutId } }
+
+    /**
+     * Enregistrement de l'éditeur (§ 2.9) : exercices, poids de corps (≤ 0 → ancien poids), nom et
+     * préréglage. Appliqué à la dernière version de la séance ; sans effet si elle a disparu.
+     */
+    suspend fun patchWorkout(
+        workoutId: String,
+        exercises: List<WorkoutExercise>,
+        bodyWeight: Double,
+        name: String,
+        preset: PresetId?,
+    ) = updateHistory { list ->
+        list.map { if (it.id == workoutId) WorkoutRules.patch(it, exercises, bodyWeight, name, preset) else it }
+    }
+
+    private suspend fun updateHistory(transform: (List<Workout>) -> List<Workout>) {
+        mutex.withLock {
+            val current = _workouts.value
+            val next = transform(current)
+            if (next != current) commitWorkouts(next)
+        }
     }
 
     // ─── Séance en cours ────────────────────────────────────────────────────────────

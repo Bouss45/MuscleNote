@@ -837,6 +837,7 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `supplements_taken.json` | `TakenRecord` |
 | `daily_tracker.json` | `DailyTracker` |
 | `preferences.json` | `Preferences` |
+| `local_preferences.json` | `{ migrateCardDismissed }` — préférences locales (§ 3.14), hors sauvegarde |
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
 | `meta.json` | `{ "schemaVersion": 2 }` — version du schéma de stockage |
 

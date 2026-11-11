@@ -188,6 +188,59 @@ class WorkoutRepositoryTest {
         }
     }
 
+    // ─── Séances terminées : date, suppression, édition ───────────────────────────────
+
+    private fun pastLegs() = pastPush().copy(id = "legs", name = "Legs", preset = PresetId.Legs, date = "2026-03-10T17:00:00.000Z")
+
+    @Test
+    fun `changer la date d'une séance retrie l'historique et l'enregistre`() = runBlocking<Unit> {
+        writeHistory(pastLegs(), pastPush()) // 10 puis 12 mars : ordre volontairement faux
+        coroutineScope {
+            val repo = repository()
+            assertEquals(listOf("past", "legs"), repo.workouts.value.map { it.id })
+            repo.updateWorkoutDate("past", Instant.parse("2026-03-01T09:30:00Z"))
+            assertEquals(listOf("legs", "past"), repo.workouts.value.map { it.id })
+            assertEquals("2026-03-01T09:30:00.000Z", repo.workouts.value.last().date)
+        }
+        coroutineScope { assertEquals(listOf("legs", "past"), repository().workouts.value.map { it.id }) }
+    }
+
+    @Test
+    fun `supprimer une séance terminée l'enlève de l'historique`() = runBlocking<Unit> {
+        writeHistory(pastPush(), pastLegs())
+        coroutineScope {
+            val repo = repository()
+            repo.deleteWorkout("legs")
+            repo.deleteWorkout("inconnue")
+            assertEquals(listOf("past"), repo.workouts.value.map { it.id })
+        }
+        coroutineScope { assertEquals(listOf("past"), repository().workouts.value.map { it.id }) }
+    }
+
+    @Test
+    fun `l'éditeur remplace exercices, nom et préréglage, et garde l'ancien poids si le nouveau est nul`() = runBlocking<Unit> {
+        writeHistory(pastPush())
+        val exercises = listOf(WorkoutExercise("ohp", sets = listOf(WorkoutSet("e1", 5, 50.0, true))))
+        coroutineScope {
+            val repo = repository()
+            repo.patchWorkout("past", exercises, bodyWeight = 0.0, name = " Épaules ", preset = null)
+            val patched = repo.workouts.value.single()
+            assertEquals(exercises, patched.exercises)
+            assertEquals(79.0, patched.bodyWeight, 0.0)
+            assertEquals("Épaules", patched.name)
+            assertNull(patched.preset)
+            // Date et durée inchangées.
+            assertEquals(pastPush().date, patched.date)
+            assertEquals(60, patched.durationMinutes)
+
+            repo.patchWorkout("past", exercises, bodyWeight = 81.5, name = "Pull", preset = PresetId.Pull)
+            assertEquals(81.5, repo.workouts.value.single().bodyWeight, 0.0)
+            assertEquals(PresetId.Pull, repo.workouts.value.single().preset)
+            repo.patchWorkout("inconnue", emptyList(), 70.0, "X", null)
+        }
+        coroutineScope { assertEquals(PresetId.Pull, repository().workouts.value.single().preset) }
+    }
+
     // ─── Séance en cours ─────────────────────────────────────────────────────────
 
     @Test
