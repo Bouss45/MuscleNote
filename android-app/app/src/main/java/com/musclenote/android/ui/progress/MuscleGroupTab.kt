@@ -37,10 +37,10 @@ import com.musclenote.android.ui.components.ChartPoint
 import com.musclenote.android.ui.components.DateFormats
 import com.musclenote.android.ui.components.LineChart
 import com.musclenote.android.ui.components.appLocale
-import com.musclenote.android.ui.components.color
 import com.musclenote.android.ui.components.exerciseName
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.formatOneDecimal
+import com.musclenote.android.ui.components.textColor
 import com.musclenote.android.ui.theme.FixedColors
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 import java.time.ZoneId
@@ -63,7 +63,7 @@ fun MuscleGroupTab(
     val progress = remember(workouts, definitions, group, zone) { ProgressStats.muscleGroupProgress(workouts, definitions, group, zone) }
     val isCardio = group == MuscleGroup.Cardio
     val unit = if (isCardio) "min" else "kg"
-    val color = group.color
+    val textColor = group.textColor
 
     if (progress.isEmpty) {
         val name = stringResource(group.labelRes).lowercase(appLocale())
@@ -77,23 +77,23 @@ fun MuscleGroupTab(
 
     StatsRow(
         listOf(
-            StatItem(progress.sessions.toString(), stringResource(R.string.progress_muscle_sessions), color),
+            StatItem(progress.sessions.toString(), stringResource(R.string.progress_muscle_sessions), textColor),
             StatItem(
                 "${formatNumber(progress.maxMetric)} $unit",
                 stringResource(if (isCardio) R.string.progress_muscle_max_duration else R.string.progress_muscle_max_load),
-                color,
+                textColor,
             ),
             StatItem(
                 // Volume en tonnes au dixième (§ 3.8), distance en km au dixième.
                 if (isCardio) "${formatOneDecimal(progress.maxVolume)} km" else "${formatOneDecimal(progress.maxVolume / 1000)} t",
                 stringResource(if (isCardio) R.string.progress_muscle_max_distance else R.string.progress_muscle_max_volume),
-                color,
+                textColor,
             ),
         ),
     )
 
     TopExercisesCard(progress.top3, isCardio, unit, dates, onOpenHistory)
-    AllExercisesCard(progress.exercises, unit, color, onOpenHistory)
+    AllExercisesCard(progress.exercises, unit, textColor, onOpenHistory)
 }
 
 /** « Exercices les plus utilisés » : rang coloré, séances, record, tendance, mini-graphique. */
@@ -116,6 +116,8 @@ private fun TopExercisesCard(
         top3.forEachIndexed { index, exercise ->
             if (index > 0) HorizontalDivider(thickness = 1.dp, color = colors.border)
             val rankColor = FixedColors.progressTop3[index % FixedColors.progressTop3.size]
+            // Texte du rang et du record : nuance foncée en thème clair (§ 6.2) ; fonds et courbe gardent rankColor.
+            val rankText = if (colors.isDark) rankColor else FixedColors.progressTop3OnLight[index % FixedColors.progressTop3OnLight.size]
             Row(
                 Modifier
                     .fillMaxWidth()
@@ -131,7 +133,7 @@ private fun TopExercisesCard(
                         .background(rankColor.copy(alpha = 0.13f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text("#${index + 1}", color = rankColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text("#${index + 1}", color = rankText, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 }
                 ExerciseLabel(exercise, Modifier.weight(1f))
                 if (exercise.record > 0) {
@@ -143,8 +145,8 @@ private fun TopExercisesCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(3.dp),
                     ) {
-                        Icon(painterResource(R.drawable.ic_emoji_events), contentDescription = null, tint = rankColor, modifier = Modifier.size(11.dp))
-                        Text("${formatNumber(exercise.record)} $unit", color = rankColor, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Icon(painterResource(R.drawable.ic_emoji_events), contentDescription = null, tint = rankText, modifier = Modifier.size(11.dp))
+                        Text("${formatNumber(exercise.record)} $unit", color = rankText, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
                 val trend = exercise.trend

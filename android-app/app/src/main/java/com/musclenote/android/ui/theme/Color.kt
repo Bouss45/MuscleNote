@@ -86,16 +86,25 @@ val LightColors = MuscleNoteColors(
     isDark = false,
 )
 
-/** Couleurs fixes, identiques dans les deux thèmes (§ 9.1). */
+/**
+ * Couleurs fixes, identiques dans les deux thèmes (§ 9.1). Variantes `…OnLight` : texte et icônes
+ * en thème clair, nuance foncée de la même couleur pour un contraste ≥ 4,5:1 (§ 6.2) ; fonds,
+ * bordures et courbes gardent la couleur de base.
+ */
 object FixedColors {
     val csvExport = Color(0xFF217346)
     val dataImport = Color(0xFF3B82F6)
     val restTimerAmber = Color(0xFFF59E0B)
+    val restTimerAmberOnLight = Color(0xFFB45309)
     val progressTop3 = listOf(Color(0xFF16A34A), Color(0xFF3B82F6), Color(0xFFA855F7))
+    val progressTop3OnLight = listOf(Color(0xFF166534), Color(0xFF1D4ED8), Color(0xFF7E22CE))
     val modalScrim = Color.Black.copy(alpha = 0.6f)
 }
 
-/** Couleurs des groupes musculaires, par identifiant (§ 6.2), identiques dans les deux thèmes. */
+/**
+ * Couleurs des groupes musculaires, par identifiant (§ 6.2), identiques dans les deux thèmes ;
+ * `…OnLight` : texte et icônes en thème clair (contraste ≥ 4,5:1).
+ */
 object MuscleGroupColors {
     val dos = Color(0xFF3B82F6)
     val pecs = Color(0xFFF97316)
@@ -106,4 +115,14 @@ object MuscleGroupColors {
     val abdos = Color(0xFFEF4444)
     val cardio = Color(0xFFEC4899)
     val avantBras = Color(0xFF14B8A6)
+
+    val dosOnLight = Color(0xFF1D4ED8)
+    val pecsOnLight = Color(0xFFC2410C)
+    val bicepsOnLight = Color(0xFF7E22CE)
+    val tricepsOnLight = Color(0xFF6D28D9)
+    val jambesOnLight = Color(0xFF15803D)
+    val epaulesOnLight = Color(0xFFB45309)
+    val abdosOnLight = Color(0xFFB91C1C)
+    val cardioOnLight = Color(0xFFBE185D)
+    val avantBrasOnLight = Color(0xFF0F766E)
 }

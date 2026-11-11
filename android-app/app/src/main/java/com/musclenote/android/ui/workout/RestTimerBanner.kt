@@ -56,11 +56,14 @@ fun RestTimerBanner(state: RestTimerState?, time: TimeSource, onSkip: () -> Unit
 
     val colors = MuscleNoteTheme.colors
     val fraction = RestTimerRules.remainingFraction(state, now)
-    val tint = when (RestTimerRules.tone(fraction)) {
+    val tone = RestTimerRules.tone(fraction)
+    val tint = when (tone) {
         RestTimerTone.Plenty -> colors.success
         RestTimerTone.Half -> FixedColors.restTimerAmber
         RestTimerTone.Low -> colors.destructive
     }
+    // Texte et icônes : l'ambre, illisible sur fond clair, prend une nuance foncée (§ 6.2).
+    val content = if (tone == RestTimerTone.Half && !colors.isDark) FixedColors.restTimerAmberOnLight else tint
     val shape = RoundedCornerShape(10.dp)
     Row(
         modifier
@@ -73,11 +76,11 @@ fun RestTimerBanner(state: RestTimerState?, time: TimeSource, onSkip: () -> Unit
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Icon(painterResource(R.drawable.ic_schedule), contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
-            Text(stringResource(R.string.rest_timer_label), color = tint, fontSize = 12.sp)
+            Icon(painterResource(R.drawable.ic_schedule), contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+            Text(stringResource(R.string.rest_timer_label), color = content, fontSize = 12.sp)
             Text(
                 RestTimerRules.formatClock(RestTimerRules.secondsLeft(state, now)),
-                color = tint,
+                color = content,
                 fontSize = 17.sp,
                 fontWeight = FontWeight.Bold,
             )
@@ -91,8 +94,8 @@ fun RestTimerBanner(state: RestTimerState?, time: TimeSource, onSkip: () -> Unit
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(3.dp),
         ) {
-            Icon(painterResource(R.drawable.ic_skip_next), contentDescription = null, tint = tint, modifier = Modifier.size(14.dp))
-            Text(stringResource(R.string.rest_timer_skip), color = tint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            Icon(painterResource(R.drawable.ic_skip_next), contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+            Text(stringResource(R.string.rest_timer_skip), color = content, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

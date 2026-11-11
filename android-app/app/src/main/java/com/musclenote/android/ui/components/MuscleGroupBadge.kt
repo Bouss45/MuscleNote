@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -16,8 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.ui.theme.MuscleGroupColors
+import com.musclenote.android.ui.theme.MuscleNoteTheme
 
-/** Couleur d'un groupe musculaire (§ 6.2), identique dans les deux thèmes. */
+/** Couleur d'un groupe musculaire (§ 6.2), identique dans les deux thèmes : fonds, bordures, courbes. */
 val MuscleGroup.color: Color
     get() = when (this) {
         MuscleGroup.Dos -> MuscleGroupColors.dos
@@ -32,8 +34,30 @@ val MuscleGroup.color: Color
     }
 
 /**
- * Badge de groupe (§ 6.2) : pilule au fond couleur à 13 %, bordure à 33 %, texte couleur ;
- * 12 sp (padding 10 × 4), ou 10 sp en petit (7 × 2).
+ * Couleur du texte et des icônes d'un groupe : sa couleur en thème sombre, une nuance foncée en
+ * thème clair (contraste ≥ 4,5:1, § 6.2). Fonds, bordures et courbes gardent [color].
+ */
+val MuscleGroup.textColor: Color
+    @Composable @ReadOnlyComposable
+    get() = if (MuscleNoteTheme.colors.isDark) {
+        color
+    } else {
+        when (this) {
+            MuscleGroup.Dos -> MuscleGroupColors.dosOnLight
+            MuscleGroup.Pecs -> MuscleGroupColors.pecsOnLight
+            MuscleGroup.Biceps -> MuscleGroupColors.bicepsOnLight
+            MuscleGroup.Triceps -> MuscleGroupColors.tricepsOnLight
+            MuscleGroup.Jambes -> MuscleGroupColors.jambesOnLight
+            MuscleGroup.Epaules -> MuscleGroupColors.epaulesOnLight
+            MuscleGroup.Abdos -> MuscleGroupColors.abdosOnLight
+            MuscleGroup.Cardio -> MuscleGroupColors.cardioOnLight
+            MuscleGroup.AvantBras -> MuscleGroupColors.avantBrasOnLight
+        }
+    }
+
+/**
+ * Badge de groupe (§ 6.2) : pilule au fond couleur à 13 %, bordure à 33 %, texte couleur
+ * ([textColor]) ; 12 sp (padding 10 × 4), ou 10 sp en petit (7 × 2).
  */
 @Composable
 fun MuscleGroupBadge(group: MuscleGroup, modifier: Modifier = Modifier, small: Boolean = false) {
@@ -48,7 +72,7 @@ fun MuscleGroupBadge(group: MuscleGroup, modifier: Modifier = Modifier, small: B
     ) {
         Text(
             stringResource(group.labelRes),
-            color = color,
+            color = group.textColor,
             fontSize = if (small) 10.sp else 12.sp,
             fontWeight = FontWeight.SemiBold,
         )

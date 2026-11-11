@@ -46,6 +46,7 @@ import com.musclenote.android.ui.components.ScreenHeader
 import com.musclenote.android.ui.components.color
 import com.musclenote.android.ui.components.rememberDateFormats
 import com.musclenote.android.ui.components.rememberToday
+import com.musclenote.android.ui.components.textColor
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 
 /** Onglet affiché ; sa [key] est mémorisée (état sauvegardé). */
@@ -153,6 +154,7 @@ fun ProgressScreen(onOpenExerciseHistory: (exerciseId: String) -> Unit, modifier
                     TabChip(
                         label = stringResource(group.labelRes),
                         color = group.color,
+                        contentColor = group.textColor,
                         active = tab == muscleTab,
                         badge = count,
                         dimmed = count == 0,
@@ -202,9 +204,9 @@ fun ProgressScreen(onOpenExerciseHistory: (exerciseId: String) -> Unit, modifier
 }
 
 /**
- * Onglet de la rangée (§ 2.10) : actif → fond couleur à 13 %, bordure et texte couleur, badge
- * plein couleur à texte blanc ; inactif → `card`, texte `mutedForeground`. [dimmed] : groupe sans
- * séance, opacité 50 %.
+ * Onglet de la rangée (§ 2.10) : actif → fond couleur à 13 %, bordure couleur, texte et icône
+ * [contentColor] (nuance lisible en thème clair, § 6.2), badge plein couleur à texte blanc ;
+ * inactif → `card`, texte `mutedForeground`. [dimmed] : groupe sans séance, opacité 50 %.
  */
 @Composable
 private fun TabChip(
@@ -212,6 +214,7 @@ private fun TabChip(
     color: Color,
     active: Boolean,
     onClick: () -> Unit,
+    contentColor: Color = color,
     @DrawableRes icon: Int? = null,
     emoji: String? = null,
     badge: Int = 0,
@@ -219,7 +222,7 @@ private fun TabChip(
 ) {
     val colors = MuscleNoteTheme.colors
     val shape = RoundedCornerShape(20.dp)
-    val content = if (active) color else colors.mutedForeground
+    val content = if (active) contentColor else colors.mutedForeground
     Row(
         Modifier
             .alpha(if (dimmed) 0.5f else 1f)
