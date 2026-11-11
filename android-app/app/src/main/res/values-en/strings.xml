@@ -238,4 +238,9 @@
     <string name="edit_workout_discard">Discard</string>
     <string name="edit_workout_keep_editing">Keep editing</string>
     <string name="edit_workout_rename">Rename session</string>
+    <!-- Notification channels (§ 7.1) -->
+    <string name="channel_rest_timer_ongoing">Rest in progress</string>
+    <string name="channel_rest_timer">Rest timer</string>
+    <string name="channel_supplements">Supplement reminders</string>
+
 </resources>

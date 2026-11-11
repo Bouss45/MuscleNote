@@ -5,6 +5,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.musclenote.android.data.AppContainer
+import com.musclenote.android.notifications.NotificationChannels
 import java.io.File
 
 class MuscleNoteApplication : Application() {
@@ -16,6 +17,7 @@ class MuscleNoteApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(File(filesDir, "data"))
+        NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onStart(owner: LifecycleOwner) = container.onAppForeground()

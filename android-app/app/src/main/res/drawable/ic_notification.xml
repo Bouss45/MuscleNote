@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Petite icône des notifications (§ 7.1) : silhouette blanche sur transparent, tracée depuis
+  artifacts/mobile/assets/images/notification-icon.png (contours simplifiés).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:fillColor="@android:color/white"
+        android:fillType="evenOdd"
+        android:pathData="M156,28 L168,28 L194,51 L194,79 L171,60 L171,228 L151,228 L152,61 L118,91 L114,91 L100,81 L109,70Z M63,83 L126,127 L127,205 L149,228 L119,228 L107,215 L106,145 L84,129 L82,129 L82,213 L89,228 L74,228 L61,214 L61,85Z M192,207 L194,207 L194,228 L174,228Z" />
+</vector>

@@ -13,6 +13,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
+import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.MuscleNoteApp
 import com.musclenote.android.ui.settings.BackupViewModel
@@ -31,6 +32,8 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as MuscleNoteApplication
+        // Noms des canaux dans la langue de l'app : l'activité est recréée à chaque changement (§ 7.1).
+        NotificationChannels.createOrUpdate(this)
         backupViewModel = ViewModelProvider(this, BackupViewModel.Factory(app))[BackupViewModel::class.java]
 
         // Une recréation (rotation, langue) ou une reprise depuis les récents ne relance pas l'import.

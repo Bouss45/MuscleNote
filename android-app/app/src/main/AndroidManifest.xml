@@ -2,6 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Uniquement les permissions qui servent (§ 1, 🔄 D19). -->
+    <!-- Minuteur de repos et rappels (demandée à l'exécution, Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Alarmes exactes : accordée d'office sous Android 13+ (acceptable hors Play Store). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Alarmes exactes sous Android 12 – 12L. -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <!-- Vibration de fin de repos depuis le récepteur d'alarme. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".MuscleNoteApplication"
         android:icon="@mipmap/ic_launcher"

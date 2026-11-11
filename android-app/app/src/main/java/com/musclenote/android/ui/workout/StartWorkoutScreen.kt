@@ -1,6 +1,9 @@
 package com.musclenote.android.ui.workout
 
+import android.Manifest
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -42,6 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,6 +58,7 @@ import com.musclenote.android.R
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseDecimal
+import com.musclenote.android.notifications.AppNotifications
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.appLocale
 import com.musclenote.android.ui.components.rememberHaptics
@@ -89,10 +94,25 @@ fun StartWorkoutScreen(onClose: () -> Unit, onStarted: () -> Unit) {
         mutableStateOf(workouts.firstOrNull()?.bodyWeight?.takeIf { it > 0 }?.let { formatDecimal(it, locale) }.orEmpty())
     }
     var starting by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     val presetLabel = preset?.let { stringResource(it.labelRes) }
     val finalName = presetLabel ?: if (customSelected) customName.trim() else ""
     val weight = parseDecimal(weightText)
+
+    /** `startWorkout` (§ 3.1), puis remplacement de cet écran par la séance en cours. */
+    fun startNow() {
+        val chosenPreset = preset
+        val name = finalName
+        val bodyWeight = weight
+        val job = container.launchMutation { container.workouts.startWorkout(bodyWeight, chosenPreset, name) }
+        scope.launch {
+            job.join()
+            onStarted()
+        }
+    }
+    // Le rappel est toujours le plus récent (rememberUpdatedState interne) : il voit la saisie actuelle.
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { startNow() }
 
     BackHandler(enabled = step == StartStep.Weight) { step = StartStep.Name }
 
@@ -164,11 +184,11 @@ fun StartWorkoutScreen(onClose: () -> Unit, onStarted: () -> Unit) {
                         if (weight > 0 && finalName.isNotEmpty() && !starting) {
                             starting = true
                             haptics.heavy()
-                            val chosenPreset = preset
-                            val job = container.launchMutation { container.workouts.startWorkout(weight, chosenPreset, finalName) }
-                            scope.launch {
-                                job.join()
-                                onStarted()
+                            // 🔄 D6 : la permission est demandée d'abord ; un refus n'empêche pas de démarrer.
+                            if (AppNotifications.needsPermissionRequest(context)) {
+                                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                startNow()
                             }
                         }
                     },
