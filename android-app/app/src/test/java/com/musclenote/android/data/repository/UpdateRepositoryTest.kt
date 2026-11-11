@@ -49,7 +49,7 @@ class UpdateRepositoryTest {
     }
 
     @Test
-    fun `première vérification : la Release trouvée est enregistrée et proposée`() = runBlocking<Unit> {
+    fun `première vérification, la Release trouvée est enregistrée et proposée`() = runBlocking<Unit> {
         coroutineScope {
             val repo = repository()
             assertEquals(UpdateCheckResult.Available, repo.checkIfDue())
