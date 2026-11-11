@@ -36,6 +36,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.update.UpdateRules
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.GymTime
 import com.musclenote.android.data.workout.Streak
@@ -54,6 +56,7 @@ import com.musclenote.android.data.workout.WorkoutStats
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.DateFormats
 import com.musclenote.android.ui.components.InlineConfirm
+import com.musclenote.android.ui.components.downloadUpdate
 import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberDateFormats
@@ -65,9 +68,10 @@ import java.time.ZoneId
 
 /**
  * Onglet Accueil (SPEC § 2.2) : sur l'image de fond floutée, le bouton « Nouvelle séance » (ou la
- * séance en cours), la carte de transfert depuis l'ancienne app, la série hebdomadaire, les
- * statistiques, le temps en salle, puis toutes les séances terminées avec édition, modale de date
- * et suppression en deux temps ; état vide sans aucune séance.
+ * séance en cours), l'annonce d'une mise à jour (§ 3.17), la carte de transfert depuis l'ancienne
+ * app, la série hebdomadaire, les statistiques, le temps en salle, puis toutes les séances
+ * terminées avec édition, modale de date et suppression en deux temps ; état vide sans aucune
+ * séance.
  */
 @Composable
 fun HomeScreen(
@@ -81,7 +85,9 @@ fun HomeScreen(
     val workouts by repository.workouts.collectAsStateWithLifecycle()
     val currentWorkout by repository.currentWorkout.collectAsStateWithLifecycle()
     val localPreferences by container.preferences.localPreferences.collectAsStateWithLifecycle()
+    val updateState by container.updates.state.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
+    val context = LocalContext.current
     val colors = MuscleNoteTheme.colors
 
     val time = container.time
@@ -96,6 +102,14 @@ fun HomeScreen(
 
     var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
     var dateEditId by rememberSaveable { mutableStateOf<String?>(null) }
+
+    // 🔄 D25 : nouvelle Release pour une app installée sans Obtainium, tant qu'elle n'est pas masquée.
+    val installedVersion = container.updates.currentVersion
+    val update = if (container.updateChecksEnabled) {
+        UpdateRules.available(updateState, installedVersion)?.takeIf { it.version != updateState.dismissedVersion }
+    } else {
+        null
+    }
 
     Box(modifier.fillMaxSize()) {
         HomeBackground()
@@ -116,6 +130,21 @@ fun HomeScreen(
                             onStartWorkout()
                         },
                         modifier = Modifier.padding(bottom = 24.dp),
+                    )
+                }
+            }
+
+            if (update != null) {
+                item(key = "update") {
+                    UpdateBanner(
+                        release = update,
+                        installedVersion = installedVersion,
+                        onDownload = { downloadUpdate(context, update) },
+                        onDismiss = {
+                            haptics.light()
+                            container.launchMutation { container.updates.dismiss(update.version) }
+                        },
+                        modifier = Modifier.padding(bottom = 16.dp),
                     )
                 }
             }
