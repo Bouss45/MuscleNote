@@ -10,6 +10,8 @@ import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
+import com.musclenote.android.update.GitHubReleaseSource
+import com.musclenote.android.update.InstallSource
 import java.io.File
 
 class MuscleNoteApplication : Application() {
@@ -40,6 +42,10 @@ class MuscleNoteApplication : Application() {
             File(filesDir, "data"),
             restTimerEffects = RestTimerNotifier(this),
             supplementReminders = SupplementReminderScheduler(this, TimeSource.System),
+            currentVersion = BuildConfig.VERSION_NAME,
+            releaseSource = GitHubReleaseSource(BuildConfig.VERSION_NAME),
+            // Installée par Obtainium : c'est lui qui suit les Releases (§ 3.17).
+            updateChecksEnabled = !InstallSource.isManagedByUpdater(this),
         )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(

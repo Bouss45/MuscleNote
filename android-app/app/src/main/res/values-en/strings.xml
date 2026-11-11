@@ -60,6 +60,7 @@
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
     <string name="settings_section_backup">BACKUP</string>
+    <string name="settings_section_app">APP</string>
     <string name="settings_export_title">Export my data</string>
     <string name="settings_export_desc">Download a JSON file with all your workouts, exercises, and body weights</string>
     <string name="settings_import_title">Import data</string>
@@ -85,6 +86,13 @@
     <string name="settings_crash_title">Crash report</string>
     <string name="settings_crash_desc">Last crash on %1$s</string>
     <string name="settings_crash_share">Share</string>
+    <string name="settings_update_title">Updates</string>
+    <string name="settings_update_managed">Version %1$s · updates managed by Obtainium</string>
+    <string name="settings_update_never">Version %1$s · not checked yet</string>
+    <string name="settings_update_up_to_date">Version %1$s · up to date (checked on %2$s)</string>
+    <string name="settings_update_available">Version %1$s · %2$s is available</string>
+    <string name="settings_update_failed">Couldn\'t check: no connection?</string>
+    <string name="settings_update_check">Check now</string>
 
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Back</string>
@@ -159,6 +167,9 @@
     <string name="home_active_subtitle">%1$s · %2$s kg bodyweight</string>
     <string name="home_migrate_title">Coming from the old MuscleNote?</string>
     <string name="home_migrate_text">Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote.</string>
+    <string name="home_update_title">Update available</string>
+    <string name="home_update_text">MuscleNote %1$s is available (installed version: %2$s).</string>
+    <string name="update_download">Download</string>
     <string name="home_streak_current">Current streak</string>
     <plurals name="home_streak_week_unit">
         <item quantity="one">week</item>

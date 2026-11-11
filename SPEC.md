@@ -47,9 +47,10 @@
 - **MuscleNote** : carnet de musculation personnel, en français et en anglais, qui suit **la
   langue du système** (🔄 D9). Installé par APK (Releases GitHub, suivies par Obtainium),
   **pas de publication Play Store**.
-- **100 % hors ligne** : aucun appel réseau, aucun compte, **pas de permission `INTERNET`**.
-  Seule exception indirecte : la police Inter est obtenue via les polices téléchargeables
-  de Google Play Services (🔄 D12) ; l'app elle-même ne fait aucune requête.
+- **Hors ligne** : aucun compte, aucune donnée envoyée. **Une seule requête réseau** (🔄 D25) :
+  la vérification des mises à jour (§ 3.17), au plus une fois par jour et seulement si l'app
+  n'est pas installée par Obtainium. Exception indirecte : la police Inter est obtenue via les
+  polices téléchargeables de Google Play Services (🔄 D12).
 - **Identité Android** (🔄 D5, D22) : nouvel `applicationId` `com.musclenote.android`, nom
   affiché **« MuscleNote »** (un suffixe « 2 » le distinguait de l'app Expo pendant la
   transition, retiré à la bascule), orientation **portrait** uniquement. L'app Expo
@@ -74,6 +75,7 @@
   | `SCHEDULE_EXACT_ALARM` (`maxSdkVersion="32"`) | alarmes exactes, Android 12–12L |
   | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage |
   | `VIBRATE` | vibration de fin de repos depuis le récepteur d'alarme |
+  | `INTERNET` (🔄 D25) | vérification des mises à jour (§ 3.17) |
   Aucune permission de stockage (fichiers via le sélecteur système et `FileProvider`), de
   localisation ni de caméra.
 - Quatre domaines fonctionnels :
@@ -127,6 +129,13 @@ marges latérales 20 dp) contenant dans l'ordre :
    - séance en cours : carte bordée `primary` (fond `primary` à 13 %) avec point coloré, nom
      affiché de la séance (§ 3.1) et sous-titre `home.activeSubtitle`
      (« N exercices · 78 kg corps ») → `workout`.
+
+   Juste dessous, 🔄 D25 — **annonce de mise à jour**, seulement si la vérification est active
+   (app installée sans Obtainium) et qu'une Release plus récente que la version installée est
+   connue, non masquée (§ 3.17) : icône `download`, « Mise à jour disponible », « MuscleNote
+   {version} est disponible (version installée : {installée}). », bouton `primary`
+   [Télécharger] (APK dans le navigateur, sinon page de la Release) et ✕ (masque l'annonce
+   jusqu'à la version suivante).
 2. **Carte de transfert** (🔄 D4/D5) — seulement si aucune séance terminée, aucune séance en
    cours, et carte non masquée : « Tu viens de l'ancienne MuscleNote ? » + mode d'emploi
    (§ 5.5) + bouton ✕ (masquage mémorisé dans les préférences locales, non sauvegardé).
@@ -505,9 +514,16 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
    `error`), avec le message (`settings.export.*` / `settings.import.*`, erreur technique
    dans `{{error}}`).
 5. **Encart info** permanent : `settings.info`.
-6. **Rapport de plantage** (🔄 D17, affiché seulement si un rapport existe, § 10.9) :
-   « Dernier plantage le {date} » + [Partager] (feuille de partage, `text/plain`)
-   [Supprimer] (efface tous les rapports).
+6. Section **« APPLICATION »** :
+   - **Mises à jour** (🔄 D25, icône `download`, § 3.17) : « Version {installée} · … » —
+     installée par Obtainium : « mises à jour gérées par Obtainium », rien d'autre ; sinon
+     « pas encore de vérification », « à jour (vérification du {date heure}) » ou « la {version}
+     est disponible » (en `primary`), « Vérification impossible : pas de connexion ? » en rouge
+     après un échec ; boutons [Vérifier] (indicateur pendant la requête) et, si une mise à
+     jour est disponible, [Télécharger] ;
+   - **Rapport de plantage** (🔄 D17, affiché seulement si un rapport existe, § 10.9) :
+     « Dernier plantage le {date} » + [Partager] (feuille de partage, `text/plain`)
+     [Supprimer] (efface tous les rapports).
 
 ### 2.13 Graphique linéaire
 
@@ -748,6 +764,30 @@ dans les séances (plan pour le pré-remplissage, modifiables dans l'éditeur) e
 sauvegarde JSON. Les anciennes séances importées depuis l'app Expo ont toutes leurs séries
 marquées validées (§ 5.3), pour que leurs statistiques ne changent pas.
 
+### 3.17 Vérification des mises à jour (🔄 D25)
+
+- **Active seulement sans gestionnaire de mises à jour** : désactivée si l'app a été installée
+  (ou sa dernière mise à jour faite) par Obtainium (`dev.imranr.obtainium`,
+  `dev.imranr.obtainium.fdroid`) ou au nom du Play Store (`com.android.vending`, nom
+  qu'Obtainium peut emprunter via Shizuku) — `PackageManager.getInstallSourceInfo`
+  (installateur et initiateur, Android 11+), `getInstallerPackageName` avant. Relu à chaque
+  démarrage.
+- **Requête** : `GET https://api.github.com/repos/Bouss45/MuscleNote/releases/latest` (dernière
+  Release, ni brouillon ni pré-release), HTTPS, délai 10 s, en-tête `User-Agent:
+  MuscleNote-Android/{version}` ; aucune donnée de l'app n'est envoyée. Version = tag sans le
+  `v` ; APK = premier fichier `.apk` de la Release.
+- **Quand** : au retour au premier plan, si la dernière vérification réussie date de 24 h ou
+  plus (ou n'a jamais eu lieu) ; après un échec, pas de nouvel essai automatique avant 1 h.
+  [Vérifier] dans Paramètres vérifie tout de suite. Une vérification à la fois.
+- **Comparaison** : nombres de la version un à un (`1.0.10` > `1.0.9`, nombre manquant = 0),
+  contre le `versionName` installé.
+- **Enregistré** dans `update_check.json` (§ 4.2, hors sauvegarde) : instant de la dernière
+  vérification réussie, dernière version vue, page et APK, version dont l'annonce a été
+  masquée. Un échec ne modifie rien d'enregistré.
+- **Installation** : [Télécharger] ouvre l'APK dans le navigateur ; l'utilisateur l'ouvre et
+  Android l'installe par-dessus (même signature, `versionCode` supérieur), données conservées.
+  Pas de téléchargement ni d'installation par l'app (aucune permission supplémentaire).
+
 ---
 
 ## 4. Modèle de données et stockage
@@ -853,6 +893,7 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `preferences.json` | `Preferences` |
 | `local_preferences.json` | `{ migrateCardDismissed, appLanguage? }` — préférences locales (§ 3.14), hors sauvegarde |
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
+| `update_check.json` | `{ checkedAt, latestVersion?, pageUrl?, apkUrl?, dismissedVersion? }` — vérification des mises à jour (§ 3.17), hors sauvegarde |
 | `meta.json` | `{ "schemaVersion": 2 }` — version du schéma de stockage |
 
 Volume attendu : quelques centaines de séances (< 1–2 Mo), entièrement chargées en mémoire au
@@ -1532,6 +1573,17 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `restTimer.ongoingText` | Prochaine série : {{exercise}} | Next set: {{exercise}} |
 | `channel.restTimerOngoing` | Repos en cours | Rest in progress |
 | `nutrition.reminderTimeTitle` | Heure du rappel | Reminder time |
+| `home.update.title` | Mise à jour disponible | Update available |
+| `home.update.text` | MuscleNote {{version}} est disponible (version installée : {{installed}}). | MuscleNote {{version}} is available (installed version: {{installed}}). |
+| `update.download` | Télécharger | Download |
+| `settings.section.app` | APPLICATION | APP |
+| `settings.update.title` | Mises à jour | Updates |
+| `settings.update.managed` | Version {{installed}} · mises à jour gérées par Obtainium | Version {{installed}} · updates managed by Obtainium |
+| `settings.update.never` | Version {{installed}} · pas encore de vérification | Version {{installed}} · not checked yet |
+| `settings.update.upToDate` | Version {{installed}} · à jour (vérification du {{date}}) | Version {{installed}} · up to date (checked on {{date}}) |
+| `settings.update.available` | Version {{installed}} · la {{version}} est disponible | Version {{installed}} · {{version}} is available |
+| `settings.update.failed` | Vérification impossible : pas de connexion ? | Couldn't check: no connection? |
+| `settings.update.check` | Vérifier | Check now |
 
 ---
 
@@ -1616,7 +1668,7 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 Réponses données aux questions ouvertes de la première version de ce document, et leur
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
-vérification finale (§ 13).
+vérification finale (§ 13), D25 après la bascule.
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1644,6 +1696,7 @@ vérification finale (§ 13).
 | D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
 | D23 | Contraste des couleurs de groupe en thème clair | texte foncé en thème clair | texte et icônes en nuance foncée (contraste ≥ 4,5:1) en thème clair : groupes, ambre du minuteur, top 3 ; fonds, bordures, courbes et thème sombre inchangés (§ 6.2, 9.1) |
 | D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
+| D25 | Mises à jour d'une app installée sans Obtainium | vérification intégrée | requête quotidienne à l'API GitHub, permission `INTERNET`, annonce sur l'Accueil et carte dans Paramètres ; désactivée quand Obtainium installe l'app (§ 1, 2.2, 2.12, 3.17) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1698,7 +1751,7 @@ construction de l'APK.
 
 | § | sujet | où |
 |---|---|---|
-| 1 | identité (`com.musclenote.android`, « MuscleNote », portrait), SDK 26 / 37, socle technique ; permissions = la liste fermée de D19, sans `INTERNET` (vérifié dans le manifeste fusionné de l'APK) | `app/build.gradle.kts`, `AndroidManifest.xml` |
+| 1 | identité (`com.musclenote.android`, « MuscleNote », portrait), SDK 26 / 37, socle technique ; permissions = la liste fermée de D19, vérifiée dans le manifeste fusionné de l'APK (`INTERNET` ajoutée ensuite par D25, § 13.6) | `app/build.gradle.kts`, `AndroidManifest.xml` |
 | 2.1 | navigation, 4 onglets, entrées externes (notifications, fichier partagé) | `ui/MuscleNoteApp.kt`, `MainActivity.kt` |
 | 2.2 | Accueil : fond flouté, séance en cours, carte de transfert, série hebdo, stats, temps en salle, séances avec édition / date / suppression | `ui/home/` |
 | 2.3 – 2.6 | démarrer une séance, séance en cours (chronomètre, échauffement, glisser-déposer, fin ou abandon), carte d'exercice, ligne de série | `ui/workout/` |
@@ -1768,3 +1821,9 @@ L'app native a remplacé l'app Expo sur `main` : nom affiché « MuscleNote », 
 du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiées par
 `.github/workflows/release.yml` à chaque push sur `main` touchant `android-app/`
 (`versionCode` = 1000 + n, au-dessus des pré-releases `v0.1.*` de la transition, supprimées).
+
+### 13.6 Après la bascule
+
+- Vérification des mises à jour intégrée pour une app installée sans Obtainium (🔄 D25,
+  § 3.17) ; c'est la seule requête réseau de l'app et la seule raison de la permission
+  `INTERNET`.

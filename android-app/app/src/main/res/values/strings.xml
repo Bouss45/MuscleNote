@@ -61,6 +61,7 @@
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
     <string name="settings_section_backup">SAUVEGARDE</string>
+    <string name="settings_section_app">APPLICATION</string>
     <string name="settings_export_title">Exporter mes données</string>
     <string name="settings_export_desc">Télécharge un fichier JSON avec toutes tes séances, exercices et poids de corps</string>
     <string name="settings_import_title">Importer des données</string>
@@ -86,6 +87,13 @@
     <string name="settings_crash_title">Rapport de plantage</string>
     <string name="settings_crash_desc">Dernier plantage le %1$s</string>
     <string name="settings_crash_share">Partager</string>
+    <string name="settings_update_title">Mises à jour</string>
+    <string name="settings_update_managed">Version %1$s · mises à jour gérées par Obtainium</string>
+    <string name="settings_update_never">Version %1$s · pas encore de vérification</string>
+    <string name="settings_update_up_to_date">Version %1$s · à jour (vérification du %2$s)</string>
+    <string name="settings_update_available">Version %1$s · la %2$s est disponible</string>
+    <string name="settings_update_failed">Vérification impossible : pas de connexion ?</string>
+    <string name="settings_update_check">Vérifier</string>
 
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Dos</string>
@@ -160,6 +168,9 @@
     <string name="home_active_subtitle">%1$s · %2$s kg corps</string>
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
     <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote.</string>
+    <string name="home_update_title">Mise à jour disponible</string>
+    <string name="home_update_text">MuscleNote %1$s est disponible (version installée : %2$s).</string>
+    <string name="update_download">Télécharger</string>
     <string name="home_streak_current">Série en cours</string>
     <!-- Unité seule, le nombre est affiché à côté en grand. -->
     <plurals name="home_streak_week_unit" tools:ignore="ImpliedQuantity">

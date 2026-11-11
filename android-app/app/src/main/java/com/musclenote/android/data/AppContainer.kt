@@ -6,8 +6,10 @@ import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.SupplementReminders
 import com.musclenote.android.data.repository.NutritionRepository
 import com.musclenote.android.data.repository.PreferencesRepository
+import com.musclenote.android.data.repository.ReleaseSource
 import com.musclenote.android.data.repository.RestTimerEffects
 import com.musclenote.android.data.repository.RestTimerRepository
+import com.musclenote.android.data.repository.UpdateRepository
 import com.musclenote.android.data.repository.WorkoutRepository
 import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.data.storage.StorageMeta
@@ -36,6 +38,14 @@ class AppContainer(
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     restTimerEffects: RestTimerEffects = RestTimerEffects.None,
     private val supplementReminders: SupplementReminders = SupplementReminders.None,
+    /** `versionName` de l'app installée, comparé à la dernière Release (§ 3.17). */
+    currentVersion: String = "0",
+    releaseSource: ReleaseSource = ReleaseSource.None,
+    /**
+     * Vérification des mises à jour active : app installée sans gestionnaire de mises à jour
+     * (Obtainium s'en charge sinon), § 3.17, 🔄 D25.
+     */
+    val updateChecksEnabled: Boolean = false,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -49,6 +59,7 @@ class AppContainer(
     val currentDay = CurrentDay(time, appScope)
     val preferences = PreferencesRepository(files.preferences, files.localPreferences)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
+    val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
 
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
@@ -72,13 +83,21 @@ class AppContainer(
 
     /**
      * Retour de l'app au premier plan (`ON_START`) : contrôle des séances de plus de 24 h (§ 3.4) ;
-     * une séance finalisée ou abandonnée arrête le repos en cours.
+     * une séance finalisée ou abandonnée arrête le repos en cours. Puis vérification des mises à
+     * jour si elle est due (§ 3.17).
      */
     fun onAppForeground() {
         currentDay.refresh()
         appScope.launch {
             awaitReady()
             if (workouts.finalizeStaleSession() != null) restTimer.stop()
+        }
+        // Au plus une fois par jour, et seulement sans gestionnaire de mises à jour (§ 3.17).
+        if (updateChecksEnabled) {
+            appScope.launch {
+                awaitReady()
+                updates.checkIfDue()
+            }
         }
     }
 
@@ -172,6 +191,7 @@ class AppContainer(
             launch { nutrition.load() }
             launch { preferences.load() }
             launch { restTimer.load() }
+            launch { updates.load() }
             workouts.load()
         }
         // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).
