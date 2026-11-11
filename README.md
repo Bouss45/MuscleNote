@@ -1,6 +1,6 @@
 # MuscleNote
 
-Carnet de musculation pour Android, entièrement **hors ligne** : séances, progression, nutrition et compléments, sans compte ni serveur. Toutes les données restent sur le téléphone.
+Carnet de musculation pour Android, **hors ligne** : séances, progression, nutrition et compléments, sans compte ni serveur. Toutes les données restent sur le téléphone ; la seule requête réseau est la vérification des mises à jour quand l'app n'est pas installée par Obtainium.
 
 Application native (Kotlin, Jetpack Compose), en français et en anglais. Elle n'est pas publiée sur le Play Store : chaque version est une [Release GitHub](https://github.com/Bouss45/MuscleNote/releases) avec son APK signé.
 
@@ -13,11 +13,11 @@ Application native (Kotlin, Jetpack Compose), en français et en anglais. Elle n
 3. **Installer** : Obtainium télécharge l'APK de la dernière Release (`MuscleNote-v1.0.<n>.apk`). Android demande d'autoriser Obtainium à installer des apps la première fois.
 4. Les mises à jour apparaissent ensuite dans Obtainium à chaque nouvelle Release.
 
-Sans Obtainium : télécharger l'APK depuis la page [Releases](https://github.com/Bouss45/MuscleNote/releases) et l'ouvrir sur le téléphone.
+Sans Obtainium : télécharger l'APK depuis la page [Releases](https://github.com/Bouss45/MuscleNote/releases) et l'ouvrir sur le téléphone. L'app vérifie alors elle-même, une fois par jour, s'il existe une nouvelle Release : une annonce « Mise à jour disponible » apparaît sur l'Accueil, avec un bouton qui télécharge le nouvel APK (à ouvrir pour l'installer). **Paramètres → Mises à jour** permet aussi de vérifier tout de suite. Quand Obtainium installe l'app, cette vérification se désactive : c'est lui qui suit les Releases.
 
 Toutes les versions sont signées avec la même clé : une mise à jour s'installe par-dessus la précédente et garde les données. Les versions de test de la transition (pré-releases `v0.1.*`) sont la même app (`com.musclenote.android`) : les Releases `v1.0.*` s'installent par-dessus.
 
-Permissions : notifications (minuteur de repos, rappels de compléments), alarmes exactes, redémarrage (reprogrammer les rappels), vibration. Aucune permission Internet, de stockage, de localisation ni de caméra.
+Permissions : notifications (minuteur de repos, rappels de compléments), alarmes exactes, redémarrage (reprogrammer les rappels), vibration, Internet (uniquement pour la vérification des mises à jour, qui ne lit que la dernière Release GitHub et n'envoie aucune donnée). Aucune permission de stockage, de localisation ni de caméra.
 
 ### Venir de l'ancienne app (Expo)
 
@@ -57,6 +57,7 @@ Une fois les données vérifiées, l'ancienne app peut être désinstallée.
 - Langue (système, français, anglais), thème (système, clair, sombre), durée du repos.
 - **Sauvegarde / restauration JSON** (importe aussi les sauvegardes de l'ancienne app).
 - **Export CSV** (séances, séries, pesées, nutrition), lisible dans Excel ou Google Sheets.
+- Mises à jour (sans Obtainium) : version installée, vérification, téléchargement de la nouvelle version.
 - Rapport de plantage local, à partager ou supprimer.
 
 ## Stack technique
