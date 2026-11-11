@@ -11,6 +11,11 @@ object Routes {
     const val ARG_EXERCISE_ID = "exerciseId"
     const val EXERCISE_HISTORY = "exercise-history/{$ARG_EXERCISE_ID}"
 
-    /** Les ids sont des chaînes opaques (§ 3.15) : encodées pour tenir dans le chemin. */
+    const val ARG_WORKOUT_ID = "workoutId"
+    const val EDIT_WORKOUT = "edit-workout/{$ARG_WORKOUT_ID}"
+
+    // Les ids sont des chaînes opaques (§ 3.15) : encodées pour tenir dans le chemin.
     fun exerciseHistory(exerciseId: String) = "exercise-history/${Uri.encode(exerciseId)}"
+
+    fun editWorkout(workoutId: String) = "edit-workout/${Uri.encode(workoutId)}"
 }

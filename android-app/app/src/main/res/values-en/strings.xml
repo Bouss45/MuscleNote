@@ -187,6 +187,16 @@
     <string name="exercise_history_volume">Volume %1$s kg</string>
     <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
+    <!-- Edit a finished workout (§ 2.9) -->
+    <string name="edit_workout_not_found">Workout not found</string>
+    <string name="edit_workout_header_label">Edit workout</string>
+    <string name="edit_workout_no_exercise_found">No exercise found</string>
+    <string name="edit_workout_empty_exercises">No exercises — tap the button above to add one</string>
+    <string name="edit_workout_discard_title">Discard changes?</string>
+    <string name="edit_workout_discard">Discard</string>
+    <string name="edit_workout_keep_editing">Keep editing</string>
+    <string name="edit_workout_rename">Rename session</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>
     <string name="debug_data_sessions">Sessions</string>

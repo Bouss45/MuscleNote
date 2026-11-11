@@ -211,25 +211,34 @@ fun ExerciseCard(
                     }
                 }
 
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(colors.primary.copy(alpha = 0.06f))
-                        .dashedBorder(1.dp, colors.primary.copy(alpha = 0.33f), 10.dp)
-                        .clickable {
-                            haptics.light()
-                            onAddSet()
-                        }
-                        .padding(vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
-                    Text(stringResource(R.string.exercise_card_add_set), color = colors.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-                }
+                AddSetButton(
+                    onClick = {
+                        haptics.light()
+                        onAddSet()
+                    },
+                )
             }
         }
+    }
+}
+
+/** « + Ajouter une série » en pointillés (séance en cours, éditeur de séance). */
+@Composable
+internal fun AddSetButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MuscleNoteTheme.colors
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.primary.copy(alpha = 0.06f))
+            .dashedBorder(1.dp, colors.primary.copy(alpha = 0.33f), 10.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
+        Text(stringResource(R.string.exercise_card_add_set), color = colors.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }
 

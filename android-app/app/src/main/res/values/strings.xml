@@ -188,6 +188,16 @@
     <string name="exercise_history_volume">Volume %1$s kg</string>
     <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
+    <!-- Éditer une séance terminée (§ 2.9) -->
+    <string name="edit_workout_not_found">Séance introuvable</string>
+    <string name="edit_workout_header_label">Modifier la séance</string>
+    <string name="edit_workout_no_exercise_found">Aucun exercice trouvé</string>
+    <string name="edit_workout_empty_exercises">Aucun exercice — appuie sur le bouton ci-dessus pour en ajouter</string>
+    <string name="edit_workout_discard_title">Abandonner les modifications ?</string>
+    <string name="edit_workout_discard">Abandonner</string>
+    <string name="edit_workout_keep_editing">Continuer l\'édition</string>
+    <string name="edit_workout_rename">Renommer la séance</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Données chargées (provisoire)</string>
     <string name="debug_data_sessions">Séances</string>

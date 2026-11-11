@@ -40,6 +40,7 @@ import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.workout.EditWorkoutScreen
 import com.musclenote.android.ui.workout.ExercisePickerScreen
 import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
@@ -123,6 +124,15 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
                 ExerciseHistoryScreen(
                     exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
                     onBack = { navController.popBackStack() },
+                )
+            }
+            composable(
+                Routes.EDIT_WORKOUT,
+                arguments = listOf(navArgument(Routes.ARG_WORKOUT_ID) { type = NavType.StringType }),
+            ) { entry ->
+                EditWorkoutScreen(
+                    workoutId = entry.arguments?.getString(Routes.ARG_WORKOUT_ID).orEmpty(),
+                    onClose = { navController.popBackStack() },
                 )
             }
         }

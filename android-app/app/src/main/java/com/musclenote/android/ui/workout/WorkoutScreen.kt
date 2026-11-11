@@ -297,8 +297,9 @@ private fun EmptyExercises() {
     }
 }
 
+/** « ⊕ Ajouter un exercice » en pointillés (séance en cours, éditeur de séance). */
 @Composable
-private fun AddExerciseButton(onClick: () -> Unit) {
+internal fun AddExerciseButton(onClick: () -> Unit) {
     val colors = MuscleNoteTheme.colors
     Row(
         Modifier

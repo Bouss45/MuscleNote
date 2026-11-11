@@ -45,14 +45,12 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
-import com.musclenote.android.data.model.PresetGroup
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseDecimal
@@ -67,7 +65,6 @@ private enum class StartStep { Name, Weight }
 /** Raccourcis de poids de corps (§ 2.3, étape 2). */
 private val QUICK_WEIGHTS = listOf(55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
 
-private const val CUSTOM_NAME_MAX_LENGTH = 30
 private const val WEIGHT_MAX_LENGTH = 6
 
 /**
@@ -147,7 +144,7 @@ fun StartWorkoutScreen(onClose: () -> Unit, onStarted: () -> Unit) {
                         preset = null
                         customSelected = true
                     },
-                    onCustomNameChange = { customName = it.take(CUSTOM_NAME_MAX_LENGTH) },
+                    onCustomNameChange = { customName = it },
                     onNext = {
                         haptics.light()
                         step = StartStep.Weight
@@ -192,88 +189,15 @@ private fun NameStep(
     onCustomNameChange: (String) -> Unit,
     onNext: () -> Unit,
 ) {
-    val colors = MuscleNoteTheme.colors
     StepTitle(stringResource(R.string.start_workout_title), stringResource(R.string.start_workout_subtitle))
-
-    for (group in PresetGroup.entries) {
-        GroupLabel(stringResource(group.labelRes()))
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(bottom = 20.dp),
-        ) {
-            for (candidate in PresetId.entries.filter { it.group == group }) {
-                val active = candidate == preset
-                val shape = RoundedCornerShape(12.dp)
-                Box(
-                    Modifier
-                        .clip(shape)
-                        .background(if (active) colors.primary else colors.card)
-                        .border(1.5.dp, if (active) colors.primary else colors.border, shape)
-                        .clickable { onSelectPreset(candidate) }
-                        .padding(horizontal = 18.dp, vertical = 11.dp),
-                ) {
-                    Text(
-                        stringResource(candidate.labelRes),
-                        color = if (active) colors.primaryForeground else colors.foreground,
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
-        }
-    }
-
-    GroupLabel(stringResource(R.string.start_workout_custom_label))
-    val shape = RoundedCornerShape(12.dp)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(if (customSelected) colors.primary.copy(alpha = 0.08f) else colors.card)
-            .border(1.5.dp, if (customSelected) colors.primary else colors.border, shape)
-            .clickable(enabled = !customSelected, onClick = onSelectCustom)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(
-            painterResource(R.drawable.ic_edit),
-            contentDescription = null,
-            tint = if (customSelected) colors.primary else colors.mutedForeground,
-            modifier = Modifier.size(16.dp),
-        )
-        if (customSelected) {
-            val focusRequester = remember { FocusRequester() }
-            BasicTextField(
-                value = customName,
-                onValueChange = onCustomNameChange,
-                singleLine = true,
-                textStyle = LocalTextStyle.current.copy(color = colors.foreground, fontSize = 15.sp, fontWeight = FontWeight.Medium),
-                cursorBrush = SolidColor(colors.primary),
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                modifier = Modifier
-                    .weight(1f)
-                    .focusRequester(focusRequester),
-                decorationBox = { inner ->
-                    Box {
-                        if (customName.isEmpty()) {
-                            Text(stringResource(R.string.start_workout_custom_placeholder), color = colors.mutedForeground, fontSize = 15.sp)
-                        }
-                        inner()
-                    }
-                },
-            )
-            LaunchedEffect(focusRequester) { focusRequester.requestFocus() }
-        } else {
-            Text(
-                stringResource(R.string.start_workout_custom_empty),
-                color = colors.mutedForeground,
-                fontSize = 15.sp,
-                modifier = Modifier.weight(1f),
-            )
-        }
-    }
+    WorkoutNameFields(
+        preset = preset,
+        customSelected = customSelected,
+        customName = customName,
+        onSelectPreset = onSelectPreset,
+        onSelectCustom = onSelectCustom,
+        onCustomNameChange = onCustomNameChange,
+    )
 
     Spacer(Modifier.height(28.dp))
     PrimaryButton(
@@ -404,18 +328,6 @@ private fun StepTitle(title: String, subtitle: String) {
     Text(subtitle, color = colors.mutedForeground, fontSize = 15.sp, modifier = Modifier.padding(bottom = 28.dp))
 }
 
-@Composable
-private fun GroupLabel(text: String) {
-    Text(
-        text.uppercase(appLocale()),
-        color = MuscleNoteTheme.colors.mutedForeground,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.8.sp,
-        modifier = Modifier.padding(bottom = 10.dp),
-    )
-}
-
 /** Grand bouton plein (§ 2.3) : `primary` si actif, `muted` sinon. */
 @Composable
 private fun PrimaryButton(
@@ -441,10 +353,4 @@ private fun PrimaryButton(
         Text(text, color = content, fontSize = 17.sp, fontWeight = FontWeight.Bold)
         trailingIcon?.let { Icon(painterResource(it), contentDescription = null, tint = content, modifier = Modifier.size(18.dp)) }
     }
-}
-
-private fun PresetGroup.labelRes(): Int = when (this) {
-    PresetGroup.Ppl -> R.string.start_workout_group_ppl
-    PresetGroup.Split -> R.string.start_workout_group_split
-    PresetGroup.Other -> R.string.start_workout_group_other
 }
