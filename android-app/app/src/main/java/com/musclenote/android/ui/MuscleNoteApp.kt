@@ -37,6 +37,7 @@ import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.workout.ExercisePickerScreen
 import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
 
@@ -107,6 +108,9 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
                     onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
                     onFinished = { navController.backToHome() },
                 )
+            }
+            composable(Routes.EXERCISE_PICKER) {
+                ExercisePickerScreen(onClose = { navController.popBackStack() })
             }
         }
     }

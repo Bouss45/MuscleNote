@@ -10,6 +10,7 @@
     <string name="common_delete">Supprimer</string>
     <string name="common_back">Retour</string>
     <string name="common_add">Ajouter</string>
+    <string name="common_all">Tous</string>
     <string name="common_body_weight">Poids de corps</string>
     <plurals name="common_exercises_count">
         <item quantity="one">%1$d exercice</item>
@@ -157,6 +158,15 @@
     <string name="exercise_card_add_set">Ajouter une série</string>
     <string name="exercise_card_remove_confirm">Retirer « %1$s » de la séance ?</string>
     <string name="exercise_card_remove">Retirer</string>
+
+    <!-- Sélecteur d'exercices (§ 2.7) -->
+    <string name="exercise_picker_title">Exercices</string>
+    <string name="exercise_picker_search_placeholder">Chercher un exercice...</string>
+    <string name="exercise_picker_new_exercise">Nouvel exercice</string>
+    <string name="exercise_picker_name_placeholder">Nom de l\'exercice</string>
+    <string name="exercise_picker_edit_exercise">Modifier l\'exercice</string>
+    <string name="exercise_picker_delete_confirm">Supprimer « %1$s » ?</string>
+    <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
 
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Données chargées (provisoire)</string>

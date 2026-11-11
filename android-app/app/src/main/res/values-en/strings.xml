@@ -9,6 +9,7 @@
     <string name="common_delete">Delete</string>
     <string name="common_back">Back</string>
     <string name="common_add">Add</string>
+    <string name="common_all">All</string>
     <string name="common_body_weight">Body weight</string>
     <plurals name="common_exercises_count">
         <item quantity="one">%1$d exercise</item>
@@ -156,6 +157,15 @@
     <string name="exercise_card_add_set">Add a set</string>
     <string name="exercise_card_remove_confirm">Remove “%1$s” from this session?</string>
     <string name="exercise_card_remove">Remove</string>
+
+    <!-- Exercise picker (§ 2.7) -->
+    <string name="exercise_picker_title">Exercises</string>
+    <string name="exercise_picker_search_placeholder">Search for an exercise...</string>
+    <string name="exercise_picker_new_exercise">New exercise</string>
+    <string name="exercise_picker_name_placeholder">Exercise name</string>
+    <string name="exercise_picker_edit_exercise">Edit exercise</string>
+    <string name="exercise_picker_delete_confirm">Delete %1$s?</string>
+    <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
 
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>
