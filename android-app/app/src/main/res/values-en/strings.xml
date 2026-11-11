@@ -104,7 +104,7 @@
     <string name="start_workout_preset_pecs">Chest</string>
     <string name="start_workout_preset_dos">Back</string>
     <string name="start_workout_preset_shoulders">Shoulders</string>
-    <string name="start_workout_preset_legs_split">Legs</string>
+    <string name="start_workout_preset_legs_split">Legs (split)</string>
     <string name="start_workout_preset_arms">Arms</string>
     <string name="start_workout_preset_full_body">Full Body</string>
     <string name="start_workout_preset_isolation">Isolation</string>

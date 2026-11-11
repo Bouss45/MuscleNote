@@ -123,7 +123,8 @@ class CatalogTest {
             "Push" to PresetId.Push,
             "PUSH" to PresetId.Push,
             " pull " to PresetId.Pull,
-            "Legs" to PresetId.Legs, // libellé FR de legs, avant le libellé EN de legsSplit
+            "Legs" to PresetId.Legs, // ancien libellé EN de legsSplit aussi : rattaché à legs (§ 5.3)
+            "Legs (split)" to PresetId.LegsSplit,
             "Jambes" to PresetId.LegsSplit,
             "Chest" to PresetId.Pecs,
             "Pecs" to PresetId.Pecs,

@@ -29,7 +29,7 @@ enum class PresetId(
     @SerialName("pecs") Pecs("pecs", PresetGroup.Split, R.string.start_workout_preset_pecs, "Pecs", "Chest"),
     @SerialName("dos") Dos("dos", PresetGroup.Split, R.string.start_workout_preset_dos, "Dos", "Back"),
     @SerialName("shoulders") Shoulders("shoulders", PresetGroup.Split, R.string.start_workout_preset_shoulders, "Épaules", "Shoulders"),
-    @SerialName("legsSplit") LegsSplit("legsSplit", PresetGroup.Split, R.string.start_workout_preset_legs_split, "Jambes", "Legs"),
+    @SerialName("legsSplit") LegsSplit("legsSplit", PresetGroup.Split, R.string.start_workout_preset_legs_split, "Jambes", "Legs (split)"),
     @SerialName("arms") Arms("arms", PresetGroup.Split, R.string.start_workout_preset_arms, "Bras", "Arms"),
     @SerialName("fullBody") FullBody("fullBody", PresetGroup.Other, R.string.start_workout_preset_full_body, "Full Body", "Full Body"),
     @SerialName("isolation") Isolation("isolation", PresetGroup.Other, R.string.start_workout_preset_isolation, "Isolation", "Isolation"),
@@ -40,8 +40,8 @@ enum class PresetId(
 
         /**
          * Préréglage d'une ancienne séance d'après son nom (§ 5.3) : nom normalisé comparé aux
-         * libellés FR, puis EN. « Legs » donne donc [Legs] (le préréglage FR « Legs ») et non
-         * [LegsSplit], dont le libellé EN est aussi « Legs ».
+         * libellés FR, puis EN. « Legs » donne [Legs] : dans l'app Expo, [LegsSplit] s'appelait
+         * aussi « Legs » en anglais (aujourd'hui « Legs (split) »), et ces séances vont à [Legs].
          */
         fun fromLegacyName(name: String): PresetId? {
             val wanted = normalizeSearch(name)
