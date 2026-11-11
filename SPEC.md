@@ -42,10 +42,10 @@
 - **100 % hors ligne** : aucun appel réseau, aucun compte, **pas de permission `INTERNET`**.
   Seule exception indirecte : la police Inter est obtenue via les polices téléchargeables
   de Google Play Services (🔄 D12) ; l'app elle-même ne fait aucune requête.
-- **Identité Android** (🔄 D5) : nouvel `applicationId` (proposition :
-  `com.musclenote.android`), nom affiché « MuscleNote », orientation **portrait** uniquement.
-  L'app Expo (`com.musclenote.app`) peut rester installée pendant la transition ; le
-  transfert des données est décrit au § 5.5.
+- **Identité Android** (🔄 D5, D22) : nouvel `applicationId` `com.musclenote.android`, nom
+  affiché **« MuscleNote 2 »** pendant la transition, orientation **portrait** uniquement.
+  L'app Expo (`com.musclenote.app`, « MuscleNote ») reste installée à côté ; le transfert
+  des données se fait par partage (§ 5.5, D4).
 - **Socle technique** :
   - Kotlin, Jetpack Compose, Material 3, Navigation Compose ;
   - coroutines + `StateFlow` ; kotlinx.serialization ;
@@ -55,8 +55,8 @@
   - `androidx.compose.ui:ui-text-google-fonts` pour Inter (🔄 D12) ;
   - `sh.calvin.reorderable` pour le glisser-déposer (🔄 D14) ;
   - graphiques dessinés au `Canvas` Compose (🔄 D13).
-- **SDK** : `minSdk 26` (Android 8.0), `compileSdk` / `targetSdk` = dernière API stable au
-  démarrage du projet (valeur par défaut, D8 non tranchée — § 12).
+- **SDK** (D8) : `minSdk 26` (Android 8.0), `compileSdk` / `targetSdk` = dernière API stable,
+  soit **37** (Android 17) au démarrage du projet.
 - **Permissions** (🔄 D19 — uniquement celles qui servent) :
   | permission | usage |
   |---|---|
@@ -867,7 +867,8 @@ AsyncStorage, clés `@gymtracker_workouts`, `_exercises`, `_current_workout`,
 `_body_weights`, `_supplements`, `_supplements_taken`, `_daily_tracker`, `_preferences` ; sur
 Android dans la base SQLite `databases/RKStorage`, table
 `catalystLocalStorage(key TEXT PRIMARY KEY, value TEXT)`. Inaccessible depuis un autre
-`applicationId` (bac à sable Android) ; ne sert que si l'option (a) du § 12 est retenue.
+`applicationId` (bac à sable Android) : l'app native ne le lit jamais, les données arrivent
+par le transfert du § 5.5 (D4).
 
 ---
 
@@ -1020,7 +1021,7 @@ ou racine non-objet → « Format invalide ».
     ces séances sont rattachées à `legs`) ; pas de correspondance → pas de `preset` ;
   - séries : `id` absent → généré ; **`completed` forcé à `true`** pour toutes les séries
     des séances terminées (l'app Expo comptait toutes les séries ; cela préserve les
-    statistiques historiques — à confirmer, § 12) ; champs cardio `null` → absents ;
+    statistiques historiques — D21) ; champs cardio `null` → absents ;
     `reps` non entier → arrondi.
 - **Exercices** : 🔄 D16 — `muscleGroup` inconnu → normalisé (`normalizeSearch`, espaces et
   tirets ignorés) puis comparé aux 9 ids et aux libellés FR/EN des groupes (ex. `"Epaules"`,
@@ -1061,12 +1062,13 @@ compléments inconnus retirées.
 6. Message « Import réussi ! Tes données sont à jour. » ou l'erreur. Via un intent externe,
    l'app s'ouvre sur Paramètres pour afficher ce message.
 
-### 5.5 Transfert depuis l'app Expo (🔄 D4/D5 — provisoire, cf. § 12)
+### 5.5 Transfert depuis l'app Expo (🔄 D4/D5)
 
 Avec un nouvel `applicationId`, l'app native ne peut pas lire le stockage de l'app Expo. Le
-transfert retenu se fait **en un geste, sans modifier l'app Expo** :
+transfert retenu se fait **en un geste, sans modifier l'app Expo** ; les deux apps
+cohabitent pendant la transition :
 1. dans l'app Expo : Paramètres → « Exporter mes données » ;
-2. dans la feuille de partage : choisir **MuscleNote** (l'app native déclare un
+2. dans la feuille de partage : choisir **MuscleNote 2** (l'app native déclare un
    `intent-filter` `ACTION_SEND` pour `application/json`) ;
 3. l'app native affiche la confirmation d'import (§ 5.4) et migre le fichier v1.
 
@@ -1487,7 +1489,7 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `settings.crash.desc` | Dernier plantage le {{date}} | Last crash on {{date}} |
 | `settings.crash.share` | Partager | Share |
 | `home.migrate.title` | Tu viens de l'ancienne MuscleNote ? | Coming from the old MuscleNote? |
-| `home.migrate.text` | Termine ta séance en cours dans l'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote. | Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote. |
+| `home.migrate.text` | Termine ta séance en cours dans l'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote 2. | Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote 2. |
 | `workout.finishEmpty` | Aucune série validée : la séance ne sera pas enregistrée. | No completed set: this session won't be saved. |
 | `workout.abandon` | Abandonner | Discard |
 | `exerciseCard.removeConfirm` | Retirer « {{name}} » de la séance ? | Remove “{{name}}” from this session? |
@@ -1582,18 +1584,19 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 ## 11. Décisions
 
 Réponses données aux questions ouvertes de la première version de ce document, et leur
-traduction dans la spec.
+traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
+aux questions de la deuxième version (cf. § 12).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
 | D1 | Export Excel ou CSV | « fait au plus simple » | CSV, 4 fichiers, mêmes tables (§ 8) |
 | D2 | Persistance | « oui, fait au plus simple » | un fichier JSON par document, même forme que la sauvegarde ; le format § 5 reste le format d'échange (§ 4.2) |
 | D3 | Langue des noms de séance | stocker l'identifiant de préréglage | `Workout.preset`, clé de séance, migration des anciens noms (§ 3.1, 5.3, 6.3) |
-| D4 | Migration des données | automatique | ⚠️ incompatible avec D5 ; retenu provisoirement : transfert en un geste par partage (§ 5.5) — **à trancher, § 12** |
-| D5 | `applicationId` | un nouvel applicationId | `com.musclenote.android` (proposition, § 1) |
+| D4 | Migration des données | automatique, puis option (b) : nouvel applicationId + transfert par partage | transfert en un geste par la feuille de partage, sans modifier l'app Expo ; les deux apps cohabitent (§ 5.5) |
+| D5 | `applicationId` | un nouvel applicationId : `com.musclenote.android` | `com.musclenote.android` (§ 1) |
 | D6 | Minuteur de repos | visible sur l'écran (verrouillé) + demander les permissions | notification en cours avec compte à rebours système + alarme exacte de fin, demande de `POST_NOTIFICATIONS` (§ 7.1, 7.2) |
 | D7 | Rappels de compléments | vrai sélecteur d'heure + alarme exacte | `TimePicker` M3, toute minute ; alarmes exactes reprogrammées chaque jour (§ 2.11, 7.3) |
-| D8 | minSdk / targetSdk | — (pas de réponse) | défaut : minSdk 26, targetSdk = dernière API stable (§ 1, § 12) |
+| D8 | minSdk / targetSdk | minSdk 26, targetSdk = dernière API stable | minSdk 26 ; compileSdk / targetSdk 37 (Android 17) au démarrage du projet (§ 1) |
 | D9 | Langue | langue système | langue du système par défaut + surcharge FR/EN par AppCompat ; plus de préférence `language` (§ 2.12, 3.14, 9.4) |
 | D10 | Thème | ajouter un thème clair | palette claire + choix Système/Clair/Sombre (§ 2.12, 9.1) |
 | D11 | Icônes | Material Symbols | table de correspondance (§ 9.3) |
@@ -1606,6 +1609,8 @@ traduction dans la spec.
 | D18 | Format d'export JSON | au plus scalable | `version: 2` + chaîne de migrations, v1 toujours importée, v2 lisible par l'app Expo (§ 5.1) |
 | D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
+| D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
+| D22 | Nom affiché pendant la transition | « MuscleNote 2 » | `app_name` = « MuscleNote 2 » (FR et EN), cible du partage au § 5.5 (§ 1, 9.5) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1631,27 +1636,13 @@ traduction dans la spec.
 
 ## 12. Questions restantes
 
-1. **Migration automatique (D4) contre nouvel `applicationId` (D5).** Android isole les
-   données de chaque app : avec un nouvel `applicationId`, l'app native **ne peut pas** lire
-   le stockage de l'app Expo. Options :
-   - **(a)** garder `com.musclenote.app` et signer avec la **même clé** que l'app Expo
-     (gérée par EAS, récupérable via `eas credentials`) : l'app native s'installe par-dessus
-     et lit `databases/RKStorage` au premier lancement (§ 4.3). Migration vraiment
-     automatique, séance en cours comprise ; mais pas de cohabitation ni de retour arrière
-     simple.
-   - **(b)** *(retenue provisoirement, § 5.5)* nouvel `applicationId` + transfert en un geste
-     par la feuille de partage, sans toucher à l'app Expo ; les deux apps cohabitent.
-   - **(c)** nouvel `applicationId` + une dernière version de l'app Expo avec un bouton
-     « Transférer vers la nouvelle app » qui envoie directement les données (séance en
-     cours comprise) à l'app native. Plus confortable que (b), mais demande de retoucher
-     et republier l'APK Expo.
-   Recommandation : (b) si la cohabitation compte, (a) si « automatique » est prioritaire.
-2. **minSdk / targetSdk (D8)** : défaut retenu minSdk 26 (Android 8.0) et targetSdk = dernière
-   API stable. À confirmer selon les téléphones visés.
-3. **Anciennes séries non cochées** (conséquence de D15) : à la migration v1, toutes les
-   séries des séances terminées sont marquées validées pour que les statistiques passées ne
-   changent pas. Alternative : garder les cases telles qu'enregistrées (plus exact si tu
-   cochais toujours tes séries, mais les séries jamais cochées disparaîtraient des stats).
-4. **Nom du nouvel `applicationId`** (si D5 est maintenue) : `com.musclenote.android`
-   proposé ; pendant la cohabitation les deux apps s'appelleront « MuscleNote » sur le
-   lanceur — garder ce nom ou distinguer temporairement (ex. « MuscleNote 2 ») ?
+Aucune. Les quatre questions de la version précédente ont été tranchées :
+
+1. **Migration automatique (D4) contre nouvel `applicationId` (D5)** → option **(b)** :
+   nouvel `applicationId` `com.musclenote.android` + transfert en un geste par la feuille de
+   partage ; l'app Expo n'est pas modifiée et les deux apps cohabitent (D4, § 5.5). Les
+   options écartées étaient (a) réutiliser `com.musclenote.app` avec la clé EAS pour lire
+   `RKStorage` (§ 4.3) et (c) republier l'app Expo avec un bouton de transfert.
+2. **minSdk / targetSdk** → minSdk 26, targetSdk = dernière API stable (D8, § 1).
+3. **Anciennes séries non cochées** → toutes marquées validées à la migration (D21, § 5.3).
+4. **Nom affiché** → « MuscleNote 2 » pendant la transition (D22, § 1).
