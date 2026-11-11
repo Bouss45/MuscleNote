@@ -5,6 +5,15 @@
     <!-- Commun -->
     <string name="common_cancel">Cancel</string>
     <string name="common_confirm">Confirm</string>
+    <string name="common_save">Save</string>
+    <string name="common_delete">Delete</string>
+    <string name="common_back">Back</string>
+    <string name="common_add">Add</string>
+    <string name="common_body_weight">Body weight</string>
+    <plurals name="common_exercises_count">
+        <item quantity="one">%1$d exercise</item>
+        <item quantity="other">%1$d exercises</item>
+    </plurals>
 
     <!-- Onglets et titres -->
     <string name="tabs_home">Home</string>
@@ -101,6 +110,23 @@
     <string name="exercise_reversecurl">Reverse curl</string>
     <string name="exercise_pinchgrip">Pinch grip</string>
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
+
+    <!-- Home (§ 2.2) -->
+    <string name="home_new_session">New workout</string>
+    <string name="home_active_subtitle">%1$s · %2$s kg bodyweight</string>
+
+    <!-- Start workout (§ 2.3) -->
+    <string name="start_workout_title">Workout type</string>
+    <string name="start_workout_subtitle">Pick or name your workout</string>
+    <string name="start_workout_group_ppl">PPL</string>
+    <string name="start_workout_group_split">Split</string>
+    <string name="start_workout_group_other">Other</string>
+    <string name="start_workout_custom_label">Custom</string>
+    <string name="start_workout_custom_placeholder">E.g. Shoulders / Calves</string>
+    <string name="start_workout_custom_empty">Custom name...</string>
+    <string name="start_workout_next">Next</string>
+    <string name="start_workout_body_weight_subtitle">Your weight today?</string>
+    <string name="start_workout_start">Start</string>
 
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>

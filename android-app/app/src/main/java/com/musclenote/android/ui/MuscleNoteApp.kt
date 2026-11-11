@@ -30,12 +30,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.musclenote.android.ui.home.HomeScreen
+import com.musclenote.android.ui.navigation.Routes
 import com.musclenote.android.ui.navigation.TopLevelDestination
 import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.workout.StartWorkoutScreen
 
 /**
  * Racine de l'interface (SPEC § 2.1) : barre d'onglets + hôte de navigation, sans en-tête
@@ -46,6 +48,9 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    // Écrans plein écran (séance, sélecteur…) : pas de barre d'onglets.
+    val onTab = currentDestination == null ||
+        TopLevelDestination.entries.any { tab -> currentDestination.hierarchy.any { it.route == tab.route } }
 
     // Fichier partagé par une autre app (§ 5.5) : la confirmation d'import est dans Paramètres.
     LaunchedEffect(backupViewModel) {
@@ -58,10 +63,12 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
         containerColor = MuscleNoteTheme.colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
-            MuscleNoteBottomBar(
-                currentDestination = currentDestination,
-                onSelect = { navController.navigateToTab(it) },
-            )
+            if (onTab) {
+                MuscleNoteBottomBar(
+                    currentDestination = currentDestination,
+                    onSelect = { navController.navigateToTab(it) },
+                )
+            }
         },
     ) { innerPadding ->
         NavHost(
@@ -71,12 +78,35 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
             enterTransition = { EnterTransition.None },
             exitTransition = { ExitTransition.None },
         ) {
-            composable(TopLevelDestination.Home.route) { HomeScreen() }
+            composable(TopLevelDestination.Home.route) {
+                HomeScreen(
+                    onStartWorkout = { navController.navigate(Routes.START_WORKOUT) { launchSingleTop = true } },
+                    onOpenWorkout = { navController.navigate(Routes.WORKOUT) { launchSingleTop = true } },
+                )
+            }
             composable(TopLevelDestination.Progress.route) { ProgressScreen() }
             composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
             composable(TopLevelDestination.Settings.route) { SettingsScreen(backupViewModel) }
+
+            composable(Routes.START_WORKOUT) {
+                StartWorkoutScreen(
+                    onClose = { navController.popBackStack() },
+                    // « Commencer » remplace cet écran par la séance en cours (§ 2.3).
+                    onStarted = {
+                        navController.navigate(Routes.WORKOUT) {
+                            popUpTo(Routes.START_WORKOUT) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
         }
     }
+}
+
+/** Retour à l'Accueil depuis un écran plein écran (la séance en cours, par exemple). */
+private fun NavHostController.backToHome() {
+    if (!popBackStack(TopLevelDestination.Home.route, inclusive = false)) navigateToTab(TopLevelDestination.Home)
 }
 
 /** Onglet : une seule copie de chaque onglet dans la pile, état conservé entre deux visites. */
