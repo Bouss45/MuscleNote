@@ -4,6 +4,9 @@ import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.os.SystemClock
+import android.view.View
+import android.view.ViewTreeObserver
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,8 +14,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.musclenote.android.data.model.ThemeMode
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import com.musclenote.android.notifications.NotificationChannels
@@ -39,8 +45,10 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         val app = application as MuscleNoteApplication
-        // Noms des canaux dans la langue de l'app : l'activité est recréée à chaque changement (§ 7.1).
+        // Noms des canaux dans la langue de l'app : l'activité est recréée à chaque changement (§ 7.1),
+        // et la notification d'un repos en cours est republiée dans cette langue.
         NotificationChannels.createOrUpdate(this)
+        app.container.launchMutation { app.container.restTimer.refreshNotification() }
         backupViewModel = ViewModelProvider(this, BackupViewModel.Factory(app))[BackupViewModel::class.java]
 
         // Une recréation (rotation, langue) ou une reprise depuis les récents ne relance ni l'import
@@ -49,7 +57,13 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null && !fromHistory) handleIntent(intent)
 
         setContent {
-            val darkTheme = isSystemInDarkTheme()
+            val preferences by app.container.preferences.preferences.collectAsStateWithLifecycle()
+            // Choix Système / Clair / Sombre (🔄 D10), appliqué sans recréer l'activité.
+            val darkTheme = when (preferences.theme) {
+                ThemeMode.System -> isSystemInDarkTheme()
+                ThemeMode.Light -> false
+                ThemeMode.Dark -> true
+            }
             // Icônes des barres système claires en thème sombre, foncées en thème clair (§ 9.1).
             DisposableEffect(darkTheme) {
                 enableEdgeToEdge(
@@ -64,6 +78,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+        keepSplashUntilPreferencesLoaded(app)
+    }
+
+    /**
+     * Retarde le premier rendu jusqu'à la lecture des préférences (quelques ms), pour ne pas
+     * afficher l'interface dans le mauvais thème puis la redessiner. L'écran de démarrage du
+     * système reste affiché entre-temps ; au-delà d'une seconde, on dessine quand même.
+     */
+    private fun keepSplashUntilPreferencesLoaded(app: MuscleNoteApplication) {
+        val content = findViewById<View>(android.R.id.content)
+        val start = SystemClock.uptimeMillis()
+        content.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    val ready = app.container.preferences.loaded.value || SystemClock.uptimeMillis() - start > SPLASH_TIMEOUT_MS
+                    if (ready) content.viewTreeObserver.removeOnPreDrawListener(this)
+                    return ready
+                }
+            },
+        )
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -94,6 +128,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         /** Ouvre l'écran de la séance en cours (notifications du minuteur, § 7.2). */
         const val ACTION_OPEN_WORKOUT = "com.musclenote.android.action.OPEN_WORKOUT"
+
+        private const val SPLASH_TIMEOUT_MS = 1_000L
 
         /** Ouvre l'onglet Nutrition (notifications des rappels de compléments, § 7.3). */
         const val ACTION_OPEN_NUTRITION = "com.musclenote.android.action.OPEN_NUTRITION"

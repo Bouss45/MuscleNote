@@ -85,6 +85,17 @@ class RestTimerRepository(
         }
     }
 
+    /**
+     * Republie la notification du repos en cours (alarme comprise, à l'identique) : après un
+     * changement de langue, son texte suit la nouvelle langue.
+     */
+    suspend fun refreshNotification() {
+        mutex.withLock {
+            val current = _state.value ?: return
+            if (!RestTimerRules.isFinished(current, now())) effects.show(current)
+        }
+    }
+
     /** « Passer » (bandeau ou notification), fin ou abandon de la séance : tout est annulé. */
     suspend fun stop() {
         mutex.withLock {

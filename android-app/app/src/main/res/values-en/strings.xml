@@ -46,6 +46,17 @@
     <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
     <string name="settings_notifications_denied">Notifications are off — timer and reminders are silent</string>
     <string name="settings_notifications_open">Open settings</string>
+    <string name="settings_my_data">My data</string>
+    <string name="settings_stat_sessions">workouts</string>
+    <string name="settings_stat_custom_exercises">custom exercises</string>
+    <string name="settings_language_title">Language</string>
+    <string name="settings_language_desc">Choose the app language</string>
+    <string name="settings_language_system">System language</string>
+    <string name="settings_theme_title">Theme</string>
+    <string name="settings_theme_desc">App appearance</string>
+    <string name="settings_theme_system">System</string>
+    <string name="settings_theme_light">Light</string>
+    <string name="settings_theme_dark">Dark</string>
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
     <string name="settings_section_backup">BACKUP</string>
@@ -65,6 +76,7 @@
     <string name="settings_import_invalid_key">invalid content for %1$s</string>
     <string name="settings_share_json">Export my MuscleNote data</string>
     <string name="settings_import_newer_version">This file comes from a newer version of MuscleNote</string>
+    <string name="settings_info">The exported file contains all your workouts, custom exercises, and body weight history. Keep it safe.</string>
 
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Back</string>

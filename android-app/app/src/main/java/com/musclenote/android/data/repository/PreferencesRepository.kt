@@ -2,6 +2,7 @@ package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.Preferences
+import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.storage.JsonDocument
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,10 +26,16 @@ class PreferencesRepository(
     private val _localPreferences = MutableStateFlow(LocalPreferences.DEFAULT)
     val localPreferences: StateFlow<LocalPreferences> = _localPreferences.asStateFlow()
 
+    private val _loaded = MutableStateFlow(false)
+
+    /** `true` une fois les préférences lues : le premier rendu attend le bon thème. */
+    val loaded: StateFlow<Boolean> = _loaded.asStateFlow()
+
     suspend fun load() {
         mutex.withLock {
             _preferences.value = preferencesDoc.read() ?: Preferences.DEFAULT
             _localPreferences.value = localPreferencesDoc.read() ?: LocalPreferences.DEFAULT
+            _loaded.value = true
         }
     }
 
@@ -44,6 +51,16 @@ class PreferencesRepository(
         if (seconds <= 0) return
         mutex.withLock {
             val next = _preferences.value.copy(restSeconds = seconds)
+            if (next == _preferences.value) return
+            _preferences.value = next
+            preferencesDoc.save(next)
+        }
+    }
+
+    /** Thème Système / Clair / Sombre (🔄 D10, § 2.12), effet immédiat. */
+    suspend fun setTheme(theme: ThemeMode) {
+        mutex.withLock {
+            val next = _preferences.value.copy(theme = theme)
             if (next == _preferences.value) return
             _preferences.value = next
             preferencesDoc.save(next)

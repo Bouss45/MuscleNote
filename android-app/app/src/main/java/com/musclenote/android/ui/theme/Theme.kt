@@ -15,8 +15,8 @@ private val LocalMuscleNoteColors = staticCompositionLocalOf { DarkColors }
 
 /**
  * Thème de l'app : palettes sombre et claire (§ 9.1, pas de couleurs dynamiques), Inter
- * (§ 9.2) et rayons (§ 9.3). Le choix Système / Clair / Sombre (§ 2.12) arrivera avec les
- * préférences ; en attendant, le thème suit le système.
+ * (§ 9.2) et rayons (§ 9.3). [darkTheme] vient du choix Système / Clair / Sombre de Paramètres
+ * (§ 2.12), résolu par `MainActivity`.
  */
 @Composable
 fun MuscleNoteTheme(

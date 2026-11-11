@@ -60,15 +60,16 @@ import com.musclenote.android.ui.theme.MuscleNoteTheme
 private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 
 /**
- * Onglet Paramètres (SPEC § 2.12). Pour l'instant : dans « PRÉFÉRENCES », le minuteur de repos et
- * l'avertissement « Notifications désactivées » ; puis « SAUVEGARDE » : export JSON v2, import
- * avec confirmation (§ 5.4) et encart de statut.
+ * Onglet Paramètres (SPEC § 2.12) : « Mes données » ; « PRÉFÉRENCES » (langue, thème, minuteur de
+ * repos, avertissement « Notifications désactivées ») ; « SAUVEGARDE » (export JSON v2, import avec
+ * confirmation § 5.4) ; encart de statut ; encart d'info.
  */
 @Composable
 fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifier) {
     val state by backupViewModel.state.collectAsStateWithLifecycle()
     val container = LocalAppContainer.current
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
+    val customExercises by container.workouts.customExercises.collectAsStateWithLifecycle()
     val preferences by container.preferences.preferences.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val colors = MuscleNoteTheme.colors
@@ -99,7 +100,17 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            MyDataCard(sessions = workouts.size, customExercises = customExercises.count { !it.archived })
+
             SectionTitle(stringResource(R.string.settings_section_preferences))
+            LanguageCard()
+            ThemeCard(
+                selected = preferences.theme,
+                onSelect = { theme ->
+                    haptics.light()
+                    container.launchMutation { container.preferences.setTheme(theme) }
+                },
+            )
             RestTimerCard(
                 selected = preferences.restSeconds,
                 onSelect = { seconds ->
@@ -146,6 +157,7 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
                 )
             }
             state.status?.let { StatusMessage(it) }
+            SettingsInfoBox()
         }
     }
 }
@@ -174,7 +186,7 @@ private fun SectionTitle(text: String) {
 
 /** Icône ronde (carré arrondi 44 dp, fond couleur à 13 %) des cartes de Paramètres. */
 @Composable
-private fun CardIcon(@DrawableRes icon: Int, tint: Color) {
+internal fun CardIcon(@DrawableRes icon: Int, tint: Color) {
     Box(
         modifier = Modifier
             .size(44.dp)
