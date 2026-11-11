@@ -15,6 +15,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.core.content.IntentCompat
 import androidx.lifecycle.ViewModelProvider
@@ -28,6 +29,7 @@ import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.MuscleNoteApp
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.theme.SystemNightMode
 
 /**
  * Activité unique. AppCompatActivity (et non ComponentActivity) pour la langue par
@@ -63,11 +65,17 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val preferences by app.container.preferences.preferences.collectAsStateWithLifecycle()
-            // Choix Système / Clair / Sombre (🔄 D10), appliqué sans recréer l'activité.
+            val preferencesLoaded by app.container.preferences.loaded.collectAsStateWithLifecycle()
+            // Choix Système / Clair / Sombre (🔄 D10), appliqué tout de suite à l'interface.
             val darkTheme = when (preferences.theme) {
                 ThemeMode.System -> isSystemInDarkTheme()
                 ThemeMode.Light -> false
                 ThemeMode.Dark -> true
+            }
+            // Puis transmis au système (Android 12+) pour l'écran de démarrage et le fond de
+            // fenêtre (§ 9.1) — seulement une fois le vrai choix lu, pas la valeur par défaut.
+            LaunchedEffect(preferencesLoaded, preferences.theme) {
+                if (preferencesLoaded) SystemNightMode.apply(this@MainActivity, preferences.theme)
             }
             // Icônes des barres système claires en thème sombre, foncées en thème clair (§ 9.1).
             DisposableEffect(darkTheme) {
