@@ -2,16 +2,22 @@
 
 > **Rôle de ce document.** C'est la référence unique pour réécrire l'app Expo/React Native
 > (`artifacts/mobile/`) en Android natif (Kotlin + Jetpack Compose). Il décrit le
-> comportement **cible de l'app native** : le comportement de l'app Expo actuelle, auquel
+> comportement **cible de l'app native** : le comportement de l'app Expo, auquel
 > s'appliquent les décisions prises au § 11.
+>
+> **L'app Expo de référence est conservée au tag `expo-final`** (dernière version, commit
+> `2292cf5` de `main`) ; elle a été retirée du dépôt lors de la bascule vers l'app native.
+> Pour lire un de ses fichiers : `git show expo-final:artifacts/mobile/<chemin>` ; pour
+> l'extraire en entier : `git worktree add ../musclenote-expo expo-final`.
 >
 > - **🔄 Dn** marque un écart volontaire par rapport à l'app Expo ; `n` renvoie à la décision
 >   n° n du § 11. Le comportement Expo d'origine est rappelé quand il compte (import des
 >   anciennes sauvegardes, migration).
 > - Ce qui est propre à iOS ou au web est omis.
-> - Les points encore à trancher sont au § 12.
+> - Les points encore à trancher sont au § 12 ; l'état de l'implémentation au § 13.
 >
-> Conventions : les chemins de fichiers sont relatifs à `artifacts/mobile/`. Les clés
+> Conventions : les chemins de fichiers de l'app Expo sont relatifs à `artifacts/mobile/`
+> au tag `expo-final`. Les clés
 > `xxx.yyy` entre backticks sont des clés de traduction (cf. § 9.4). « Jour local » = jour
 > calendaire dans le fuseau du téléphone. Une **série validée** = série dont
 > `completed == true` (cf. § 3.16).
@@ -39,14 +45,16 @@
 ## 1. Vue d'ensemble
 
 - **MuscleNote** : carnet de musculation personnel, en français et en anglais, qui suit **la
-  langue du système** (🔄 D9). Installé par APK, **pas de publication Play Store**.
+  langue du système** (🔄 D9). Installé par APK (Releases GitHub, suivies par Obtainium),
+  **pas de publication Play Store**.
 - **100 % hors ligne** : aucun appel réseau, aucun compte, **pas de permission `INTERNET`**.
   Seule exception indirecte : la police Inter est obtenue via les polices téléchargeables
   de Google Play Services (🔄 D12) ; l'app elle-même ne fait aucune requête.
 - **Identité Android** (🔄 D5, D22) : nouvel `applicationId` `com.musclenote.android`, nom
-  affiché **« MuscleNote 2 »** pendant la transition, orientation **portrait** uniquement.
-  L'app Expo (`com.musclenote.app`, « MuscleNote ») reste installée à côté ; le transfert
-  des données se fait par partage (§ 5.5, D4).
+  affiché **« MuscleNote »** (un suffixe « 2 » le distinguait de l'app Expo pendant la
+  transition, retiré à la bascule), orientation **portrait** uniquement. L'app Expo
+  (`com.musclenote.app`, « MuscleNote ») peut rester installée à côté le temps du transfert
+  des données, qui se fait par partage (§ 5.5, D4).
 - **Socle technique** :
   - Kotlin, Jetpack Compose, Material 3, Navigation Compose ;
   - coroutines + `StateFlow` ; kotlinx.serialization ;
@@ -1075,8 +1083,8 @@ Avec un nouvel `applicationId`, l'app native ne peut pas lire le stockage de l'a
 transfert retenu se fait **en un geste, sans modifier l'app Expo** ; les deux apps
 cohabitent pendant la transition :
 1. dans l'app Expo : Paramètres → « Exporter mes données » ;
-2. dans la feuille de partage : choisir **MuscleNote 2** (l'app native déclare un
-   `intent-filter` `ACTION_SEND` pour `application/json`) ;
+2. dans la feuille de partage : choisir **MuscleNote**, l'app native (l'app native déclare
+   un `intent-filter` `ACTION_SEND` pour `application/json`) ;
 3. l'app native affiche la confirmation d'import (§ 5.4) et migre le fichier v1.
 
 La séance en cours n'étant pas exportée par l'app Expo, il faut la terminer avant le
@@ -1462,7 +1470,7 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 ### 9.4 Textes et traductions (🔄 D9)
 
 - **Les sources de vérité des textes existants sont `artifacts/mobile/constants/i18n/fr.ts`
-  (référence) et `artifacts/mobile/constants/i18n/en.ts`.** Ils contiennent toutes les
+  (référence) et `artifacts/mobile/constants/i18n/en.ts`, au tag `expo-final`.** Ils contiennent toutes les
   chaînes visibles : écrans, composants, libellés de graphiques, exercices intégrés
   (`exercise.*`), groupes (`muscle.*`), en-têtes d'export (`excel.*`), canaux de
   notification (`channel.*`). Ce document cite certains textes pour la lisibilité ; en cas
@@ -1511,7 +1519,7 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `settings.crash.desc` | Dernier plantage le {{date}} | Last crash on {{date}} |
 | `settings.crash.share` | Partager | Share |
 | `home.migrate.title` | Tu viens de l'ancienne MuscleNote ? | Coming from the old MuscleNote? |
-| `home.migrate.text` | Termine ta séance en cours dans l'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote 2. | Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote 2. |
+| `home.migrate.text` | Termine ta séance en cours dans l'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote. | Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote. |
 | `workout.finishEmpty` | Aucune série validée : la séance ne sera pas enregistrée. | No completed set: this session won't be saved. |
 | `workout.abandon` | Abandonner | Discard |
 | `exerciseCard.removeConfirm` | Retirer « {{name}} » de la séance ? | Remove “{{name}}” from this session? |
@@ -1633,7 +1641,7 @@ vérification finale (§ 13).
 | D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
-| D22 | Nom affiché pendant la transition | « MuscleNote 2 » | `app_name` = « MuscleNote 2 » (FR et EN), cible du partage au § 5.5 (§ 1, 9.5) |
+| D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
 | D23 | Contraste des couleurs de groupe en thème clair | texte foncé en thème clair | texte et icônes en nuance foncée (contraste ≥ 4,5:1) en thème clair : groupes, ambre du minuteur, top 3 ; fonds, bordures, courbes et thème sombre inchangés (§ 6.2, 9.1) |
 | D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
 
@@ -1670,7 +1678,8 @@ Aucune. Les quatre questions de la version précédente ont été tranchées :
    `RKStorage` (§ 4.3) et (c) republier l'app Expo avec un bouton de transfert.
 2. **minSdk / targetSdk** → minSdk 26, targetSdk = dernière API stable (D8, § 1).
 3. **Anciennes séries non cochées** → toutes marquées validées à la migration (D21, § 5.3).
-4. **Nom affiché** → « MuscleNote 2 » pendant la transition (D22, § 1).
+4. **Nom affiché** → « MuscleNote » suivi d'un « 2 » pendant la transition, « MuscleNote »
+   depuis la bascule (D22, § 1).
 
 ---
 
@@ -1689,7 +1698,7 @@ construction de l'APK.
 
 | § | sujet | où |
 |---|---|---|
-| 1 | identité (`com.musclenote.android`, « MuscleNote 2 », portrait), SDK 26 / 37, socle technique ; permissions = la liste fermée de D19, sans `INTERNET` (vérifié dans le manifeste fusionné de l'APK) | `app/build.gradle.kts`, `AndroidManifest.xml` |
+| 1 | identité (`com.musclenote.android`, « MuscleNote », portrait), SDK 26 / 37, socle technique ; permissions = la liste fermée de D19, sans `INTERNET` (vérifié dans le manifeste fusionné de l'APK) | `app/build.gradle.kts`, `AndroidManifest.xml` |
 | 2.1 | navigation, 4 onglets, entrées externes (notifications, fichier partagé) | `ui/MuscleNoteApp.kt`, `MainActivity.kt` |
 | 2.2 | Accueil : fond flouté, séance en cours, carte de transfert, série hebdo, stats, temps en salle, séances avec édition / date / suppression | `ui/home/` |
 | 2.3 – 2.6 | démarrer une séance, séance en cours (chronomètre, échauffement, glisser-déposer, fin ou abandon), carte d'exercice, ligne de série | `ui/workout/` |
@@ -1707,7 +1716,7 @@ construction de l'APK.
 | 9 | palettes sombre et claire, Inter, icônes Material Symbols, textes FR / EN | `ui/theme/`, `res/` |
 | 10 | virgule décimale, jour local, dates impossibles, recherche, rapport de plantage | `data/util/`, `CrashHandler.kt`, `data/crash/` |
 
-Textes : les 320 clés de `constants/i18n/fr.ts` sont reprises, sauf celles que le § 9.4
+Textes : les 320 clés de `constants/i18n/fr.ts` (tag `expo-final`) sont reprises, sauf celles que le § 9.4
 écarte (Excel) et trois sans objet dans l'app native : `notFound.*` (écran 404
 d'expo-router ; une route inconnue n'existe pas) et `settings.export.noShare` (Android a
 toujours une feuille de partage ; son absence donne l'erreur d'export générique). Toutes les
@@ -1752,3 +1761,10 @@ comme des propositions :
   (séparateur décimal de la locale, § 9.4).
 - **`DUMP`** apparaît dans le manifeste fusionné : c'est la permission qui *protège* le
   récepteur d'`androidx.profileinstaller`, pas une permission demandée par l'app.
+
+### 13.5 Bascule
+
+L'app native a remplacé l'app Expo sur `main` : nom affiché « MuscleNote », app Expo retirée
+du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiées par
+`.github/workflows/release.yml` à chaque push sur `main` touchant `android-app/`
+(`versionCode` = 1000 + n, au-dessus des pré-releases `v0.1.*` de la transition, supprimées).
