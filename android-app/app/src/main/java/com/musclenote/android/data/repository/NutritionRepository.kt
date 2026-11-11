@@ -4,6 +4,7 @@ import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.TakenRecord
+import com.musclenote.android.data.nutrition.BodyWeightRules
 import com.musclenote.android.data.storage.JsonDocument
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.util.dayKey
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.LocalDate
 
 /**
  * Dépôt nutrition : pesées, compléments, « pris aujourd'hui » et suivi calories / eau
@@ -50,11 +52,34 @@ class NutritionRepository(
             val taken = storedTaken.filter { (id, day) -> id in ids && day == today }
             if (taken != storedTaken) takenDoc.save(taken)
 
-            _bodyWeights.value = bodyWeightsDoc.read().orEmpty().sortedByDescending { it.date }
+            _bodyWeights.value = BodyWeightRules.sortedNewestFirst(bodyWeightsDoc.read().orEmpty(), time.zone())
             _supplements.value = supplements
             _taken.value = taken
             _tracker.value = trackerDoc.read() ?: DailyTracker.DEFAULT
         }
+    }
+
+    /**
+     * Nouvelle pesée (§ 3.11) pour le jour local [day], à midi : remplace celle du même jour.
+     * Refusée (`false`) hors de `0 < poids ≤ 500`.
+     */
+    suspend fun addBodyWeight(day: LocalDate, weight: Double): Boolean {
+        if (!BodyWeightRules.isValidWeight(weight)) return false
+        mutex.withLock { commitBodyWeights(BodyWeightRules.add(_bodyWeights.value, day, weight, time.zone())) }
+        return true
+    }
+
+    /** Suppression immédiate d'une pesée, par sa date exacte. */
+    suspend fun removeBodyWeight(date: String) {
+        mutex.withLock {
+            val next = BodyWeightRules.remove(_bodyWeights.value, date)
+            if (next != _bodyWeights.value) commitBodyWeights(next)
+        }
+    }
+
+    private fun commitBodyWeights(next: List<BodyWeightEntry>) {
+        _bodyWeights.value = next
+        bodyWeightsDoc.save(next)
     }
 
     /** Import (§ 5.4) : documents présents remplacés, écriture attendue. */
