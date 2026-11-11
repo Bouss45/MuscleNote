@@ -11,6 +11,7 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -49,6 +50,10 @@ class MainActivity : AppCompatActivity() {
         // et la notification d'un repos en cours est republiée dans cette langue.
         NotificationChannels.createOrUpdate(this)
         app.container.launchMutation { app.container.restTimer.refreshNotification() }
+        // AppCompat connaît la langue choisie une fois l'activité créée : copie pour les
+        // notifications construites hors activité avant Android 13 (§ 9.4).
+        val languages = AppCompatDelegate.getApplicationLocales()
+        app.container.rememberAppLanguage(if (languages.isEmpty) null else languages.toLanguageTags())
         backupViewModel = ViewModelProvider(this, BackupViewModel.Factory(app))[BackupViewModel::class.java]
 
         // Une recréation (rotation, langue) ou une reprise depuis les récents ne relance ni l'import

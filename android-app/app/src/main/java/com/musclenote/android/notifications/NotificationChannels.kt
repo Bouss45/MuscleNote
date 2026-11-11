@@ -6,10 +6,12 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.res.Configuration
 import android.media.AudioAttributes
+import android.os.Build
 import android.os.LocaleList
 import android.provider.Settings
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
+import com.musclenote.android.MuscleNoteApplication
 import com.musclenote.android.R
 
 /**
@@ -93,13 +95,21 @@ object NotificationChannels {
  * Contexte dans la langue de l'app (§ 9.4) : les textes construits hors d'une activité (récepteurs,
  * canaux) doivent suivre le choix FR / EN fait via AppCompat, pas seulement la langue du système.
  * Avant Android 13, AppCompat ne connaît ce choix qu'une fois une activité créée dans le
- * processus : dans un processus lancé par une alarme, le texte suit alors la langue du système.
+ * processus : dans un processus lancé par une alarme, la copie gardée dans les préférences locales
+ * prend le relais (lue une fois les données chargées, ce que les récepteurs attendent).
  */
 fun Context.withAppLocale(): Context {
-    val locales = AppCompatDelegate.getApplicationLocales()
-    if (locales.isEmpty) return this
+    val tags = appLanguageTags() ?: return this
     val configuration = Configuration(resources.configuration).apply {
-        setLocales(LocaleList.forLanguageTags(locales.toLanguageTags()))
+        setLocales(LocaleList.forLanguageTags(tags))
     }
     return createConfigurationContext(configuration)
+}
+
+/** Langue choisie dans l'app (étiquettes BCP 47), `null` = langue du système. */
+private fun Context.appLanguageTags(): String? {
+    val locales = AppCompatDelegate.getApplicationLocales()
+    if (!locales.isEmpty) return locales.toLanguageTags()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return null
+    return (applicationContext as? MuscleNoteApplication)?.storedAppLanguage()
 }

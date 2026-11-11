@@ -134,12 +134,17 @@ data class Preferences(
 }
 
 /**
- * Préférences locales à l'appareil, **hors sauvegarde** (§ 3.14) : carte de transfert de
+ * Préférences locales à l'appareil, **hors sauvegarde** (§ 3.14) : langue choisie, carte de transfert de
  * l'Accueil masquée (§ 2.2).
  */
 @Serializable
 data class LocalPreferences(
     val migrateCardDismissed: Boolean = false,
+    /**
+     * Langue choisie dans l'app (`"fr"`, `"en"`, absente = système) : copie de celle d'AppCompat,
+     * qu'AppCompat ne connaît, avant Android 13, qu'une fois une activité créée (§ 9.4).
+     */
+    val appLanguage: String? = null,
 ) {
     companion object {
         val DEFAULT = LocalPreferences()

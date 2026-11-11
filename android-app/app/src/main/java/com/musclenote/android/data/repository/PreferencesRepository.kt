@@ -72,9 +72,17 @@ class PreferencesRepository(
      * Écriture attendue sous le verrou : un rechargement (après un import) ne peut pas relire le
      * fichier avant elle.
      */
-    suspend fun dismissMigrateCard() {
+    suspend fun dismissMigrateCard() = updateLocal { it.copy(migrateCardDismissed = true) }
+
+    /**
+     * Copie de la langue choisie dans Paramètres (`"fr"`, `"en"`, `null` = système), pour les
+     * textes de notification d'un processus lancé par une alarme sous Android 8 – 12 (§ 9.4).
+     */
+    suspend fun setAppLanguage(tag: String?) = updateLocal { it.copy(appLanguage = tag) }
+
+    private suspend fun updateLocal(transform: (LocalPreferences) -> LocalPreferences) {
         mutex.withLock {
-            val next = _localPreferences.value.copy(migrateCardDismissed = true)
+            val next = transform(_localPreferences.value)
             if (next == _localPreferences.value) return
             _localPreferences.value = next
             localPreferencesDoc.saveNow(next)

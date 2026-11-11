@@ -18,6 +18,13 @@ class MuscleNoteApplication : Application() {
     lateinit var container: AppContainer
         private set
 
+    /**
+     * Langue choisie dans l'app d'après les préférences locales (`null` = système, ou données pas
+     * encore chargées) : avant Android 13, relais d'AppCompat hors activité (§ 9.4).
+     */
+    fun storedAppLanguage(): String? =
+        if (::container.isInitialized) container.preferences.localPreferences.value.appLanguage else null
+
     /** Rapports de plantage locaux (§ 10.9), partagés ou supprimés depuis Paramètres (§ 2.12). */
     lateinit var crashReports: CrashReports
         private set

@@ -120,6 +120,18 @@ class AppContainer(
         restTimer.stop()
     }
 
+    /**
+     * Copie de la langue choisie dans l'app ([tag] `null` = système), relue par les notifications
+     * hors activité avant Android 13 (§ 9.4). Écrite une fois les données chargées, pour ne pas
+     * écraser les préférences locales encore sur disque.
+     */
+    fun rememberAppLanguage(tag: String?) {
+        appScope.launch {
+            awaitReady()
+            preferences.setAppLanguage(tag)
+        }
+    }
+
     /** Mise en arrière-plan (`ON_STOP`) : écritures différées forcées (§ 4.2). */
     fun onAppBackground() {
         appScope.launch { workouts.flushPendingWrites() }
