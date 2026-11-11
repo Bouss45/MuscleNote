@@ -173,6 +173,21 @@
     <string name="chart_one_point">Une seule séance — continue pour voir ta progression !</string>
     <string name="chart_goal">Objectif</string>
 
+    <!-- Historique d'un exercice (§ 2.8) -->
+    <string name="exercise_history_not_found">Exercice introuvable</string>
+    <string name="exercise_history_pr">Record personnel</string>
+    <string name="exercise_history_one_rm">1RM estimé</string>
+    <string name="exercise_history_longest">Séance la plus longue</string>
+    <string name="exercise_history_max_load">Charge maximale (kg)</string>
+    <string name="exercise_history_duration_chart">Durée par séance (min)</string>
+    <string name="exercise_history_need_more">Fais encore des séances pour voir ta progression !</string>
+    <string name="exercise_history_history_title">Historique</string>
+    <string name="exercise_history_empty">Aucune séance avec cet exercice</string>
+    <string name="exercise_history_body_weight_suffix">%1$s kg corps</string>
+    <string name="exercise_history_max">Max %1$s kg</string>
+    <string name="exercise_history_volume">Volume %1$s kg</string>
+    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Données chargées (provisoire)</string>
     <string name="debug_data_sessions">Séances</string>

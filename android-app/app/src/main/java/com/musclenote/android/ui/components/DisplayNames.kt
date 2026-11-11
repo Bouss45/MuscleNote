@@ -1,17 +1,22 @@
 package com.musclenote.android.ui.components
 
+import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseInstantOrNull
+import java.text.NumberFormat
+import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import kotlin.math.roundToLong
 
 /** Locale effective de l'app (langue du système ou choix FR / EN, § 9.4), pour formater. */
 @Composable
@@ -22,6 +27,36 @@ fun appLocale(): Locale = LocalConfiguration.current.locales.get(0) ?: Locale.ge
 @Composable
 @ReadOnlyComposable
 fun formatNumber(value: Double): String = formatDecimal(value, appLocale())
+
+/**
+ * Entier arrondi (demis vers le haut), avec le séparateur de milliers de la locale : `5 230` en
+ * français, `5,230` en anglais (§ 9.4). Pour les volumes et autres grands totaux.
+ */
+@Composable
+@ReadOnlyComposable
+fun formatInteger(value: Double): String = NumberFormat.getIntegerInstance(appLocale()).format(value.roundToLong())
+
+/** Formats de date de l'app, dans la locale et le fuseau courants (§ 9.4). */
+class DateFormats(locale: Locale, private val zone: ZoneId) {
+    /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
+    private val weekdayDayMonth = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
+    private val time = DateTimeFormatter.ofPattern("HH:mm", locale)
+    private val dayMonth = DateTimeFormatter.ofPattern("dd/MM", locale)
+
+    fun weekdayDayMonth(instant: Instant): String = weekdayDayMonth.format(instant.atZone(zone))
+
+    /** Heure `HH:mm`. */
+    fun time(instant: Instant): String = time.format(instant.atZone(zone))
+
+    /** `dd/MM`, pour les libellés des graphiques. */
+    fun dayMonth(instant: Instant): String = dayMonth.format(instant.atZone(zone))
+}
+
+@Composable
+fun rememberDateFormats(zone: ZoneId): DateFormats {
+    val locale = appLocale()
+    return remember(locale, zone) { DateFormats(locale, zone) }
+}
 
 /**
  * Nom affiché d'une séance (§ 3.1) : libellé traduit du préréglage, sinon le nom saisi, sinon

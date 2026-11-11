@@ -54,6 +54,7 @@ import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.WorkoutRules
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.InlineConfirm
+import com.musclenote.android.ui.components.NotFoundScreen
 import com.musclenote.android.ui.components.dashedBorder
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberHaptics
@@ -69,10 +70,15 @@ import java.util.Locale
  * cartes d'exercice réordonnables par appui long, puis « Terminer la séance » avec confirmation.
  *
  * [onBack] revient à l'Accueil (la séance reste en cours) ; [onFinished] aussi, une fois la
- * séance terminée ou abandonnée.
+ * séance terminée ou abandonnée. [onOpenHistory] ouvre l'historique d'un exercice (§ 2.8).
  */
 @Composable
-fun WorkoutScreen(onBack: () -> Unit, onAddExercise: () -> Unit, onFinished: () -> Unit) {
+fun WorkoutScreen(
+    onBack: () -> Unit,
+    onAddExercise: () -> Unit,
+    onOpenHistory: (exerciseId: String) -> Unit,
+    onFinished: () -> Unit,
+) {
     val container = LocalAppContainer.current
     val repository = container.workouts
     val current by repository.currentWorkout.collectAsStateWithLifecycle()
@@ -82,7 +88,7 @@ fun WorkoutScreen(onBack: () -> Unit, onAddExercise: () -> Unit, onFinished: () 
 
     val workout = current
     if (workout == null) {
-        NoActiveWorkout(onBack)
+        NotFoundScreen(stringResource(R.string.workout_no_active), onBack)
         return
     }
 
@@ -144,6 +150,7 @@ fun WorkoutScreen(onBack: () -> Unit, onAddExercise: () -> Unit, onFinished: () 
                         onAddSet = { container.launchMutation { repository.addSet(exerciseId) } },
                         onNoteChange = { note -> container.launchMutation { repository.updateExerciseNote(exerciseId, note) } },
                         onRemove = { container.launchMutation { repository.removeExerciseFromWorkout(exerciseId) } },
+                        onOpenHistory = { onOpenHistory(exerciseId) },
                         modifier = Modifier
                             .graphicsLayer {
                                 scaleX = scale
@@ -358,31 +365,5 @@ private fun FinishFooter(hasCompletedSet: Boolean, onConfirm: (hasCompletedSet: 
                 }
             }
         }
-    }
-}
-
-/** « Aucune séance active » + Retour (§ 2.4). */
-@Composable
-private fun NoActiveWorkout(onBack: () -> Unit) {
-    val colors = MuscleNoteTheme.colors
-    Column(
-        Modifier
-            .fillMaxSize()
-            .background(colors.background),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text(stringResource(R.string.workout_no_active), color = colors.foreground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text(
-            stringResource(R.string.common_back),
-            color = colors.primary,
-            fontSize = 15.sp,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier
-                .padding(top = 10.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .clickable(onClick = onBack)
-                .padding(horizontal = 12.dp, vertical = 6.dp),
-        )
     }
 }

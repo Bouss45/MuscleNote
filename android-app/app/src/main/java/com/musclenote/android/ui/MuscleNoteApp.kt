@@ -25,10 +25,13 @@ import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import com.musclenote.android.ui.history.ExerciseHistoryScreen
 import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.navigation.Routes
 import com.musclenote.android.ui.navigation.TopLevelDestination
@@ -106,11 +109,21 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
                 WorkoutScreen(
                     onBack = { navController.backToHome() },
                     onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
+                    onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
                     onFinished = { navController.backToHome() },
                 )
             }
             composable(Routes.EXERCISE_PICKER) {
                 ExercisePickerScreen(onClose = { navController.popBackStack() })
+            }
+            composable(
+                Routes.EXERCISE_HISTORY,
+                arguments = listOf(navArgument(Routes.ARG_EXERCISE_ID) { type = NavType.StringType }),
+            ) { entry ->
+                ExerciseHistoryScreen(
+                    exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                )
             }
         }
     }

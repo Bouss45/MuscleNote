@@ -172,6 +172,21 @@
     <string name="chart_one_point">Only one session — keep going to see your progress!</string>
     <string name="chart_goal">Goal</string>
 
+    <!-- Exercise history (§ 2.8) -->
+    <string name="exercise_history_not_found">Exercise not found</string>
+    <string name="exercise_history_pr">Personal record</string>
+    <string name="exercise_history_one_rm">Estimated 1RM</string>
+    <string name="exercise_history_longest">Longest session</string>
+    <string name="exercise_history_max_load">Max load (kg)</string>
+    <string name="exercise_history_duration_chart">Duration per session (min)</string>
+    <string name="exercise_history_need_more">Complete more sessions to track your progress!</string>
+    <string name="exercise_history_history_title">History</string>
+    <string name="exercise_history_empty">No sessions with this exercise</string>
+    <string name="exercise_history_body_weight_suffix">%1$s kg body</string>
+    <string name="exercise_history_max">Max %1$s kg</string>
+    <string name="exercise_history_volume">Volume %1$s kg</string>
+    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>
     <string name="debug_data_sessions">Sessions</string>

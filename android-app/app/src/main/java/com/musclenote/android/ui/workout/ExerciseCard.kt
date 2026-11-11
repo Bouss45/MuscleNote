@@ -70,6 +70,7 @@ fun ExerciseCard(
     onAddSet: () -> Unit,
     onNoteChange: (String) -> Unit,
     onRemove: () -> Unit,
+    onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = MuscleNoteTheme.colors
@@ -131,8 +132,7 @@ fun ExerciseCard(
                     focusNote = noteText.isEmpty()
                 },
             )
-            // Historique de l'exercice : branché à l'étape suivante.
-            HeaderIcon(icon = R.drawable.ic_trending_up, tint = colors.primary, onClick = null)
+            HeaderIcon(icon = R.drawable.ic_trending_up, tint = colors.primary, onClick = onOpenHistory)
             HeaderIcon(
                 icon = R.drawable.ic_close,
                 tint = colors.mutedForeground,
@@ -233,14 +233,14 @@ fun ExerciseCard(
     }
 }
 
-/** Icône d'en-tête de carte ; sans [onClick], elle est seulement affichée. */
+/** Icône d'en-tête de carte. */
 @Composable
-private fun HeaderIcon(@DrawableRes icon: Int, tint: Color, onClick: (() -> Unit)?, contentDescription: String? = null) {
+private fun HeaderIcon(@DrawableRes icon: Int, tint: Color, onClick: () -> Unit, contentDescription: String? = null) {
     Box(
         Modifier
             .size(36.dp)
             .clip(CircleShape)
-            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(painterResource(icon), contentDescription = contentDescription, tint = tint, modifier = Modifier.size(18.dp))
