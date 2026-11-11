@@ -168,6 +168,11 @@
     <string name="exercise_picker_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
 
+    <!-- Graphiques (§ 2.13) -->
+    <string name="chart_no_data">Aucune donnée</string>
+    <string name="chart_one_point">Une seule séance — continue pour voir ta progression !</string>
+    <string name="chart_goal">Objectif</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Données chargées (provisoire)</string>
     <string name="debug_data_sessions">Séances</string>

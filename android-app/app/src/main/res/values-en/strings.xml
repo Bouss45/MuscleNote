@@ -167,6 +167,11 @@
     <string name="exercise_picker_delete_confirm">Delete %1$s?</string>
     <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
 
+    <!-- Charts (§ 2.13) -->
+    <string name="chart_no_data">No data</string>
+    <string name="chart_one_point">Only one session — keep going to see your progress!</string>
+    <string name="chart_goal">Goal</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>
     <string name="debug_data_sessions">Sessions</string>
