@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- Uniquement les permissions qui servent (§ 1, 🔄 D19). -->
+    <!-- Minuteur de repos et rappels (demandée à l'exécution, Android 13+). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Alarmes exactes : accordée d'office sous Android 13+ (acceptable hors Play Store). -->
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+    <!-- Alarmes exactes sous Android 12 – 12L. -->
+    <uses-permission
+        android:name="android.permission.SCHEDULE_EXACT_ALARM"
+        android:maxSdkVersion="32" />
+    <!-- Vibration de fin de repos depuis le récepteur d'alarme. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Reprogrammer les rappels de compléments après un redémarrage. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".MuscleNoteApplication"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:localeConfig="@xml/locales_config"
+        android:roundIcon="@mipmap/ic_launcher"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.MuscleNote"
+        tools:targetApi="33">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            android:windowSoftInputMode="adjustResize"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- Sauvegarde partagée depuis l'app Expo ou une autre app (§ 5.4, § 5.5). -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/json" />
+            </intent-filter>
+
+            <!-- Fichier JSON ouvert avec MuscleNote depuis un gestionnaire de fichiers. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+        </activity>
+
+        <!-- Minuteur de repos (§ 7.2) : alarme de fin et action « Passer », intents explicites. -->
+        <receiver
+            android:name=".notifications.RestTimerReceiver"
+            android:exported="false" />
+
+        <!-- Rappels de compléments (§ 7.3) : sonnerie d'un rappel, intent explicite. -->
+        <receiver
+            android:name=".notifications.SupplementReminderReceiver"
+            android:exported="false" />
+
+        <!--
+          Resynchronisation des rappels : diffusions du système, reçues même non exporté.
+          Toutes figurent parmi les exceptions aux restrictions des diffusions implicites.
+        -->
+        <receiver
+            android:name=".notifications.ReminderResyncReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Partage des exports (§ 5.6) sans permission de stockage. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <!-- Langue par application (§ 9.4) : AppCompat mémorise le choix sous Android 13. -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+    </application>
+
+</manifest>

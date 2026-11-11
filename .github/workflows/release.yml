@@ -1,0 +1,107 @@
+name: release
+
+# Release de l'app : à chaque push sur main touchant android-app/, tests JVM, build de l'APK
+# release signé, puis Release GitHub v1.0.<run_number> (installée et mise à jour par Obtainium).
+on:
+  push:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/release.yml"
+
+permissions:
+  contents: write # création de la release
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    name: Tests, APK release signé, Release
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      VERSION_NAME: 1.0.${{ github.run_number }}
+      TAG: v1.0.${{ github.run_number }}
+      APK_NAME: MuscleNote-v1.0.${{ github.run_number }}.apk
+    defaults:
+      run:
+        working-directory: android-app
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            android-app/gradle/libs.versions.toml
+            android-app/**/*.gradle.kts
+            android-app/gradle/wrapper/gradle-wrapper.properties
+
+      # versionCode = 1000 + run_number : toujours au-dessus des pré-releases v0.1.* (versionCode =
+      # run_number de l'ancien workflow, < 1000), pour qu'Android accepte la mise à jour.
+      - name: Numéro de version
+        run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      # Tests JVM (règles métier, sauvegarde, stockage, textes) : un échec bloque le build.
+      - name: Tests unitaires
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      # Le keystore n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
+      - name: Décoder le keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant"
+            exit 1
+          fi
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
+
+      - name: Build de l'APK release
+        env:
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: >-
+          ./gradlew :app:assembleRelease
+          -PversionCode="$VERSION_CODE"
+          -PversionName="$VERSION_NAME"
+          --stacktrace
+
+      # Dépôt public : on vérifie la signature sans afficher le certificat dans les logs.
+      - name: Vérifier la signature
+        run: |
+          APK=app/build/outputs/apk/release/app-release.apk
+          BUILD_TOOLS="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -n 1)"
+          "$BUILD_TOOLS/apksigner" verify "$APK"
+          cp "$APK" "$RUNNER_TEMP/$APK_NAME"
+          ls -l "$RUNNER_TEMP/$APK_NAME"
+
+      - name: Publier la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES="MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}."
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            # Relance d'un même run : on remplace l'APK de la release existante.
+            gh release upload "$TAG" "$RUNNER_TEMP/$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
+          else
+            gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --latest \
+              --title "MuscleNote v$VERSION_NAME" \
+              --notes "$NOTES"
+          fi
+
+      - name: Supprimer le keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
