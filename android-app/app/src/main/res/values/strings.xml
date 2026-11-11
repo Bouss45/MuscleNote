@@ -20,6 +20,10 @@
         <item quantity="one">%1$d série</item>
         <item quantity="other">%1$d séries</item>
     </plurals>
+    <plurals name="common_days_count">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
 
     <!-- Onglets et titres -->
     <string name="tabs_home">Accueil</string>
@@ -262,4 +266,23 @@
     <string name="rest_timer_notif_body">C\'est parti pour %1$s !</string>
     <string name="rest_timer_skip">Passer</string>
     <string name="rest_timer_label">Repos</string>
+
+    <!-- Progrès (§ 2.10) -->
+    <string name="progress_tab_weight">Poids corps</string>
+    <string name="progress_tab_calories">Calories</string>
+    <string name="progress_tab_water">Eau</string>
+    <string name="progress_weight_current">Actuel</string>
+    <string name="progress_weight_change">Évolution</string>
+    <string name="progress_weight_min_max">Min–Max</string>
+    <string name="progress_weight_chart_title">Poids de corps (kg)</string>
+    <string name="progress_empty_no_session">Aucune séance encore</string>
+    <string name="progress_empty_no_session_hint">Lance ta première séance pour voir tes progrès ici</string>
+    <string name="body_weight_log_title">Journal de poids</string>
+    <string name="body_weight_add">Ajouter une pesée</string>
+    <string name="body_weight_new_entry">Nouvelle pesée</string>
+    <string name="body_weight_weight_label">Poids (kg)</string>
+    <string name="body_weight_weight_placeholder">Ex : 75.5</string>
+    <string name="body_weight_date_label">Date</string>
+    <string name="body_weight_empty">Aucune pesée manuelle enregistrée. Ajoute une pesée pour suivre ton poids même les jours sans séance.</string>
+    <string name="body_weight_invalid_entry">Vérifie le poids et la date</string>
 </resources>
