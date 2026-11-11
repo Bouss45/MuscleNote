@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
   Petite icône des notifications (§ 7.1) : silhouette blanche sur transparent, tracée depuis
-  artifacts/mobile/assets/images/notification-icon.png (contours simplifiés).
+  artifacts/mobile/assets/images/notification-icon.png, tag expo-final (contours simplifiés).
 -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="24dp"
