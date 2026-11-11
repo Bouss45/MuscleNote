@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Français : langue par défaut (§ 9.4). Clés de constants/i18n/fr.ts en snake_case. -->
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <string name="app_name" translatable="false">MuscleNote 2</string>
+    <string name="app_name" translatable="false">MuscleNote</string>
 
     <!-- Commun -->
     <string name="common_cancel">Annuler</string>
@@ -159,7 +159,7 @@
     <string name="home_new_session">Nouvelle séance</string>
     <string name="home_active_subtitle">%1$s · %2$s kg corps</string>
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
-    <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote 2.</string>
+    <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote.</string>
     <string name="home_streak_current">Série en cours</string>
     <!-- Unité seule, le nombre est affiché à côté en grand. -->
     <plurals name="home_streak_week_unit" tools:ignore="ImpliedQuantity">
