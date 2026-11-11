@@ -72,12 +72,13 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Toucher d'une notification du minuteur (`ACTION_OPEN_WORKOUT`), `ACTION_SEND`
+     * Toucher d'une notification (`ACTION_OPEN_WORKOUT`, `ACTION_OPEN_NUTRITION`), `ACTION_SEND`
      * (`EXTRA_STREAM`, ou à défaut `EXTRA_TEXT`) ou `ACTION_VIEW` d'un JSON.
      */
     private fun handleIntent(intent: Intent) {
         when (intent.action) {
             ACTION_OPEN_WORKOUT -> externalDestinations.trySend(ExternalDestination.Workout)
+            ACTION_OPEN_NUTRITION -> externalDestinations.trySend(ExternalDestination.Nutrition)
             Intent.ACTION_SEND -> {
                 val uri = IntentCompat.getParcelableExtra(intent, Intent.EXTRA_STREAM, Uri::class.java)
                 val text = intent.getStringExtra(Intent.EXTRA_TEXT)
@@ -93,5 +94,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         /** Ouvre l'écran de la séance en cours (notifications du minuteur, § 7.2). */
         const val ACTION_OPEN_WORKOUT = "com.musclenote.android.action.OPEN_WORKOUT"
+
+        /** Ouvre l'onglet Nutrition (notifications des rappels de compléments, § 7.3). */
+        const val ACTION_OPEN_NUTRITION = "com.musclenote.android.action.OPEN_NUTRITION"
     }
 }

@@ -22,9 +22,12 @@ object AppNotifications {
     /** Couleur d'accent des notifications (`primary`, identique dans les deux thèmes). */
     const val ACCENT_COLOR = 0xFF9B1C1C.toInt()
 
-    /** Identifiants des notifications de l'app ; les rappels de compléments viendront ensuite. */
+    /** Identifiants des notifications de l'app. */
     const val ID_REST_TIMER_ONGOING = 1001
     const val ID_REST_TIMER_FINISHED = 1002
+
+    /** Rappels de compléments : même id, une étiquette par complément. */
+    const val ID_SUPPLEMENT = 2001
 
     /** Builder commun : canal, petite icône, couleur d'accent. */
     fun builder(context: Context, channel: AppChannel): NotificationCompat.Builder =
@@ -45,13 +48,16 @@ object AppNotifications {
         hasPermission(context) && NotificationManagerCompat.from(context).areNotificationsEnabled()
 
     /** Affiche (ou remplace) la notification [id] ; ne fait rien si les notifications sont refusées. */
+    fun post(context: Context, id: Int, notification: Notification) = post(context, tag = null, id, notification)
+
+    /** Comme [post], identifiée par l'étiquette [tag] et [id]. */
     @SuppressLint("MissingPermission") // vérifiée juste avant par hasPermission
-    fun post(context: Context, id: Int, notification: Notification) {
+    fun post(context: Context, tag: String?, id: Int, notification: Notification) {
         if (!hasPermission(context)) return
         try {
-            NotificationManagerCompat.from(context).notify(id, notification)
+            NotificationManagerCompat.from(context).notify(tag, id, notification)
         } catch (e: SecurityException) {
-            Log.w(TAG, "Notification $id refusée", e)
+            Log.w(TAG, "Notification $tag/$id refusée", e)
         }
     }
 

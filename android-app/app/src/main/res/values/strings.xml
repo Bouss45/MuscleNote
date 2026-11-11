@@ -316,4 +316,8 @@
     <string name="progress_muscle_top_exercises_sub_cardio">Durée totale par séance</string>
     <string name="progress_muscle_need_two">Fais au moins 2 séances pour voir le graphique</string>
     <string name="progress_muscle_all_exercises">Tous les exercices</string>
+
+    <!-- Rappels de compléments (§ 7.3) -->
+    <string name="nutrition_notif_body">N\'oublie pas ta dose !</string>
+    <string name="nutrition_notif_body_dosage">N\'oublie pas ta dose (%1$s %2$s) !</string>
 </resources>

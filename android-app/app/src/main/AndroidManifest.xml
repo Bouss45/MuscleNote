@@ -13,6 +13,8 @@
         android:maxSdkVersion="32" />
     <!-- Vibration de fin de repos depuis le récepteur d'alarme. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Reprogrammer les rappels de compléments après un redémarrage. -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
         android:name=".MuscleNoteApplication"
@@ -56,6 +58,27 @@
         <receiver
             android:name=".notifications.RestTimerReceiver"
             android:exported="false" />
+
+        <!-- Rappels de compléments (§ 7.3) : sonnerie d'un rappel, intent explicite. -->
+        <receiver
+            android:name=".notifications.SupplementReminderReceiver"
+            android:exported="false" />
+
+        <!--
+          Resynchronisation des rappels : diffusions du système, reçues même non exporté.
+          Toutes figurent parmi les exceptions aux restrictions des diffusions implicites.
+        -->
+        <receiver
+            android:name=".notifications.ReminderResyncReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+                <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <!-- Partage des exports (§ 5.6) sans permission de stockage. -->
         <provider

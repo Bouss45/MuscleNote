@@ -5,8 +5,10 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.musclenote.android.data.AppContainer
+import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
+import com.musclenote.android.notifications.SupplementReminderScheduler
 import java.io.File
 
 class MuscleNoteApplication : Application() {
@@ -17,7 +19,11 @@ class MuscleNoteApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
-        container = AppContainer(File(filesDir, "data"), restTimerEffects = RestTimerNotifier(this))
+        container = AppContainer(
+            File(filesDir, "data"),
+            restTimerEffects = RestTimerNotifier(this),
+            supplementReminders = SupplementReminderScheduler(this, TimeSource.System),
+        )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(
             object : DefaultLifecycleObserver {

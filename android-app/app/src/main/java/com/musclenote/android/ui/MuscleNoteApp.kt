@@ -47,7 +47,7 @@ import com.musclenote.android.ui.workout.WorkoutScreen
 import kotlinx.coroutines.flow.Flow
 
 /** Écran demandé de l'extérieur de l'app (toucher d'une notification). */
-enum class ExternalDestination { Workout }
+enum class ExternalDestination { Workout, Nutrition }
 
 /**
  * Racine de l'interface (SPEC § 2.1) : barre d'onglets + hôte de navigation, sans en-tête
@@ -68,11 +68,13 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
             navController.navigateToTab(TopLevelDestination.Settings)
         }
     }
-    // Notification du minuteur touchée (§ 7.2) : séance en cours, au-dessus de l'écran actuel.
+    // Notification touchée : séance en cours au-dessus de l'écran actuel (minuteur, § 7.2), ou
+    // onglet Nutrition (rappel de complément, § 7.3).
     LaunchedEffect(externalDestinations) {
         externalDestinations.collect { destination ->
             when (destination) {
                 ExternalDestination.Workout -> navController.navigate(Routes.WORKOUT) { launchSingleTop = true }
+                ExternalDestination.Nutrition -> navController.navigateToTab(TopLevelDestination.Nutrition)
             }
         }
     }

@@ -314,4 +314,8 @@
     <string name="progress_muscle_top_exercises_sub_cardio">Total duration per session</string>
     <string name="progress_muscle_need_two">Complete at least 2 sessions to view the chart</string>
     <string name="progress_muscle_all_exercises">All exercises</string>
+
+    <!-- Supplement reminders (§ 7.3) -->
+    <string name="nutrition_notif_body">Don\'t forget your dose!</string>
+    <string name="nutrition_notif_body_dosage">Don\'t forget your dose (%1$s %2$s)!</string>
 </resources>
