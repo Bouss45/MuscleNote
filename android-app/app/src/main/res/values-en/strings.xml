@@ -242,4 +242,11 @@
     <string name="channel_rest_timer_ongoing">Rest in progress</string>
     <string name="channel_rest_timer">Rest timer</string>
     <string name="channel_supplements">Supplement reminders</string>
+
+    <!-- Rest timer (§ 7.2) -->
+    <string name="rest_timer_ongoing_title">Resting</string>
+    <string name="rest_timer_ongoing_text">Next set: %1$s</string>
+    <string name="rest_timer_notif_title">Rest complete 💪</string>
+    <string name="rest_timer_notif_body">Ready for %1$s!</string>
+    <string name="rest_timer_skip">Skip</string>
 </resources>

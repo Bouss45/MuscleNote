@@ -44,13 +44,17 @@ import com.musclenote.android.ui.workout.EditWorkoutScreen
 import com.musclenote.android.ui.workout.ExercisePickerScreen
 import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
+import kotlinx.coroutines.flow.Flow
+
+/** Écran demandé de l'extérieur de l'app (toucher d'une notification). */
+enum class ExternalDestination { Workout }
 
 /**
  * Racine de l'interface (SPEC § 2.1) : barre d'onglets + hôte de navigation, sans en-tête
  * système. Chaque écran dessine son propre en-tête sous la barre de statut (edge-to-edge).
  */
 @Composable
-fun MuscleNoteApp(backupViewModel: BackupViewModel) {
+fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<ExternalDestination>) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
@@ -62,6 +66,14 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
     LaunchedEffect(backupViewModel) {
         backupViewModel.showSettingsRequests.collect {
             navController.navigateToTab(TopLevelDestination.Settings)
+        }
+    }
+    // Notification du minuteur touchée (§ 7.2) : séance en cours, au-dessus de l'écran actuel.
+    LaunchedEffect(externalDestinations) {
+        externalDestinations.collect { destination ->
+            when (destination) {
+                ExternalDestination.Workout -> navController.navigate(Routes.WORKOUT) { launchSingleTop = true }
+            }
         }
     }
 

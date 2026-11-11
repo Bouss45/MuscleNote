@@ -52,6 +52,11 @@
             </intent-filter>
         </activity>
 
+        <!-- Minuteur de repos (§ 7.2) : alarme de fin et action « Passer », intents explicites. -->
+        <receiver
+            android:name=".notifications.RestTimerReceiver"
+            android:exported="false" />
+
         <!-- Partage des exports (§ 5.6) sans permission de stockage. -->
         <provider
             android:name="androidx.core.content.FileProvider"
