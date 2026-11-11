@@ -24,6 +24,10 @@
         <item quantity="one">%1$d jour</item>
         <item quantity="other">%1$d jours</item>
     </plurals>
+    <plurals name="common_sessions_count">
+        <item quantity="one">%1$d séance</item>
+        <item quantity="other">%1$d séances</item>
+    </plurals>
 
     <!-- Onglets et titres -->
     <string name="tabs_home">Accueil</string>
@@ -300,4 +304,16 @@
     <string name="progress_recap_daily_goal">Objectif quotidien</string>
     <string name="progress_recap_best_day">Meilleure journée</string>
     <string name="progress_recap_days_tracked">Jours suivis</string>
+    <string name="progress_muscle_sessions">Séances</string>
+    <string name="progress_muscle_max_load">Charge max</string>
+    <string name="progress_muscle_max_volume">Vol. max</string>
+    <string name="progress_muscle_max_duration">Durée max</string>
+    <string name="progress_muscle_max_distance">Distance max</string>
+    <string name="progress_muscle_empty">Aucune séance %1$s</string>
+    <string name="progress_muscle_empty_hint">Fais des exercices de %1$s pour voir ta progression</string>
+    <string name="progress_muscle_top_exercises">Exercices les plus utilisés</string>
+    <string name="progress_muscle_top_exercises_sub">Charge maximale par séance</string>
+    <string name="progress_muscle_top_exercises_sub_cardio">Durée totale par séance</string>
+    <string name="progress_muscle_need_two">Fais au moins 2 séances pour voir le graphique</string>
+    <string name="progress_muscle_all_exercises">Tous les exercices</string>
 </resources>

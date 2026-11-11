@@ -23,6 +23,10 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
+    <plurals name="common_sessions_count">
+        <item quantity="one">%1$d workout</item>
+        <item quantity="other">%1$d workouts</item>
+    </plurals>
 
     <!-- Onglets et titres -->
     <string name="tabs_home">Home</string>
@@ -298,4 +302,16 @@
     <string name="progress_recap_daily_goal">Daily goal</string>
     <string name="progress_recap_best_day">Best day</string>
     <string name="progress_recap_days_tracked">Days tracked</string>
+    <string name="progress_muscle_sessions">Sessions</string>
+    <string name="progress_muscle_max_load">Max load</string>
+    <string name="progress_muscle_max_volume">Max volume</string>
+    <string name="progress_muscle_max_duration">Longest</string>
+    <string name="progress_muscle_max_distance">Max distance</string>
+    <string name="progress_muscle_empty">No %1$s sessions</string>
+    <string name="progress_muscle_empty_hint">Complete %1$s exercises to see your progress</string>
+    <string name="progress_muscle_top_exercises">Top exercises</string>
+    <string name="progress_muscle_top_exercises_sub">Max load per session</string>
+    <string name="progress_muscle_top_exercises_sub_cardio">Total duration per session</string>
+    <string name="progress_muscle_need_two">Complete at least 2 sessions to view the chart</string>
+    <string name="progress_muscle_all_exercises">All exercises</string>
 </resources>

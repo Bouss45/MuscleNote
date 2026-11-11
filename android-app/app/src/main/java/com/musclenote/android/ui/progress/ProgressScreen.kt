@@ -83,10 +83,10 @@ private sealed interface ProgressTab {
 /**
  * Onglet Progrès (SPEC § 2.10) : rangée défilante d'onglets — Poids corps, Calories, Eau, puis un
  * onglet par groupe musculaire avec son nombre de séances — et le contenu de l'onglet choisi.
- * Calculs au § 3.10 ([ProgressStats]).
+ * Calculs au § 3.10 ([ProgressStats]). [onOpenExerciseHistory] ouvre l'historique d'un exercice.
  */
 @Composable
-fun ProgressScreen(modifier: Modifier = Modifier) {
+fun ProgressScreen(onOpenExerciseHistory: (exerciseId: String) -> Unit, modifier: Modifier = Modifier) {
     val container = LocalAppContainer.current
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
     val customExercises by container.workouts.customExercises.collectAsStateWithLifecycle()
@@ -176,7 +176,14 @@ fun ProgressScreen(modifier: Modifier = Modifier) {
                     )
                     ProgressTab.Calories -> DailyTab(DailyKind.Calories, tracker, today, dates)
                     ProgressTab.Water -> DailyTab(DailyKind.Water, tracker, today, dates)
-                    is ProgressTab.Muscle -> Unit
+                    is ProgressTab.Muscle -> MuscleGroupTab(
+                        group = tab.group,
+                        workouts = workouts,
+                        definitions = definitions,
+                        zone = zone,
+                        dates = dates,
+                        onOpenHistory = onOpenExerciseHistory,
+                    )
                 }
             }
         }

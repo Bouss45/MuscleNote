@@ -103,7 +103,11 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
                 )
             }
-            composable(TopLevelDestination.Progress.route) { ProgressScreen() }
+            composable(TopLevelDestination.Progress.route) {
+                ProgressScreen(
+                    onOpenExerciseHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
+                )
+            }
             composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
             composable(TopLevelDestination.Settings.route) { SettingsScreen(backupViewModel) }
 
