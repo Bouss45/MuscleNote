@@ -48,6 +48,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.catalog.exerciseDefinitions
+import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.util.parseInstantOrNull
@@ -56,6 +57,7 @@ import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.InlineConfirm
 import com.musclenote.android.ui.components.NotFoundScreen
 import com.musclenote.android.ui.components.dashedBorder
+import com.musclenote.android.ui.components.exerciseName
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.components.workoutDisplayName
@@ -82,6 +84,7 @@ fun WorkoutScreen(
     val container = LocalAppContainer.current
     val repository = container.workouts
     val current by repository.currentWorkout.collectAsStateWithLifecycle()
+    val restTimer by container.restTimer.state.collectAsStateWithLifecycle()
     val customExercises by repository.customExercises.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val colors = MuscleNoteTheme.colors
@@ -138,13 +141,19 @@ fun WorkoutScreen(
 
             items(ordered, key = { it.exerciseId }) { workoutExercise ->
                 val exerciseId = workoutExercise.exerciseId
+                val exerciseLabel = exerciseName(definitions.getValue(exerciseId))
                 ReorderableItem(reorderState, key = exerciseId) { isDragging ->
                     val elevation by animateDpAsState(if (isDragging) 10.dp else 0.dp, label = "elevation")
                     val scale by animateFloatAsState(if (isDragging) 1.03f else 1f, label = "scale")
                     ExerciseCard(
                         definition = definitions.getValue(exerciseId),
                         workoutExercise = workoutExercise,
-                        onToggleSet = { setId -> container.launchMutation { repository.toggleSetCompleted(exerciseId, setId) } },
+                        // Non validée → validée : repos avec le nom affiché de l'exercice (§ 2.6, § 7.2).
+                        onToggleSet = { setId ->
+                            container.launchMutation {
+                                if (repository.toggleSetCompleted(exerciseId, setId) == true) container.restTimer.start(exerciseLabel)
+                            }
+                        },
                         onUpdateSet = { setId, transform -> container.launchMutation { repository.updateSet(exerciseId, setId, transform) } },
                         onRemoveSet = { setId -> container.launchMutation { repository.removeSet(exerciseId, setId) } },
                         onAddSet = { container.launchMutation { repository.addSet(exerciseId) } },
@@ -173,6 +182,12 @@ fun WorkoutScreen(
 
         FinishFooter(
             hasCompletedSet = WorkoutRules.hasCompletedSet(workout),
+            restTimer = restTimer,
+            time = container.time,
+            onSkipRest = {
+                haptics.light()
+                container.launchMutation { container.restTimer.stop() }
+            },
             onConfirm = { completed ->
                 if (completed) haptics.success() else haptics.warning()
                 onFinished()
@@ -323,7 +338,13 @@ internal fun AddExerciseButton(onClick: () -> Unit) {
  * la confirmation prévient que la séance ne sera pas enregistrée (🔄 D15).
  */
 @Composable
-private fun FinishFooter(hasCompletedSet: Boolean, onConfirm: (hasCompletedSet: Boolean) -> Unit) {
+private fun FinishFooter(
+    hasCompletedSet: Boolean,
+    restTimer: RestTimerState?,
+    time: TimeSource,
+    onSkipRest: () -> Unit,
+    onConfirm: (hasCompletedSet: Boolean) -> Unit,
+) {
     val colors = MuscleNoteTheme.colors
     val haptics = rememberHaptics()
     var confirming by rememberSaveable { mutableStateOf(false) }
@@ -333,11 +354,12 @@ private fun FinishFooter(hasCompletedSet: Boolean, onConfirm: (hasCompletedSet: 
             .background(colors.background),
     ) {
         HorizontalDivider(thickness = 1.dp, color = colors.border)
-        Box(
+        Column(
             Modifier
                 .navigationBarsPadding()
                 .padding(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 16.dp),
         ) {
+            RestTimerBanner(restTimer, time, onSkip = onSkipRest, modifier = Modifier.padding(bottom = 10.dp))
             if (confirming) {
                 InlineConfirm(
                     message = stringResource(if (hasCompletedSet) R.string.workout_finish_confirm else R.string.workout_finish_empty),

@@ -249,4 +249,5 @@
     <string name="rest_timer_notif_title">Rest complete 💪</string>
     <string name="rest_timer_notif_body">Ready for %1$s!</string>
     <string name="rest_timer_skip">Skip</string>
+    <string name="rest_timer_label">Rest</string>
 </resources>
