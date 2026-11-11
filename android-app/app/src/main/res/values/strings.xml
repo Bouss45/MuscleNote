@@ -329,4 +329,25 @@
     <string name="nutrition_water_placeholder">ml…</string>
     <string name="nutrition_cal_goal_placeholder">Objectif kcal</string>
     <string name="nutrition_water_goal_placeholder">Ex : 2.0 (en litres)</string>
+    <string name="nutrition_supplement">Complément</string>
+    <string name="nutrition_supplements_section">COMPLÉMENTS</string>
+    <string name="nutrition_new_supplement">Nouveau complément</string>
+    <string name="nutrition_name">Nom</string>
+    <string name="nutrition_name_placeholder">Ex : Créatine, Whey, Oméga-3...</string>
+    <string name="nutrition_dosage_per_intake">Dosage par prise</string>
+    <string name="nutrition_dosage_placeholder">Ex : 1</string>
+    <string name="nutrition_reminders">Rappels</string>
+    <string name="nutrition_add_reminder">Ajouter un rappel</string>
+    <string name="nutrition_reminder_time_title">Heure du rappel</string>
+    <string name="nutrition_empty_title">Aucun complément</string>
+    <string name="nutrition_empty_text">Ajoute tes compléments alimentaires et configure des rappels pour ne jamais en oublier</string>
+    <string name="nutrition_per_intake">%1$s %2$s par prise</string>
+    <string name="nutrition_reminders_on">Rappels activés</string>
+    <string name="nutrition_reminder_at">Rappel à %1$s</string>
+    <string name="nutrition_reminders_count">%1$d rappels</string>
+    <string name="nutrition_no_reminder">Pas de rappel</string>
+    <string name="nutrition_taken_yes">✓ Pris aujourd\'hui</string>
+    <string name="nutrition_taken_no">Non pris aujourd\'hui</string>
+    <string name="nutrition_delete_confirm">Supprimer « %1$s » ?</string>
+    <string name="nutrition_info_mobile">Les rappels sont des notifications locales. L\'app doit avoir la permission d\'envoyer des notifications.</string>
 </resources>

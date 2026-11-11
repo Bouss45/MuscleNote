@@ -327,4 +327,25 @@
     <string name="nutrition_water_placeholder">ml…</string>
     <string name="nutrition_cal_goal_placeholder">kcal goal</string>
     <string name="nutrition_water_goal_placeholder">E.g. 2.0 (liters)</string>
+    <string name="nutrition_supplement">Supplement</string>
+    <string name="nutrition_supplements_section">SUPPLEMENTS</string>
+    <string name="nutrition_new_supplement">New supplement</string>
+    <string name="nutrition_name">Name</string>
+    <string name="nutrition_name_placeholder">E.g. Creatine, Whey, Omega-3...</string>
+    <string name="nutrition_dosage_per_intake">Dosage per intake</string>
+    <string name="nutrition_dosage_placeholder">E.g. 1</string>
+    <string name="nutrition_reminders">Reminders</string>
+    <string name="nutrition_add_reminder">Add a reminder</string>
+    <string name="nutrition_reminder_time_title">Reminder time</string>
+    <string name="nutrition_empty_title">No supplements</string>
+    <string name="nutrition_empty_text">Add your supplements and set reminders so you never forget</string>
+    <string name="nutrition_per_intake">%1$s %2$s per intake</string>
+    <string name="nutrition_reminders_on">Reminders enabled</string>
+    <string name="nutrition_reminder_at">Reminder at %1$s</string>
+    <string name="nutrition_reminders_count">%1$d reminders</string>
+    <string name="nutrition_no_reminder">No reminder</string>
+    <string name="nutrition_taken_yes">✓ Taken today</string>
+    <string name="nutrition_taken_no">Not taken today</string>
+    <string name="nutrition_delete_confirm">Delete “%1$s”?</string>
+    <string name="nutrition_info_mobile">Reminders are local notifications. The app needs permission to send notifications.</string>
 </resources>
