@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
+import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseInstantOrNull
@@ -36,3 +37,9 @@ fun workoutDisplayName(workout: Workout): String {
     val start = parseInstantOrNull(workout.date, zone) ?: return ""
     return start.atZone(zone).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(appLocale()))
 }
+
+/** Nom affiché d'un exercice (§ 6.1) : traduit pour un exercice intégré, saisi pour un perso. */
+@Composable
+@ReadOnlyComposable
+fun exerciseName(definition: ExerciseDefinition): String =
+    definition.nameRes?.let { stringResource(it) } ?: definition.customName.orEmpty()

@@ -38,6 +38,7 @@ import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 import com.musclenote.android.ui.workout.StartWorkoutScreen
+import com.musclenote.android.ui.workout.WorkoutScreen
 
 /**
  * Racine de l'interface (SPEC § 2.1) : barre d'onglets + hôte de navigation, sans en-tête
@@ -98,6 +99,13 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
                             launchSingleTop = true
                         }
                     },
+                )
+            }
+            composable(Routes.WORKOUT) {
+                WorkoutScreen(
+                    onBack = { navController.backToHome() },
+                    onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
+                    onFinished = { navController.backToHome() },
                 )
             }
         }

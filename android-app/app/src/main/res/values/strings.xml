@@ -129,6 +129,35 @@
     <string name="start_workout_body_weight_subtitle">Ton poids aujourd\'hui ?</string>
     <string name="start_workout_start">Commencer</string>
 
+    <!-- Séance en cours (§ 2.4 – 2.6) -->
+    <string name="workout_no_active">Aucune séance active</string>
+    <string name="workout_in_progress">Séance en cours</string>
+    <string name="workout_sets_progress">%1$d/%2$d séries</string>
+    <string name="workout_add_exercise">Ajouter un exercice</string>
+    <string name="workout_empty_exercises">Ajoute des exercices pour commencer</string>
+    <string name="workout_finish">Terminer la séance</string>
+    <string name="workout_finish_short">Terminer</string>
+    <string name="workout_finish_confirm">Terminer la séance ?</string>
+    <string name="workout_finish_empty">Aucune série validée : la séance ne sera pas enregistrée.</string>
+    <string name="workout_abandon">Abandonner</string>
+    <string name="workout_warmup_title">Échauffement</string>
+    <string name="workout_warmup_count">%1$d/%2$d exercices</string>
+    <string name="workout_warmup_done">Fait !</string>
+    <string name="workout_warmup_cardio_label">Cardio léger</string>
+    <string name="workout_warmup_cardio_detail">5-10 min vélo ou rameur</string>
+    <string name="workout_warmup_shoulders_label">Rotation des épaules</string>
+    <string name="workout_warmup_shoulders_detail">15 reps chaque côté</string>
+    <string name="workout_warmup_hips_label">Mobilité des hanches</string>
+    <string name="workout_warmup_hips_detail">10 reps cercles</string>
+    <string name="workout_warmup_stretch_label">Étirements dynamiques</string>
+    <string name="workout_warmup_stretch_detail">1 min jambes &amp; dos</string>
+    <string name="workout_warmup_squat_label">Squats à vide</string>
+    <string name="workout_warmup_squat_detail">15 reps lents</string>
+    <string name="exercise_card_note_placeholder">Ajouter une note…</string>
+    <string name="exercise_card_add_set">Ajouter une série</string>
+    <string name="exercise_card_remove_confirm">Retirer « %1$s » de la séance ?</string>
+    <string name="exercise_card_remove">Retirer</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Données chargées (provisoire)</string>
     <string name="debug_data_sessions">Séances</string>

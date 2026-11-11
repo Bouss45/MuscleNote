@@ -128,6 +128,35 @@
     <string name="start_workout_body_weight_subtitle">Your weight today?</string>
     <string name="start_workout_start">Start</string>
 
+    <!-- Workout in progress (§ 2.4 – 2.6) -->
+    <string name="workout_no_active">No active workout</string>
+    <string name="workout_in_progress">Workout in progress</string>
+    <string name="workout_sets_progress">%1$d/%2$d sets</string>
+    <string name="workout_add_exercise">Add an exercise</string>
+    <string name="workout_empty_exercises">Add exercises to get started</string>
+    <string name="workout_finish">Finish workout</string>
+    <string name="workout_finish_short">Finish</string>
+    <string name="workout_finish_confirm">Finish this workout?</string>
+    <string name="workout_finish_empty">No completed set: this session won\'t be saved.</string>
+    <string name="workout_abandon">Discard</string>
+    <string name="workout_warmup_title">Warm-up</string>
+    <string name="workout_warmup_count">%1$d/%2$d exercises</string>
+    <string name="workout_warmup_done">Done!</string>
+    <string name="workout_warmup_cardio_label">Light cardio</string>
+    <string name="workout_warmup_cardio_detail">5-10 min bike or rower</string>
+    <string name="workout_warmup_shoulders_label">Shoulder rotations</string>
+    <string name="workout_warmup_shoulders_detail">15 reps each side</string>
+    <string name="workout_warmup_hips_label">Hip mobility</string>
+    <string name="workout_warmup_hips_detail">10 circle reps</string>
+    <string name="workout_warmup_stretch_label">Dynamic stretches</string>
+    <string name="workout_warmup_stretch_detail">1 min legs &amp; back</string>
+    <string name="workout_warmup_squat_label">Bodyweight squats</string>
+    <string name="workout_warmup_squat_detail">15 slow reps</string>
+    <string name="exercise_card_note_placeholder">Add a note…</string>
+    <string name="exercise_card_add_set">Add a set</string>
+    <string name="exercise_card_remove_confirm">Remove “%1$s” from this session?</string>
+    <string name="exercise_card_remove">Remove</string>
+
     <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
     <string name="debug_data_title">Loaded data (temporary)</string>
     <string name="debug_data_sessions">Sessions</string>
