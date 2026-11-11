@@ -20,10 +20,11 @@ class StringResourcesTest {
     }
 
     private companion object {
+        // Déclarée avant FR et EN, qui s'en servent à l'initialisation.
+        private val argument = Regex("""%(\d+)\$[sdf]""")
+
         val FR = arguments("src/main/res/values/strings.xml")
         val EN = arguments("src/main/res/values-en/strings.xml")
-
-        private val argument = Regex("""%(\d+)\$[sdf]""")
 
         /** Clé (`<string>` ou `<plurals>` traduisible) → arguments `%n$x` utilisés. */
         fun arguments(path: String): Map<String, Set<String>> {
