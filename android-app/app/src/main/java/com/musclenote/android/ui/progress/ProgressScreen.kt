@@ -174,7 +174,9 @@ fun ProgressScreen(modifier: Modifier = Modifier) {
                         onAddWeighIn = { showWeighIn = true },
                         onRemoveWeighIn = { date -> container.launchMutation { container.nutrition.removeBodyWeight(date) } },
                     )
-                    ProgressTab.Calories, ProgressTab.Water, is ProgressTab.Muscle -> Unit
+                    ProgressTab.Calories -> DailyTab(DailyKind.Calories, tracker, today, dates)
+                    ProgressTab.Water -> DailyTab(DailyKind.Water, tracker, today, dates)
+                    is ProgressTab.Muscle -> Unit
                 }
             }
         }

@@ -283,4 +283,19 @@
     <string name="body_weight_date_label">Date</string>
     <string name="body_weight_empty">No manual weigh-ins recorded. Add a weigh-in to track weight on rest days.</string>
     <string name="body_weight_invalid_entry">Check the weight and the date</string>
+    <string name="progress_stat_today">Today</string>
+    <string name="progress_stat_today_liters">Today\n(L)</string>
+    <string name="progress_stat_avg7">7-day avg</string>
+    <string name="progress_stat_goal_days_hit">Goal days\nhit</string>
+    <string name="progress_cal_no_data">No data</string>
+    <string name="progress_cal_no_data_hint">Start logging calories in the Nutrition tab to track them here</string>
+    <string name="progress_cal_chart_title">Calories (kcal)</string>
+    <string name="progress_cal_chart_sub">%1$d days · Goal %2$s kcal</string>
+    <string name="progress_water_no_data_hint">Start tracking hydration in the Nutrition tab to see it here</string>
+    <string name="progress_water_chart_title">Hydration (L)</string>
+    <string name="progress_water_chart_sub">%1$d days · Goal %2$s L/day</string>
+    <string name="progress_recap_title">Summary</string>
+    <string name="progress_recap_daily_goal">Daily goal</string>
+    <string name="progress_recap_best_day">Best day</string>
+    <string name="progress_recap_days_tracked">Days tracked</string>
 </resources>
