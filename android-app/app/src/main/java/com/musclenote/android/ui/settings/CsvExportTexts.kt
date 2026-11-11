@@ -9,6 +9,7 @@ import com.musclenote.android.data.export.CsvTexts
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.util.parseInstantOrNull
+import com.musclenote.android.ui.components.appFormattingLocale
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -19,14 +20,17 @@ import java.time.format.FormatStyle
  */
 object CsvExportTexts {
 
-    /** Anglais → `,` et point ; sinon (français, ou autre langue affichée en français) → `;` et virgule. */
+    /**
+     * Langue des en-têtes (§ 3.14) : anglais → `,` et point ; sinon (français, ou autre langue
+     * du système, affichée en français) → `;` et virgule.
+     */
     fun format(localized: Context): CsvFormat =
-        if (localized.resources.configuration.locales[0]?.language == "en") CsvFormat.ENGLISH else CsvFormat.FRENCH
+        if (localized.resources.configuration.appFormattingLocale().language == "en") CsvFormat.ENGLISH else CsvFormat.FRENCH
 
     fun texts(localized: Context, customExercises: List<Exercise>, zone: ZoneId): CsvTexts {
         // Archivés compris : ils nomment encore l'historique (§ 3.9).
         val definitions = exerciseDefinitions(customExercises).associateBy { it.id }
-        val locale = localized.resources.configuration.locales[0]
+        val locale = localized.resources.configuration.appFormattingLocale()
         val dateFormatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).withLocale(locale)
         return CsvTexts(
             header = { localized.getString(it.labelRes()) },

@@ -1,5 +1,6 @@
 package com.musclenote.android.ui.components
 
+import android.content.res.Configuration
 import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -8,6 +9,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.util.AppLocales
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseInstantOrNull
 import java.math.RoundingMode
@@ -20,10 +22,16 @@ import java.time.format.FormatStyle
 import java.util.Locale
 import kotlin.math.roundToLong
 
-/** Locale effective de l'app (langue du système ou choix FR / EN, § 9.4), pour formater. */
+/**
+ * Locale effective de l'app, pour formater (§ 3.14) : celle des textes affichés — français ou
+ * anglais, système dans une autre langue → français (§ 9.4).
+ */
 @Composable
 @ReadOnlyComposable
-fun appLocale(): Locale = LocalConfiguration.current.locales.get(0) ?: Locale.getDefault()
+fun appLocale(): Locale = LocalConfiguration.current.appFormattingLocale()
+
+/** [AppLocales.formatting] appliquée aux locales de la configuration. */
+fun Configuration.appFormattingLocale(): Locale = AppLocales.formatting(List(locales.size()) { locales.get(it) })
 
 /** Nombre décimal selon la locale de l'app (`78,5` en français). */
 @Composable
