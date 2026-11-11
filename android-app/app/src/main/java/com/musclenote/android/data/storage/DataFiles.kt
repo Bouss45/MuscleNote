@@ -9,6 +9,7 @@ import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.update.UpdateCheckState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.serialization.KSerializer
@@ -50,5 +51,8 @@ class DataFiles(
 
     /** Repos en cours (§ 7.2) ; fichier absent hors repos. */
     val restTimer = document("rest_timer.json", RestTimerState.serializer())
+
+    /** Vérification des mises à jour (§ 3.17), propre à l'appareil, hors sauvegarde. */
+    val updateCheck = document("update_check.json", UpdateCheckState.serializer())
     val meta = document("meta.json", StorageMeta.serializer())
 }

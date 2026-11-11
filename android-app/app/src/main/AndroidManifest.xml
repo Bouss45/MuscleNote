@@ -15,6 +15,9 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <!-- Reprogrammer les rappels de compléments après un redémarrage. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- Vérification des mises à jour (§ 3.17, 🔄 D25) : une requête par jour à l'API GitHub,
+         seulement si l'app n'est pas installée par Obtainium ; aucune donnée envoyée. -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".MuscleNoteApplication"
