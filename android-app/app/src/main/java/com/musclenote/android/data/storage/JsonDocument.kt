@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.core.util.AtomicFile
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -22,7 +24,8 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * - Écriture **atomique** ([AtomicFile] : fichier temporaire puis renommage), sur [ioDispatcher].
  * - [save] planifie l'écriture et rend la main ; si plusieurs écritures s'accumulent, seule la
- *   plus récente est faite. [saveNow] écrit et attend (import).
+ *   plus récente est faite. [saveNow] écrit et attend (import). [saveDebounced] regroupe les
+ *   écritures rapprochées (séance en cours) ; [flush] force celle qui attend encore.
  * - Un fichier illisible (JSON invalide ou mauvaise forme) est **renommé**
  *   `<nom>.corrupt-<timestamp ms>.json` et lu comme absent : la prochaine écriture ne détruit
  *   donc pas l'unique copie des données.
@@ -43,6 +46,13 @@ class JsonDocument<T : Any>(
     /** Numéro de la dernière écriture demandée : une écriture dépassée n'est pas faite. */
     private val generation = AtomicLong()
 
+    /** Écriture différée par [saveDebounced], pas encore faite. */
+    private class Pending<V>(val value: V?, val generation: Long)
+
+    private val pendingLock = Any()
+    private var pending: Pending<T>? = null
+    private var pendingJob: Job? = null
+
     val name: String get() = file.name
 
     /** Contenu du fichier, ou `null` s'il est absent ou illisible (alors mis de côté). */
@@ -58,6 +68,37 @@ class JsonDocument<T : Any>(
     suspend fun saveNow(value: T?) {
         generation.incrementAndGet()
         withContext(ioDispatcher) { ioMutex.withLock { writeLocked(value) } }
+    }
+
+    /**
+     * Écriture différée de [delayMillis] : chaque appel repousse l'écriture, qui ne porte que sur
+     * la dernière valeur. Un [save] ou [saveNow] ultérieur la rend caduque.
+     */
+    fun saveDebounced(value: T?, delayMillis: Long) {
+        synchronized(pendingLock) {
+            val next = Pending(value, generation.incrementAndGet())
+            pending = next
+            pendingJob?.cancel()
+            pendingJob = scope.launch(ioDispatcher) {
+                delay(delayMillis)
+                writePending(next)
+            }
+        }
+    }
+
+    /** Fait tout de suite l'écriture différée en attente, s'il y en a une, et attend sa fin. */
+    suspend fun flush() {
+        val waiting = synchronized(pendingLock) {
+            pendingJob?.cancel()
+            pendingJob = null
+            pending
+        } ?: return
+        withContext(ioDispatcher) { writePending(waiting) }
+    }
+
+    private suspend fun writePending(write: Pending<T>) {
+        ioMutex.withLock { if (write.generation == generation.get()) writeLocked(write.value) }
+        synchronized(pendingLock) { if (pending === write) pending = null }
     }
 
     private fun readLocked(): T? {

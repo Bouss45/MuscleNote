@@ -10,8 +10,10 @@ import com.musclenote.android.data.storage.StorageMeta
 import com.musclenote.android.data.util.TimeSource
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -43,6 +45,29 @@ class AppContainer(
 
     /** Attend la fin du chargement initial : rien ne doit être exporté ou importé avant. */
     suspend fun awaitReady() = initialLoad.await()
+
+    /**
+     * Lance une mutation de dépôt depuis l'UI. Démarrage immédiat (`UNDISPATCHED`) : la mutation
+     * demande le `Mutex` du dépôt dès l'appel, et ce `Mutex` sert les demandes dans leur ordre
+     * d'arrivée — deux frappes successives sont donc appliquées dans l'ordre. Sans attente, la
+     * mutation s'applique même avant le retour de l'appel. Portée de l'application : quitter
+     * l'écran ne l'annule pas.
+     */
+    fun launchMutation(block: suspend () -> Unit): Job =
+        appScope.launch(start = CoroutineStart.UNDISPATCHED) { block() }
+
+    /** Retour de l'app au premier plan (`ON_START`) : contrôle des séances de plus de 24 h (§ 3.4). */
+    fun onAppForeground() {
+        appScope.launch {
+            awaitReady()
+            workouts.finalizeStaleSession()
+        }
+    }
+
+    /** Mise en arrière-plan (`ON_STOP`) : écritures différées forcées (§ 4.2). */
+    fun onAppBackground() {
+        appScope.launch { workouts.flushPendingWrites() }
+    }
 
     /**
      * Import d'une sauvegarde validée (§ 5.4) : seuls les documents présents sont remplacés,

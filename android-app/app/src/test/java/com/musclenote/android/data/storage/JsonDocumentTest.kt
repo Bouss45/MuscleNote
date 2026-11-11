@@ -51,6 +51,38 @@ class JsonDocumentTest {
     }
 
     @Test
+    fun `les écritures différées rapprochées n'en font qu'une, avec la dernière valeur`() = runBlocking<Unit> {
+        coroutineScope {
+            val doc = document(this)
+            doc.saveDebounced(listOf(1), 200)
+            doc.saveDebounced(listOf(2), 200)
+            assertFalse(file.exists())
+        }
+        assertEquals("[2]", file.readText())
+    }
+
+    @Test
+    fun `flush fait tout de suite l'écriture différée en attente`() = runBlocking<Unit> {
+        val doc = document(this)
+        doc.saveDebounced(listOf(4), 60_000)
+        doc.flush()
+        assertEquals("[4]", file.readText())
+        doc.flush() // plus rien en attente
+        assertEquals("[4]", file.readText())
+    }
+
+    @Test
+    fun `une écriture immédiate rend caduque l'écriture différée en attente`() = runBlocking<Unit> {
+        coroutineScope {
+            val doc = document(this)
+            doc.saveNow(listOf(1))
+            doc.saveDebounced(listOf(5), 100)
+            doc.save(null)
+        }
+        assertFalse(file.exists())
+    }
+
+    @Test
     fun `écrire null supprime le fichier`() = runBlocking<Unit> {
         val doc = document(this)
         doc.saveNow(listOf(1))

@@ -1,6 +1,9 @@
 package com.musclenote.android
 
 import android.app.Application
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.musclenote.android.data.AppContainer
 import java.io.File
 
@@ -13,5 +16,12 @@ class MuscleNoteApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(File(filesDir, "data"))
+        ProcessLifecycleOwner.get().lifecycle.addObserver(
+            object : DefaultLifecycleObserver {
+                override fun onStart(owner: LifecycleOwner) = container.onAppForeground()
+
+                override fun onStop(owner: LifecycleOwner) = container.onAppBackground()
+            },
+        )
     }
 }
