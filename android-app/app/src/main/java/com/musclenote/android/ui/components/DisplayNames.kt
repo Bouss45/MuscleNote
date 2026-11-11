@@ -38,18 +38,19 @@ fun formatInteger(value: Double): String = NumberFormat.getIntegerInstance(appLo
 
 /** Formats de date de l'app, dans la locale et le fuseau courants (§ 9.4). */
 class DateFormats(locale: Locale, private val zone: ZoneId) {
-    /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
-    private val weekdayDayMonth = DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
-    private val time = DateTimeFormatter.ofPattern("HH:mm", locale)
-    private val dayMonth = DateTimeFormatter.ofPattern("dd/MM", locale)
+    private val weekdayDayMonthFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
+    private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", locale)
+    private val dayMonthFormatter = DateTimeFormatter.ofPattern("dd/MM", locale)
 
-    fun weekdayDayMonth(instant: Instant): String = weekdayDayMonth.format(instant.atZone(zone))
+    /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
+    fun weekdayDayMonth(instant: Instant): String = weekdayDayMonthFormatter.format(instant.atZone(zone))
 
     /** Heure `HH:mm`. */
-    fun time(instant: Instant): String = time.format(instant.atZone(zone))
+    fun time(instant: Instant): String = timeFormatter.format(instant.atZone(zone))
 
     /** `dd/MM`, pour les libellés des graphiques. */
-    fun dayMonth(instant: Instant): String = dayMonth.format(instant.atZone(zone))
+    fun dayMonth(instant: Instant): String = dayMonthFormatter.format(instant.atZone(zone))
 }
 
 @Composable

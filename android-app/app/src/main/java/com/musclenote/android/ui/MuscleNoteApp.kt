@@ -88,6 +88,7 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel) {
                 HomeScreen(
                     onStartWorkout = { navController.navigate(Routes.START_WORKOUT) { launchSingleTop = true } },
                     onOpenWorkout = { navController.navigate(Routes.WORKOUT) { launchSingleTop = true } },
+                    onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
                 )
             }
             composable(TopLevelDestination.Progress.route) { ProgressScreen() }

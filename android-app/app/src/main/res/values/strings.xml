@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Français : langue par défaut (§ 9.4). Clés de constants/i18n/fr.ts en snake_case. -->
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <string name="app_name" translatable="false">MuscleNote 2</string>
 
     <!-- Commun -->
@@ -15,6 +15,10 @@
     <plurals name="common_exercises_count">
         <item quantity="one">%1$d exercice</item>
         <item quantity="other">%1$d exercices</item>
+    </plurals>
+    <plurals name="common_sets_count">
+        <item quantity="one">%1$d série</item>
+        <item quantity="other">%1$d séries</item>
     </plurals>
 
     <!-- Onglets et titres -->
@@ -116,6 +120,45 @@
     <!-- Accueil (§ 2.2) -->
     <string name="home_new_session">Nouvelle séance</string>
     <string name="home_active_subtitle">%1$s · %2$s kg corps</string>
+    <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
+    <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote 2.</string>
+    <string name="home_streak_current">Série en cours</string>
+    <!-- Unité seule, le nombre est affiché à côté en grand. -->
+    <plurals name="home_streak_week_unit" tools:ignore="ImpliedQuantity">
+        <item quantity="one">semaine</item>
+        <item quantity="other">semaines</item>
+    </plurals>
+    <string name="home_streak_best">Meilleure</string>
+    <string name="home_streak_best_value">%1$d sem.</string>
+    <string name="home_streak_last8weeks">8 dernières semaines · cette semaine à droite</string>
+    <string name="home_streak_legend_validated">Validée (3+)</string>
+    <string name="home_streak_legend_partial">Partielle (1-2)</string>
+    <string name="home_streak_legend_none">Aucune</string>
+    <string name="home_streak_hint_start">Fais 3 séances cette semaine pour démarrer une série</string>
+    <string name="home_streak_hint_alive">Minimum 3 séances/semaine · 1 pause autorisée</string>
+    <string name="home_streak_hint_over">Série terminée — recommence cette semaine !</string>
+    <string name="home_stat_sessions">Séances</string>
+    <string name="home_stat_total_volume">Volume total</string>
+    <string name="home_stat_last_weight">Dernier poids</string>
+    <string name="home_gym_time">Temps total en salle · moy. %1$s/séance</string>
+    <string name="home_recent_sessions">Séances récentes</string>
+    <string name="home_delete_confirm">Supprimer cette séance ?</string>
+    <string name="home_volume_short">%1$s kg vol.</string>
+    <string name="home_minutes">%1$d min</string>
+    <string name="home_empty_title">Prêt à s\'entrainer ?</string>
+    <string name="home_empty_text">Lance ta première séance pour commencer à suivre tes progrès</string>
+    <string name="home_edit_date">Modifier la date</string>
+    <string name="home_date_day">Jour</string>
+    <string name="home_date_month">Mois</string>
+    <string name="home_date_year">Année</string>
+    <string name="home_date_hour">Heure</string>
+    <string name="home_date_minute">Min</string>
+    <string name="date_day">JJ</string>
+    <string name="date_month">MM</string>
+    <string name="date_year">AAAA</string>
+    <string name="date_hh">HH</string>
+    <string name="date_mm">mm</string>
+    <string name="date_invalid">Date ou heure invalide</string>
 
     <!-- Démarrer une séance (§ 2.3) -->
     <string name="start_workout_title">Type de séance</string>
@@ -197,12 +240,4 @@
     <string name="edit_workout_discard">Abandonner</string>
     <string name="edit_workout_keep_editing">Continuer l\'édition</string>
     <string name="edit_workout_rename">Renommer la séance</string>
-
-    <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
-    <string name="debug_data_title">Données chargées (provisoire)</string>
-    <string name="debug_data_sessions">Séances</string>
-    <string name="debug_data_custom_exercises">Exercices perso</string>
-    <string name="debug_data_archived">dont %1$d archivé(s)</string>
-    <string name="debug_data_weigh_ins">Pesées</string>
-    <string name="debug_data_supplements">Compléments</string>
 </resources>
