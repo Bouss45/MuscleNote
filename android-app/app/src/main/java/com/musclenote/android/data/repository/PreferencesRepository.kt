@@ -39,6 +39,17 @@ class PreferencesRepository(
         }
     }
 
+    /** Durée du repos entre les séries (§ 2.12, § 3.14) : entier > 0, sinon ignorée. */
+    suspend fun setRestSeconds(seconds: Int) {
+        if (seconds <= 0) return
+        mutex.withLock {
+            val next = _preferences.value.copy(restSeconds = seconds)
+            if (next == _preferences.value) return
+            _preferences.value = next
+            preferencesDoc.save(next)
+        }
+    }
+
     /**
      * ✕ de la carte « Tu viens de l'ancienne MuscleNote ? » (§ 2.2), mémorisé sur l'appareil.
      * Écriture attendue sous le verrou : un rechargement (après un import) ne peut pas relire le

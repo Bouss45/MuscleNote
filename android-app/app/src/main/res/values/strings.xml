@@ -30,6 +30,16 @@
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Paramètres</string>
 
+    <!-- Paramètres : préférences (§ 2.12) -->
+    <string name="settings_section_preferences">PRÉFÉRENCES</string>
+    <string name="settings_rest_timer_title">Minuteur de repos</string>
+    <string name="settings_rest_timer_desc">Durée par défaut du repos entre les séries</string>
+    <string name="settings_rest_timer_seconds">%1$d s</string>
+    <string name="settings_rest_timer_minutes">%1$d min</string>
+    <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
+    <string name="settings_notifications_denied">Notifications désactivées — minuteur et rappels silencieux</string>
+    <string name="settings_notifications_open">Ouvrir les réglages</string>
+
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
     <string name="settings_section_backup">SAUVEGARDE</string>
     <string name="settings_export_title">Exporter mes données</string>

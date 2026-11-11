@@ -213,4 +213,22 @@ class RestTimerRepositoryTest {
         }
         assertNull(container.restTimer.state.value)
     }
+
+    @Test
+    fun `la durée choisie dans Paramètres est enregistrée et sert aux repos suivants`() = runBlocking<Unit> {
+        val container = AppContainer(dataDir, time, restTimerEffects = effects).also { it.awaitReady() }
+        container.preferences.setRestSeconds(60)
+        container.preferences.setRestSeconds(0) // ignorée : > 0 seulement
+        assertEquals(60, container.preferences.preferences.value.restSeconds)
+        container.restTimer.start("Dips")
+        assertEquals(60, container.restTimer.state.value?.total)
+
+        // Écriture des préférences en tâche de fond : on attend qu'elle soit sur disque.
+        val file = File(dataDir, "preferences.json")
+        repeat(200) {
+            if (file.exists() && file.readText().contains("\"restSeconds\":60")) return@runBlocking
+            Thread.sleep(10)
+        }
+        assertTrue(file.readText().contains("\"restSeconds\":60"))
+    }
 }

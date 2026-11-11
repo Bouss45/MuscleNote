@@ -29,6 +29,16 @@
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Settings</string>
 
+    <!-- Settings: preferences (§ 2.12) -->
+    <string name="settings_section_preferences">PREFERENCES</string>
+    <string name="settings_rest_timer_title">Rest timer</string>
+    <string name="settings_rest_timer_desc">Default rest duration between sets</string>
+    <string name="settings_rest_timer_seconds">%1$d s</string>
+    <string name="settings_rest_timer_minutes">%1$d min</string>
+    <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
+    <string name="settings_notifications_denied">Notifications are off — timer and reminders are silent</string>
+    <string name="settings_notifications_open">Open settings</string>
+
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
     <string name="settings_section_backup">BACKUP</string>
     <string name="settings_export_title">Export my data</string>

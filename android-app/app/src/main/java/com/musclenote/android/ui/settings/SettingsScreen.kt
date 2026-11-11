@@ -2,8 +2,10 @@ package com.musclenote.android.ui.settings
 
 import android.content.ActivityNotFoundException
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.DrawableRes
@@ -13,6 +15,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,21 +30,29 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.backup.BackupReadResult
+import com.musclenote.android.data.timer.RestTimerRules
+import com.musclenote.android.notifications.AppNotifications
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.ScreenHeader
+import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.theme.FixedColors
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 
@@ -49,13 +60,17 @@ import com.musclenote.android.ui.theme.MuscleNoteTheme
 private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 
 /**
- * Onglet Paramètres (SPEC § 2.12). Pour l'instant, seule la section « SAUVEGARDE » :
- * export JSON v2, import avec confirmation (§ 5.4) et encart de statut.
+ * Onglet Paramètres (SPEC § 2.12). Pour l'instant : dans « PRÉFÉRENCES », le minuteur de repos et
+ * l'avertissement « Notifications désactivées » ; puis « SAUVEGARDE » : export JSON v2, import
+ * avec confirmation (§ 5.4) et encart de statut.
  */
 @Composable
 fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifier) {
     val state by backupViewModel.state.collectAsStateWithLifecycle()
-    val workouts by LocalAppContainer.current.workouts.workouts.collectAsStateWithLifecycle()
+    val container = LocalAppContainer.current
+    val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
+    val preferences by container.preferences.preferences.collectAsStateWithLifecycle()
+    val haptics = rememberHaptics()
     val colors = MuscleNoteTheme.colors
 
     val chooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_json))
@@ -84,6 +99,16 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            SectionTitle(stringResource(R.string.settings_section_preferences))
+            RestTimerCard(
+                selected = preferences.restSeconds,
+                onSelect = { seconds ->
+                    haptics.light()
+                    container.launchMutation { container.preferences.setRestSeconds(seconds) }
+                },
+            )
+            NotificationsDisabledCard()
+
             SectionTitle(stringResource(R.string.settings_section_backup))
 
             val busy = state.operation != null
@@ -145,6 +170,143 @@ private fun SectionTitle(text: String) {
         letterSpacing = 1.sp,
         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
     )
+}
+
+/** Icône ronde (carré arrondi 44 dp, fond couleur à 13 %) des cartes de Paramètres. */
+@Composable
+private fun CardIcon(@DrawableRes icon: Int, tint: Color) {
+    Box(
+        modifier = Modifier
+            .size(44.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(tint.copy(alpha = 0.13f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+    }
+}
+
+/**
+ * Minuteur de repos (§ 2.12) : préréglages de 1 à 5 min ; la durée choisie vaut pour les repos
+ * démarrés ensuite (§ 7.2).
+ */
+@Composable
+private fun RestTimerCard(selected: Int, onSelect: (Int) -> Unit) {
+    val colors = MuscleNoteTheme.colors
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.card)
+            .border(1.dp, colors.border, shape)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            CardIcon(R.drawable.ic_schedule, colors.primary)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(stringResource(R.string.settings_rest_timer_title), color = colors.foreground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                Text(stringResource(R.string.settings_rest_timer_desc), color = colors.mutedForeground, fontSize = 12.sp, lineHeight = 18.sp)
+            }
+        }
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (seconds in RestTimerRules.PRESETS) {
+                val active = seconds == selected
+                val chipShape = RoundedCornerShape(12.dp)
+                Box(
+                    Modifier
+                        .clip(chipShape)
+                        .background(if (active) colors.primary else colors.muted)
+                        .border(1.dp, if (active) colors.primary else colors.border, chipShape)
+                        .clickable { onSelect(seconds) }
+                        .padding(horizontal = 14.dp, vertical = 9.dp),
+                ) {
+                    Text(
+                        restDurationLabel(seconds),
+                        color = if (active) colors.primaryForeground else colors.foreground,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** `45 s`, `1 min`, `1 min 30` (§ 2.12). */
+@Composable
+private fun restDurationLabel(seconds: Int): String {
+    val minutes = seconds / 60
+    val rest = seconds % 60
+    return when {
+        minutes == 0 -> stringResource(R.string.settings_rest_timer_seconds, rest)
+        rest == 0 -> stringResource(R.string.settings_rest_timer_minutes, minutes)
+        else -> stringResource(R.string.settings_rest_timer_minutes_seconds, minutes, rest)
+    }
+}
+
+/**
+ * « Notifications désactivées — minuteur et rappels silencieux » + « Ouvrir les réglages »
+ * (🔄 D6), seulement si la permission est refusée ou les notifications de l'app coupées ; revérifié
+ * à chaque retour sur l'écran.
+ */
+@Composable
+private fun NotificationsDisabledCard() {
+    val context = LocalContext.current
+    var enabled by remember { mutableStateOf(AppNotifications.areEnabled(context)) }
+    LifecycleResumeEffect(context) {
+        enabled = AppNotifications.areEnabled(context)
+        onPauseOrDispose { }
+    }
+    if (enabled) return
+
+    val colors = MuscleNoteTheme.colors
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .background(colors.destructive.copy(alpha = 0.08f))
+            .border(1.dp, colors.destructive.copy(alpha = 0.27f), shape)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+            CardIcon(R.drawable.ic_notifications_off, colors.destructive)
+            Text(
+                stringResource(R.string.settings_notifications_denied),
+                color = colors.foreground,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                lineHeight = 19.sp,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        val buttonShape = RoundedCornerShape(10.dp)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .clip(buttonShape)
+                .border(1.dp, colors.destructive.copy(alpha = 0.5f), buttonShape)
+                .clickable { openNotificationSettings(context) }
+                .padding(vertical = 10.dp),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(stringResource(R.string.settings_notifications_open), color = colors.destructive, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+        }
+    }
+}
+
+/** Réglages de notification de l'app ; à défaut, sa fiche dans les réglages système. */
+private fun openNotificationSettings(context: Context) {
+    val notificationSettings = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+        .putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+    try {
+        context.startActivity(notificationSettings)
+    } catch (e: ActivityNotFoundException) {
+        context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
+    }
 }
 
 /** Carte-action : icône ronde, titre, description, chevron (§ 2.12, point 3). */
