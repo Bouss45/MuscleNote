@@ -10,8 +10,10 @@ import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.util.formatDecimal
 import com.musclenote.android.data.util.parseInstantOrNull
+import java.math.RoundingMode
 import java.text.NumberFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -36,12 +38,26 @@ fun formatNumber(value: Double): String = formatDecimal(value, appLocale())
 @ReadOnlyComposable
 fun formatInteger(value: Double): String = NumberFormat.getIntegerInstance(appLocale()).format(value.roundToLong())
 
+/**
+ * Nombre à une décimale exactement (`2,0`, `-1,8`), séparateurs de la locale, demis vers le haut :
+ * litres, tonnes, kilomètres et évolutions de l'onglet Progrès (§ 2.10).
+ */
+@Composable
+@ReadOnlyComposable
+fun formatOneDecimal(value: Double): String = NumberFormat.getNumberInstance(appLocale()).apply {
+    minimumFractionDigits = 1
+    maximumFractionDigits = 1
+    roundingMode = RoundingMode.HALF_UP
+}.format(value)
+
 /** Formats de date de l'app, dans la locale et le fuseau courants (§ 9.4). */
 class DateFormats(locale: Locale, private val zone: ZoneId) {
     private val weekdayDayMonthFormatter =
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", locale)
     private val dayMonthFormatter = DateTimeFormatter.ofPattern("dd/MM", locale)
+    private val dayMonthYearFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMMyyyy"), locale)
 
     /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
     fun weekdayDayMonth(instant: Instant): String = weekdayDayMonthFormatter.format(instant.atZone(zone))
@@ -51,6 +67,12 @@ class DateFormats(locale: Locale, private val zone: ZoneId) {
 
     /** `dd/MM`, pour les libellés des graphiques. */
     fun dayMonth(instant: Instant): String = dayMonthFormatter.format(instant.atZone(zone))
+
+    /** `dd/MM` d'un jour local (journaux quotidiens). */
+    fun dayMonth(day: LocalDate): String = dayMonthFormatter.format(day)
+
+    /** Jour, mois abrégé, année : « 11 nov. 2026 », « Nov 11, 2026 ». */
+    fun dayMonthYear(instant: Instant): String = dayMonthYearFormatter.format(instant.atZone(zone))
 }
 
 @Composable

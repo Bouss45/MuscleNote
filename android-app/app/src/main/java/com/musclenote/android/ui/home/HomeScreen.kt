@@ -43,7 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.model.Workout
@@ -59,6 +58,7 @@ import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberDateFormats
 import com.musclenote.android.ui.components.rememberHaptics
+import com.musclenote.android.ui.components.rememberToday
 import com.musclenote.android.ui.components.workoutDisplayName
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 import java.time.ZoneId
@@ -87,11 +87,7 @@ fun HomeScreen(
     val time = container.time
     val zone = time.zone()
     // Relu à chaque reprise : la semaine courante de la série change chaque lundi.
-    var today by remember { mutableStateOf(time.today()) }
-    LifecycleResumeEffect(time) {
-        today = time.today()
-        onPauseOrDispose { }
-    }
+    val today = rememberToday(time)
 
     val streak = remember(workouts, today, zone) { WorkoutStats.streak(workouts, today, zone) }
     val gymTime = remember(workouts) { WorkoutStats.gymTime(workouts) }
