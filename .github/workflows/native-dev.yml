@@ -45,6 +45,10 @@ jobs:
             android-app/**/*.gradle.kts
             android-app/gradle/wrapper/gradle-wrapper.properties
 
+      # Tests JVM (validation et migrations de la sauvegarde, stockage) : un échec bloque le build.
+      - name: Tests unitaires
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
       # Le keystore n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
       - name: Décoder le keystore
         env:

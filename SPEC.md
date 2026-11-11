@@ -1000,10 +1000,10 @@ Différences v2 / v1 : `Workout.preset` ajouté ; séries toujours avec `id` et 
 **Validation de forme** (identique en v1 et v2 ; une clé absente du fichier est ignorée) :
 | clé | règle |
 |---|---|
-| workouts | tableau ; chaque élément objet avec `id` string, `date` string parseable en instant, `name` string/absent/null, `bodyWeight` nombre fini/absent/null, `preset` string/absent, `exercises` tableau d'objets `{ exerciseId: string, sets: tableau }`, chaque set objet avec `reps` et `weight` nombres finis et `duration`/`distance`/`speed`/`incline` nombres finis, absents ou null |
-| exercises | tableau d'objets avec `id`, `name`, `muscleGroup` strings |
-| body_weights | tableau d'objets `{ date: string, weight: nombre fini }` |
-| supplements | tableau d'objets avec `id` et `name` strings |
+| workouts | tableau ; chaque élément objet avec `id` string non vide (§ 3.15), `date` string parseable en instant, `name` string/absent/null, `bodyWeight` nombre fini/absent/null, `preset` string/absent, `exercises` tableau d'objets `{ exerciseId: string, sets: tableau }`, chaque set objet avec `reps` et `weight` nombres finis et `duration`/`distance`/`speed`/`incline` nombres finis, absents ou null |
+| exercises | tableau d'objets avec `id` (non vide), `name`, `muscleGroup` strings |
+| body_weights | tableau d'objets `{ date: string parseable en instant, weight: nombre fini }` |
+| supplements | tableau d'objets avec `id` (non vide) et `name` strings |
 | supplements_taken | objet |
 | daily_tracker | objet |
 | preferences | objet |

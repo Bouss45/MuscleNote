@@ -1,0 +1,85 @@
+{
+  "version": 2,
+  "exportedAt": "2026-11-11T18:42:07.123Z",
+  "@gymtracker_workouts": [
+    {
+      "id": "5f0c2a9e-3b1d-4c7a-9e2f-1a2b3c4d5e6f",
+      "name": "Push",
+      "preset": "push",
+      "date": "2026-11-10T17:05:12.345Z",
+      "bodyWeight": 78.5,
+      "exercises": [
+        {
+          "exerciseId": "bench",
+          "note": "Prise un peu plus serrée",
+          "sets": [
+            { "id": "0b6f0f0e-0001-4000-8000-000000000001", "reps": 8, "weight": 80, "completed": true },
+            { "id": "0b6f0f0e-0001-4000-8000-000000000002", "reps": 6, "weight": 82.5, "completed": false }
+          ]
+        },
+        {
+          "exerciseId": "1760000000000abcdefghi",
+          "sets": [
+            { "id": "0b6f0f0e-0001-4000-8000-000000000003", "reps": 12, "weight": 30, "completed": true }
+          ]
+        },
+        {
+          "exerciseId": "treadmill",
+          "sets": [
+            {
+              "id": "0b6f0f0e-0001-4000-8000-000000000004",
+              "reps": 0, "weight": 0, "completed": true,
+              "duration": 20, "distance": 3.2, "speed": 9.5, "incline": 2
+            }
+          ]
+        }
+      ],
+      "durationMinutes": 72
+    },
+    {
+      "id": "1755000000000aaaaaaaaa",
+      "name": "Épaules / Mollets",
+      "date": "2026-11-08T16:30:00.000Z",
+      "bodyWeight": 78.9,
+      "exercises": [
+        {
+          "exerciseId": "ohp",
+          "sets": [ { "id": "1755000000001bbbbbbbbb", "reps": 10, "weight": 40, "completed": true } ]
+        }
+      ],
+      "durationMinutes": 48
+    }
+  ],
+  "@gymtracker_exercises": [
+    { "id": "1760000000000abcdefghi", "name": "Hip thrust", "muscleGroup": "jambes" },
+    { "id": "1755000000000zyxwvutsr", "name": "Shrug", "muscleGroup": "dos", "archived": true }
+  ],
+  "@gymtracker_body_weights": [
+    { "date": "2026-11-09T11:00:00.000Z", "weight": 78.2 }
+  ],
+  "@gymtracker_supplements": [
+    {
+      "id": "1758000000000mnbvcxzlk",
+      "name": "Créatine",
+      "dosage": "5",
+      "unit": "g",
+      "reminderEnabled": true,
+      "reminders": [
+        { "id": "1758000000001poiuytrez", "hour": 8, "minute": 0 },
+        { "id": "1758000000002lkjhgfdsq", "hour": 20, "minute": 35 }
+      ]
+    }
+  ],
+  "@gymtracker_supplements_taken": {
+    "1758000000000mnbvcxzlk": "2026-11-11"
+  },
+  "@gymtracker_daily_tracker": {
+    "calorieGoal": 2800,
+    "waterGoal": 2500,
+    "calorieGoalHistory": { "0000-01-01": 2500, "2026-11-01": 2800 },
+    "waterGoalHistory": { "0000-01-01": 2500 },
+    "caloriesLog": { "2026-11-10": 2650, "2026-11-11": 1200 },
+    "waterLog": { "2026-11-10": 0, "2026-11-11": 1500 }
+  },
+  "@gymtracker_preferences": { "restSeconds": 150, "theme": "system" }
+}

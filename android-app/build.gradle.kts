@@ -4,4 +4,5 @@ plugins {
     // déclarer le plugin ici, sans l'appliquer, fixe la version de Kotlin utilisée.
     alias(libs.plugins.kotlin.android) apply false
     alias(libs.plugins.kotlin.compose) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
 }

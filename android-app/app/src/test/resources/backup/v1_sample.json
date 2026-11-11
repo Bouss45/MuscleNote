@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "exportedAt": "2026-03-14T19:20:00.000Z",
+  "@gymtracker_workouts": [
+    {
+      "id": "1741600000000wkt00003",
+      "name": "Legs",
+      "date": "2026-03-08T10:00:00.000Z",
+      "bodyWeight": null,
+      "exercises": [
+        {
+          "exerciseId": "legpress",
+          "sets": [
+            { "id": "1741600000001set00031", "reps": 12, "weight": 140, "completed": false }
+          ]
+        }
+      ],
+      "durationMinutes": 55
+    },
+    {
+      "id": "1740900000000wkt00001",
+      "name": "Push",
+      "date": "2026-03-02T17:00:00.000Z",
+      "bodyWeight": 80,
+      "exercises": [
+        {
+          "exerciseId": "bench",
+          "note": "Coudes serrés",
+          "sets": [
+            { "id": "1740900000001set00011", "reps": 10, "weight": 60, "completed": true },
+            { "id": "1740900000002set00012", "reps": 8, "weight": 62.5, "completed": false },
+            { "reps": 8.6, "weight": 62.5 }
+          ]
+        },
+        {
+          "exerciseId": "1740000000000exo00001",
+          "sets": [
+            { "id": "1740900000003set00013", "reps": 12, "weight": 20, "completed": false }
+          ]
+        }
+      ],
+      "durationMinutes": 65
+    },
+    {
+      "id": "1741200000000wkt00002",
+      "name": "jambes ",
+      "date": "2026-03-05T18:30:00.000Z",
+      "bodyWeight": 79.6,
+      "exercises": [
+        {
+          "exerciseId": "squat",
+          "sets": [
+            { "id": "1741200000001set00021", "reps": 5, "weight": 100, "completed": true }
+          ]
+        }
+      ],
+      "durationMinutes": 70
+    },
+    {
+      "id": "1741700000000wkt00004",
+      "name": "Chest",
+      "date": "2026-03-09T16:00:00.000Z",
+      "bodyWeight": 79.9,
+      "exercises": [],
+      "durationMinutes": 30
+    },
+    {
+      "id": "1741800000000wkt00005",
+      "name": "Epaules",
+      "date": "2026-03-10T16:00:00.000Z",
+      "bodyWeight": 80.1,
+      "exercises": [
+        {
+          "exerciseId": "ohp",
+          "sets": [
+            { "id": "1741800000001set00051", "reps": 8, "weight": 40, "completed": true }
+          ]
+        }
+      ],
+      "durationMinutes": 45
+    },
+    {
+      "id": "1741900000000wkt00006",
+      "name": null,
+      "date": "2026-03-12T07:15:00.000Z",
+      "exercises": [
+        {
+          "exerciseId": "treadmill",
+          "sets": [
+            {
+              "id": "1741900000001set00061",
+              "reps": 0,
+              "weight": 0,
+              "completed": false,
+              "duration": 25,
+              "distance": 4.1,
+              "speed": 9.8,
+              "incline": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1742000000000wkt00007",
+      "name": "Haut du corps",
+      "date": "2026-03-13T17:45:00Z",
+      "bodyWeight": 80.2,
+      "exercises": [],
+      "durationMinutes": 40
+    }
+  ],
+  "@gymtracker_exercises": [
+    { "id": "1740000000000exo00001", "name": "Hip thrust", "muscleGroup": "jambes" },
+    { "id": "1740000000000exo00002", "name": "Face pull", "muscleGroup": "Epaules" },
+    { "id": "1740000000000exo00003", "name": "Oiseau", "muscleGroup": "shoulders" },
+    { "id": "1740000000000exo00004", "name": "Grip pince", "muscleGroup": "avant bras" },
+    { "id": "1740000000000exo00005", "name": "Mollets presse", "muscleGroup": "mollets" },
+    { "id": "1740000000000exo00006", "name": "Shrug", "muscleGroup": "dos", "archived": true },
+    { "id": "bench", "name": "Développé couché", "muscleGroup": "pecs" }
+  ],
+  "@gymtracker_body_weights": [
+    { "date": "2026-03-10T11:00:00.000Z", "weight": 79.8 },
+    { "date": "2026-03-13T11:00:00.000Z", "weight": 80.1 }
+  ],
+  "@gymtracker_supplements": [
+    {
+      "id": "1739000000000sup00001",
+      "name": "Créatine",
+      "dosage": "5",
+      "unit": "g",
+      "reminderEnabled": true,
+      "reminderHour": 8,
+      "reminderMinute": 30,
+      "notifId": "notif-ancien-1"
+    },
+    {
+      "id": "1739000000000sup00002",
+      "name": "Magnésium",
+      "reminderEnabled": false
+    },
+    {
+      "id": "1739000000000sup00003",
+      "name": "Vitamine D",
+      "dosage": "1000",
+      "unit": "ui",
+      "reminderEnabled": true,
+      "reminders": [
+        { "id": "1739000000001rem00031", "hour": 9, "minute": 0, "notifId": "notif-ancien-2" },
+        { "id": "1739000000002rem00032", "hour": 21, "minute": 15 }
+      ]
+    }
+  ],
+  "@gymtracker_supplements_taken": {
+    "1739000000000sup00001": "2026-03-14",
+    "1739000000000sup00002": "2026-03-13"
+  },
+  "@gymtracker_daily_tracker": {
+    "calorieGoal": 2600,
+    "waterGoal": 8,
+    "caloriesLog": { "2026-03-13": 2450, "2026-03-14": 900 },
+    "waterLog": { "2026-03-13": 6, "2026-03-14": 2 }
+  },
+  "@gymtracker_preferences": { "language": "en", "restSeconds": 150 }
+}

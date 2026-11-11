@@ -3,12 +3,111 @@
 <resources>
     <string name="app_name" translatable="false">MuscleNote 2</string>
 
+    <!-- Commun -->
+    <string name="common_cancel">Annuler</string>
+    <string name="common_confirm">Confirmer</string>
+
+    <!-- Onglets et titres -->
     <string name="tabs_home">Accueil</string>
     <string name="tabs_progress">Progrès</string>
     <string name="tabs_nutrition">Nutrition</string>
     <string name="tabs_settings">Paramètres</string>
-
     <string name="progress_title">Progression</string>
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Paramètres</string>
+
+    <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
+    <string name="settings_section_backup">SAUVEGARDE</string>
+    <string name="settings_export_title">Exporter mes données</string>
+    <string name="settings_export_desc">Télécharge un fichier JSON avec toutes tes séances, exercices et poids de corps</string>
+    <string name="settings_import_title">Importer des données</string>
+    <string name="settings_import_desc">Restaure tes données depuis un fichier exporté — utile lors d\'un changement de téléphone</string>
+    <string name="settings_import_confirm_title">Écraser les données actuelles ?</string>
+    <string name="settings_import_confirm_desc">Tes %1$d séances actuelles seront remplacées par celles du fichier importé.</string>
+    <string name="settings_export_success_share">Fichier partagé avec succès !</string>
+    <string name="settings_export_error">Erreur lors de l\'export : %1$s</string>
+    <string name="settings_import_success">Import réussi ! Tes données sont à jour.</string>
+    <string name="settings_import_error">Erreur lors de l\'import : %1$s</string>
+    <string name="settings_import_read_error">Impossible de lire le fichier : %1$s</string>
+    <string name="settings_import_no_muscle_note">Aucune donnée MuscleNote trouvée dans ce fichier</string>
+    <string name="settings_import_invalid_format">Format invalide</string>
+    <string name="settings_import_invalid_key">contenu invalide pour %1$s</string>
+    <string name="settings_share_json">Exporter mes données MuscleNote</string>
+    <string name="settings_import_newer_version">Ce fichier vient d\'une version plus récente de MuscleNote</string>
+
+    <!-- Groupes musculaires (§ 6.2) -->
+    <string name="muscle_dos">Dos</string>
+    <string name="muscle_pecs">Pecs</string>
+    <string name="muscle_biceps">Biceps</string>
+    <string name="muscle_triceps">Triceps</string>
+    <string name="muscle_jambes">Jambes</string>
+    <string name="muscle_epaules">Épaules</string>
+    <string name="muscle_abdos">Abdos</string>
+    <string name="muscle_cardio">Cardio</string>
+    <string name="muscle_avant_bras">Avant-bras</string>
+
+    <!-- Préréglages de séance (§ 6.3) -->
+    <string name="start_workout_preset_push">Push</string>
+    <string name="start_workout_preset_pull">Pull</string>
+    <string name="start_workout_preset_legs">Legs</string>
+    <string name="start_workout_preset_pecs">Pecs</string>
+    <string name="start_workout_preset_dos">Dos</string>
+    <string name="start_workout_preset_shoulders">Épaules</string>
+    <string name="start_workout_preset_legs_split">Jambes</string>
+    <string name="start_workout_preset_arms">Bras</string>
+    <string name="start_workout_preset_full_body">Full Body</string>
+    <string name="start_workout_preset_isolation">Isolation</string>
+    <string name="start_workout_preset_cardio">Cardio</string>
+
+    <!-- Exercices intégrés (§ 6.1) -->
+    <string name="exercise_deadlift">Soulevé de terre</string>
+    <string name="exercise_pullup">Traction</string>
+    <string name="exercise_row">Rowing barre</string>
+    <string name="exercise_latpull">Tirage vertical</string>
+    <string name="exercise_tiragebucheron">Tirage bûcheron</string>
+    <string name="exercise_tirageh">Tirage horizontale</string>
+    <string name="exercise_bench">Développé couché</string>
+    <string name="exercise_incline">Développé incliné</string>
+    <string name="exercise_fly">Écarté haltères</string>
+    <string name="exercise_dips">Dips</string>
+    <string name="exercise_dbench">Développé couché haltères</string>
+    <string name="exercise_dincline">Développé incliné haltères</string>
+    <string name="exercise_pecfly">Pec Fly</string>
+    <string name="exercise_curl">Curl barre</string>
+    <string name="exercise_hammercurl">Curl marteau</string>
+    <string name="exercise_concentcurl">Curl concentré</string>
+    <string name="exercise_pushdown">Pushdown câble</string>
+    <string name="exercise_overheadtri">Extension nuque</string>
+    <string name="exercise_skullcrusher">Skull crusher</string>
+    <string name="exercise_barfront">Barre au front</string>
+    <string name="exercise_squat">Squat</string>
+    <string name="exercise_legpress">Presse à cuisses</string>
+    <string name="exercise_legcurl">Leg curl couché</string>
+    <string name="exercise_legext">Leg extension</string>
+    <string name="exercise_lunges">Fentes</string>
+    <string name="exercise_calfraize">Mollets debout</string>
+    <string name="exercise_adductorpress">Adducteur press</string>
+    <string name="exercise_abductorpress">Abducteur press</string>
+    <string name="exercise_calfsit">Mollets assis</string>
+    <string name="exercise_ohp">Développé militaire</string>
+    <string name="exercise_lateralraise">Élévations latérales</string>
+    <string name="exercise_frontraise">Élévations frontales</string>
+    <string name="exercise_crunch">Crunch</string>
+    <string name="exercise_plank">Gainage</string>
+    <string name="exercise_legrise">Relevé de jambes</string>
+    <string name="exercise_treadmill">Tapis roulant</string>
+    <string name="exercise_bike">Vélo</string>
+    <string name="exercise_wristcurl">Curl poignet</string>
+    <string name="exercise_wristext">Extension poignet</string>
+    <string name="exercise_reversecurl">Curl inversé</string>
+    <string name="exercise_pinchgrip">Pince (grip)</string>
+    <string name="exercise_farmerwalk">Farmer\'s walk</string>
+
+    <!-- Provisoire (étape 3) : carte de vérification des données chargées, sur l'Accueil -->
+    <string name="debug_data_title">Données chargées (provisoire)</string>
+    <string name="debug_data_sessions">Séances</string>
+    <string name="debug_data_custom_exercises">Exercices perso</string>
+    <string name="debug_data_archived">dont %1$d archivé(s)</string>
+    <string name="debug_data_weigh_ins">Pesées</string>
+    <string name="debug_data_supplements">Compléments</string>
 </resources>

@@ -14,6 +14,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -32,6 +33,7 @@ import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.navigation.TopLevelDestination
 import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
+import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 
@@ -40,10 +42,17 @@ import com.musclenote.android.ui.theme.MuscleNoteTheme
  * système. Chaque écran dessine son propre en-tête sous la barre de statut (edge-to-edge).
  */
 @Composable
-fun MuscleNoteApp() {
+fun MuscleNoteApp(backupViewModel: BackupViewModel) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+
+    // Fichier partagé par une autre app (§ 5.5) : la confirmation d'import est dans Paramètres.
+    LaunchedEffect(backupViewModel) {
+        backupViewModel.showSettingsRequests.collect {
+            navController.navigateToTab(TopLevelDestination.Settings)
+        }
+    }
 
     Scaffold(
         containerColor = MuscleNoteTheme.colors.background,
@@ -65,7 +74,7 @@ fun MuscleNoteApp() {
             composable(TopLevelDestination.Home.route) { HomeScreen() }
             composable(TopLevelDestination.Progress.route) { ProgressScreen() }
             composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
-            composable(TopLevelDestination.Settings.route) { SettingsScreen() }
+            composable(TopLevelDestination.Settings.route) { SettingsScreen(backupViewModel) }
         }
     }
 }
