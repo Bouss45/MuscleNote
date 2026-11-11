@@ -320,4 +320,13 @@
     <!-- Rappels de compléments (§ 7.3) -->
     <string name="nutrition_notif_body">N\'oublie pas ta dose !</string>
     <string name="nutrition_notif_body_dosage">N\'oublie pas ta dose (%1$s %2$s) !</string>
+
+    <!-- Nutrition (§ 2.11) -->
+    <string name="nutrition_section_today">SUIVI DU JOUR</string>
+    <string name="nutrition_cal_add">+ Ajouter</string>
+    <string name="nutrition_cal_set">= Définir</string>
+    <string name="nutrition_cal_placeholder">kcal…</string>
+    <string name="nutrition_water_placeholder">ml…</string>
+    <string name="nutrition_cal_goal_placeholder">Objectif kcal</string>
+    <string name="nutrition_water_goal_placeholder">Ex : 2.0 (en litres)</string>
 </resources>

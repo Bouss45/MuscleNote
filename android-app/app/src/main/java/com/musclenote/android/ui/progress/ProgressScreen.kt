@@ -93,7 +93,7 @@ fun ProgressScreen(onOpenExerciseHistory: (exerciseId: String) -> Unit, modifier
     val bodyWeights by container.nutrition.bodyWeights.collectAsStateWithLifecycle()
     val tracker by container.nutrition.tracker.collectAsStateWithLifecycle()
     val zone = container.time.zone()
-    val today = rememberToday(container.time)
+    val today = rememberToday()
     val dates = rememberDateFormats(zone)
     val colors = MuscleNoteTheme.colors
 

@@ -87,7 +87,7 @@ fun HomeScreen(
     val time = container.time
     val zone = time.zone()
     // Relu à chaque reprise : la semaine courante de la série change chaque lundi.
-    val today = rememberToday(time)
+    val today = rememberToday()
 
     val streak = remember(workouts, today, zone) { WorkoutStats.streak(workouts, today, zone) }
     val gymTime = remember(workouts) { WorkoutStats.gymTime(workouts) }

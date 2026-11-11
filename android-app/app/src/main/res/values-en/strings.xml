@@ -318,4 +318,13 @@
     <!-- Supplement reminders (§ 7.3) -->
     <string name="nutrition_notif_body">Don\'t forget your dose!</string>
     <string name="nutrition_notif_body_dosage">Don\'t forget your dose (%1$s %2$s)!</string>
+
+    <!-- Nutrition (§ 2.11) -->
+    <string name="nutrition_section_today">TODAY\'S TRACKING</string>
+    <string name="nutrition_cal_add">+ Add</string>
+    <string name="nutrition_cal_set">= Set</string>
+    <string name="nutrition_cal_placeholder">kcal…</string>
+    <string name="nutrition_water_placeholder">ml…</string>
+    <string name="nutrition_cal_goal_placeholder">kcal goal</string>
+    <string name="nutrition_water_goal_placeholder">E.g. 2.0 (liters)</string>
 </resources>
