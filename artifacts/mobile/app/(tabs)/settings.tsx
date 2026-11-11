@@ -1,8 +1,10 @@
 import { Feather } from "@expo/vector-icons";
+import * as DocumentPicker from "expo-document-picker";
+import * as FileSystem from "expo-file-system/legacy";
+import * as Sharing from "expo-sharing";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,146 +14,211 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useNutrition } from "@/context/NutritionContext";
+import { LANGUAGES, TranslationKey } from "@/constants/i18n";
 import { useWorkout } from "@/context/WorkoutContext";
+import { BACKUP_KEYS, parseBackup } from "@/utils/backup";
+import { dayKey, parseDayKey } from "@/utils/date";
 
-// Keys stored in AsyncStorage that we export/import
-const EXPORT_KEYS = [
-  "@gymtracker_workouts",
-  "@gymtracker_exercises",
-  "@gymtracker_body_weights",
-];
+// Rest-timer presets offered in Settings (seconds)
+const REST_PRESETS = [60, 90, 120, 150, 180, 240, 300];
 
 type Status = { type: "success" | "error"; message: string } | null;
 
 export default function SettingsScreen() {
   const colors = useColors();
+  const { t, locale, language, setLanguage, restSeconds, setRestSeconds, reload: reloadPreferences } = usePreferences();
   const insets = useSafeAreaInsets();
-  const { workouts, exercises, isCustomExercise } = useWorkout();
+  const { workouts, exercises, exerciseById, isCustomExercise, reloadData } = useWorkout();
+  const { bodyWeights, tracker, reload: reloadNutrition } = useNutrition();
+  const exerciseName = useExerciseName();
   const [exporting, setExporting] = useState(false);
+  const [exportingExcel, setExportingExcel] = useState(false);
   const [importing, setImporting] = useState(false);
   const [status, setStatus] = useState<Status>(null);
   const [confirmImport, setConfirmImport] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const pendingImportRef = useRef<string | null>(null);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = insets.top;
+
+  function formatRestLabel(sec: number) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    if (m === 0) return t("settings.restTimer.seconds", { count: s });
+    if (s === 0) return t("settings.restTimer.minutes", { minutes: m });
+    return t("settings.restTimer.minutesSeconds", { minutes: m, seconds: s });
+  }
+
+  async function shareFile(path: string, options: Sharing.SharingOptions): Promise<boolean> {
+    if (!(await Sharing.isAvailableAsync())) {
+      setStatus({ type: "error", message: t("settings.export.noShare") });
+      return false;
+    }
+    await Sharing.shareAsync(path, options);
+    return true;
+  }
 
   // ─── Export ───────────────────────────────────────────────────────────────
   async function handleExport() {
     setExporting(true);
     setStatus(null);
     try {
-      // Gather all keys
-      const pairs = await AsyncStorage.multiGet(EXPORT_KEYS);
+      const pairs = await AsyncStorage.multiGet(BACKUP_KEYS);
       const data: Record<string, unknown> = { version: 1, exportedAt: new Date().toISOString() };
       for (const [key, value] of pairs) {
         if (value !== null) {
           try { data[key] = JSON.parse(value); } catch { data[key] = value; }
         }
       }
-      const json = JSON.stringify(data, null, 2);
-      const filename = `gymtracker_backup_${new Date().toISOString().slice(0, 10)}.json`;
-
-      if (Platform.OS === "web") {
-        // Web: trigger download via Blob
-        const blob = new Blob([json], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
-        setStatus({ type: "success", message: "Fichier téléchargé avec succès !" });
-      } else {
-        // Mobile: write to temp file and share
-        const FileSystem = require("expo-file-system/legacy");
-        const Sharing = require("expo-sharing");
-        const path = FileSystem.cacheDirectory + filename;
-        await FileSystem.writeAsStringAsync(path, json, { encoding: "utf8" });
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(path, { mimeType: "application/json", dialogTitle: "Exporter mes données GymTracker" });
-          setStatus({ type: "success", message: "Fichier partagé avec succès !" });
-        } else {
-          setStatus({ type: "error", message: "Le partage de fichiers n'est pas disponible sur cet appareil." });
-        }
+      const path = FileSystem.cacheDirectory + `musclenote_backup_${dayKey()}.json`;
+      await FileSystem.writeAsStringAsync(path, JSON.stringify(data, null, 2), { encoding: "utf8" });
+      if (await shareFile(path, { mimeType: "application/json", dialogTitle: t("settings.share.json") })) {
+        setStatus({ type: "success", message: t("settings.export.successShare") });
       }
     } catch (e) {
-      setStatus({ type: "error", message: "Erreur lors de l'export : " + String(e) });
+      setStatus({ type: "error", message: t("settings.export.error", { error: String(e) }) });
     } finally {
       setExporting(false);
     }
   }
 
-  // ─── Import ───────────────────────────────────────────────────────────────
-  async function processImport(json: string) {
+  // ─── Export Excel ────────────────────────────────────────────────────────
+  async function handleExportExcel() {
+    setExportingExcel(true);
+    setStatus(null);
     try {
-      const data = JSON.parse(json);
-      if (!data || typeof data !== "object") throw new Error("Format invalide");
+      const XLSX = require("xlsx");
+      const col = (k: string) => t(`excel.col.${k}` as TranslationKey);
+      const fmtDate = (d: Date) => d.toLocaleDateString(locale);
 
-      const pairs: [string, string][] = [];
-      for (const key of EXPORT_KEYS) {
-        if (data[key] !== undefined) {
-          pairs.push([key, JSON.stringify(data[key])]);
+      // Sheet 1 — sessions overview
+      const sessionRows = workouts.map((w) => {
+        const d = new Date(w.date);
+        return {
+          [col("date")]: fmtDate(d),
+          [col("time")]: d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" }),
+          [col("sessionName")]: w.name || "",
+          [col("duration")]: w.durationMinutes ?? "",
+          [col("bodyWeight")]: w.bodyWeight || "",
+          [col("exercises")]: w.exercises.length,
+          [col("totalSets")]: w.exercises.reduce((s, e) => s + e.sets.length, 0),
+          [col("totalVolume")]: w.exercises.reduce(
+            (s, e) => s + e.sets.reduce((s2, set) => s2 + set.reps * set.weight, 0), 0,
+          ),
+        };
+      });
+
+      // Sheet 2 — every set
+      const setRows: Record<string, unknown>[] = [];
+      for (const w of workouts) {
+        for (const we of w.exercises) {
+          const ex = exerciseById.get(we.exerciseId);
+          we.sets.forEach((set, i) => {
+            const row: Record<string, unknown> = {
+              [col("date")]: fmtDate(new Date(w.date)),
+              [col("session")]: w.name || "",
+              [col("exercise")]: ex ? exerciseName(ex) : we.exerciseId,
+              [col("muscleGroup")]: ex ? t(`muscle.${ex.muscleGroup}` as TranslationKey) : "",
+              [col("setNumber")]: i + 1,
+            };
+            if (ex?.muscleGroup === "cardio") {
+              row[col("duration")] = set.duration ?? "";
+              row[col("distance")] = set.distance ?? "";
+              row[col("speed")] = set.speed ?? "";
+              row[col("incline")] = set.incline ?? "";
+            } else {
+              row[col("reps")] = set.reps || "";
+              row[col("weight")] = set.weight || "";
+            }
+            setRows.push(row);
+          });
         }
       }
-      if (pairs.length === 0) throw new Error("Aucune donnée GymTracker trouvée dans ce fichier");
 
-      await AsyncStorage.multiSet(pairs);
-      setStatus({ type: "success", message: `Import réussi ! Redémarre l'application pour voir tes données.` });
+      // Sheet 3 — manual weigh-ins
+      const weightRows = bodyWeights.map((e) => ({
+        [col("date")]: fmtDate(new Date(e.date)),
+        [col("weight")]: e.weight,
+      }));
+
+      // Sheet 4 — nutrition (calories + water)
+      const days = [...new Set([...Object.keys(tracker.caloriesLog), ...Object.keys(tracker.waterLog)])].sort();
+      const nutritionRows = days.map((day) => ({
+        [col("date")]: fmtDate(parseDayKey(day)),
+        [col("calories")]: tracker.caloriesLog[day] ?? 0,
+        [col("water")]: tracker.waterLog[day] ?? 0,
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const sheets: [TranslationKey, Record<string, unknown>[]][] = [
+        ["excel.sheet.sessions", sessionRows],
+        ["excel.sheet.sets", setRows],
+        ["excel.sheet.bodyWeight", weightRows],
+        ["excel.sheet.nutrition", nutritionRows],
+      ];
+      for (const [name, rows] of sheets) {
+        if (rows.length > 0) XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), t(name));
+      }
+      if (!wb.SheetNames.length) {
+        setStatus({ type: "error", message: t("settings.export.noData") });
+        return;
+      }
+
+      const path = FileSystem.cacheDirectory + `musclenote_${dayKey()}.xlsx`;
+      await FileSystem.writeAsStringAsync(path, XLSX.write(wb, { type: "base64", bookType: "xlsx" }), {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const shared = await shareFile(path, {
+        mimeType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        dialogTitle: t("settings.share.excel"),
+        UTI: "com.microsoft.excel.xlsx",
+      });
+      if (shared) setStatus({ type: "success", message: t("settings.export.successExcel") });
     } catch (e) {
-      setStatus({ type: "error", message: "Erreur lors de l'import : " + String(e) });
+      setStatus({ type: "error", message: t("settings.export.errorExcel", { error: String(e) }) });
+    } finally {
+      setExportingExcel(false);
+    }
+  }
+
+  // ─── Import ───────────────────────────────────────────────────────────────
+  async function processImport(json: string) {
+    const parsed = parseBackup(json);
+    if (!parsed.ok) {
+      const reason =
+        parsed.error === "noData" ? t("settings.import.noMuscleNote")
+        : parsed.error === "invalidKey" ? t("settings.import.invalidKey", { key: parsed.key ?? "" })
+        : t("settings.import.invalidFormat");
+      setStatus({ type: "error", message: t("settings.import.error", { error: reason }) });
+      return;
+    }
+    try {
+      await AsyncStorage.multiSet(parsed.pairs);
+      // Every provider re-reads storage, so no screen keeps (and later re-saves) stale data.
+      await Promise.all([reloadData(), reloadNutrition(), reloadPreferences()]);
+      setStatus({ type: "success", message: t("settings.import.success") });
+    } catch (e) {
+      setStatus({ type: "error", message: t("settings.import.error", { error: String(e) }) });
     }
   }
 
   async function handleImport() {
     setStatus(null);
     setConfirmImport(false);
-
-    if (Platform.OS === "web") {
-      // Web: trigger hidden file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-        fileInputRef.current.click();
-      }
-      return;
-    }
-
-    // Mobile: use document picker
     setImporting(true);
     try {
-      const DocumentPicker = require("expo-document-picker");
       const result = await DocumentPicker.getDocumentAsync({
         type: ["application/json", "text/plain", "*/*"],
         copyToCacheDirectory: true,
       });
-      if (result.canceled || !result.assets?.[0]) {
-        setImporting(false);
-        return;
-      }
-      const FileSystem = require("expo-file-system/legacy");
-      const json = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: "utf8" });
-      pendingImportRef.current = json;
-      setImporting(false);
+      if (result.canceled || !result.assets?.[0]) return;
+      pendingImportRef.current = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: "utf8" });
       setConfirmImport(true);
     } catch (e) {
-      setStatus({ type: "error", message: "Impossible de lire le fichier : " + String(e) });
-      setImporting(false);
-    }
-  }
-
-  // Web file input change handler
-  async function handleWebFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setImporting(true);
-    try {
-      const text = await file.text();
-      pendingImportRef.current = text;
-      setImporting(false);
-      setConfirmImport(true);
-    } catch {
-      setStatus({ type: "error", message: "Impossible de lire le fichier sélectionné." });
+      setStatus({ type: "error", message: t("settings.import.readError", { error: String(e) }) });
+    } finally {
       setImporting(false);
     }
   }
@@ -167,44 +234,94 @@ export default function SettingsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* Hidden file input for web import */}
-      {Platform.OS === "web" && (
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,application/json"
-          style={{ display: "none" }}
-          onChange={handleWebFileChange as any}
-        />
-      )}
-
       {/* Header */}
       <View style={[styles.header, { paddingTop: topPad + 16, borderBottomColor: colors.border }]}>
-        <Text style={[styles.title, { color: colors.foreground }]}>Paramètres</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>{t("settings.title")}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 20, gap: 12 }} showsVerticalScrollIndicator={false}>
 
         {/* Stats summary */}
         <View style={[styles.statsCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>Mes données</Text>
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>{t("settings.myData")}</Text>
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.foreground }]}>{workouts.length}</Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>séances</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("settings.stat.sessions")}</Text>
             </View>
             <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
             <View style={styles.statItem}>
               <Text style={[styles.statValue, { color: colors.foreground }]}>
-                {exercises.filter((e) => isCustomExercise(e.id)).length}
+                {exercises.filter((e) => isCustomExercise(e.id) && !e.archived).length}
               </Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>exercices perso</Text>
+              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("settings.stat.customExercises")}</Text>
             </View>
           </View>
         </View>
 
+        {/* Preferences section */}
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("settings.section.preferences")}</Text>
+
+        {/* Language */}
+        <View style={[styles.prefCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.prefHeader}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.info + "20" }]}>
+              <Feather name="globe" size={20} color={colors.info} />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={[styles.actionTitle, { color: colors.foreground }]}>{t("settings.language.title")}</Text>
+              <Text style={[styles.actionDesc, { color: colors.mutedForeground }]}>{t("settings.language.desc")}</Text>
+            </View>
+          </View>
+          <View style={styles.chipWrap}>
+            {LANGUAGES.map((l) => {
+              const active = language === l.code;
+              return (
+                <TouchableOpacity
+                  key={l.code}
+                  style={[styles.langChip, { backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}
+                  onPress={() => setLanguage(l.code)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={{ fontSize: 15 }}>{l.flag}</Text>
+                  <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground }]}>{l.label}</Text>
+                  {active && <Feather name="check" size={13} color={colors.primaryForeground} />}
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
+        {/* Rest timer */}
+        <View style={[styles.prefCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <View style={styles.prefHeader}>
+            <View style={[styles.iconCircle, { backgroundColor: colors.primary + "20" }]}>
+              <Feather name="clock" size={20} color={colors.primary} />
+            </View>
+            <View style={styles.actionText}>
+              <Text style={[styles.actionTitle, { color: colors.foreground }]}>{t("settings.restTimer.title")}</Text>
+              <Text style={[styles.actionDesc, { color: colors.mutedForeground }]}>{t("settings.restTimer.desc")}</Text>
+            </View>
+          </View>
+          <View style={styles.chipWrap}>
+            {REST_PRESETS.map((sec) => {
+              const active = restSeconds === sec;
+              return (
+                <TouchableOpacity
+                  key={sec}
+                  style={[styles.restChip, { backgroundColor: active ? colors.primary : colors.muted, borderColor: active ? colors.primary : colors.border }]}
+                  onPress={() => setRestSeconds(sec)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.chipText, { color: active ? colors.primaryForeground : colors.foreground }]}>{formatRestLabel(sec)}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </View>
+
         {/* Backup section */}
-        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>SAUVEGARDE</Text>
+        <Text style={[styles.sectionTitle, { color: colors.mutedForeground }]}>{t("settings.section.backup")}</Text>
 
         {/* Export */}
         <TouchableOpacity
@@ -219,9 +336,30 @@ export default function SettingsScreen() {
               : <Feather name="upload" size={20} color={colors.primary} />}
           </View>
           <View style={styles.actionText}>
-            <Text style={[styles.actionTitle, { color: colors.foreground }]}>Exporter mes données</Text>
+            <Text style={[styles.actionTitle, { color: colors.foreground }]}>{t("settings.export.title")}</Text>
             <Text style={[styles.actionDesc, { color: colors.mutedForeground }]}>
-              Télécharge un fichier JSON avec toutes tes séances, exercices et poids de corps
+              {t("settings.export.desc")}
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
+        </TouchableOpacity>
+
+        {/* Export Excel */}
+        <TouchableOpacity
+          style={[styles.actionCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+          onPress={handleExportExcel}
+          disabled={exporting || exportingExcel || importing}
+          activeOpacity={0.75}
+        >
+          <View style={[styles.iconCircle, { backgroundColor: "#21734620" }]}>
+            {exportingExcel
+              ? <ActivityIndicator size="small" color="#217346" />
+              : <Feather name="grid" size={20} color="#217346" />}
+          </View>
+          <View style={styles.actionText}>
+            <Text style={[styles.actionTitle, { color: colors.foreground }]}>{t("settings.exportExcel.title")}</Text>
+            <Text style={[styles.actionDesc, { color: colors.mutedForeground }]}>
+              {t("settings.exportExcel.desc")}
             </Text>
           </View>
           <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -240,9 +378,9 @@ export default function SettingsScreen() {
               : <Feather name="download" size={20} color="#3B82F6" />}
           </View>
           <View style={styles.actionText}>
-            <Text style={[styles.actionTitle, { color: colors.foreground }]}>Importer des données</Text>
+            <Text style={[styles.actionTitle, { color: colors.foreground }]}>{t("settings.import.title")}</Text>
             <Text style={[styles.actionDesc, { color: colors.mutedForeground }]}>
-              Restaure tes données depuis un fichier exporté — utile lors d'un changement de téléphone
+              {t("settings.import.desc")}
             </Text>
           </View>
           <Feather name="chevron-right" size={18} color={colors.mutedForeground} />
@@ -254,10 +392,10 @@ export default function SettingsScreen() {
             <Feather name="alert-circle" size={18} color="#3B82F6" />
             <View style={{ flex: 1 }}>
               <Text style={[styles.confirmTitle, { color: colors.foreground }]}>
-                Écraser les données actuelles ?
+                {t("settings.import.confirmTitle")}
               </Text>
               <Text style={[styles.confirmDesc, { color: colors.mutedForeground }]}>
-                Tes {workouts.length} séances actuelles seront remplacées par celles du fichier importé.
+                {t("settings.import.confirmDesc", { count: workouts.length })}
               </Text>
             </View>
             <View style={styles.confirmBtns}>
@@ -265,14 +403,14 @@ export default function SettingsScreen() {
                 style={[styles.cancelBtn, { borderColor: colors.border }]}
                 onPress={() => { setConfirmImport(false); pendingImportRef.current = null; }}
               >
-                <Text style={[styles.cancelBtnText, { color: colors.foreground }]}>Annuler</Text>
+                <Text style={[styles.cancelBtnText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.okBtn, { backgroundColor: "#3B82F6" }]}
                 onPress={handleConfirmImport}
               >
                 <Feather name="check" size={14} color="#fff" />
-                <Text style={styles.okBtnText}>Confirmer</Text>
+                <Text style={styles.okBtnText}>{t("common.confirm")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -302,7 +440,7 @@ export default function SettingsScreen() {
         <View style={[styles.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="info" size={14} color={colors.mutedForeground} />
           <Text style={[styles.infoText, { color: colors.mutedForeground }]}>
-            Le fichier exporté contient toutes tes séances, tes exercices personnalisés et l'historique de poids de corps. Garde-le en lieu sûr.
+            {t("settings.info")}
           </Text>
         </View>
       </ScrollView>
@@ -327,6 +465,12 @@ const styles = StyleSheet.create({
   actionText: { flex: 1, gap: 3 },
   actionTitle: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
   actionDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  prefCard: { borderRadius: 16, borderWidth: 1, padding: 16, gap: 14 },
+  prefHeader: { flexDirection: "row", alignItems: "center", gap: 14 },
+  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  langChip: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  restChip: { paddingHorizontal: 14, paddingVertical: 9, borderRadius: 12, borderWidth: 1 },
+  chipText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   confirmBox: { borderRadius: 14, borderWidth: 1, padding: 14, gap: 10 },
   confirmTitle: { fontSize: 14, fontFamily: "Inter_600SemiBold", marginBottom: 2 },
   confirmDesc: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },

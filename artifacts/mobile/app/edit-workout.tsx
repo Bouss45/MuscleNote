@@ -1,10 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
   Modal,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,181 +13,46 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { Exercise, MuscleGroup, Set, SetUpdate, WorkoutExercise, useWorkout } from "@/context/WorkoutContext";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { usePreferences } from "@/context/PreferencesContext";
+import { Exercise, SetUpdate, WorkoutExercise, useWorkout } from "@/context/WorkoutContext";
+import ExerciseSearchBar, { useExerciseSearch } from "@/components/ExerciseSearchBar";
 import MuscleGroupBadge from "@/components/MuscleGroupBadge";
-import { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
-
-function generateId() {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
-}
-
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras",
-];
-
-// ── Inline set editor ────────────────────────────────────────────────────────
-interface SetEditorProps {
-  set: Set;
-  index: number;
-  isCardio?: boolean;
-  onChange: (data: SetUpdate) => void;
-  onRemove: () => void;
-}
-function SetEditor({ set, index, isCardio, onChange, onRemove }: SetEditorProps) {
-  const colors = useColors();
-  const [reps, setReps] = useState(String(set.reps || ""));
-  const [weight, setWeight] = useState(String(set.weight || ""));
-  const [duration, setDuration] = useState(set.duration != null ? String(set.duration) : "");
-  const [distance, setDistance] = useState(set.distance != null ? String(set.distance) : "");
-  const [speed, setSpeed] = useState(set.speed != null ? String(set.speed) : "");
-  const [incline, setIncline] = useState(set.incline != null ? String(set.incline) : "");
-
-  function commit() {
-    if (isCardio) {
-      onChange({
-        duration: parseFloat(duration) || 0,
-        distance: parseFloat(distance) || 0,
-        speed: parseFloat(speed) || 0,
-        incline: parseFloat(incline) || 0,
-      });
-    } else {
-      onChange({ reps: parseInt(reps) || 0, weight: parseFloat(weight) || 0 });
-    }
-  }
-
-  const inp = [setStyles.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }] as const;
-
-  return (
-    <View style={[setStyles.row, { backgroundColor: colors.background, borderColor: colors.border }]}>
-      <Text style={[setStyles.idx, { color: colors.mutedForeground }]}>{index + 1}</Text>
-
-      {isCardio ? (
-        <View style={setStyles.cardioGrid}>
-          <View style={setStyles.cardioRow}>
-            <View style={setStyles.group}>
-              <TextInput style={inp} value={duration} onChangeText={setDuration} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
-              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>min</Text>
-            </View>
-            <View style={setStyles.group}>
-              <TextInput style={inp} value={distance} onChangeText={setDistance} onBlur={commit} keyboardType="decimal-pad" maxLength={5} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
-              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>km</Text>
-            </View>
-          </View>
-          <View style={setStyles.cardioRow}>
-            <View style={setStyles.group}>
-              <TextInput style={inp} value={speed} onChangeText={setSpeed} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
-              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>km/h</Text>
-            </View>
-            <View style={setStyles.group}>
-              <TextInput style={inp} value={incline} onChangeText={setIncline} onBlur={commit} keyboardType="decimal-pad" maxLength={4} placeholder="0" placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
-              <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>% inc.</Text>
-            </View>
-          </View>
-        </View>
-      ) : (
-        <View style={setStyles.inputs}>
-          <View style={setStyles.group}>
-            <TextInput style={inp} value={reps} onChangeText={setReps} onBlur={commit} keyboardType="number-pad" maxLength={3} selectTextOnFocus />
-            <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>reps</Text>
-          </View>
-          <Text style={[setStyles.x, { color: colors.mutedForeground }]}>×</Text>
-          <View style={setStyles.group}>
-            <TextInput style={inp} value={weight} onChangeText={setWeight} onBlur={commit} keyboardType="decimal-pad" maxLength={6} selectTextOnFocus />
-            <Text style={[setStyles.unit, { color: colors.mutedForeground }]}>kg</Text>
-          </View>
-        </View>
-      )}
-
-      <TouchableOpacity onPress={onRemove} style={setStyles.del}>
-        <Feather name="trash-2" size={14} color={colors.destructive} />
-      </TouchableOpacity>
-    </View>
-  );
-}
-
-const setStyles = StyleSheet.create({
-  row: {
-    flexDirection: "row", alignItems: "center",
-    paddingHorizontal: 10, paddingVertical: 8,
-    borderRadius: 10, borderWidth: 1, marginBottom: 8, gap: 6,
-  },
-  idx: { width: 18, fontSize: 13, fontFamily: "Inter_600SemiBold", textAlign: "center" },
-  inputs: { flex: 1, flexDirection: "row", alignItems: "center", gap: 6 },
-  group: { flexDirection: "row", alignItems: "center", gap: 4 },
-  input: {
-    width: 52, paddingVertical: 8, borderRadius: 8, borderWidth: 1,
-    textAlign: "center", fontSize: 15, fontFamily: "Inter_600SemiBold",
-    includeFontPadding: false,
-  },
-  unit: { fontSize: 11, fontFamily: "Inter_400Regular" },
-  x: { fontSize: 14, fontFamily: "Inter_400Regular" },
-  del: { padding: 6 },
-  cardioGrid: { flex: 1, gap: 4 },
-  cardioRow: { flexDirection: "row", gap: 8 },
-});
+import SetRow from "@/components/SetRow";
+import { generateId } from "@/utils/id";
+import { parseDecimal } from "@/utils/number";
 
 // ── Exercise picker modal ────────────────────────────────────────────────────
 interface PickerProps {
   exercises: Exercise[];
-  usedIds: string[];
   onPick: (id: string) => void;
   onClose: () => void;
 }
-function ExercisePicker({ exercises, usedIds, onPick, onClose }: PickerProps) {
+function ExercisePickerModal({ exercises, onPick, onClose }: PickerProps) {
   const colors = useColors();
+  const { t } = usePreferences();
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState("");
-  const [filterGroup, setFilterGroup] = useState<MuscleGroup | null>(null);
-
-  const filtered = exercises.filter((e) => {
-    if (usedIds.includes(e.id)) return false;
-    if (filterGroup && e.muscleGroup !== filterGroup) return false;
-    if (search && !e.name.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
+  const exerciseName = useExerciseName();
+  const { search, setSearch, group, setGroup, filtered } = useExerciseSearch(exercises);
 
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
-      <View style={[pickerStyles.container, { backgroundColor: colors.background, paddingTop: Platform.OS === "web" ? 67 : insets.top + 12 }]}>
+      <View style={[pickerStyles.container, { backgroundColor: colors.background, paddingTop: insets.top + 12 }]}>
         <View style={[pickerStyles.header, { borderBottomColor: colors.border }]}>
-          <TouchableOpacity onPress={onClose} style={pickerStyles.closeBtn}>
-            <Feather name="x" size={22} color={colors.foreground} />
-          </TouchableOpacity>
-          <Text style={[pickerStyles.title, { color: colors.foreground }]}>Ajouter un exercice</Text>
-        </View>
-
-        <View style={[pickerStyles.searchRow, { borderBottomColor: colors.border }]}>
-          <Feather name="search" size={16} color={colors.mutedForeground} />
-          <TextInput
-            style={[pickerStyles.searchInput, { color: colors.foreground }]}
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Rechercher..."
-            placeholderTextColor={colors.mutedForeground}
-          />
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={pickerStyles.groupScroll} contentContainerStyle={pickerStyles.groupRow}>
-          <TouchableOpacity
-            style={[pickerStyles.groupChip, { backgroundColor: !filterGroup ? colors.primary : colors.card, borderColor: !filterGroup ? colors.primary : colors.border }]}
-            onPress={() => setFilterGroup(null)}
-          >
-            <Text style={[pickerStyles.groupChipText, { color: !filterGroup ? "#fff" : colors.mutedForeground }]}>Tous</Text>
-          </TouchableOpacity>
-          {MUSCLE_GROUPS.map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[pickerStyles.groupChip, { backgroundColor: filterGroup === g ? colors.primary : colors.card, borderColor: filterGroup === g ? colors.primary : colors.border }]}
-              onPress={() => setFilterGroup(filterGroup === g ? null : g)}
-            >
-              <Text style={[pickerStyles.groupChipText, { color: filterGroup === g ? "#fff" : colors.mutedForeground }]}>
-                {MUSCLE_GROUP_LABELS[g]}
-              </Text>
+          <View style={pickerStyles.titleRow}>
+            <TouchableOpacity onPress={onClose} style={pickerStyles.closeBtn}>
+              <Feather name="x" size={22} color={colors.foreground} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+            <Text style={[pickerStyles.title, { color: colors.foreground }]}>{t("workout.addExercise")}</Text>
+          </View>
+          <ExerciseSearchBar search={search} onSearch={setSearch} group={group} onGroup={setGroup} />
+        </View>
 
-        <ScrollView style={pickerStyles.list} contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}>
+        <ScrollView
+          style={pickerStyles.list}
+          contentContainerStyle={{ paddingBottom: insets.bottom + 20 }}
+          keyboardShouldPersistTaps="handled"
+        >
           {filtered.map((ex) => (
             <TouchableOpacity
               key={ex.id}
@@ -196,14 +60,14 @@ function ExercisePicker({ exercises, usedIds, onPick, onClose }: PickerProps) {
               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPick(ex.id); }}
             >
               <View style={{ flex: 1 }}>
-                <Text style={[pickerStyles.exName, { color: colors.foreground }]}>{ex.name}</Text>
+                <Text style={[pickerStyles.exName, { color: colors.foreground }]}>{exerciseName(ex)}</Text>
                 <MuscleGroupBadge muscleGroup={ex.muscleGroup} small />
               </View>
               <Feather name="plus" size={18} color={colors.primary} />
             </TouchableOpacity>
           ))}
           {filtered.length === 0 && (
-            <Text style={[pickerStyles.empty, { color: colors.mutedForeground }]}>Aucun exercice trouvé</Text>
+            <Text style={[pickerStyles.empty, { color: colors.mutedForeground }]}>{t("editWorkout.noExerciseFound")}</Text>
           )}
         </ScrollView>
       </View>
@@ -213,15 +77,10 @@ function ExercisePicker({ exercises, usedIds, onPick, onClose }: PickerProps) {
 
 const pickerStyles = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1 },
+  header: { paddingHorizontal: 20, paddingBottom: 14, borderBottomWidth: 1, gap: 14 },
+  titleRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   closeBtn: { padding: 4 },
   title: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingHorizontal: 20, paddingVertical: 12, borderBottomWidth: 1 },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
-  groupScroll: { maxHeight: 50 },
-  groupRow: { paddingHorizontal: 20, gap: 8, paddingVertical: 8, flexDirection: "row" },
-  groupChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
-  groupChipText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
   list: { flex: 1 },
   exRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: 1, gap: 12 },
   exName: { fontSize: 15, fontFamily: "Inter_600SemiBold", marginBottom: 4 },
@@ -231,29 +90,31 @@ const pickerStyles = StyleSheet.create({
 // ── Main edit screen ─────────────────────────────────────────────────────────
 export default function EditWorkoutScreen() {
   const colors = useColors();
+  const { t } = usePreferences();
   const insets = useSafeAreaInsets();
   const { workoutId } = useLocalSearchParams<{ workoutId: string }>();
-  const { workouts, exercises, patchWorkout } = useWorkout();
+  const { workouts, exercises, exerciseById, patchWorkout } = useWorkout();
+  const exerciseName = useExerciseName();
 
-  const workout = useMemo(() => workouts.find((w) => w.id === workoutId), [workouts, workoutId]);
+  const workout = workouts.find((w) => w.id === workoutId);
 
   const [localExercises, setLocalExercises] = useState<WorkoutExercise[]>(
     () => workout?.exercises ?? []
   );
   const [localBodyWeight, setLocalBodyWeight] = useState(
-    workout?.bodyWeight > 0 ? String(workout.bodyWeight) : ""
+    workout && workout.bodyWeight > 0 ? String(workout.bodyWeight) : ""
   );
   const [showPicker, setShowPicker] = useState(false);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 20;
+  const topPad = insets.top;
+  const bottomPad = insets.bottom + 20;
 
   if (!workout) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
-        <Text style={[styles.empty, { color: colors.mutedForeground }]}>Séance introuvable</Text>
+        <Text style={[styles.empty, { color: colors.mutedForeground }]}>{t("editWorkout.notFound")}</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={[styles.backLink, { color: colors.primary }]}>Retour</Text>
+          <Text style={[styles.backLink, { color: colors.primary }]}>{t("common.back")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -307,16 +168,17 @@ export default function EditWorkoutScreen() {
   }
 
   function save() {
-    const bw = parseFloat(localBodyWeight);
+    const bw = parseDecimal(localBodyWeight);
     patchWorkout(workoutId, {
       exercises: localExercises,
-      bodyWeight: isNaN(bw) ? workout.bodyWeight : bw,
+      bodyWeight: bw > 0 ? bw : workout?.bodyWeight ?? 0,
     });
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   }
 
-  const usedIds = localExercises.map((e) => e.exerciseId);
+  const usedIds = new Set(localExercises.map((e) => e.exerciseId));
+  const pickable = exercises.filter((e) => !e.archived && !usedIds.has(e.id));
 
   return (
     <>
@@ -328,22 +190,22 @@ export default function EditWorkoutScreen() {
               <Feather name="chevron-left" size={22} color={colors.foreground} />
             </TouchableOpacity>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.headerLabel, { color: colors.mutedForeground }]}>Modifier la séance</Text>
+              <Text style={[styles.headerLabel, { color: colors.mutedForeground }]}>{t("editWorkout.headerLabel")}</Text>
               <Text style={[styles.headerTitle, { color: colors.foreground }]} numberOfLines={1}>{workout.name}</Text>
             </View>
             <TouchableOpacity style={[styles.saveBtn, { backgroundColor: colors.primary }]} onPress={save}>
               <Feather name="check" size={16} color={colors.primaryForeground} />
-              <Text style={[styles.saveBtnText, { color: colors.primaryForeground }]}>Enregistrer</Text>
+              <Text style={[styles.saveBtnText, { color: colors.primaryForeground }]}>{t("common.save")}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: bottomPad }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* Body weight card */}
           <View style={[styles.bwCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="user" size={15} color={colors.mutedForeground} />
-            <Text style={[styles.bwLabel, { color: colors.mutedForeground }]}>Poids de corps</Text>
+            <Text style={[styles.bwLabel, { color: colors.mutedForeground }]}>{t("common.bodyWeight")}</Text>
             <View style={[styles.bwInputWrap, { backgroundColor: colors.input, borderColor: colors.border }]}>
               <TextInput
                 style={[styles.bwInput, { color: colors.foreground }]}
@@ -360,14 +222,14 @@ export default function EditWorkoutScreen() {
           </View>
 
           {localExercises.map((we) => {
-            const ex = exercises.find((e) => e.id === we.exerciseId);
+            const ex = exerciseById.get(we.exerciseId);
             if (!ex) return null;
             return (
               <View key={we.exerciseId} style={[styles.exCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 {/* Exercise header */}
                 <View style={styles.exHeader}>
                   <View style={{ flex: 1 }}>
-                    <Text style={[styles.exName, { color: colors.foreground }]}>{ex.name}</Text>
+                    <Text style={[styles.exName, { color: colors.foreground }]}>{exerciseName(ex)}</Text>
                     <MuscleGroupBadge muscleGroup={ex.muscleGroup} small />
                   </View>
                   <TouchableOpacity onPress={() => removeExercise(ex.id)} style={styles.removeBtn}>
@@ -378,12 +240,12 @@ export default function EditWorkoutScreen() {
                 {/* Sets */}
                 <View style={styles.setsList}>
                   {we.sets.map((set, idx) => (
-                    <SetEditor
+                    <SetRow
                       key={set.id}
                       set={set}
                       index={idx}
                       isCardio={ex.muscleGroup === "cardio"}
-                      onChange={(data) => updateSet(ex.id, set.id, data)}
+                      onUpdate={(data) => updateSet(ex.id, set.id, data)}
                       onRemove={() => removeSet(ex.id, set.id)}
                     />
                   ))}
@@ -395,7 +257,7 @@ export default function EditWorkoutScreen() {
                   onPress={() => addSet(ex.id, ex.muscleGroup === "cardio")}
                 >
                   <Feather name="plus" size={15} color={colors.primary} />
-                  <Text style={[styles.addSetText, { color: colors.primary }]}>Ajouter une série</Text>
+                  <Text style={[styles.addSetText, { color: colors.primary }]}>{t("exerciseCard.addSet")}</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -408,14 +270,14 @@ export default function EditWorkoutScreen() {
             activeOpacity={0.8}
           >
             <Feather name="plus-circle" size={20} color={colors.primary} />
-            <Text style={[styles.addExText, { color: colors.primary }]}>Ajouter un exercice</Text>
+            <Text style={[styles.addExText, { color: colors.primary }]}>{t("workout.addExercise")}</Text>
           </TouchableOpacity>
 
           {localExercises.length === 0 && (
             <View style={styles.emptyState}>
               <Feather name="activity" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Aucun exercice — appuie sur le bouton ci-dessus pour en ajouter
+                {t("editWorkout.emptyExercises")}
               </Text>
             </View>
           )}
@@ -423,9 +285,8 @@ export default function EditWorkoutScreen() {
       </View>
 
       {showPicker && (
-        <ExercisePicker
-          exercises={exercises}
-          usedIds={usedIds}
+        <ExercisePickerModal
+          exercises={pickable}
           onPick={addExercise}
           onClose={() => setShowPicker(false)}
         />

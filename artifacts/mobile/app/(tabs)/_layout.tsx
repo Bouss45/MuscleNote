@@ -2,9 +2,10 @@ import { BlurView } from "expo-blur";
 import { Tabs } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
 
 // NativeTabs with liquid glass is iOS 26+ only — guard strictly
 let isLiquidGlass = false;
@@ -18,25 +19,26 @@ if (Platform.OS === "ios") {
 }
 
 function NativeTabLayout() {
+  const { t } = usePreferences();
   try {
     const { Icon, Label, NativeTabs } = require("expo-router/unstable-native-tabs");
     return (
       <NativeTabs>
         <NativeTabs.Trigger name="index">
           <Icon sf={{ default: "house", selected: "house.fill" }} />
-          <Label>Accueil</Label>
+          <Label>{t("tabs.home")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="progress">
           <Icon sf={{ default: "chart.line.uptrend.xyaxis", selected: "chart.line.uptrend.xyaxis" }} />
-          <Label>Progrès</Label>
+          <Label>{t("tabs.progress")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="supplements">
           <Icon sf={{ default: "heart.text.square", selected: "heart.text.square.fill" }} />
-          <Label>Nutrition</Label>
+          <Label>{t("tabs.nutrition")}</Label>
         </NativeTabs.Trigger>
         <NativeTabs.Trigger name="settings">
           <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
-          <Label>Paramètres</Label>
+          <Label>{t("tabs.settings")}</Label>
         </NativeTabs.Trigger>
       </NativeTabs>
     );
@@ -47,10 +49,10 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
+  const { t } = usePreferences();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
-  const isWeb = Platform.OS === "web";
 
   return (
     <Tabs
@@ -64,7 +66,6 @@ function ClassicTabLayout() {
           borderTopWidth: 1,
           borderTopColor: colors.border,
           elevation: 0,
-          ...(isWeb ? { height: 84 } : {}),
         },
         tabBarBackground: () =>
           isIOS ? (
@@ -73,20 +74,13 @@ function ClassicTabLayout() {
               tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
-          ) : isWeb ? (
-            <View
-              style={[
-                StyleSheet.absoluteFill,
-                { backgroundColor: colors.background },
-              ]}
-            />
           ) : null,
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Accueil",
+          title: t("tabs.home"),
           tabBarIcon: ({ color }) => (
             <Feather name="home" size={22} color={color} />
           ),
@@ -95,7 +89,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: "Progrès",
+          title: t("tabs.progress"),
           tabBarIcon: ({ color }) => (
             <Feather name="trending-up" size={22} color={color} />
           ),
@@ -104,7 +98,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="supplements"
         options={{
-          title: "Nutrition",
+          title: t("tabs.nutrition"),
           tabBarIcon: ({ color }) => (
             <Feather name="heart" size={22} color={color} />
           ),
@@ -113,7 +107,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: "Paramètres",
+          title: t("tabs.settings"),
           tabBarIcon: ({ color }) => (
             <Feather name="settings" size={22} color={color} />
           ),
@@ -129,5 +123,3 @@ export default function TabLayout() {
   }
   return <ClassicTabLayout />;
 }
-
-const styles = StyleSheet.create({});

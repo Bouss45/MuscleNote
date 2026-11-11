@@ -1,8 +1,0 @@
-uploads = []
-outputs = []
-
-[[generated]]
-id = "qiafBFNL3EYKNqsV3Le2c"
-uri = "file://artifacts/mobile/assets/images/icon.png"
-type = "image"
-title = "red gym tracker icon"

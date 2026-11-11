@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,20 +12,29 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
 import { useWorkout } from "@/context/WorkoutContext";
+import { TranslationKey } from "@/constants/i18n";
+import { parseDecimal } from "@/utils/number";
 
-const PRESET_GROUPS = [
+const PRESET_GROUPS: { labelKey: TranslationKey; presetKeys: TranslationKey[] }[] = [
   {
-    label: "PPL",
-    presets: ["Push", "Pull", "Legs"],
+    labelKey: "startWorkout.group.ppl",
+    presetKeys: ["startWorkout.preset.push", "startWorkout.preset.pull", "startWorkout.preset.legs"],
   },
   {
-    label: "Split",
-    presets: ["Pecs / Triceps", "Dos / Biceps", "Épaules", "Jambes", "Bras"],
+    labelKey: "startWorkout.group.split",
+    presetKeys: [
+      "startWorkout.preset.pecs",
+      "startWorkout.preset.dos",
+      "startWorkout.preset.shoulders",
+      "startWorkout.preset.legsSplit",
+      "startWorkout.preset.arms",
+    ],
   },
   {
-    label: "Autre",
-    presets: ["Full Body", "Isolation", "Cardio"],
+    labelKey: "startWorkout.group.other",
+    presetKeys: ["startWorkout.preset.fullBody", "startWorkout.preset.isolation", "startWorkout.preset.cardio"],
   },
 ];
 
@@ -34,6 +42,7 @@ export default function StartWorkoutScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { startWorkout, workouts } = useWorkout();
+  const { t } = usePreferences();
   const [bodyWeight, setBodyWeight] = useState(
     workouts.length > 0 ? workouts[0].bodyWeight.toString() : ""
   );
@@ -41,8 +50,9 @@ export default function StartWorkoutScreen() {
   const [customName, setCustomName] = useState("");
   const [step, setStep] = useState<"name" | "weight">("name");
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 20;
+  const topPad = insets.top;
+  const bottomPad = insets.bottom + 20;
+  const weightValue = parseDecimal(bodyWeight);
 
   const finalName = selectedName === "__custom__"
     ? customName.trim()
@@ -61,10 +71,9 @@ export default function StartWorkoutScreen() {
   }
 
   function handleStart() {
-    const w = parseFloat(bodyWeight);
-    if (!w || w <= 0 || !finalName) return;
+    if (weightValue <= 0 || !finalName) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    startWorkout(w, finalName);
+    startWorkout(weightValue, finalName);
     router.replace("/workout");
   }
 
@@ -102,23 +111,24 @@ export default function StartWorkoutScreen() {
         {step === "name" ? (
           <>
             <Text style={[styles.title, { color: colors.foreground }]}>
-              Type de séance
+              {t("startWorkout.title")}
             </Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Choisis ou nomme ta séance
+              {t("startWorkout.subtitle")}
             </Text>
 
             {PRESET_GROUPS.map((group) => (
-              <View key={group.label} style={styles.group}>
+              <View key={group.labelKey} style={styles.group}>
                 <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>
-                  {group.label}
+                  {t(group.labelKey)}
                 </Text>
                 <View style={styles.presetRow}>
-                  {group.presets.map((name) => {
+                  {group.presetKeys.map((pk) => {
+                    const name = t(pk);
                     const active = selectedName === name;
                     return (
                       <TouchableOpacity
-                        key={name}
+                        key={pk}
                         style={[
                           styles.presetChip,
                           {
@@ -147,7 +157,7 @@ export default function StartWorkoutScreen() {
             {/* Custom name */}
             <View style={styles.group}>
               <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>
-                Personnalisé
+                {t("startWorkout.custom.label")}
               </Text>
               <TouchableOpacity
                 style={[
@@ -173,14 +183,14 @@ export default function StartWorkoutScreen() {
                     style={[styles.customNameInput, { color: colors.foreground }]}
                     value={customName}
                     onChangeText={setCustomName}
-                    placeholder="Ex: Épaules / Mollets"
+                    placeholder={t("startWorkout.custom.placeholder")}
                     placeholderTextColor={colors.mutedForeground}
                     autoFocus
                     maxLength={30}
                   />
                 ) : (
                   <Text style={[styles.customNamePlaceholder, { color: colors.mutedForeground }]}>
-                    Nom personnalisé...
+                    {t("startWorkout.custom.empty")}
                   </Text>
                 )}
               </TouchableOpacity>
@@ -204,7 +214,7 @@ export default function StartWorkoutScreen() {
                   { color: finalName ? colors.primaryForeground : colors.mutedForeground },
                 ]}
               >
-                Suivant
+                {t("startWorkout.next")}
               </Text>
               <Feather
                 name="arrow-right"
@@ -222,10 +232,10 @@ export default function StartWorkoutScreen() {
             </View>
 
             <Text style={[styles.title, { color: colors.foreground }]}>
-              Poids de corps
+              {t("common.bodyWeight")}
             </Text>
             <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-              Ton poids aujourd'hui ?
+              {t("startWorkout.bodyWeightSubtitle")}
             </Text>
 
             <View style={styles.weightContainer}>
@@ -291,20 +301,20 @@ export default function StartWorkoutScreen() {
                 styles.nextBtn,
                 {
                   backgroundColor:
-                    bodyWeight && parseFloat(bodyWeight) > 0
+                    weightValue > 0
                       ? colors.primary
                       : colors.muted,
                 },
               ]}
               onPress={handleStart}
-              disabled={!bodyWeight || parseFloat(bodyWeight) <= 0}
+              disabled={weightValue <= 0}
               activeOpacity={0.85}
             >
               <Feather
                 name="play"
                 size={18}
                 color={
-                  bodyWeight && parseFloat(bodyWeight) > 0
+                  weightValue > 0
                     ? colors.primaryForeground
                     : colors.mutedForeground
                 }
@@ -314,13 +324,13 @@ export default function StartWorkoutScreen() {
                   styles.nextBtnText,
                   {
                     color:
-                      bodyWeight && parseFloat(bodyWeight) > 0
+                      weightValue > 0
                         ? colors.primaryForeground
                         : colors.mutedForeground,
                   },
                 ]}
               >
-                Commencer
+                {t("startWorkout.start")}
               </Text>
             </TouchableOpacity>
           </>

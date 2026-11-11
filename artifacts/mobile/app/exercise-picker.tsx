@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -13,14 +12,17 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { usePreferences } from "@/context/PreferencesContext";
 import { Exercise, MuscleGroup, useWorkout } from "@/context/WorkoutContext";
-import MuscleGroupBadge, { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
-
-const ALL_GROUPS: MuscleGroup[] = ["dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras"];
+import ExerciseSearchBar, { useExerciseSearch } from "@/components/ExerciseSearchBar";
+import MuscleGroupBadge from "@/components/MuscleGroupBadge";
+import MuscleGroupChips from "@/components/MuscleGroupChips";
 
 export default function ExercisePickerScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const { t } = usePreferences();
   const {
     exercises,
     addExerciseToWorkout,
@@ -31,8 +33,9 @@ export default function ExercisePickerScreen() {
     isCustomExercise,
   } = useWorkout();
 
-  const [search, setSearch] = useState("");
-  const [selectedGroup, setSelectedGroup] = useState<MuscleGroup | null>(null);
+  const exerciseName = useExerciseName();
+  // Archived exercises (deleted but still used by past sessions) are not offered anymore.
+  const { search, setSearch, group, setGroup, filtered } = useExerciseSearch(exercises.filter((e) => !e.archived));
 
   // Add custom form
   const [showAddCustom, setShowAddCustom] = useState(false);
@@ -47,26 +50,20 @@ export default function ExercisePickerScreen() {
   // Delete confirm
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 20;
+  const topPad = insets.top;
+  const bottomPad = insets.bottom + 20;
 
   const addedIds = new Set(currentWorkout?.exercises.map((e) => e.exerciseId) ?? []);
-
-  const filtered = exercises.filter((e) => {
-    const matchGroup = selectedGroup ? e.muscleGroup === selectedGroup : true;
-    const matchSearch = e.name.toLowerCase().includes(search.toLowerCase());
-    return matchGroup && matchSearch;
-  });
 
   function handleAdd(exerciseId: string) {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     addExerciseToWorkout(exerciseId);
   }
 
-  async function handleAddCustom() {
+  function handleAddCustom() {
     if (!customName.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    await addCustomExercise(customName.trim(), customGroup);
+    addCustomExercise(customName.trim(), customGroup);
     setCustomName("");
     setShowAddCustom(false);
   }
@@ -101,47 +98,13 @@ export default function ExercisePickerScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Feather name="x" size={22} color={colors.foreground} />
           </TouchableOpacity>
-          <Text style={[styles.title, { color: colors.foreground }]}>Exercices</Text>
+          <Text style={[styles.title, { color: colors.foreground }]}>{t("exercisePicker.title")}</Text>
           <TouchableOpacity onPress={() => { setShowAddCustom(!showAddCustom); setEditingId(null); }}>
             <Feather name="plus" size={22} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        <View style={[styles.searchBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Feather name="search" size={16} color={colors.mutedForeground} />
-          <TextInput
-            style={[styles.searchInput, { color: colors.foreground }]}
-            placeholder="Chercher un exercice..."
-            placeholderTextColor={colors.mutedForeground}
-            value={search}
-            onChangeText={setSearch}
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Feather name="x" size={14} color={colors.mutedForeground} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.groupFilter}>
-          <TouchableOpacity
-            style={[styles.groupChip, { backgroundColor: selectedGroup === null ? colors.primary : colors.card, borderColor: selectedGroup === null ? colors.primary : colors.border }]}
-            onPress={() => setSelectedGroup(null)}
-          >
-            <Text style={[styles.groupChipText, { color: selectedGroup === null ? colors.primaryForeground : colors.foreground }]}>Tous</Text>
-          </TouchableOpacity>
-          {ALL_GROUPS.map((g) => (
-            <TouchableOpacity
-              key={g}
-              style={[styles.groupChip, { backgroundColor: selectedGroup === g ? colors.primary : colors.card, borderColor: selectedGroup === g ? colors.primary : colors.border }]}
-              onPress={() => setSelectedGroup(selectedGroup === g ? null : g)}
-            >
-              <Text style={[styles.groupChipText, { color: selectedGroup === g ? colors.primaryForeground : colors.foreground }]}>
-                {MUSCLE_GROUP_LABELS[g]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <ExerciseSearchBar search={search} onSearch={setSearch} group={group} onGroup={setGroup} />
       </View>
 
       <ScrollView
@@ -152,32 +115,20 @@ export default function ExercisePickerScreen() {
         {/* Add custom form */}
         {showAddCustom && (
           <View style={[styles.customBox, { backgroundColor: colors.card, borderColor: colors.primary + "55" }]}>
-            <Text style={[styles.customTitle, { color: colors.foreground }]}>Nouvel exercice</Text>
+            <Text style={[styles.customTitle, { color: colors.foreground }]}>{t("exercisePicker.newExercise")}</Text>
             <TextInput
               style={[styles.customInput, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-              placeholder="Nom de l'exercice"
+              placeholder={t("exercisePicker.namePlaceholder")}
               placeholderTextColor={colors.mutedForeground}
               value={customName}
               onChangeText={setCustomName}
               autoFocus
             />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-              <View style={{ flexDirection: "row", gap: 8 }}>
-                {ALL_GROUPS.map((g) => (
-                  <TouchableOpacity
-                    key={g}
-                    onPress={() => setCustomGroup(g)}
-                    style={[styles.groupChip, { backgroundColor: customGroup === g ? colors.primary : colors.input, borderColor: customGroup === g ? colors.primary : colors.border }]}
-                  >
-                    <Text style={[styles.groupChipText, { color: customGroup === g ? colors.primaryForeground : colors.foreground }]}>
-                      {MUSCLE_GROUP_LABELS[g]}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
+            <View style={{ marginBottom: 12 }}>
+              <MuscleGroupChips selected={customGroup} onSelect={(g) => g && setCustomGroup(g)} chipBackground={colors.input} />
+            </View>
             <TouchableOpacity style={[styles.customSaveBtn, { backgroundColor: colors.primary }]} onPress={handleAddCustom}>
-              <Text style={[styles.customSaveBtnText, { color: colors.primaryForeground }]}>Ajouter</Text>
+              <Text style={[styles.customSaveBtnText, { color: colors.primaryForeground }]}>{t("common.add")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -194,41 +145,29 @@ export default function ExercisePickerScreen() {
               {/* Edit form (inline, shown when editing this exercise) */}
               {isEditing && (
                 <View style={[styles.customBox, { backgroundColor: colors.card, borderColor: colors.primary + "55", marginBottom: 0, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
-                  <Text style={[styles.customTitle, { color: colors.foreground }]}>Modifier l'exercice</Text>
+                  <Text style={[styles.customTitle, { color: colors.foreground }]}>{t("exercisePicker.editExercise")}</Text>
                   <TextInput
                     style={[styles.customInput, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
                     value={editName}
                     onChangeText={setEditName}
                     autoFocus
                   />
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }}>
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      {ALL_GROUPS.map((g) => (
-                        <TouchableOpacity
-                          key={g}
-                          onPress={() => setEditGroup(g)}
-                          style={[styles.groupChip, { backgroundColor: editGroup === g ? colors.primary : colors.input, borderColor: editGroup === g ? colors.primary : colors.border }]}
-                        >
-                          <Text style={[styles.groupChipText, { color: editGroup === g ? colors.primaryForeground : colors.foreground }]}>
-                            {MUSCLE_GROUP_LABELS[g]}
-                          </Text>
-                        </TouchableOpacity>
-                      ))}
-                    </View>
-                  </ScrollView>
+                  <View style={{ marginBottom: 12 }}>
+                    <MuscleGroupChips selected={editGroup} onSelect={(g) => g && setEditGroup(g)} chipBackground={colors.input} />
+                  </View>
                   <View style={{ flexDirection: "row", gap: 8 }}>
                     <TouchableOpacity
                       style={[styles.editCancelBtn, { borderColor: colors.border }]}
                       onPress={() => setEditingId(null)}
                     >
-                      <Text style={[styles.editCancelText, { color: colors.foreground }]}>Annuler</Text>
+                      <Text style={[styles.editCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.customSaveBtn, { flex: 1, backgroundColor: colors.primary, flexDirection: "row", gap: 6 }]}
                       onPress={handleSaveEdit}
                     >
                       <Feather name="check" size={15} color={colors.primaryForeground} />
-                      <Text style={[styles.customSaveBtnText, { color: colors.primaryForeground }]}>Enregistrer</Text>
+                      <Text style={[styles.customSaveBtnText, { color: colors.primaryForeground }]}>{t("common.save")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -250,7 +189,7 @@ export default function ExercisePickerScreen() {
               >
                 <View style={styles.exerciseInfo}>
                   <Text style={[styles.exerciseName, { color: added ? colors.primary : colors.foreground }]}>
-                    {exercise.name}
+                    {exerciseName(exercise)}
                   </Text>
                   <MuscleGroupBadge muscleGroup={exercise.muscleGroup} small />
                 </View>
@@ -285,21 +224,24 @@ export default function ExercisePickerScreen() {
               {isDeleting && (
                 <View style={[styles.deleteConfirm, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "44" }]}>
                   <Text style={[styles.deleteConfirmText, { color: colors.foreground }]}>
-                    Supprimer « {exercise.name} » ?
+                    {t("exercisePicker.deleteConfirm", { name: exercise.name })}
+                  </Text>
+                  <Text style={[styles.deleteHint, { color: colors.mutedForeground }]}>
+                    {t("exercisePicker.deleteHint")}
                   </Text>
                   <View style={styles.deleteConfirmBtns}>
                     <TouchableOpacity
                       style={[styles.deleteCancelBtn, { borderColor: colors.border }]}
                       onPress={() => setDeletingId(null)}
                     >
-                      <Text style={[styles.deleteCancelText, { color: colors.foreground }]}>Annuler</Text>
+                      <Text style={[styles.deleteCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.deleteOkBtn, { backgroundColor: colors.destructive }]}
                       onPress={() => handleDelete(exercise.id)}
                     >
                       <Feather name="trash-2" size={13} color="#fff" />
-                      <Text style={styles.deleteOkText}>Supprimer</Text>
+                      <Text style={styles.deleteOkText}>{t("common.delete")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -317,11 +259,6 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 12, borderBottomWidth: 1 },
   headerTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14 },
   title: { fontSize: 18, fontFamily: "Inter_700Bold" },
-  searchBox: { flexDirection: "row", alignItems: "center", borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, gap: 8, marginBottom: 12 },
-  searchInput: { flex: 1, fontSize: 15, fontFamily: "Inter_400Regular" },
-  groupFilter: { marginBottom: 4 },
-  groupChip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, borderWidth: 1, marginRight: 8 },
-  groupChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   exerciseRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 12, borderWidth: 1, marginBottom: 8 },
   exerciseInfo: { flex: 1, gap: 6 },
   exerciseName: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
@@ -338,6 +275,7 @@ const styles = StyleSheet.create({
   // Delete confirm
   deleteConfirm: { borderWidth: 1, borderTopWidth: 0, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, padding: 12, gap: 10, marginBottom: 8 },
   deleteConfirmText: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  deleteHint: { fontSize: 12, fontFamily: "Inter_400Regular", marginTop: -6 },
   deleteConfirmBtns: { flexDirection: "row", gap: 8 },
   deleteCancelBtn: { flex: 1, borderWidth: 1, borderRadius: 8, paddingVertical: 8, alignItems: "center" },
   deleteCancelText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },

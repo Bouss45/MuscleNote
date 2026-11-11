@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -13,128 +11,37 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useNutrition } from "@/context/NutritionContext";
+import { generateId } from "@/utils/id";
+import { parseDecimal, parseInteger } from "@/utils/number";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-interface Reminder {
-  id: string;
-  hour: number;
-  minute: number;
-  notifId?: string;
-}
-
-interface Supplement {
-  id: string;
-  name: string;
-  dosage: string;
-  unit: string;
-  reminderEnabled: boolean;
-  reminders: Reminder[];
-}
-
-interface TakenRecord {
-  [supplementId: string]: string;
-}
-
-interface DailyTracker {
-  calorieGoal: number;
-  waterGoal: number;   // ml
-  caloriesLog: { [date: string]: number };
-  waterLog: { [date: string]: number };  // ml
-  bottleSize: number;  // ml per bottle
-}
-
-const STORAGE_KEY = "@gymtracker_supplements";
-const TAKEN_KEY = "@gymtracker_supplements_taken";
-const TRACKER_KEY = "@gymtracker_daily_tracker";
 const UNITS = ["g", "mg", "ml", "caps", "cp", "dose", "ui"];
-const BOTTLE_PRESETS = [250, 330, 500, 750, 1000];
-const DEFAULT_TRACKER: DailyTracker = {
-  calorieGoal: 2000,
-  waterGoal: 2000,  // 2L in ml
-  caloriesLog: {},
-  waterLog: {},
-  bottleSize: 500,  // 500ml bottle
-};
 
-function genId() {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 6);
-}
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
 function pad2(n: number) {
   return String(n).padStart(2, "0");
 }
 
-// ─── Notification helpers ─────────────────────────────────────────────────────
-async function requestNotifPermission(): Promise<boolean> {
-  if (Platform.OS === "web") return false;
-  try {
-    const N = require("expo-notifications");
-    const { status: existing } = await N.getPermissionsAsync();
-    if (existing === "granted") return true;
-    const { status } = await N.requestPermissionsAsync();
-    return status === "granted";
-  } catch { return false; }
-}
-
-async function scheduleReminder(sup: Supplement, r: Reminder): Promise<string | undefined> {
-  if (Platform.OS === "web" || !sup.reminderEnabled) return undefined;
-  try {
-    const N = require("expo-notifications");
-    const granted = await requestNotifPermission();
-    if (!granted) return undefined;
-    return await N.scheduleNotificationAsync({
-      content: {
-        title: `💊 ${sup.name}`,
-        body: `N'oublie pas ta dose${sup.dosage ? ` (${sup.dosage} ${sup.unit})` : ""} !`,
-        sound: true,
-      },
-      trigger: { type: "daily", hour: r.hour, minute: r.minute },
-    });
-  } catch { return undefined; }
-}
-
-async function cancelNotif(notifId?: string) {
-  if (!notifId || Platform.OS === "web") return;
-  try { await require("expo-notifications").cancelScheduledNotificationAsync(notifId); } catch {}
-}
-
-async function cancelAllReminders(reminders: Reminder[]) {
-  for (const r of reminders) await cancelNotif(r.notifId);
-}
-
-async function scheduleAllReminders(sup: Supplement): Promise<Reminder[]> {
-  return Promise.all(
-    sup.reminders.map(async (r) => ({ ...r, notifId: await scheduleReminder(sup, r) }))
-  );
-}
-
-function migrateSup(raw: any): Supplement {
-  if (raw.reminders) return raw as Supplement;
-  const reminder: Reminder = { id: genId(), hour: raw.reminderHour ?? 8, minute: raw.reminderMinute ?? 0, notifId: raw.notifId };
-  return { id: raw.id, name: raw.name, dosage: raw.dosage ?? "", unit: raw.unit ?? "g", reminderEnabled: raw.reminderEnabled ?? false, reminders: raw.reminderEnabled ? [reminder] : [] };
-}
-
 // ─── TimePicker sub-component ─────────────────────────────────────────────────
-function TimePicker({ hour, minute, onHour, onMinute, onRemove, showRemove }: {
+// Arrows report a delta (±1 hour / ±1 quarter-hour) rather than a new value, so
+// rapid taps accumulate correctly even before the previous one has re-rendered.
+function TimePicker({ hour, minute, onShift, onRemove, showRemove }: {
   hour: number; minute: number;
-  onHour: (h: number) => void; onMinute: (m: number) => void;
+  onShift: (field: "hour" | "minute", delta: number) => void;
   onRemove?: () => void; showRemove: boolean;
 }) {
   const colors = useColors();
   return (
     <View style={[tpStyles.row, { backgroundColor: colors.input, borderColor: colors.border }]}>
       <Feather name="clock" size={13} color={colors.mutedForeground} />
-      <TouchableOpacity onPress={() => onHour((hour + 23) % 24)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
+      <TouchableOpacity onPress={() => onShift("hour", -1)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(hour)}</Text>
-      <TouchableOpacity onPress={() => onHour((hour + 1) % 24)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
+      <TouchableOpacity onPress={() => onShift("hour", 1)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.sep, { color: colors.mutedForeground }]}>:</Text>
-      <TouchableOpacity onPress={() => onMinute((minute + 45) % 60)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
+      <TouchableOpacity onPress={() => onShift("minute", -1)} style={tpStyles.arrow}><Feather name="chevron-left" size={15} color={colors.foreground} /></TouchableOpacity>
       <Text style={[tpStyles.val, { color: colors.foreground }]}>{pad2(minute)}</Text>
-      <TouchableOpacity onPress={() => onMinute((minute + 15) % 60)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
+      <TouchableOpacity onPress={() => onShift("minute", 1)} style={tpStyles.arrow}><Feather name="chevron-right" size={15} color={colors.foreground} /></TouchableOpacity>
       <View style={{ flex: 1 }} />
       {showRemove && onRemove && (
         <TouchableOpacity onPress={onRemove} style={tpStyles.remove}><Feather name="x" size={14} color={colors.destructive} /></TouchableOpacity>
@@ -167,24 +74,27 @@ const pbStyles = StyleSheet.create({
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function NutritionScreen() {
   const colors = useColors();
+  const { t, locale } = usePreferences();
   const insets = useSafeAreaInsets();
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
+  const topPad = insets.top;
+  const {
+    today, tracker, supplements, taken,
+    addCalories, setCaloriesToday, setCalorieGoal, addWater, setWaterGoal,
+    toggleTaken, addSupplement, deleteSupplement, setRemindersEnabled,
+    addReminder, shiftReminder, removeReminder,
+  } = useNutrition();
 
-  // ── Supplements ──
-  const [supplements, setSupplements] = useState<Supplement[]>([]);
-  const [taken, setTaken] = useState<TakenRecord>({});
-  const [loading, setLoading] = useState(true);
+  // ── Supplement form ──
   const [showForm, setShowForm] = useState(false);
   const [formName, setFormName] = useState("");
   const [formDosage, setFormDosage] = useState("");
   const [formUnit, setFormUnit] = useState("g");
   const [formReminder, setFormReminder] = useState(true);
-  const [formReminders, setFormReminders] = useState<Array<{ id: string; hour: number; minute: number }>>([{ id: genId(), hour: 8, minute: 0 }]);
+  const [formReminders, setFormReminders] = useState<Array<{ id: string; hour: number; minute: number }>>([{ id: generateId(), hour: 8, minute: 0 }]);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [expandedRemId, setExpandedRemId] = useState<string | null>(null);
 
-  // ── Daily tracker ──
-  const [tracker, setTracker] = useState<DailyTracker>(DEFAULT_TRACKER);
+  // ── Daily tracker inputs ──
   const [editCalGoal, setEditCalGoal] = useState(false);
   const [editWaterGoal, setEditWaterGoal] = useState(false);
   const [calGoalInput, setCalGoalInput] = useState("");
@@ -193,187 +103,97 @@ export default function NutritionScreen() {
   const [calMode, setCalMode] = useState<"add" | "set">("add");
   const [waterInput, setWaterInput] = useState("");
 
-  const today = todayStr();
   const todayCalories = tracker.caloriesLog[today] ?? 0;
   const todayWater = tracker.waterLog[today] ?? 0;
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const [supsRaw, takenRaw, trackerRaw] = await Promise.all([
-          AsyncStorage.getItem(STORAGE_KEY),
-          AsyncStorage.getItem(TAKEN_KEY),
-          AsyncStorage.getItem(TRACKER_KEY),
-        ]);
-        if (supsRaw) setSupplements((JSON.parse(supsRaw) as any[]).map(migrateSup));
-        if (takenRaw) setTaken(JSON.parse(takenRaw));
-        if (trackerRaw) {
-          const raw = JSON.parse(trackerRaw);
-          if (raw.bottleSize === undefined && raw.waterGoal !== undefined && raw.waterGoal <= 30) {
-            raw.waterGoal = raw.waterGoal * 250;
-            if (raw.waterLog) {
-              raw.waterLog = Object.fromEntries(
-                Object.entries(raw.waterLog).map(([k, v]) => [k, (v as number) * 250])
-              );
-            }
-            raw.bottleSize = 500;
-          }
-          setTracker({ ...DEFAULT_TRACKER, ...raw });
-        }
-      } catch {}
-      setLoading(false);
-    }
-    load();
-  }, []);
-
-  async function saveSups(list: Supplement[]) {
-    setSupplements(list);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-  }
-  async function saveTaken(record: TakenRecord) {
-    setTaken(record);
-    await AsyncStorage.setItem(TAKEN_KEY, JSON.stringify(record));
-  }
-  async function saveTracker(t: DailyTracker) {
-    setTracker(t);
-    await AsyncStorage.setItem(TRACKER_KEY, JSON.stringify(t));
+  function tap() {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 
   // ── Calories ──
-  async function addCalories(amount: number) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const updated = { ...tracker, caloriesLog: { ...tracker.caloriesLog, [today]: Math.max(0, todayCalories + amount) } };
-    await saveTracker(updated);
+  function submitCalories() {
+    const v = parseInteger(calInput);
+    if (!calInput.trim() || v < 0) return;
+    tap();
+    if (calMode === "add") addCalories(v);
+    else setCaloriesToday(v);
+    setCalInput("");
   }
-  async function setCaloriesToday(val: number) {
-    const updated = { ...tracker, caloriesLog: { ...tracker.caloriesLog, [today]: Math.max(0, val) } };
-    await saveTracker(updated);
-  }
-  async function saveCalGoal() {
-    const v = parseInt(calGoalInput);
-    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, calorieGoal: v });
+  function saveCalGoal() {
+    const v = parseInteger(calGoalInput);
+    if (v > 0) setCalorieGoal(v);
     setEditCalGoal(false);
   }
 
   // ── Water ──
-  async function addWater(deltaMl: number) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const updated = { ...tracker, waterLog: { ...tracker.waterLog, [today]: Math.max(0, todayWater + deltaMl) } };
-    await saveTracker(updated);
+  function submitWater() {
+    const v = parseInteger(waterInput);
+    if (v <= 0) return;
+    tap();
+    addWater(v);
+    setWaterInput("");
   }
-  async function saveWaterGoal() {
-    const v = parseFloat(waterGoalInput);
-    if (!isNaN(v) && v > 0) await saveTracker({ ...tracker, waterGoal: Math.round(v * 1000) });
+  function saveWaterGoal() {
+    const v = parseDecimal(waterGoalInput);
+    if (v > 0) setWaterGoal(Math.round(v * 1000));
     setEditWaterGoal(false);
   }
 
   // ── Supplement form helpers ──
   function addFormReminder() {
-    const last = formReminders[formReminders.length - 1];
-    setFormReminders((prev) => [...prev, { id: genId(), hour: ((last?.hour ?? 8) + 2) % 24, minute: last?.minute ?? 0 }]);
+    setFormReminders((prev) => {
+      const last = prev[prev.length - 1];
+      return [...prev, { id: generateId(), hour: ((last?.hour ?? 8) + 2) % 24, minute: last?.minute ?? 0 }];
+    });
   }
   function removeFormReminder(id: string) { setFormReminders((prev) => prev.filter((r) => r.id !== id)); }
-  function updateFormReminder(id: string, field: "hour" | "minute", val: number) {
-    setFormReminders((prev) => prev.map((r) => r.id === id ? { ...r, [field]: val } : r));
+  function shiftFormReminder(id: string, field: "hour" | "minute", delta: number) {
+    setFormReminders((prev) => prev.map((r) => {
+      if (r.id !== id) return r;
+      return field === "hour"
+        ? { ...r, hour: (r.hour + delta + 24) % 24 }
+        : { ...r, minute: (r.minute + delta * 15 + 60) % 60 };
+    }));
   }
   function resetForm() {
     setFormName(""); setFormDosage(""); setFormUnit("g");
-    setFormReminder(true); setFormReminders([{ id: genId(), hour: 8, minute: 0 }]);
+    setFormReminder(true); setFormReminders([{ id: generateId(), hour: 8, minute: 0 }]);
   }
 
-  async function handleAdd() {
+  function handleAdd() {
     if (!formName.trim()) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const base: Supplement = {
-      id: genId(), name: formName.trim(), dosage: formDosage.trim(), unit: formUnit,
+    addSupplement({
+      name: formName.trim(),
+      dosage: formDosage.trim(),
+      unit: formUnit,
       reminderEnabled: formReminder,
-      reminders: formReminder ? formReminders.map((r) => ({ ...r, notifId: undefined })) : [],
-    };
-    const withNotifs = { ...base, reminders: await scheduleAllReminders(base) };
-    await saveSups([...supplements, withNotifs]);
+      reminders: formReminders,
+    });
     setShowForm(false); resetForm();
   }
 
-  async function toggleMasterReminder(sup: Supplement) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (sup.reminderEnabled) {
-      await cancelAllReminders(sup.reminders);
-      await saveSups(supplements.map((s) =>
-        s.id === sup.id ? { ...s, reminderEnabled: false, reminders: s.reminders.map((r) => ({ ...r, notifId: undefined })) } : s
-      ));
-    } else {
-      const updated: Supplement = { ...sup, reminderEnabled: true };
-      const reminders = await scheduleAllReminders(updated);
-      await saveSups(supplements.map((s) => s.id === sup.id ? { ...updated, reminders } : s));
-    }
-  }
-
-  async function addReminderToSup(sup: Supplement) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const last = sup.reminders[sup.reminders.length - 1];
-    const newR: Reminder = { id: genId(), hour: ((last?.hour ?? 8) + 2) % 24, minute: last?.minute ?? 0 };
-    if (sup.reminderEnabled) newR.notifId = await scheduleReminder(sup, newR);
-    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: [...s.reminders, newR] } : s));
-  }
-
-  async function updateReminderOnSup(sup: Supplement, remId: string, field: "hour" | "minute", val: number) {
-    const updatedReminders = await Promise.all(sup.reminders.map(async (r) => {
-      if (r.id !== remId) return r;
-      const newR = { ...r, [field]: val };
-      if (sup.reminderEnabled) { await cancelNotif(r.notifId); newR.notifId = await scheduleReminder(sup, newR); }
-      return newR;
-    }));
-    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: updatedReminders } : s));
-  }
-
-  async function removeReminderFromSup(sup: Supplement, remId: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const rem = sup.reminders.find((r) => r.id === remId);
-    if (rem) await cancelNotif(rem.notifId);
-    await saveSups(supplements.map((s) => s.id === sup.id ? { ...s, reminders: s.reminders.filter((r) => r.id !== remId) } : s));
-  }
-
-  async function toggleTaken(supId: string) {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const newTaken = { ...taken };
-    if (newTaken[supId] === today) delete newTaken[supId]; else newTaken[supId] = today;
-    await saveTaken(newTaken);
-  }
-
-  async function handleDelete(sup: Supplement) {
+  function handleDelete(supId: string) {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    await cancelAllReminders(sup.reminders);
-    await saveSups(supplements.filter((s) => s.id !== sup.id));
+    deleteSupplement(supId);
     setDeletingId(null);
   }
 
   const calPct = Math.min(1, tracker.calorieGoal > 0 ? todayCalories / tracker.calorieGoal : 0);
   const calColor = calPct > 1.05 ? "#ef4444" : calPct >= 0.9 ? "#22c55e" : colors.primary;
-  const bottleSize = tracker.bottleSize ?? 500;
-  const totalDots = Math.min(Math.ceil(tracker.waterGoal / bottleSize), 12);
-  const waterDots = Array.from({ length: totalDots });
-  const filledDots = Math.floor(todayWater / bottleSize);
-
-  if (loading) {
-    return (
-      <View style={[s.container, { backgroundColor: colors.background, justifyContent: "center", alignItems: "center" }]}>
-        <ActivityIndicator color={colors.primary} />
-      </View>
-    );
-  }
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[s.header, { paddingTop: topPad + 16, borderBottomColor: colors.border }]}>
-        <Text style={[s.title, { color: colors.foreground }]}>Nutrition</Text>
+        <Text style={[s.title, { color: colors.foreground }]}>{t("nutrition.title")}</Text>
         <TouchableOpacity
           onPress={() => { setShowForm(!showForm); setDeletingId(null); setExpandedRemId(null); }}
           style={[s.addBtn, { backgroundColor: colors.primary }]}
         >
           <Feather name={showForm ? "x" : "plus"} size={18} color={colors.primaryForeground} />
           <Text style={[s.addBtnText, { color: colors.primaryForeground }]}>
-            {showForm ? "Annuler" : "Complément"}
+            {showForm ? t("common.cancel") : t("nutrition.supplement")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -381,14 +201,14 @@ export default function NutritionScreen() {
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
         {/* ══ SUIVI DU JOUR ══════════════════════════════════════════════════ */}
-        <Text style={[s.sectionLabel, { color: colors.mutedForeground }]}>SUIVI DU JOUR</Text>
+        <Text style={[s.sectionLabel, { color: colors.mutedForeground }]}>{t("nutrition.sectionToday")}</Text>
 
-        <View style={s.trackingRow}>
+        <View style={s.trackingStack}>
           {/* ── Calories card ── */}
           <View style={[s.trackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={s.trackCardHeader}>
               <Text style={{ fontSize: 18 }}>🔥</Text>
-              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>Calories</Text>
+              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>{t("progress.tab.calories")}</Text>
               <TouchableOpacity
                 onPress={() => { setEditCalGoal(!editCalGoal); setCalGoalInput(String(tracker.calorieGoal)); setEditWaterGoal(false); }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -397,12 +217,14 @@ export default function NutritionScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[s.trackBigNum, { color: calColor }]}>
-              {todayCalories.toLocaleString("fr-FR")}
-            </Text>
-            <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
-              / {tracker.calorieGoal.toLocaleString("fr-FR")} kcal
-            </Text>
+            <View style={s.trackValueRow}>
+              <Text style={[s.trackBigNum, { color: calColor }]}>
+                {todayCalories.toLocaleString(locale)}
+              </Text>
+              <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
+                / {tracker.calorieGoal.toLocaleString(locale)} kcal
+              </Text>
+            </View>
             <ProgressBar value={todayCalories} max={tracker.calorieGoal} color={calColor} />
 
             {editCalGoal ? (
@@ -412,7 +234,7 @@ export default function NutritionScreen() {
                   value={calGoalInput}
                   onChangeText={setCalGoalInput}
                   keyboardType="number-pad"
-                  placeholder="Objectif kcal"
+                  placeholder={t("nutrition.calGoalPlaceholder")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                   autoFocus
@@ -423,59 +245,46 @@ export default function NutritionScreen() {
               </View>
             ) : (
               <View style={{ marginTop: 10, gap: 6 }}>
-                <View style={[s.calBtnsRow]}>
-                  {/* Mode toggle: + (add) or = (set total) */}
+                <View style={s.calModeRow}>
                   <TouchableOpacity
-                    onPress={() => setCalMode(calMode === "add" ? "set" : "add")}
-                    style={[s.calAddBtn, {
-                      backgroundColor: calMode === "set" ? colors.primary : colors.muted,
-                      borderColor: calMode === "set" ? colors.primary : colors.border,
-                    }]}
+                    onPress={() => setCalMode("add")}
+                    style={[s.calModeBtn, { backgroundColor: calMode === "add" ? colors.primary : colors.muted, borderColor: calMode === "add" ? colors.primary : colors.border }]}
                   >
-                    <Text style={{ fontSize: 16, fontFamily: "Inter_700Bold", color: calMode === "set" ? "#fff" : colors.mutedForeground, lineHeight: 20 }}>
-                      {calMode === "add" ? "+" : "="}
-                    </Text>
+                    <Text style={[s.calModeBtnText, { color: calMode === "add" ? "#fff" : colors.mutedForeground }]}>{t("nutrition.calAdd")}</Text>
                   </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setCalMode("set")}
+                    style={[s.calModeBtn, { backgroundColor: calMode === "set" ? colors.primary : colors.muted, borderColor: calMode === "set" ? colors.primary : colors.border }]}
+                  >
+                    <Text style={[s.calModeBtnText, { color: calMode === "set" ? "#fff" : colors.mutedForeground }]}>{t("nutrition.calSet")}</Text>
+                  </TouchableOpacity>
+                </View>
+                <View style={s.calBtnsRow}>
                   <View style={[s.calInputWrap, { flex: 1, backgroundColor: colors.input, borderColor: colors.border }]}>
                     <TextInput
                       style={[s.calDirectInput, { color: colors.foreground }]}
                       value={calInput}
                       onChangeText={setCalInput}
                       keyboardType="number-pad"
-                      placeholder={calMode === "add" ? "Ajouter kcal…" : "Définir le total…"}
+                      placeholder={t("nutrition.calPlaceholder")}
                       placeholderTextColor={colors.mutedForeground}
                       returnKeyType="done"
-                      onSubmitEditing={() => {
-                        const v = parseInt(calInput);
-                        if (!isNaN(v) && v >= 0) {
-                          calMode === "add" ? addCalories(v) : setCaloriesToday(v);
-                          setCalInput("");
-                        }
-                      }}
+                      onSubmitEditing={submitCalories}
                     />
                   </View>
                   <TouchableOpacity
                     style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
-                    onPress={() => {
-                      const v = parseInt(calInput);
-                      if (!isNaN(v) && v >= 0) {
-                        calMode === "add" ? addCalories(v) : setCaloriesToday(v);
-                        setCalInput("");
-                      }
-                    }}
+                    onPress={submitCalories}
                   >
                     <Feather name={calMode === "add" ? "plus" : "check"} size={16} color={colors.primary} />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCaloriesToday(0); }}
+                    onPress={() => { tap(); setCaloriesToday(0); }}
                   >
                     <Feather name="rotate-ccw" size={14} color={colors.mutedForeground} />
                   </TouchableOpacity>
                 </View>
-                <Text style={{ fontSize: 10, fontFamily: "Inter_400Regular", color: colors.mutedForeground }}>
-                  {calMode === "add" ? "Mode + : ajoute au total" : "Mode = : remplace le total"}
-                </Text>
               </View>
             )}
           </View>
@@ -484,7 +293,7 @@ export default function NutritionScreen() {
           <View style={[s.trackCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={s.trackCardHeader}>
               <Text style={{ fontSize: 18 }}>💧</Text>
-              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>Eau</Text>
+              <Text style={[s.trackCardTitle, { color: colors.foreground }]}>{t("progress.tab.water")}</Text>
               <TouchableOpacity
                 onPress={() => { setEditWaterGoal(!editWaterGoal); setWaterGoalInput((tracker.waterGoal / 1000).toFixed(1)); setEditCalGoal(false); }}
                 hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
@@ -493,13 +302,16 @@ export default function NutritionScreen() {
               </TouchableOpacity>
             </View>
 
-            <Text style={[s.trackBigNum, { color: todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary }]}>
-              {todayWater >= 1000 ? (todayWater / 1000).toFixed(1) : todayWater}
-              <Text style={{ fontSize: 18 }}>{todayWater >= 1000 ? " L" : " ml"}</Text>
-            </Text>
-            <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
-              / {(tracker.waterGoal / 1000).toFixed(1)} L
-            </Text>
+            <View style={s.trackValueRow}>
+              <Text style={[s.trackBigNum, { color: todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary }]}>
+                {todayWater >= 1000 ? (todayWater / 1000).toFixed(1) : todayWater}
+                <Text style={{ fontSize: 18 }}>{todayWater >= 1000 ? " L" : " ml"}</Text>
+              </Text>
+              <Text style={[s.trackGoalText, { color: colors.mutedForeground }]}>
+                / {(tracker.waterGoal / 1000).toFixed(1)} L
+              </Text>
+            </View>
+            <ProgressBar value={todayWater} max={tracker.waterGoal} color={todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary} />
 
             {editWaterGoal ? (
               <View style={[s.goalEditRow, { marginTop: 10 }]}>
@@ -508,7 +320,7 @@ export default function NutritionScreen() {
                   value={waterGoalInput}
                   onChangeText={setWaterGoalInput}
                   keyboardType="decimal-pad"
-                  placeholder="Ex : 2.0 (en litres)"
+                  placeholder={t("nutrition.waterGoalPlaceholder")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                   autoFocus
@@ -518,94 +330,33 @@ export default function NutritionScreen() {
                 </TouchableOpacity>
               </View>
             ) : (
-              <>
-                <View style={s.waterDots}>
-                  {waterDots.map((_, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      onPress={() => addWater((i + 1) * bottleSize - todayWater)}
-                    >
-                      <View style={[
-                        s.waterDot,
-                        { backgroundColor: i < filledDots ? (todayWater >= tracker.waterGoal ? "#22c55e" : colors.primary) : colors.muted },
-                      ]} />
-                    </TouchableOpacity>
-                  ))}
+              <View style={[s.calBtnsRow, { marginTop: 10 }]}>
+                <View style={[s.calInputWrap, { flex: 1, backgroundColor: colors.input, borderColor: colors.border }]}>
+                  <TextInput
+                    style={[s.calDirectInput, { color: colors.foreground }]}
+                    value={waterInput}
+                    onChangeText={setWaterInput}
+                    keyboardType="number-pad"
+                    placeholder={t("nutrition.waterPlaceholder")}
+                    placeholderTextColor={colors.mutedForeground}
+                    returnKeyType="done"
+                    onSubmitEditing={submitWater}
+                  />
                 </View>
-                {/* Custom ml input */}
-                <View style={[s.calBtnsRow, { marginTop: 8 }]}>
-                  <View style={[s.calInputWrap, { flex: 1, backgroundColor: colors.input, borderColor: colors.border }]}>
-                    <TextInput
-                      style={[s.calDirectInput, { color: colors.foreground }]}
-                      value={waterInput}
-                      onChangeText={setWaterInput}
-                      keyboardType="number-pad"
-                      placeholder="Quantité en ml…"
-                      placeholderTextColor={colors.mutedForeground}
-                      returnKeyType="done"
-                      onSubmitEditing={() => {
-                        const v = parseInt(waterInput);
-                        if (!isNaN(v) && v > 0) { addWater(v); setWaterInput(""); }
-                      }}
-                    />
-                  </View>
-                  <TouchableOpacity
-                    style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
-                    onPress={() => {
-                      const v = parseInt(waterInput);
-                      if (!isNaN(v) && v > 0) { addWater(v); setWaterInput(""); }
-                    }}
-                  >
-                    <Feather name="plus" size={16} color={colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                    onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); addWater(-todayWater); }}
-                    disabled={todayWater === 0}
-                  >
-                    <Feather name="rotate-ccw" size={14} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.mutedForeground} />
-                  </TouchableOpacity>
-                </View>
-                <View style={s.waterBtns}>
-                  <TouchableOpacity
-                    style={[s.waterBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
-                    onPress={() => addWater(-bottleSize)}
-                    disabled={todayWater === 0}
-                  >
-                    <Feather name="minus" size={18} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.foreground} />
-                  </TouchableOpacity>
-                  <View style={{ flex: 1, alignItems: "center" }}>
-                    <Text style={[{ fontSize: 11, fontFamily: "Inter_400Regular", color: colors.mutedForeground }]}>
-                      Gourde : {bottleSize < 1000 ? `${bottleSize} ml` : `${bottleSize / 1000} L`}
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[s.waterBtn, { backgroundColor: colors.primary, borderColor: colors.primary }]}
-                    onPress={() => addWater(bottleSize)}
-                  >
-                    <Feather name="plus" size={18} color="#fff" />
-                  </TouchableOpacity>
-                </View>
-                <View style={s.bottleSizeRow}>
-                  {BOTTLE_PRESETS.map((ml) => (
-                    <TouchableOpacity
-                      key={ml}
-                      onPress={() => saveTracker({ ...tracker, bottleSize: ml })}
-                      style={[
-                        s.bottleChip,
-                        {
-                          backgroundColor: bottleSize === ml ? colors.primary : colors.muted,
-                          borderColor: bottleSize === ml ? colors.primary : colors.border,
-                        },
-                      ]}
-                    >
-                      <Text style={[s.bottleChipText, { color: bottleSize === ml ? "#fff" : colors.mutedForeground }]}>
-                        {ml < 1000 ? `${ml}` : "1 L"}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </>
+                <TouchableOpacity
+                  style={[s.calAddBtn, { backgroundColor: colors.primary + "22", borderColor: colors.primary + "44" }]}
+                  onPress={submitWater}
+                >
+                  <Feather name="plus" size={16} color={colors.primary} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[s.calAddBtn, { backgroundColor: colors.muted, borderColor: colors.border }]}
+                  onPress={() => { tap(); addWater(-todayWater); }}
+                  disabled={todayWater === 0}
+                >
+                  <Feather name="rotate-ccw" size={14} color={todayWater === 0 ? colors.mutedForeground + "44" : colors.mutedForeground} />
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -613,31 +364,31 @@ export default function NutritionScreen() {
         {/* ══ COMPLÉMENTS ════════════════════════════════════════════════════ */}
         <View style={s.sectionHeaderRow}>
           <Text style={[s.sectionLabel, { color: colors.mutedForeground }]}>
-            COMPLÉMENTS {supplements.length > 0 ? `(${supplements.length})` : ""}
+            {t("nutrition.supplementsSection")} {supplements.length > 0 ? `(${supplements.length})` : ""}
           </Text>
         </View>
 
         {/* Add form */}
         {showForm && (
           <View style={[s.formCard, { backgroundColor: colors.card, borderColor: colors.primary + "55" }]}>
-            <Text style={[s.formTitle, { color: colors.foreground }]}>Nouveau complément</Text>
+            <Text style={[s.formTitle, { color: colors.foreground }]}>{t("nutrition.newSupplement")}</Text>
 
-            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Nom</Text>
+            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>{t("nutrition.name")}</Text>
             <TextInput
               style={[s.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-              placeholder="Ex : Créatine, Whey, Oméga-3..."
+              placeholder={t("nutrition.namePlaceholder")}
               placeholderTextColor={colors.mutedForeground}
               value={formName} onChangeText={setFormName} autoFocus
             />
 
-            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>Dosage par prise</Text>
-            <View style={s.dosageRow}>
+            <Text style={[s.inputLabel, { color: colors.mutedForeground }]}>{t("nutrition.dosagePerIntake")}</Text>
+            <View style={{ gap: 8 }}>
               <TextInput
-                style={[s.input, { flex: 1, color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
-                placeholder="Ex : 1" placeholderTextColor={colors.mutedForeground}
-                value={formDosage} onChangeText={setFormDosage} keyboardType="numeric"
+                style={[s.input, { color: colors.foreground, backgroundColor: colors.input, borderColor: colors.border }]}
+                placeholder={t("nutrition.dosagePlaceholder")} placeholderTextColor={colors.mutedForeground}
+                value={formDosage} onChangeText={setFormDosage} keyboardType="decimal-pad"
               />
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginLeft: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                 <View style={{ flexDirection: "row", gap: 6 }}>
                   {UNITS.map((u) => (
                     <TouchableOpacity key={u} onPress={() => setFormUnit(u)}
@@ -652,10 +403,10 @@ export default function NutritionScreen() {
             <View style={s.reminderRow}>
               <View style={s.reminderLeft}>
                 <Feather name="bell" size={15} color={colors.mutedForeground} />
-                <Text style={[s.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>Rappels</Text>
+                <Text style={[s.inputLabel, { color: colors.foreground, marginBottom: 0 }]}>{t("nutrition.reminders")}</Text>
               </View>
               <Switch value={formReminder}
-                onValueChange={(v) => { setFormReminder(v); if (v && formReminders.length === 0) setFormReminders([{ id: genId(), hour: 8, minute: 0 }]); }}
+                onValueChange={(v) => { setFormReminder(v); if (v && formReminders.length === 0) setFormReminders([{ id: generateId(), hour: 8, minute: 0 }]); }}
                 trackColor={{ true: colors.primary, false: colors.muted }} thumbColor="#fff"
               />
             </View>
@@ -664,8 +415,7 @@ export default function NutritionScreen() {
               <View style={{ gap: 8 }}>
                 {formReminders.map((r) => (
                   <TimePicker key={r.id} hour={r.hour} minute={r.minute}
-                    onHour={(h) => updateFormReminder(r.id, "hour", h)}
-                    onMinute={(m) => updateFormReminder(r.id, "minute", m)}
+                    onShift={(field, delta) => shiftFormReminder(r.id, field, delta)}
                     onRemove={() => removeFormReminder(r.id)}
                     showRemove={formReminders.length > 1}
                   />
@@ -673,7 +423,7 @@ export default function NutritionScreen() {
                 <TouchableOpacity onPress={addFormReminder}
                   style={[s.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}>
                   <Feather name="plus" size={14} color={colors.primary} />
-                  <Text style={[s.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
+                  <Text style={[s.addReminderText, { color: colors.primary }]}>{t("nutrition.addReminder")}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -683,7 +433,7 @@ export default function NutritionScreen() {
               onPress={handleAdd} disabled={!formName.trim()}
             >
               <Feather name="check" size={16} color={colors.primaryForeground} />
-              <Text style={[s.saveBtnText, { color: colors.primaryForeground }]}>Enregistrer</Text>
+              <Text style={[s.saveBtnText, { color: colors.primaryForeground }]}>{t("common.save")}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -694,9 +444,9 @@ export default function NutritionScreen() {
             <View style={[s.emptyIcon, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={{ fontSize: 28 }}>💊</Text>
             </View>
-            <Text style={[s.emptyTitle, { color: colors.foreground }]}>Aucun complément</Text>
+            <Text style={[s.emptyTitle, { color: colors.foreground }]}>{t("nutrition.emptyTitle")}</Text>
             <Text style={[s.emptyText, { color: colors.mutedForeground }]}>
-              Ajoute tes compléments alimentaires et configure des rappels pour ne jamais en oublier
+              {t("nutrition.emptyText")}
             </Text>
           </View>
         )}
@@ -712,14 +462,14 @@ export default function NutritionScreen() {
             <View key={sup.id}>
               <View style={[s.supCard, { backgroundColor: isTaken ? colors.primary + "12" : colors.card, borderColor: isTaken ? colors.primary + "55" : colors.border }]}>
                 <View style={s.supTop}>
-                  <TouchableOpacity onPress={() => toggleTaken(sup.id)}
+                  <TouchableOpacity onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); toggleTaken(sup.id); }}
                     style={[s.takenCircle, { backgroundColor: isTaken ? colors.primary : "transparent", borderColor: isTaken ? colors.primary : colors.mutedForeground }]}>
                     {isTaken && <Feather name="check" size={14} color="#fff" />}
                   </TouchableOpacity>
                   <View style={s.supInfo}>
                     <Text style={[s.supName, { color: colors.foreground }]}>{sup.name}</Text>
                     {(sup.dosage || sup.unit) && (
-                      <Text style={[s.supDosage, { color: colors.mutedForeground }]}>{sup.dosage} {sup.unit} par prise</Text>
+                      <Text style={[s.supDosage, { color: colors.mutedForeground }]}>{t("nutrition.perIntake", { dosage: sup.dosage, unit: sup.unit })}</Text>
                     )}
                   </View>
                   <TouchableOpacity onPress={() => { setDeletingId(isDeleting ? null : sup.id); setExpandedRemId(null); }}
@@ -734,12 +484,12 @@ export default function NutritionScreen() {
                       <Feather name={sup.reminderEnabled ? "bell" : "bell-off"} size={13} color={sup.reminderEnabled ? colors.primary : colors.mutedForeground} />
                       <Text style={[s.reminderSummary, { color: sup.reminderEnabled ? colors.primary : colors.mutedForeground }]}>
                         {sup.reminderEnabled
-                          ? reminderCount === 0 ? "Rappels activés" : reminderCount === 1 ? `Rappel à ${pad2(sup.reminders[0].hour)}:${pad2(sup.reminders[0].minute)}` : `${reminderCount} rappels`
-                          : "Pas de rappel"}
+                          ? reminderCount === 0 ? t("nutrition.remindersOn") : reminderCount === 1 ? t("nutrition.reminderAt", { time: `${pad2(sup.reminders[0].hour)}:${pad2(sup.reminders[0].minute)}` }) : t("nutrition.remindersCount", { count: reminderCount })
+                          : t("nutrition.noReminder")}
                       </Text>
                       {reminderCount > 0 && <Feather name={isExpanded ? "chevron-up" : "chevron-down"} size={13} color={colors.mutedForeground} />}
                     </TouchableOpacity>
-                    <Switch value={sup.reminderEnabled} onValueChange={() => toggleMasterReminder(sup)}
+                    <Switch value={sup.reminderEnabled} onValueChange={(v) => { tap(); setRemindersEnabled(sup.id, v); }}
                       trackColor={{ true: colors.primary, false: colors.muted }} thumbColor="#fff"
                       style={{ transform: [{ scale: 0.8 }] }}
                     />
@@ -748,16 +498,15 @@ export default function NutritionScreen() {
                     <View style={{ gap: 6, marginTop: 8 }}>
                       {sup.reminders.map((r) => (
                         <TimePicker key={r.id} hour={r.hour} minute={r.minute}
-                          onHour={(h) => updateReminderOnSup(sup, r.id, "hour", h)}
-                          onMinute={(m) => updateReminderOnSup(sup, r.id, "minute", m)}
-                          onRemove={() => removeReminderFromSup(sup, r.id)}
+                          onShift={(field, delta) => shiftReminder(sup.id, r.id, field, delta)}
+                          onRemove={() => { tap(); removeReminder(sup.id, r.id); }}
                           showRemove={sup.reminders.length > 1}
                         />
                       ))}
-                      <TouchableOpacity onPress={() => addReminderToSup(sup)}
+                      <TouchableOpacity onPress={() => { tap(); addReminder(sup.id); }}
                         style={[s.addReminderBtn, { borderColor: colors.primary + "55", backgroundColor: colors.primary + "10" }]}>
                         <Feather name="plus" size={14} color={colors.primary} />
-                        <Text style={[s.addReminderText, { color: colors.primary }]}>Ajouter un rappel</Text>
+                        <Text style={[s.addReminderText, { color: colors.primary }]}>{t("nutrition.addReminder")}</Text>
                       </TouchableOpacity>
                     </View>
                   )}
@@ -765,21 +514,21 @@ export default function NutritionScreen() {
 
                 <View style={[s.takenBadge, { backgroundColor: isTaken ? colors.primary + "20" : colors.muted + "44" }]}>
                   <Text style={[s.takenText, { color: isTaken ? colors.primary : colors.mutedForeground }]}>
-                    {isTaken ? "✓ Pris aujourd'hui" : "Non pris aujourd'hui"}
+                    {isTaken ? t("nutrition.takenYes") : t("nutrition.takenNo")}
                   </Text>
                 </View>
               </View>
 
               {isDeleting && (
                 <View style={[s.deleteBox, { backgroundColor: colors.destructive + "15", borderColor: colors.destructive + "44" }]}>
-                  <Text style={[s.deleteText, { color: colors.foreground }]}>Supprimer « {sup.name} » ?</Text>
+                  <Text style={[s.deleteText, { color: colors.foreground }]}>{t("nutrition.deleteConfirm", { name: sup.name })}</Text>
                   <View style={s.deleteBtns}>
                     <TouchableOpacity style={[s.deleteCancelBtn, { borderColor: colors.border }]} onPress={() => setDeletingId(null)}>
-                      <Text style={[s.deleteCancelText, { color: colors.foreground }]}>Annuler</Text>
+                      <Text style={[s.deleteCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={[s.deleteOkBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDelete(sup)}>
+                    <TouchableOpacity style={[s.deleteOkBtn, { backgroundColor: colors.destructive }]} onPress={() => handleDelete(sup.id)}>
                       <Feather name="trash-2" size={13} color="#fff" />
-                      <Text style={s.deleteOkText}>Supprimer</Text>
+                      <Text style={s.deleteOkText}>{t("common.delete")}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -792,9 +541,7 @@ export default function NutritionScreen() {
           <View style={[s.infoBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="info" size={13} color={colors.mutedForeground} />
             <Text style={[s.infoText, { color: colors.mutedForeground }]}>
-              {Platform.OS === "web"
-                ? "Les rappels par notification sont disponibles uniquement sur l'application mobile (Android / iOS)."
-                : "Les rappels sont des notifications locales. L'app doit avoir la permission d'envoyer des notifications."}
+              {t("nutrition.infoMobile")}
             </Text>
           </View>
         )}
@@ -813,12 +560,16 @@ const s = StyleSheet.create({
   sectionHeaderRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
 
   // ── Tracking ──
-  trackingRow: { flexDirection: "row", gap: 10 },
-  trackCard: { flex: 1, borderRadius: 16, borderWidth: 1, padding: 14 },
+  trackingStack: { gap: 10 },
+  trackCard: { borderRadius: 16, borderWidth: 1, padding: 14 },
   trackCardHeader: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 6 },
   trackCardTitle: { flex: 1, fontSize: 13, fontFamily: "Inter_600SemiBold" },
-  trackBigNum: { fontSize: 30, fontFamily: "Inter_700Bold", lineHeight: 34 },
-  trackGoalText: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
+  trackValueRow: { flexDirection: "row", alignItems: "baseline", gap: 6, flexWrap: "wrap" },
+  trackBigNum: { fontSize: 24, fontFamily: "Inter_700Bold", lineHeight: 28 },
+  trackGoalText: { fontSize: 11, fontFamily: "Inter_400Regular" },
+  calModeRow: { flexDirection: "row", gap: 6 },
+  calModeBtn: { flex: 1, borderRadius: 8, borderWidth: 1, paddingVertical: 6, alignItems: "center" },
+  calModeBtnText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
   calBtnsRow: { flexDirection: "row", gap: 6, alignItems: "center" },
   calInputWrap: { flex: 1, borderRadius: 8, borderWidth: 1, paddingHorizontal: 8, paddingVertical: 6 },
   calDirectInput: { fontSize: 14, fontFamily: "Inter_600SemiBold", includeFontPadding: false },
@@ -826,21 +577,13 @@ const s = StyleSheet.create({
   goalEditRow: { flexDirection: "row", gap: 6, alignItems: "center" },
   goalInput: { flex: 1, borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 7, fontSize: 14, fontFamily: "Inter_600SemiBold" },
   goalSaveBtn: { width: 34, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
-  waterDots: { flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 8 },
-  waterDot: { width: 10, height: 10, borderRadius: 5 },
-  waterBtns: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10 },
-  waterBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, alignItems: "center", justifyContent: "center" },
-  bottleSizeRow: { flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" },
-  bottleChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1 },
-  bottleChipText: { fontSize: 11, fontFamily: "Inter_600SemiBold" },
 
   // ── Form ──
   formCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },
   formTitle: { fontSize: 16, fontFamily: "Inter_700Bold", marginBottom: 4 },
   inputLabel: { fontSize: 12, fontFamily: "Inter_500Medium", marginBottom: 4 },
   input: { borderRadius: 10, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 10, fontSize: 15, fontFamily: "Inter_400Regular" },
-  dosageRow: { flexDirection: "row", alignItems: "center" },
-  unitChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
+unitChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16, borderWidth: 1 },
   unitChipText: { fontSize: 13, fontFamily: "Inter_600SemiBold" },
   reminderRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 4 },
   reminderLeft: { flexDirection: "row", alignItems: "center", gap: 8 },

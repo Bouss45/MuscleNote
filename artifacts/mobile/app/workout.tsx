@@ -3,7 +3,6 @@ import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  Platform,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -11,19 +10,24 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useRestTimer } from "@/context/RestTimerContext";
 import { useWorkout } from "@/context/WorkoutContext";
+import { TranslationKey } from "@/constants/i18n";
+import RestTimerBanner from "@/components/RestTimerBanner";
 import SortableExerciseList from "@/components/SortableExerciseList";
 
-const WARMUP_ITEMS = [
-  { icon: "wind",       label: "Cardio léger",         detail: "5-10 min vélo ou rameur" },
-  { icon: "rotate-cw", label: "Rotation des épaules",  detail: "15 reps chaque côté" },
-  { icon: "move",       label: "Mobilité des hanches",  detail: "10 reps cercles" },
-  { icon: "arrow-down", label: "Étirements dynamiques", detail: "1 min jambes & dos" },
-  { icon: "activity",   label: "Squats à vide",         detail: "15 reps lents" },
+const WARMUP_ITEMS: { icon: string; labelKey: TranslationKey; detailKey: TranslationKey }[] = [
+  { icon: "wind",       labelKey: "workout.warmup.cardioLabel",    detailKey: "workout.warmup.cardioDetail" },
+  { icon: "rotate-cw",  labelKey: "workout.warmup.shouldersLabel", detailKey: "workout.warmup.shouldersDetail" },
+  { icon: "move",       labelKey: "workout.warmup.hipsLabel",      detailKey: "workout.warmup.hipsDetail" },
+  { icon: "arrow-down", labelKey: "workout.warmup.stretchLabel",   detailKey: "workout.warmup.stretchDetail" },
+  { icon: "activity",   labelKey: "workout.warmup.squatLabel",     detailKey: "workout.warmup.squatDetail" },
 ];
 
 function WarmupCard() {
   const colors = useColors();
+  const { t } = usePreferences();
   const [checked, setChecked] = useState<Set<number>>(new Set());
   const [collapsed, setCollapsed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -62,10 +66,10 @@ function WarmupCard() {
           </View>
           <View>
             <Text style={[warmupStyles.cardTitle, { color: colors.foreground }]}>
-              Échauffement
+              {t("workout.warmup.title")}
             </Text>
             <Text style={[warmupStyles.cardSub, { color: colors.mutedForeground }]}>
-              {checked.size}/{WARMUP_ITEMS.length} exercices
+              {t("workout.warmup.count", { done: checked.size, total: WARMUP_ITEMS.length })}
             </Text>
           </View>
         </View>
@@ -73,7 +77,7 @@ function WarmupCard() {
           {allDone && (
             <View style={[warmupStyles.doneBadge, { backgroundColor: colors.primary }]}>
               <Feather name="check" size={11} color="#fff" />
-              <Text style={warmupStyles.doneBadgeText}>Fait !</Text>
+              <Text style={warmupStyles.doneBadgeText}>{t("workout.warmup.done")}</Text>
             </View>
           )}
           <TouchableOpacity
@@ -132,10 +136,10 @@ function WarmupCard() {
                     { color: done ? colors.mutedForeground : colors.foreground },
                     done && warmupStyles.strikethrough,
                   ]}>
-                    {item.label}
+                    {t(item.labelKey)}
                   </Text>
                   <Text style={[warmupStyles.itemDetail, { color: colors.mutedForeground }]}>
-                    {item.detail}
+                    {t(item.detailKey)}
                   </Text>
                 </View>
                 <View style={[warmupStyles.itemIconCircle, { backgroundColor: colors.muted }]}>
@@ -152,13 +156,15 @@ function WarmupCard() {
 
 export default function WorkoutScreen() {
   const colors = useColors();
+  const { t } = usePreferences();
   const insets = useSafeAreaInsets();
-  const { currentWorkout, exercises, endWorkout, reorderExercises } = useWorkout();
+  const { currentWorkout, exerciseById, endWorkout, reorderExercises } = useWorkout();
+  const restTimer = useRestTimer();
   const [confirming, setConfirming] = useState(false);
   const [elapsed, setElapsed] = useState("0:00");
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 + 80 : insets.bottom + 90;
+  const topPad = insets.top;
+  const bottomPad = insets.bottom + 90;
 
   useEffect(() => {
     if (!currentWorkout) return;
@@ -186,11 +192,11 @@ export default function WorkoutScreen() {
         ]}
       >
         <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-          Aucune séance active
+          {t("workout.noActive")}
         </Text>
         <TouchableOpacity onPress={() => router.replace("/")}>
           <Text style={[styles.backLink, { color: colors.primary }]}>
-            Retour
+            {t("common.back")}
           </Text>
         </TouchableOpacity>
       </View>
@@ -204,19 +210,15 @@ export default function WorkoutScreen() {
 
   function handleConfirmFinish() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    restTimer.stop();
     router.replace("/");
     endWorkout();
   }
 
-  const currentExercises = currentWorkout.exercises
-    .map((we) => ({
-      we,
-      exercise: exercises.find((e) => e.id === we.exerciseId),
-    }))
-    .filter((x) => x.exercise !== undefined) as {
-    we: typeof currentWorkout.exercises[0];
-    exercise: typeof exercises[0];
-  }[];
+  const currentExercises = currentWorkout.exercises.flatMap((we) => {
+    const exercise = exerciseById.get(we.exerciseId);
+    return exercise ? [{ we, exercise }] : [];
+  });
 
   const completedCount = currentWorkout.exercises.reduce(
     (sum, e) => sum + e.sets.filter((s) => s.completed).length,
@@ -251,7 +253,7 @@ export default function WorkoutScreen() {
             </TouchableOpacity>
             <View>
               <Text style={[styles.sessionLabel, { color: colors.mutedForeground }]}>
-                Séance en cours
+                {t("workout.inProgress")}
               </Text>
               <Text style={[styles.bodyWeight, { color: colors.foreground }]}>
                 {currentWorkout.name}
@@ -282,7 +284,7 @@ export default function WorkoutScreen() {
               />
             </View>
             <Text style={[styles.progressLabel, { color: colors.mutedForeground }]}>
-              {completedCount}/{totalSets} séries
+              {t("workout.setsProgress", { done: completedCount, total: totalSets })}
             </Text>
           </View>
         )}
@@ -304,7 +306,7 @@ export default function WorkoutScreen() {
           >
             <Feather name="plus-circle" size={20} color={colors.primary} />
             <Text style={[styles.addExerciseBtnText, { color: colors.primary }]}>
-              Ajouter un exercice
+              {t("workout.addExercise")}
             </Text>
           </TouchableOpacity>
         }
@@ -312,7 +314,7 @@ export default function WorkoutScreen() {
           <View style={styles.emptyExercises}>
             <Feather name="activity" size={36} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Ajoute des exercices pour commencer
+              {t("workout.emptyExercises")}
             </Text>
           </View>
         }
@@ -323,16 +325,17 @@ export default function WorkoutScreen() {
         style={[
           styles.footer,
           {
-            paddingBottom: Platform.OS === "web" ? 34 : insets.bottom + 16,
+            paddingBottom: insets.bottom + 16,
             borderTopColor: colors.border,
             backgroundColor: colors.background,
           },
         ]}
       >
+        <RestTimerBanner />
         {confirming ? (
           <View style={styles.confirmRow}>
             <Text style={[styles.confirmText, { color: colors.foreground }]}>
-              Terminer la séance ?
+              {t("workout.finishConfirm")}
             </Text>
             <View style={styles.confirmBtns}>
               <TouchableOpacity
@@ -341,7 +344,7 @@ export default function WorkoutScreen() {
                 activeOpacity={0.8}
               >
                 <Text style={[styles.confirmCancelText, { color: colors.foreground }]}>
-                  Annuler
+                  {t("common.cancel")}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -350,7 +353,7 @@ export default function WorkoutScreen() {
                 activeOpacity={0.85}
               >
                 <Feather name="check" size={16} color="#fff" />
-                <Text style={styles.confirmOkText}>Terminer</Text>
+                <Text style={styles.confirmOkText}>{t("workout.finishShort")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -362,7 +365,7 @@ export default function WorkoutScreen() {
           >
             <Feather name="check-square" size={18} color={colors.destructive} />
             <Text style={[styles.finishBtnText, { color: colors.destructive }]}>
-              Terminer la séance
+              {t("workout.finish")}
             </Text>
           </TouchableOpacity>
         )}

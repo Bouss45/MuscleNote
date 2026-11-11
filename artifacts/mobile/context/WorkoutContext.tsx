@@ -1,28 +1,17 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import { fr } from "@/constants/i18n/fr";
+import { MuscleGroup } from "@/constants/muscles";
+import { generateId } from "@/utils/id";
+import { isArray, isObject, readJSON, removeKey, writeJSON } from "@/utils/storage";
 
-export type MuscleGroup =
-  | "dos"
-  | "pecs"
-  | "biceps"
-  | "triceps"
-  | "jambes"
-  | "épaules"
-  | "abdos"
-  | "cardio"
-  | "avant-bras";
+export type { MuscleGroup } from "@/constants/muscles";
 
 export interface Exercise {
   id: string;
   name: string;
   muscleGroup: MuscleGroup;
+  /** Custom exercise "deleted" while still referenced by a session: hidden from the picker, kept for history. */
+  archived?: boolean;
 }
 
 export interface Set {
@@ -61,62 +50,42 @@ export interface ExerciseHistory {
   workoutId: string;
 }
 
-const DEFAULT_EXERCISES: Exercise[] = [
-  // Dos
-  { id: "deadlift", name: "Soulevé de terre", muscleGroup: "dos" },
-  { id: "pullup", name: "Traction", muscleGroup: "dos" },
-  { id: "row", name: "Rowing barre", muscleGroup: "dos" },
-  { id: "latpull", name: "Tirage vertical", muscleGroup: "dos" },
-  { id: "tiragebucheron", name: "Tirage bûcheron", muscleGroup: "dos" },
-  { id: "tirageh", name: "Tirage horizontale", muscleGroup: "dos" },
-  // Pecs
-  { id: "bench", name: "Développé couché", muscleGroup: "pecs" },
-  { id: "incline", name: "Développé incliné", muscleGroup: "pecs" },
-  { id: "fly", name: "Écarté haltères", muscleGroup: "pecs" },
-  { id: "dips", name: "Dips", muscleGroup: "pecs" },
-  { id: "dbench", name: "Développé couché haltères", muscleGroup: "pecs" },
-  { id: "dincline", name: "Développé incliné haltères", muscleGroup: "pecs" },
-  { id: "pecfly", name: "Pec Fly", muscleGroup: "pecs" },
-  // Biceps
-  { id: "curl", name: "Curl barre", muscleGroup: "biceps" },
-  { id: "hammercurl", name: "Curl marteau", muscleGroup: "biceps" },
-  { id: "concentcurl", name: "Curl concentré", muscleGroup: "biceps" },
-  // Triceps
-  { id: "pushdown", name: "Pushdown câble", muscleGroup: "triceps" },
-  { id: "overheadtri", name: "Extension nuque", muscleGroup: "triceps" },
-  { id: "skullcrusher", name: "Skull crusher", muscleGroup: "triceps" },
-  { id: "barfront", name: "Barre au front", muscleGroup: "triceps" },
-  // Jambes
-  { id: "squat", name: "Squat", muscleGroup: "jambes" },
-  { id: "legpress", name: "Presse à cuisses", muscleGroup: "jambes" },
-  { id: "legcurl", name: "Leg curl couché", muscleGroup: "jambes" },
-  { id: "legext", name: "Leg extension", muscleGroup: "jambes" },
-  { id: "lunges", name: "Fentes", muscleGroup: "jambes" },
-  { id: "calfraize", name: "Mollets debout", muscleGroup: "jambes" },
-  { id: "adductorpress", name: "Adducteur press", muscleGroup: "jambes" },
-  { id: "abductorpress", name: "Abducteur press", muscleGroup: "jambes" },
-  { id: "calfsit", name: "Mollets assis", muscleGroup: "jambes" },
-  // Épaules
-  { id: "ohp", name: "Développé militaire", muscleGroup: "épaules" },
-  { id: "lateralraise", name: "Élévations latérales", muscleGroup: "épaules" },
-  { id: "frontraise", name: "Élévations frontales", muscleGroup: "épaules" },
-  // Abdos
-  { id: "crunch", name: "Crunch", muscleGroup: "abdos" },
-  { id: "plank", name: "Gainage", muscleGroup: "abdos" },
-  { id: "legrise", name: "Relevé de jambes", muscleGroup: "abdos" },
-  // Cardio
-  { id: "treadmill", name: "Tapis roulant", muscleGroup: "cardio" },
-  { id: "bike", name: "Vélo", muscleGroup: "cardio" },
-  // Avant-bras
-  { id: "wristcurl", name: "Curl poignet", muscleGroup: "avant-bras" },
-  { id: "wristext", name: "Extension poignet", muscleGroup: "avant-bras" },
-  { id: "reversecurl", name: "Curl inversé", muscleGroup: "avant-bras" },
-  { id: "pinchgrip", name: "Pince (grip)", muscleGroup: "avant-bras" },
-  { id: "farmerwalk", name: "Farmer's walk", muscleGroup: "avant-bras" },
+// Built-in catalog. Display names come from the i18n dictionaries
+// (`exercise.<id>` keys); the French name is the stored fallback.
+const DEFAULT_EXERCISE_DEFS: [id: string, muscleGroup: MuscleGroup][] = [
+  ["deadlift", "dos"], ["pullup", "dos"], ["row", "dos"], ["latpull", "dos"],
+  ["tiragebucheron", "dos"], ["tirageh", "dos"],
+  ["bench", "pecs"], ["incline", "pecs"], ["fly", "pecs"], ["dips", "pecs"],
+  ["dbench", "pecs"], ["dincline", "pecs"], ["pecfly", "pecs"],
+  ["curl", "biceps"], ["hammercurl", "biceps"], ["concentcurl", "biceps"],
+  ["pushdown", "triceps"], ["overheadtri", "triceps"], ["skullcrusher", "triceps"], ["barfront", "triceps"],
+  ["squat", "jambes"], ["legpress", "jambes"], ["legcurl", "jambes"], ["legext", "jambes"],
+  ["lunges", "jambes"], ["calfraize", "jambes"], ["adductorpress", "jambes"],
+  ["abductorpress", "jambes"], ["calfsit", "jambes"],
+  ["ohp", "épaules"], ["lateralraise", "épaules"], ["frontraise", "épaules"],
+  ["crunch", "abdos"], ["plank", "abdos"], ["legrise", "abdos"],
+  ["treadmill", "cardio"], ["bike", "cardio"],
+  ["wristcurl", "avant-bras"], ["wristext", "avant-bras"], ["reversecurl", "avant-bras"],
+  ["pinchgrip", "avant-bras"], ["farmerwalk", "avant-bras"],
 ];
 
+const DEFAULT_EXERCISES: Exercise[] = DEFAULT_EXERCISE_DEFS.map(([id, muscleGroup]) => ({
+  id,
+  muscleGroup,
+  name: (fr as Record<string, string>)[`exercise.${id}`] ?? id,
+}));
+
+// O(1) membership test for "is this a built-in exercise?"
+const DEFAULT_EXERCISE_IDS = new Set(DEFAULT_EXERCISES.map((e) => e.id));
+
+export function isDefaultExercise(id: string): boolean {
+  return DEFAULT_EXERCISE_IDS.has(id);
+}
+
 interface WorkoutContextType {
+  /** Every known exercise, archived ones included (needed to label old sessions). */
   exercises: Exercise[];
+  exerciseById: Map<string, Exercise>;
   workouts: Workout[];
   currentWorkout: Workout | null;
   startWorkout: (bodyWeight: number, name: string) => void;
@@ -137,6 +106,7 @@ interface WorkoutContextType {
   updateWorkoutDate: (workoutId: string, newDate: string) => void;
   deleteWorkout: (workoutId: string) => void;
   patchWorkout: (workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => void;
+  reloadData: () => Promise<void>;
 }
 
 const WorkoutContext = createContext<WorkoutContextType | undefined>(undefined);
@@ -147,375 +117,242 @@ const CURRENT_WORKOUT_KEY = "@gymtracker_current_workout";
 
 const MAX_SESSION_MS = 24 * 60 * 60 * 1000; // auto-save after 24 h
 
-function generateId(): string {
-  return Date.now().toString() + Math.random().toString(36).substr(2, 9);
+/** Clone sets for reuse in a new session: fresh ids, reset completion, carry over cardio fields. */
+function cloneSetsForReuse(sets: Set[]): Set[] {
+  return sets.map((s) => ({
+    id: generateId(),
+    reps: s.reps,
+    weight: s.weight,
+    completed: false,
+    ...(s.duration != null ? { duration: s.duration } : {}),
+    ...(s.distance != null ? { distance: s.distance } : {}),
+    ...(s.speed != null ? { speed: s.speed } : {}),
+    ...(s.incline != null ? { incline: s.incline } : {}),
+  }));
+}
+
+function sortNewestFirst(list: Workout[]): Workout[] {
+  return [...list].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+function mapExercise(w: Workout, exerciseId: string, fn: (e: WorkoutExercise) => WorkoutExercise): Workout {
+  return { ...w, exercises: w.exercises.map((e) => (e.exerciseId === exerciseId ? fn(e) : e)) };
 }
 
 export function WorkoutProvider({ children }: { children: React.ReactNode }) {
-  const [exercises, setExercises] = useState<Exercise[]>(DEFAULT_EXERCISES);
-  const [workouts, setWorkouts] = useState<Workout[]>([]);
-  const [currentWorkout, setCurrentWorkout] = useState<Workout | null>(null);
+  const [exercises, setExercisesState] = useState<Exercise[]>(DEFAULT_EXERCISES);
+  const [workouts, setWorkoutsState] = useState<Workout[]>([]);
+  const [currentWorkout, setCurrentState] = useState<Workout | null>(null);
 
-  // Always-fresh ref so startWorkout can read workouts without stale closure
+  // Refs always hold the latest committed value, so every mutation below derives
+  // from fresh data and React state updaters stay pure (no nested setState/IO).
+  const exercisesRef = useRef<Exercise[]>(DEFAULT_EXERCISES);
   const workoutsRef = useRef<Workout[]>([]);
-  useEffect(() => {
-    workoutsRef.current = workouts;
-  }, [workouts]);
+  const currentRef = useRef<Workout | null>(null);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  // Auto-persist currentWorkout on every change so it survives app closure
-  useEffect(() => {
-    if (currentWorkout) {
-      AsyncStorage.setItem(CURRENT_WORKOUT_KEY, JSON.stringify(currentWorkout)).catch(() => {});
-    } else {
-      AsyncStorage.removeItem(CURRENT_WORKOUT_KEY).catch(() => {});
-    }
-  }, [currentWorkout]);
+  function commitWorkouts(next: Workout[]) {
+    workoutsRef.current = next;
+    setWorkoutsState(next);
+    writeJSON(STORAGE_KEY, next);
+  }
+
+  // The in-progress session is persisted on every change so it survives app closure.
+  function commitCurrent(next: Workout | null) {
+    currentRef.current = next;
+    setCurrentState(next);
+    if (next) writeJSON(CURRENT_WORKOUT_KEY, next);
+    else removeKey(CURRENT_WORKOUT_KEY);
+  }
+
+  function updateCurrent(fn: (w: Workout) => Workout) {
+    if (currentRef.current) commitCurrent(fn(currentRef.current));
+  }
+
+  function commitExercises(next: Exercise[]) {
+    exercisesRef.current = next;
+    setExercisesState(next);
+    writeJSON(EXERCISES_KEY, next.filter((e) => !DEFAULT_EXERCISE_IDS.has(e.id)));
+  }
 
   async function loadData() {
-    try {
-      const [workoutsData, exercisesData, currentData] = await Promise.all([
-        AsyncStorage.getItem(STORAGE_KEY),
-        AsyncStorage.getItem(EXERCISES_KEY),
-        AsyncStorage.getItem(CURRENT_WORKOUT_KEY),
-      ]);
+    const [savedWorkouts, custom, saved] = await Promise.all([
+      readJSON<Workout[]>(STORAGE_KEY, isArray),
+      readJSON<Exercise[]>(EXERCISES_KEY, isArray),
+      readJSON<Workout>(CURRENT_WORKOUT_KEY, isObject),
+    ]);
 
-      let restoredWorkouts: Workout[] = [];
-      if (workoutsData) {
-        restoredWorkouts = JSON.parse(workoutsData);
-        setWorkouts(restoredWorkouts);
-      }
+    const restored = sortNewestFirst(savedWorkouts ?? []);
+    workoutsRef.current = restored;
+    setWorkoutsState(restored);
 
-      if (exercisesData) {
-        const custom = JSON.parse(exercisesData) as Exercise[];
-        setExercises([...DEFAULT_EXERCISES, ...custom]);
-      }
+    const allExercises = [...DEFAULT_EXERCISES, ...(custom ?? []).filter((e) => !DEFAULT_EXERCISE_IDS.has(e.id))];
+    exercisesRef.current = allExercises;
+    setExercisesState(allExercises);
 
-      if (currentData) {
-        const saved: Workout = JSON.parse(currentData);
-        const age = Date.now() - new Date(saved.date).getTime();
-
-        if (age > MAX_SESSION_MS) {
-          // Séance trop vieille (>24h) — on la sauvegarde automatiquement en historique
-          const finished: Workout = {
-            ...saved,
-            durationMinutes: Math.round(age / 60000),
-          };
-          const updated = [finished, ...restoredWorkouts];
-          setWorkouts(updated);
-          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          await AsyncStorage.removeItem(CURRENT_WORKOUT_KEY);
-        } else {
-          // Séance récente — on la restaure comme séance active
-          setCurrentWorkout(saved);
-        }
-      }
-    } catch (e) {
-      // ignore
+    if (saved && Date.now() - new Date(saved.date).getTime() > MAX_SESSION_MS) {
+      // Session forgotten for more than 24 h — file it into history. Its real
+      // duration is unknown, so leave it unset rather than recording ~24 h.
+      commitWorkouts(sortNewestFirst([saved, ...restored]));
+      commitCurrent(null);
+    } else {
+      currentRef.current = saved ?? null;
+      setCurrentState(saved ?? null);
     }
   }
 
-  async function saveWorkouts(w: Workout[]) {
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(w));
-  }
-
-  const startWorkout = useCallback((bodyWeight: number, name: string) => {
-    // Find the most recent session with the same name (case-insensitive)
-    const lastSame = workoutsRef.current.find(
-      (w) => w.name.trim().toLowerCase() === name.trim().toLowerCase()
-    );
+  function startWorkout(bodyWeight: number, name: string) {
+    // Most recent session with the same name (case-insensitive)
+    const key = name.trim().toLowerCase();
+    const lastSame = workoutsRef.current.find((w) => w.name.trim().toLowerCase() === key);
 
     // Pre-load exercises from that session: same order, same weights/reps, sets reset to not done
     const preloaded: WorkoutExercise[] = lastSame
       ? lastSame.exercises.map((we) => ({
           exerciseId: we.exerciseId,
           note: we.note,
-          sets: we.sets.map((s) => ({
-            id: generateId(),
-            reps: s.reps,
-            weight: s.weight,
-            completed: false,
-            ...(s.duration != null ? { duration: s.duration } : {}),
-            ...(s.distance != null ? { distance: s.distance } : {}),
-            ...(s.speed   != null ? { speed:    s.speed    } : {}),
-            ...(s.incline != null ? { incline:  s.incline  } : {}),
-          })),
+          sets: cloneSetsForReuse(we.sets),
         }))
       : [];
 
-    const w: Workout = {
+    commitCurrent({
       id: generateId(),
       name,
       date: new Date().toISOString(),
       bodyWeight,
       exercises: preloaded,
+    });
+  }
+
+  function endWorkout() {
+    const cur = currentRef.current;
+    if (!cur) return;
+    const finished: Workout = {
+      ...cur,
+      durationMinutes: Math.round((Date.now() - new Date(cur.date).getTime()) / 60000),
     };
-    setCurrentWorkout(w);
-  }, []);
+    commitWorkouts([finished, ...workoutsRef.current]);
+    commitCurrent(null);
+  }
 
-  const endWorkout = useCallback(() => {
-    // Use functional update so we always get the latest state,
-    // even if a set-complete / weight update was batched just before this call.
-    setCurrentWorkout((prevWorkout) => {
-      if (!prevWorkout) return null;
-      const finished = {
-        ...prevWorkout,
-        durationMinutes: Math.round(
-          (Date.now() - new Date(prevWorkout.date).getTime()) / 60000
-        ),
-      };
-      setWorkouts((prev) => {
-        const updated = [finished, ...prev];
-        saveWorkouts(updated);
-        return updated;
-      });
-      return null;
-    });
-  }, []);
+  function addExerciseToWorkout(exerciseId: string) {
+    if (!currentRef.current || currentRef.current.exercises.some((e) => e.exerciseId === exerciseId)) return;
+    // Pre-fill from the most recent past session that used this exercise
+    // (sets reset to not completed, cardio fields carried over).
+    const lastExercise = workoutsRef.current
+      .find((w) => w.exercises.some((e) => e.exerciseId === exerciseId))
+      ?.exercises.find((e) => e.exerciseId === exerciseId);
+    updateCurrent((w) => ({
+      ...w,
+      exercises: [
+        ...w.exercises,
+        { exerciseId, sets: cloneSetsForReuse(lastExercise?.sets ?? []), note: lastExercise?.note },
+      ],
+    }));
+  }
 
-  const addExerciseToWorkout = useCallback((exerciseId: string) => {
-    // Find the most recent past workout that contains this exercise
-    const lastSession = workoutsRef.current.find((w) =>
-      w.exercises.some((e) => e.exerciseId === exerciseId)
+  function removeExerciseFromWorkout(exerciseId: string) {
+    updateCurrent((w) => ({ ...w, exercises: w.exercises.filter((e) => e.exerciseId !== exerciseId) }));
+  }
+
+  function addSet(exerciseId: string, reps: number, weight: number, extras?: SetUpdate) {
+    const newSet: Set = { id: generateId(), reps, weight, completed: false, ...extras };
+    updateCurrent((w) => mapExercise(w, exerciseId, (e) => ({ ...e, sets: [...e.sets, newSet] })));
+  }
+
+  function updateSet(exerciseId: string, setId: string, data: SetUpdate) {
+    updateCurrent((w) =>
+      mapExercise(w, exerciseId, (e) => ({
+        ...e,
+        sets: e.sets.map((s) => (s.id === setId ? { ...s, ...data } : s)),
+      })),
     );
-    const lastExercise = lastSession
-      ? lastSession.exercises.find((e) => e.exerciseId === exerciseId)
-      : undefined;
-    const lastSets = lastExercise?.sets ?? [];
+  }
 
-    // Pre-fill with last session's sets (reset completed to false),
-    // carrying over cardio fields (duration/distance/speed/incline) too.
-    const defaultSets: Set[] = lastSets.length > 0
-      ? lastSets.map((s) => ({
-          id: generateId(),
-          reps: s.reps,
-          weight: s.weight,
-          completed: false,
-          ...(s.duration != null ? { duration: s.duration } : {}),
-          ...(s.distance != null ? { distance: s.distance } : {}),
-          ...(s.speed   != null ? { speed:    s.speed    } : {}),
-          ...(s.incline != null ? { incline:  s.incline  } : {}),
-        }))
-      : [];
+  function removeSet(exerciseId: string, setId: string) {
+    updateCurrent((w) =>
+      mapExercise(w, exerciseId, (e) => ({ ...e, sets: e.sets.filter((s) => s.id !== setId) })),
+    );
+  }
 
-    setCurrentWorkout((prev) => {
-      if (!prev) return prev;
-      if (prev.exercises.find((e) => e.exerciseId === exerciseId)) return prev;
-      return {
-        ...prev,
-        exercises: [...prev.exercises, { exerciseId, sets: defaultSets, note: lastExercise?.note }],
-      };
+  function toggleSetComplete(exerciseId: string, setId: string) {
+    updateCurrent((w) =>
+      mapExercise(w, exerciseId, (e) => ({
+        ...e,
+        sets: e.sets.map((s) => (s.id === setId ? { ...s, completed: !s.completed } : s)),
+      })),
+    );
+  }
+
+  /** Reorders the exercises of the in-progress session (drag & drop on the workout screen). */
+  function reorderExercises(ids: string[]) {
+    updateCurrent((w) => {
+      const byId = new Map(w.exercises.map((e) => [e.exerciseId, e]));
+      const reordered = ids.map((id) => byId.get(id)).filter((e): e is WorkoutExercise => !!e);
+      // Keep any exercise the caller didn't list (e.g. one whose definition is missing).
+      const rest = w.exercises.filter((e) => !ids.includes(e.exerciseId));
+      return { ...w, exercises: [...reordered, ...rest] };
     });
-  }, []);
+  }
 
-  const removeExerciseFromWorkout = useCallback((exerciseId: string) => {
-    setCurrentWorkout((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        exercises: prev.exercises.filter((e) => e.exerciseId !== exerciseId),
-      };
-    });
-  }, []);
+  function updateExerciseNote(exerciseId: string, note: string) {
+    updateCurrent((w) => mapExercise(w, exerciseId, (e) => ({ ...e, note })));
+  }
 
-  const addSet = useCallback(
-    (exerciseId: string, reps: number, weight: number, extras?: SetUpdate) => {
-      setCurrentWorkout((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          exercises: prev.exercises.map((e) => {
-            if (e.exerciseId !== exerciseId) return e;
-            const newSet: Set = {
-              id: generateId(),
-              reps,
-              weight,
-              completed: false,
-              ...extras,
-            };
-            return { ...e, sets: [...e.sets, newSet] };
-          }),
-        };
-      });
-    },
-    []
-  );
-
-  const updateSet = useCallback(
-    (exerciseId: string, setId: string, data: SetUpdate) => {
-      setCurrentWorkout((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          exercises: prev.exercises.map((e) => {
-            if (e.exerciseId !== exerciseId) return e;
-            return {
-              ...e,
-              sets: e.sets.map((s) =>
-                s.id === setId ? { ...s, ...data } : s
-              ),
-            };
-          }),
-        };
-      });
-    },
-    []
-  );
-
-  const removeSet = useCallback((exerciseId: string, setId: string) => {
-    setCurrentWorkout((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        exercises: prev.exercises.map((e) => {
-          if (e.exerciseId !== exerciseId) return e;
-          return { ...e, sets: e.sets.filter((s) => s.id !== setId) };
-        }),
-      };
-    });
-  }, []);
-
-  const toggleSetComplete = useCallback(
-    (exerciseId: string, setId: string) => {
-      setCurrentWorkout((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          exercises: prev.exercises.map((e) => {
-            if (e.exerciseId !== exerciseId) return e;
-            return {
-              ...e,
-              sets: e.sets.map((s) =>
-                s.id === setId ? { ...s, completed: !s.completed } : s
-              ),
-            };
-          }),
-        };
-      });
-    },
-    []
-  );
-
-  const reorderExercises = useCallback((ids: string[]) => {
-    setCurrentWorkout((prev) => {
-      if (!prev) return prev;
-      const map = new Map(prev.exercises.map((e) => [e.exerciseId, e]));
-      const reordered = ids.map((id) => map.get(id)).filter(Boolean) as typeof prev.exercises;
-      return { ...prev, exercises: reordered };
-    });
-  }, []);
-
-  const updateExerciseNote = useCallback((exerciseId: string, note: string) => {
-    setCurrentWorkout((prev) => {
-      if (!prev) return prev;
-      return {
-        ...prev,
-        exercises: prev.exercises.map((e) =>
-          e.exerciseId === exerciseId ? { ...e, note } : e
-        ),
-      };
-    });
-  }, []);
-
-  const getExerciseHistory = useCallback(
-    (exerciseId: string): ExerciseHistory[] => {
-      const history: ExerciseHistory[] = [];
-      for (const workout of workouts) {
-        const found = workout.exercises.find(
-          (e) => e.exerciseId === exerciseId
-        );
-        if (found && found.sets.length > 0) {
-          history.push({
-            date: workout.date,
-            bodyWeight: workout.bodyWeight,
-            sets: found.sets,
-            workoutId: workout.id,
-          });
-        }
+  function getExerciseHistory(exerciseId: string): ExerciseHistory[] {
+    const history: ExerciseHistory[] = [];
+    for (const workout of workouts) {
+      const found = workout.exercises.find((e) => e.exerciseId === exerciseId);
+      if (found && found.sets.length > 0) {
+        history.push({ date: workout.date, bodyWeight: workout.bodyWeight, sets: found.sets, workoutId: workout.id });
       }
-      return history.reverse();
-    },
-    [workouts]
-  );
+    }
+    return history.reverse();
+  }
 
-  const updateWorkoutDate = useCallback((workoutId: string, newDate: string) => {
-    setWorkouts((prev) => {
-      const updated = prev
-        .map((w) => (w.id === workoutId ? { ...w, date: newDate } : w))
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      saveWorkouts(updated);
-      return updated;
-    });
-  }, []);
+  function updateWorkoutDate(workoutId: string, newDate: string) {
+    commitWorkouts(
+      sortNewestFirst(workoutsRef.current.map((w) => (w.id === workoutId ? { ...w, date: newDate } : w))),
+    );
+  }
 
-  const deleteWorkout = useCallback((workoutId: string) => {
-    setWorkouts((prev) => {
-      const updated = prev.filter((w) => w.id !== workoutId);
-      saveWorkouts(updated);
-      return updated;
-    });
-  }, []);
+  function deleteWorkout(workoutId: string) {
+    commitWorkouts(workoutsRef.current.filter((w) => w.id !== workoutId));
+  }
 
-  const patchWorkout = useCallback((workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) => {
-    setWorkouts((prev) => {
-      const updated = prev.map((w) => w.id === workoutId ? { ...w, ...updates } : w);
-      saveWorkouts(updated);
-      return updated;
-    });
-  }, []);
+  function patchWorkout(workoutId: string, updates: Partial<Pick<Workout, "exercises" | "bodyWeight" | "name">>) {
+    commitWorkouts(workoutsRef.current.map((w) => (w.id === workoutId ? { ...w, ...updates } : w)));
+  }
 
-  const addCustomExercise = useCallback(
-    async (name: string, muscleGroup: MuscleGroup) => {
-      const newEx: Exercise = {
-        id: generateId(),
-        name,
-        muscleGroup,
-      };
-      setExercises((prev) => {
-        const updated = [...prev, newEx];
-        const custom = updated.filter(
-          (e) => !DEFAULT_EXERCISES.find((d) => d.id === e.id)
-        );
-        AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(custom));
-        return updated;
-      });
-    },
-    []
-  );
+  function addCustomExercise(name: string, muscleGroup: MuscleGroup) {
+    commitExercises([...exercisesRef.current, { id: generateId(), name, muscleGroup }]);
+  }
 
-  const updateCustomExercise = useCallback(
-    (id: string, name: string, muscleGroup: MuscleGroup) => {
-      setExercises((prev) => {
-        const updated = prev.map((e) => e.id === id ? { ...e, name, muscleGroup } : e);
-        const custom = updated.filter((e) => !DEFAULT_EXERCISES.find((d) => d.id === e.id));
-        AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(custom));
-        return updated;
-      });
-    },
-    []
-  );
+  function updateCustomExercise(id: string, name: string, muscleGroup: MuscleGroup) {
+    commitExercises(exercisesRef.current.map((e) => (e.id === id ? { ...e, name, muscleGroup } : e)));
+  }
 
-  const deleteCustomExercise = useCallback((id: string) => {
-    setExercises((prev) => {
-      const updated = prev.filter((e) => e.id !== id);
-      const custom = updated.filter((e) => !DEFAULT_EXERCISES.find((d) => d.id === e.id));
-      AsyncStorage.setItem(EXERCISES_KEY, JSON.stringify(custom));
-      return updated;
-    });
-  }, []);
+  /** Removes a custom exercise — or only archives it if a session still references it. */
+  function deleteCustomExercise(id: string) {
+    const uses = (w: Workout | null) => !!w?.exercises.some((e) => e.exerciseId === id);
+    const referenced = uses(currentRef.current) || workoutsRef.current.some(uses);
+    commitExercises(
+      referenced
+        ? exercisesRef.current.map((e) => (e.id === id ? { ...e, archived: true } : e))
+        : exercisesRef.current.filter((e) => e.id !== id),
+    );
+  }
 
-  const isCustomExercise = useCallback(
-    (id: string) => !DEFAULT_EXERCISES.find((e) => e.id === id),
-    []
-  );
+  const exerciseById = new Map(exercises.map((e) => [e.id, e]));
 
   return (
     <WorkoutContext.Provider
       value={{
         exercises,
+        exerciseById,
         workouts,
         currentWorkout,
         startWorkout,
@@ -530,12 +367,13 @@ export function WorkoutProvider({ children }: { children: React.ReactNode }) {
         addCustomExercise,
         updateCustomExercise,
         deleteCustomExercise,
-        isCustomExercise,
+        isCustomExercise: (id) => !DEFAULT_EXERCISE_IDS.has(id),
         reorderExercises,
         updateExerciseNote,
         updateWorkoutDate,
         deleteWorkout,
         patchWorkout,
+        reloadData: loadData,
       }}
     >
       {children}

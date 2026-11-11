@@ -1,82 +1,96 @@
 import { Feather } from "@expo/vector-icons";
 import { router } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  Platform,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useColors } from "@/hooks/useColors";
-import { MuscleGroup, useWorkout } from "@/context/WorkoutContext";
-import { MUSCLE_GROUP_LABELS } from "@/components/MuscleGroupBadge";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useNutrition } from "@/context/NutritionContext";
+import { TranslationKey } from "@/constants/i18n";
+import { MUSCLE_COLORS, MUSCLE_GROUPS, MuscleGroup } from "@/constants/muscles";
+import { Set as WorkoutSet, useWorkout } from "@/context/WorkoutContext";
 import LineChart, { DataPoint } from "@/components/LineChart";
+import { buildLocalDate, dayKeyOf, parseDayKey } from "@/utils/date";
+import { parseDecimal } from "@/utils/number";
 
 type Tab = "weight" | "calories" | "eau" | MuscleGroup;
-
-interface DailyTracker {
-  calorieGoal: number;
-  waterGoal: number;
-  caloriesLog: { [date: string]: number };
-  waterLog: { [date: string]: number };
-}
-
-const TRACKER_KEY = "@gymtracker_daily_tracker";
-const DEFAULT_TRACKER: DailyTracker = { calorieGoal: 2000, waterGoal: 2000, caloriesLog: {}, waterLog: {} };
-
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-
-const MUSCLE_GROUPS: MuscleGroup[] = [
-  "dos", "pecs", "biceps", "triceps", "jambes", "épaules", "abdos", "cardio", "avant-bras",
-];
-
-const MUSCLE_COLORS: Record<MuscleGroup, string> = {
-  dos: "#3b82f6",
-  pecs: "#f97316",
-  biceps: "#a855f7",
-  triceps: "#8b5cf6",
-  jambes: "#22c55e",
-  épaules: "#f59e0b",
-  abdos: "#ef4444",
-  cardio: "#ec4899",
-  "avant-bras": "#14b8a6",
-};
 
 // Slightly different shades for multiple exercise charts
 const CHART_PALETTE = ["#16A34A", "#3b82f6", "#a855f7", "#f59e0b", "#ec4899"];
 
-function formatShortDate(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+function formatShortDate(d: Date, locale: string) {
+  return d.toLocaleDateString(locale, { day: "2-digit", month: "2-digit" });
+}
+
+/** Per-session metric for a muscle group: max load (kg), or total duration (min) for cardio. */
+function sessionMetric(sets: WorkoutSet[], cardio: boolean): number {
+  if (cardio) return sets.reduce((sum, s) => sum + (s.duration ?? 0), 0);
+  return sets.reduce((max, s) => Math.max(max, s.weight), 0);
 }
 
 export default function ProgressScreen() {
   const colors = useColors();
+  const { t, locale } = usePreferences();
   const insets = useSafeAreaInsets();
-  const { workouts, exercises } = useWorkout();
+  const { workouts, exercises, exerciseById } = useWorkout();
+  const exerciseName = useExerciseName();
+  const { tracker, bodyWeights, addBodyWeight, removeBodyWeight, today } = useNutrition();
   const [activeTab, setActiveTab] = useState<Tab>("weight");
-  const [tracker, setTracker] = useState<DailyTracker>(DEFAULT_TRACKER);
+  const [showWeighIn, setShowWeighIn] = useState(false);
+  const [weighInError, setWeighInError] = useState(false);
+  const [weighInWeight, setWeighInWeight] = useState("");
+  const [weighInDay, setWeighInDay] = useState("");
+  const [weighInMonth, setWeighInMonth] = useState("");
+  const [weighInYear, setWeighInYear] = useState("");
 
-  useEffect(() => {
-    AsyncStorage.getItem(TRACKER_KEY).then((raw) => {
-      if (raw) setTracker({ ...DEFAULT_TRACKER, ...JSON.parse(raw) });
-    }).catch(() => {});
-  }, []);
+  function openWeighIn() {
+    const now = new Date();
+    setWeighInWeight("");
+    setWeighInDay(String(now.getDate()));
+    setWeighInMonth(String(now.getMonth() + 1));
+    setWeighInYear(String(now.getFullYear()));
+    setWeighInError(false);
+    setShowWeighIn(true);
+  }
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top + 10;
-  const bottomPad = Platform.OS === "web" ? 34 + 84 : insets.bottom + 100;
+  function saveWeighIn() {
+    const w = parseDecimal(weighInWeight);
+    const date = buildLocalDate(parseInt(weighInYear, 10), parseInt(weighInMonth, 10), parseInt(weighInDay, 10));
+    if (w <= 0 || w > 500 || !date) {
+      setWeighInError(true);
+      return;
+    }
+    addBodyWeight(date.toISOString(), w);
+    setShowWeighIn(false);
+  }
+
+  const topPad = insets.top + 10;
+  const bottomPad = insets.bottom + 100;
 
   // ── Body weight chart ────────────────────────────────────────────────────
   const bodyWeightData: DataPoint[] = useMemo(() => {
-    return [...workouts].reverse().map((w) => ({
-      label: formatShortDate(w.date),
-      value: w.bodyWeight,
-    }));
-  }, [workouts]);
+    // Merge session-derived body weights with manual weigh-ins, one point per day
+    // (a manual weigh-in overrides the session value for that day).
+    const byDay = new Map<string, number>();
+    for (const w of workouts) {
+      if (!w.bodyWeight) continue;
+      const day = dayKeyOf(w.date);
+      if (!byDay.has(day)) byDay.set(day, w.bodyWeight); // newest session of the day wins
+    }
+    for (const e of bodyWeights) byDay.set(dayKeyOf(e.date), e.weight);
+    return Array.from(byDay.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([day, value]) => ({ label: formatShortDate(parseDayKey(day), locale), value }));
+  }, [workouts, bodyWeights, locale]);
 
   const bwStats = useMemo(() => {
     if (bodyWeightData.length === 0) return null;
@@ -90,15 +104,15 @@ export default function ProgressScreen() {
     return Object.entries(tracker.caloriesLog)
       .filter(([, v]) => v > 0)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, value]) => ({ label: formatShortDate(date), value }));
-  }, [tracker]);
+      .map(([day, value]) => ({ label: formatShortDate(parseDayKey(day), locale), value }));
+  }, [tracker, locale]);
 
   const waterData: DataPoint[] = useMemo(() => {
     return Object.entries(tracker.waterLog)
       .filter(([, v]) => v > 0)
       .sort(([a], [b]) => a.localeCompare(b))
-      .map(([date, value]) => ({ label: formatShortDate(date), value }));
-  }, [tracker]);
+      .map(([day, value]) => ({ label: formatShortDate(parseDayKey(day), locale), value }));
+  }, [tracker, locale]);
 
   const calStats = useMemo(() => {
     if (calData.length === 0) return null;
@@ -106,10 +120,10 @@ export default function ProgressScreen() {
     const last7 = calData.slice(-7).map((d) => d.value);
     const avg7 = last7.length > 0 ? Math.round(last7.reduce((a, b) => a + b, 0) / last7.length) : 0;
     const best = Math.max(...vals);
-    const todayVal = tracker.caloriesLog[todayStr()] ?? 0;
+    const todayVal = tracker.caloriesLog[today] ?? 0;
     const daysHit = vals.filter((v) => v >= tracker.calorieGoal).length;
     return { today: todayVal, avg7, best, daysHit, total: vals.length };
-  }, [calData, tracker]);
+  }, [calData, tracker, today]);
 
   const waterStats = useMemo(() => {
     if (waterData.length === 0) return null;
@@ -117,93 +131,75 @@ export default function ProgressScreen() {
     const last7 = waterData.slice(-7).map((d) => d.value);
     const avg7 = last7.length > 0 ? Math.round((last7.reduce((a, b) => a + b, 0) / last7.length) * 10) / 10 : 0;
     const best = Math.max(...vals);
-    const todayVal = tracker.waterLog[todayStr()] ?? 0;
+    const todayVal = tracker.waterLog[today] ?? 0;
     const daysHit = vals.filter((v) => v >= tracker.waterGoal).length;
     return { today: todayVal, avg7, best, daysHit, total: vals.length };
-  }, [waterData, tracker]);
+  }, [waterData, tracker, today]);
 
   // ── Sessions count per muscle group (for tab badges) ─────────────────────
   const muscleSessionCount = useMemo(() => {
     const counts: Record<MuscleGroup, number> = {} as Record<MuscleGroup, number>;
-    for (const g of MUSCLE_GROUPS) {
-      counts[g] = workouts.filter((w) =>
-        w.exercises.some((we) => {
-          const ex = exercises.find((e) => e.id === we.exerciseId);
-          return ex?.muscleGroup === g && we.sets.length > 0;
-        })
-      ).length;
+    for (const g of MUSCLE_GROUPS) counts[g] = 0;
+    for (const w of workouts) {
+      const groups = new Set<MuscleGroup>();
+      for (const we of w.exercises) {
+        if (we.sets.length === 0) continue;
+        const ex = exerciseById.get(we.exerciseId);
+        if (ex) groups.add(ex.muscleGroup);
+      }
+      for (const g of groups) counts[g]++;
     }
     return counts;
-  }, [workouts, exercises]);
+  }, [workouts, exerciseById]);
 
-  // ── Top exercises per muscle group with per-session max weight ────────────
-  const topExercisesByGroup = useMemo(() => {
-    const result: Record<MuscleGroup, {
-      exercise: typeof exercises[0];
-      sessionCount: number;
-      maxWeightData: DataPoint[];
-      volumeData: DataPoint[];
-      pr: number;
-    }[]> = {} as any;
+  const activeMuscleGroup = (activeTab !== "weight" && activeTab !== "calories" && activeTab !== "eau") ? activeTab as MuscleGroup : null;
+  // Cardio has no load: chart session duration and show duration/distance records instead.
+  const isCardio = activeMuscleGroup === "cardio";
+  const metricUnit = isCardio ? " min" : " kg";
 
-    for (const group of MUSCLE_GROUPS) {
-      const groupExercises = exercises.filter((e) => e.muscleGroup === group);
-
-      // Score each exercise by how many sessions it appears in
-      const scored = groupExercises.map((ex) => {
-        const relevantWorkouts = [...workouts]
-          .reverse()
-          .filter((w) => w.exercises.some((we) => we.exerciseId === ex.id && we.sets.length > 0));
-
+  // ── Top 3 exercises for the active muscle group, with per-session max weight ──
+  // Only the active group is computed (the chart for other groups is never rendered).
+  const muscleTopExercises = useMemo(() => {
+    if (!activeMuscleGroup) return [];
+    const oldestFirst = [...workouts].reverse();
+    const scored = exercises
+      .filter((e) => e.muscleGroup === activeMuscleGroup)
+      .map((ex) => {
+        const relevantWorkouts = oldestFirst.filter((w) =>
+          w.exercises.some((we) => we.exerciseId === ex.id && we.sets.length > 0)
+        );
         const maxWeightData: DataPoint[] = relevantWorkouts.map((w) => {
           const we = w.exercises.find((e) => e.exerciseId === ex.id)!;
-          const maxW = Math.max(...we.sets.map((s) => s.weight));
-          return { label: formatShortDate(w.date), value: maxW };
+          return { label: formatShortDate(new Date(w.date), locale), value: sessionMetric(we.sets, isCardio) };
         });
-
-        const volumeData: DataPoint[] = relevantWorkouts.map((w) => {
-          const we = w.exercises.find((e) => e.exerciseId === ex.id)!;
-          const vol = we.sets.reduce((s, set) => s + set.reps * set.weight, 0);
-          return { label: formatShortDate(w.date), value: vol };
-        });
-
         const pr = maxWeightData.length > 0 ? Math.max(...maxWeightData.map((d) => d.value)) : 0;
-
-        return { exercise: ex, sessionCount: relevantWorkouts.length, maxWeightData, volumeData, pr };
+        return { exercise: ex, sessionCount: relevantWorkouts.length, maxWeightData, pr };
       });
-
-      result[group] = scored
-        .filter((s) => s.sessionCount > 0)
-        .sort((a, b) => b.sessionCount - a.sessionCount)
-        .slice(0, 3);
-    }
-
-    return result;
-  }, [workouts, exercises]);
-
-  // Summary stats for active muscle group
-  const activeMuscleGroup = (activeTab !== "weight" && activeTab !== "calories" && activeTab !== "eau") ? activeTab as MuscleGroup : null;
-  const muscleTopExercises = activeMuscleGroup ? topExercisesByGroup[activeMuscleGroup] : [];
+    return scored
+      .filter((s) => s.sessionCount > 0)
+      .sort((a, b) => b.sessionCount - a.sessionCount)
+      .slice(0, 3);
+  }, [activeMuscleGroup, isCardio, workouts, exercises, locale]);
 
   const muscleStats = useMemo(() => {
     if (!activeMuscleGroup || muscleTopExercises.length === 0) return null;
     const allPRs = muscleTopExercises.map((e) => e.pr);
-    const allSessions = muscleSessionCount[activeMuscleGroup];
-    const allVols = workouts
-      .filter((w) => w.exercises.some((we) => {
-        const ex = exercises.find((e) => e.id === we.exerciseId);
-        return ex?.muscleGroup === activeMuscleGroup;
-      }))
-      .map((w) => w.exercises
-        .filter((we) => exercises.find((e) => e.id === we.exerciseId)?.muscleGroup === activeMuscleGroup)
-        .reduce((sum, we) => sum + we.sets.reduce((s, set) => s + set.reps * set.weight, 0), 0)
-      );
+    // Per session: total volume (kg) — or, for cardio, total distance (km).
+    let peakVolume = 0;
+    for (const w of workouts) {
+      let vol = 0;
+      for (const we of w.exercises) {
+        if (exerciseById.get(we.exerciseId)?.muscleGroup !== activeMuscleGroup) continue;
+        for (const set of we.sets) vol += isCardio ? set.distance ?? 0 : set.reps * set.weight;
+      }
+      if (vol > peakVolume) peakVolume = vol;
+    }
     return {
-      totalSessions: allSessions,
+      totalSessions: muscleSessionCount[activeMuscleGroup],
       peakWeight: Math.max(...allPRs, 0),
-      peakVolume: allVols.length > 0 ? Math.max(...allVols) : 0,
+      peakVolume,
     };
-  }, [activeMuscleGroup, muscleTopExercises, muscleSessionCount, workouts, exercises]);
+  }, [activeMuscleGroup, isCardio, muscleTopExercises, muscleSessionCount, workouts, exerciseById]);
 
   const tabColor = activeTab === "weight"
     ? colors.info
@@ -214,12 +210,13 @@ export default function ProgressScreen() {
         : MUSCLE_COLORS[activeTab as MuscleGroup] ?? colors.primary;
 
   return (
+    <>
     <ScrollView
       style={[styles.container, { backgroundColor: colors.background }]}
       contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad }}
       showsVerticalScrollIndicator={false}
     >
-      <Text style={[styles.pageTitle, { color: colors.foreground }]}>Progression</Text>
+      <Text style={[styles.pageTitle, { color: colors.foreground }]}>{t("progress.title")}</Text>
 
       {/* Tab selector */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabRow}>
@@ -229,7 +226,7 @@ export default function ProgressScreen() {
         >
           <Feather name="user" size={14} color={activeTab === "weight" ? colors.info : colors.mutedForeground} />
           <Text style={[styles.tabText, { color: activeTab === "weight" ? colors.info : colors.mutedForeground }]}>
-            Poids corps
+            {t("progress.tab.weight")}
           </Text>
         </TouchableOpacity>
 
@@ -239,7 +236,7 @@ export default function ProgressScreen() {
           onPress={() => setActiveTab("calories")}
         >
           <Text style={{ fontSize: 13, lineHeight: 16 }}>🔥</Text>
-          <Text style={[styles.tabText, { color: activeTab === "calories" ? "#e85a0a" : colors.mutedForeground }]}>Calories</Text>
+          <Text style={[styles.tabText, { color: activeTab === "calories" ? "#e85a0a" : colors.mutedForeground }]}>{t("progress.tab.calories")}</Text>
           {(calStats?.total ?? 0) > 0 && (
             <View style={[styles.tabBadge, { backgroundColor: activeTab === "calories" ? "#e85a0a" : colors.muted }]}>
               <Text style={[styles.tabBadgeText, { color: activeTab === "calories" ? "#fff" : colors.mutedForeground }]}>{calStats!.total}</Text>
@@ -253,7 +250,7 @@ export default function ProgressScreen() {
           onPress={() => setActiveTab("eau")}
         >
           <Text style={{ fontSize: 13, lineHeight: 16 }}>💧</Text>
-          <Text style={[styles.tabText, { color: activeTab === "eau" ? "#3b82f6" : colors.mutedForeground }]}>Eau</Text>
+          <Text style={[styles.tabText, { color: activeTab === "eau" ? "#3b82f6" : colors.mutedForeground }]}>{t("progress.tab.water")}</Text>
           {(waterStats?.total ?? 0) > 0 && (
             <View style={[styles.tabBadge, { backgroundColor: activeTab === "eau" ? "#3b82f6" : colors.muted }]}>
               <Text style={[styles.tabBadgeText, { color: activeTab === "eau" ? "#fff" : colors.mutedForeground }]}>{waterStats!.total}</Text>
@@ -272,7 +269,7 @@ export default function ProgressScreen() {
               onPress={() => setActiveTab(g)}
             >
               <Text style={[styles.tabText, { color: active ? c : colors.mutedForeground }]}>
-                {MUSCLE_GROUP_LABELS[g]}
+                {t(`muscle.${g}` as TranslationKey)}
               </Text>
               {count > 0 && (
                 <View style={[styles.tabBadge, { backgroundColor: active ? c : colors.muted }]}>
@@ -291,35 +288,70 @@ export default function ProgressScreen() {
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: colors.info }]}>{bwStats.current} kg</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Actuel</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.weight.current")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: bwStats.diff > 0 ? colors.destructive : bwStats.diff < 0 ? colors.success : colors.foreground }]}>
                   {bwStats.diff > 0 ? "+" : ""}{bwStats.diff.toFixed(1)} kg
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Évolution</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.weight.change")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: colors.foreground }]}>{bwStats.min}–{bwStats.max}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Min–Max</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.weight.minMax")}</Text>
               </View>
             </View>
           )}
 
           <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.chartHeader}>
-              <Text style={[styles.chartTitle, { color: colors.foreground }]}>Poids de corps (kg)</Text>
-              <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>{bodyWeightData.length} séance{bodyWeightData.length !== 1 ? "s" : ""}</Text>
+              <Text style={[styles.chartTitle, { color: colors.foreground }]}>{t("progress.weight.chartTitle")}</Text>
+              <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>{t("common.daysCount", { count: bodyWeightData.length })}</Text>
             </View>
             <LineChart data={bodyWeightData} color={colors.info} unit=" kg" height={200} formatValue={(v) => `${v}`} />
+          </View>
+
+          {/* Body weight log — manual weigh-ins (also fill the chart on rest days) */}
+          <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.logHeader}>
+              <Text style={[styles.chartTitle, { color: colors.foreground }]}>{t("bodyWeight.logTitle")}</Text>
+              <TouchableOpacity
+                style={[styles.logAddBtn, { backgroundColor: colors.primary }]}
+                onPress={openWeighIn}
+                activeOpacity={0.85}
+              >
+                <Feather name="plus" size={14} color={colors.primaryForeground} />
+                <Text style={[styles.logAddText, { color: colors.primaryForeground }]}>{t("bodyWeight.add")}</Text>
+              </TouchableOpacity>
+            </View>
+            {bodyWeights.length === 0 ? (
+              <Text style={[styles.logEmpty, { color: colors.mutedForeground }]}>{t("bodyWeight.empty")}</Text>
+            ) : (
+              bodyWeights.map((e) => (
+                <View key={e.date} style={[styles.logRow, { borderTopColor: colors.border }]}>
+                  <View style={styles.logRowLeft}>
+                    <Feather name="calendar" size={13} color={colors.mutedForeground} />
+                    <Text style={[styles.logRowDate, { color: colors.foreground }]}>
+                      {new Date(e.date).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" })}
+                    </Text>
+                  </View>
+                  <View style={styles.logRowRight}>
+                    <Text style={[styles.logRowWeight, { color: colors.info }]}>{e.weight} kg</Text>
+                    <TouchableOpacity onPress={() => removeBodyWeight(e.date)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                      <Feather name="trash-2" size={14} color={colors.destructive} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
           </View>
 
           {workouts.length === 0 && (
             <View style={styles.emptyState}>
               <Feather name="activity" size={36} color={colors.mutedForeground} />
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucune séance encore</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("progress.empty.noSession")}</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Lance ta première séance pour voir tes progrès ici
+                {t("progress.empty.noSessionHint")}
               </Text>
             </View>
           )}
@@ -332,33 +364,33 @@ export default function ProgressScreen() {
           {calStats ? (
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.today.toLocaleString("fr-FR")}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui</Text>
+                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.today.toLocaleString(locale)}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.today")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.avg7.toLocaleString("fr-FR")}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Moy. 7 jours</Text>
+                <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.avg7.toLocaleString(locale)}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.avg7")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: "#e85a0a" }]}>{calStats.daysHit}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Jours objectif{"\n"}atteint</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.goalDaysHit")}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 36 }}>🔥</Text>
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucune donnée</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("progress.cal.noData")}</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Commence à saisir tes calories dans l'onglet Nutrition pour voir leur évolution ici
+                {t("progress.cal.noDataHint")}
               </Text>
             </View>
           )}
           {calData.length >= 2 && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.chartHeader}>
-                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Calories (kcal)</Text>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>{t("progress.cal.chartTitle")}</Text>
                 <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>
-                  {calData.length} jours · Objectif {tracker.calorieGoal.toLocaleString("fr-FR")} kcal
+                  {t("progress.cal.chartSub", { days: calData.length, goal: tracker.calorieGoal.toLocaleString(locale) })}
                 </Text>
               </View>
               <LineChart
@@ -373,17 +405,17 @@ export default function ProgressScreen() {
           )}
           {calStats && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>Récapitulatif</Text>
+              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>{t("progress.recap.title")}</Text>
               <View style={styles.recapRow}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Objectif quotidien</Text>
-                <Text style={[styles.recapVal, { color: colors.foreground }]}>{tracker.calorieGoal.toLocaleString("fr-FR")} kcal</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.dailyGoal")}</Text>
+                <Text style={[styles.recapVal, { color: colors.foreground }]}>{tracker.calorieGoal.toLocaleString(locale)} kcal</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Meilleure journée</Text>
-                <Text style={[styles.recapVal, { color: "#e85a0a" }]}>{calStats.best.toLocaleString("fr-FR")} kcal</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.bestDay")}</Text>
+                <Text style={[styles.recapVal, { color: "#e85a0a" }]}>{calStats.best.toLocaleString(locale)} kcal</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Jours suivis</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.daysTracked")}</Text>
                 <Text style={[styles.recapVal, { color: colors.foreground }]}>{calStats.total}</Text>
               </View>
             </View>
@@ -398,32 +430,32 @@ export default function ProgressScreen() {
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: "#3b82f6" }]}>{(waterStats.today / 1000).toFixed(1)}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Aujourd'hui{"\n"}(L)</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.todayLiters")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: "#3b82f6" }]}>{(waterStats.avg7 / 1000).toFixed(1)}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Moy. 7 jours</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.avg7")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: "#3b82f6" }]}>{waterStats.daysHit}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Jours objectif{"\n"}atteint</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.stat.goalDaysHit")}</Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: 36 }}>💧</Text>
-              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>Aucune donnée</Text>
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{t("progress.cal.noData")}</Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Commence à suivre ton hydratation dans l'onglet Nutrition pour voir son évolution ici
+                {t("progress.water.noDataHint")}
               </Text>
             </View>
           )}
           {waterData.length >= 2 && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.chartHeader}>
-                <Text style={[styles.chartTitle, { color: colors.foreground }]}>Hydratation (L)</Text>
+                <Text style={[styles.chartTitle, { color: colors.foreground }]}>{t("progress.water.chartTitle")}</Text>
                 <Text style={[styles.chartSub, { color: colors.mutedForeground }]}>
-                  {waterData.length} jours · Objectif {(tracker.waterGoal / 1000).toFixed(1)} L/jour
+                  {t("progress.water.chartSub", { days: waterData.length, goal: (tracker.waterGoal / 1000).toFixed(1) })}
                 </Text>
               </View>
               <LineChart
@@ -438,17 +470,17 @@ export default function ProgressScreen() {
           )}
           {waterStats && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>Récapitulatif</Text>
+              <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>{t("progress.recap.title")}</Text>
               <View style={styles.recapRow}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Objectif quotidien</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.dailyGoal")}</Text>
                 <Text style={[styles.recapVal, { color: colors.foreground }]}>{(tracker.waterGoal / 1000).toFixed(1)} L</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Meilleure journée</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.bestDay")}</Text>
                 <Text style={[styles.recapVal, { color: "#3b82f6" }]}>{(waterStats.best / 1000).toFixed(1)} L</Text>
               </View>
               <View style={[styles.recapRow, { borderTopWidth: 1, borderTopColor: colors.border }]}>
-                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>Jours suivis</Text>
+                <Text style={[styles.recapLabel, { color: colors.mutedForeground }]}>{t("progress.recap.daysTracked")}</Text>
                 <Text style={[styles.recapVal, { color: colors.foreground }]}>{waterStats.total}</Text>
               </View>
             </View>
@@ -464,27 +496,33 @@ export default function ProgressScreen() {
             <View style={styles.statsRow}>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: tabColor }]}>{muscleStats.totalSessions}</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Séances</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>{t("progress.muscle.sessions")}</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-                <Text style={[styles.statValue, { color: tabColor }]}>{muscleStats.peakWeight} kg</Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Charge max</Text>
+                <Text style={[styles.statValue, { color: tabColor }]}>{muscleStats.peakWeight}{metricUnit}</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                  {t(isCardio ? "progress.muscle.maxDuration" : "progress.muscle.maxLoad")}
+                </Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
                 <Text style={[styles.statValue, { color: tabColor }]}>
-                  {Math.round(muscleStats.peakVolume / 100) / 10}t
+                  {isCardio
+                    ? `${Math.round(muscleStats.peakVolume * 10) / 10} km`
+                    : `${Math.round(muscleStats.peakVolume / 100) / 10}t`}
                 </Text>
-                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>Vol. max</Text>
+                <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                  {t(isCardio ? "progress.muscle.maxDistance" : "progress.muscle.maxVolume")}
+                </Text>
               </View>
             </View>
           ) : (
             <View style={styles.emptyState}>
               <Feather name="bar-chart-2" size={36} color={colors.mutedForeground} />
               <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-                Aucune séance {MUSCLE_GROUP_LABELS[activeMuscleGroup].toLowerCase()}
+                {t("progress.muscle.empty", { group: t(`muscle.${activeMuscleGroup}` as TranslationKey).toLowerCase() })}
               </Text>
               <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-                Fais des exercices de {MUSCLE_GROUP_LABELS[activeMuscleGroup].toLowerCase()} pour voir ta progression
+                {t("progress.muscle.emptyHint", { group: t(`muscle.${activeMuscleGroup}` as TranslationKey).toLowerCase() })}
               </Text>
             </View>
           )}
@@ -494,10 +532,10 @@ export default function ProgressScreen() {
             <View style={[styles.sectionCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <View style={styles.sectionHeader}>
                 <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-                  Exercices les plus utilisés
+                  {t("progress.muscle.topExercises")}
                 </Text>
                 <Text style={[styles.sectionSub, { color: colors.mutedForeground }]}>
-                  Charge maximale par séance
+                  {t(isCardio ? "progress.muscle.topExercisesSubCardio" : "progress.muscle.topExercisesSub")}
                 </Text>
               </View>
 
@@ -519,16 +557,16 @@ export default function ProgressScreen() {
                         <Text style={[styles.rankText, { color: chartColor }]}>#{i + 1}</Text>
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.exName, { color: colors.foreground }]}>{item.exercise.name}</Text>
+                        <Text style={[styles.exName, { color: colors.foreground }]}>{exerciseName(item.exercise)}</Text>
                         <Text style={[styles.exMeta, { color: colors.mutedForeground }]}>
-                          {item.sessionCount} séance{item.sessionCount > 1 ? "s" : ""}
+                          {t("common.sessionsCount", { count: item.sessionCount })}
                         </Text>
                       </View>
                       <View style={styles.exStats}>
                         {item.pr > 0 && (
                           <View style={[styles.prBadge, { backgroundColor: chartColor + "20" }]}>
                             <Feather name="award" size={11} color={chartColor} />
-                            <Text style={[styles.prText, { color: chartColor }]}>{item.pr} kg</Text>
+                            <Text style={[styles.prText, { color: chartColor }]}>{item.pr}{metricUnit}</Text>
                           </View>
                         )}
                         {trend !== null && trend !== 0 && (
@@ -539,7 +577,7 @@ export default function ProgressScreen() {
                               color={trend > 0 ? colors.success : colors.destructive}
                             />
                             <Text style={[styles.trendText, { color: trend > 0 ? colors.success : colors.destructive }]}>
-                              {trend > 0 ? "+" : ""}{trend.toFixed(1)} kg
+                              {trend > 0 ? "+" : ""}{trend.toFixed(1)}{metricUnit}
                             </Text>
                           </View>
                         )}
@@ -553,14 +591,14 @@ export default function ProgressScreen() {
                         <LineChart
                           data={item.maxWeightData}
                           color={chartColor}
-                          unit=" kg"
+                          unit={metricUnit}
                           height={130}
                           formatValue={(v) => `${v}`}
                         />
                       </View>
                     ) : (
                       <Text style={[styles.notEnoughData, { color: colors.mutedForeground }]}>
-                        Fais au moins 2 séances pour voir le graphique
+                        {t("progress.muscle.needTwo")}
                       </Text>
                     )}
                   </View>
@@ -573,7 +611,7 @@ export default function ProgressScreen() {
           {muscleTopExercises.length > 0 && (
             <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Text style={[styles.chartTitle, { color: colors.foreground, marginBottom: 14 }]}>
-                Tous les exercices
+                {t("progress.muscle.allExercises")}
               </Text>
               {exercises
                 .filter((e) => e.muscleGroup === activeMuscleGroup)
@@ -582,9 +620,10 @@ export default function ProgressScreen() {
                     w.exercises.some((we) => we.exerciseId === ex.id && we.sets.length > 0)
                   ).length;
                   if (sessionCount === 0) return null;
-                  const pb = workouts
-                    .flatMap((w) => w.exercises.find((we) => we.exerciseId === ex.id)?.sets ?? [])
-                    .reduce((max, s) => Math.max(max, s.weight), 0);
+                  const pb = workouts.reduce((max, w) => {
+                    const we = w.exercises.find((e) => e.exerciseId === ex.id);
+                    return we ? Math.max(max, sessionMetric(we.sets, isCardio)) : max;
+                  }, 0);
                   return (
                     <TouchableOpacity
                       key={ex.id}
@@ -592,16 +631,16 @@ export default function ProgressScreen() {
                       onPress={() => router.push({ pathname: "/exercise-history", params: { exerciseId: ex.id } })}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={[styles.exerciseName, { color: colors.foreground }]}>{ex.name}</Text>
+                        <Text style={[styles.exerciseName, { color: colors.foreground }]}>{exerciseName(ex)}</Text>
                         <Text style={[styles.exerciseMeta, { color: colors.mutedForeground }]}>
-                          {sessionCount} séance{sessionCount > 1 ? "s" : ""}
+                          {t("common.sessionsCount", { count: sessionCount })}
                         </Text>
                       </View>
                       <View style={styles.exerciseRight}>
                         {pb > 0 && (
                           <View style={styles.pbRow}>
                             <Feather name="award" size={12} color={tabColor} />
-                            <Text style={[styles.pbText, { color: tabColor }]}>{pb} kg</Text>
+                            <Text style={[styles.pbText, { color: tabColor }]}>{pb}{metricUnit}</Text>
                           </View>
                         )}
                         <Feather name="chevron-right" size={14} color={colors.mutedForeground} />
@@ -614,6 +653,46 @@ export default function ProgressScreen() {
         </>
       )}
     </ScrollView>
+
+    <Modal visible={showWeighIn} transparent animationType="fade" onRequestClose={() => setShowWeighIn(false)}>
+      <View style={styles.modalOverlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowWeighIn(false)} />
+        <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[styles.modalTitle, { color: colors.foreground }]}>{t("bodyWeight.newEntry")}</Text>
+          <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>{t("bodyWeight.weightLabel")}</Text>
+          <TextInput
+            style={[styles.modalInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
+            value={weighInWeight}
+            onChangeText={setWeighInWeight}
+            keyboardType="decimal-pad"
+            placeholder={t("bodyWeight.weightPlaceholder")}
+            placeholderTextColor={colors.mutedForeground}
+            autoFocus
+          />
+          <Text style={[styles.modalLabel, { color: colors.mutedForeground }]}>{t("bodyWeight.dateLabel")}</Text>
+          <View style={styles.dateRow}>
+            <TextInput style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} value={weighInDay} onChangeText={setWeighInDay} keyboardType="number-pad" maxLength={2} placeholder={t("date.day")} placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+            <Text style={[styles.dateSep, { color: colors.mutedForeground }]}>/</Text>
+            <TextInput style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} value={weighInMonth} onChangeText={setWeighInMonth} keyboardType="number-pad" maxLength={2} placeholder={t("date.month")} placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+            <Text style={[styles.dateSep, { color: colors.mutedForeground }]}>/</Text>
+            <TextInput style={[styles.dateInput, { flex: 2, color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]} value={weighInYear} onChangeText={setWeighInYear} keyboardType="number-pad" maxLength={4} placeholder={t("date.year")} placeholderTextColor={colors.mutedForeground} selectTextOnFocus />
+          </View>
+          {weighInError && (
+            <Text style={[styles.modalError, { color: colors.destructive }]}>{t("bodyWeight.invalidEntry")}</Text>
+          )}
+          <View style={styles.modalBtns}>
+            <TouchableOpacity style={[styles.modalCancel, { borderColor: colors.border }]} onPress={() => setShowWeighIn(false)}>
+              <Text style={[styles.modalCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalSave, { backgroundColor: colors.primary }]} onPress={saveWeighIn}>
+              <Feather name="check" size={16} color={colors.primaryForeground} />
+              <Text style={[styles.modalSaveText, { color: colors.primaryForeground }]}>{t("common.save")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+    </>
   );
 }
 
@@ -665,4 +744,29 @@ const styles = StyleSheet.create({
   recapRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingVertical: 11 },
   recapLabel: { fontSize: 13, fontFamily: "Inter_400Regular" },
   recapVal: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  // Body weight log
+  logHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  logAddBtn: { flexDirection: "row", alignItems: "center", gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 18 },
+  logAddText: { fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  logEmpty: { fontSize: 12, fontFamily: "Inter_400Regular", lineHeight: 18 },
+  logRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 11, borderTopWidth: 1 },
+  logRowLeft: { flexDirection: "row", alignItems: "center", gap: 8 },
+  logRowDate: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  logRowRight: { flexDirection: "row", alignItems: "center", gap: 14 },
+  logRowWeight: { fontSize: 14, fontFamily: "Inter_700Bold" },
+  // Weigh-in modal
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.6)", alignItems: "center", justifyContent: "center", padding: 24 },
+  modalBox: { width: "100%", maxWidth: 360, borderRadius: 20, borderWidth: 1, padding: 24, gap: 12 },
+  modalTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 4 },
+  modalLabel: { fontSize: 12, fontFamily: "Inter_500Medium" },
+  modalInput: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 11, fontSize: 16, fontFamily: "Inter_600SemiBold" },
+  dateRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  dateInput: { flex: 1, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 10, fontSize: 15, fontFamily: "Inter_600SemiBold", textAlign: "center" },
+  dateSep: { fontSize: 18, fontFamily: "Inter_600SemiBold" },
+  modalError: { fontSize: 13, fontFamily: "Inter_500Medium" },
+  modalBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
+  modalCancel: { flex: 1, paddingVertical: 13, borderRadius: 12, borderWidth: 1, alignItems: "center", justifyContent: "center" },
+  modalCancelText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
+  modalSave: { flex: 1, paddingVertical: 13, borderRadius: 12, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6 },
+  modalSaveText: { fontSize: 15, fontFamily: "Inter_600SemiBold" },
 });

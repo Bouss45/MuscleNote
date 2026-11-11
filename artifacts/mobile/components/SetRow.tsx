@@ -10,50 +10,50 @@ import {
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
 import { Set, SetUpdate } from "@/context/WorkoutContext";
+import { parseDecimal, parseInteger } from "@/utils/number";
 
 interface Props {
   set: Set;
   index: number;
   isCardio?: boolean;
-  onToggle: () => void;
+  /** Omit to hide the completion checkbox (editing a finished session). */
+  onToggle?: () => void;
   onUpdate: (data: SetUpdate) => void;
   onRemove: () => void;
   onSetComplete?: () => void;
 }
 
+type Field = "reps" | "weight" | "duration" | "distance" | "speed" | "incline";
+
+function initial(v: number | undefined, hideZero: boolean) {
+  if (v == null || (hideZero && v === 0)) return "";
+  return v.toString();
+}
+
 export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRemove, onSetComplete }: Props) {
   const colors = useColors();
 
-  // Strength fields
-  const [reps, setReps] = useState(set.reps > 0 ? set.reps.toString() : "");
-  const [weight, setWeight] = useState(set.weight > 0 ? set.weight.toString() : "");
+  // Raw text per field (keeps "62," visible while typing). Every keystroke is
+  // committed right away — waiting for blur loses the value when the user taps
+  // "Save"/"Finish" without leaving the field first.
+  const [text, setText] = useState<Record<Field, string>>({
+    reps: initial(set.reps, true),
+    weight: initial(set.weight, true),
+    duration: initial(set.duration, false),
+    distance: initial(set.distance, false),
+    speed: initial(set.speed, false),
+    incline: initial(set.incline, false),
+  });
 
-  // Cardio fields
-  const [duration, setDuration] = useState(set.duration != null ? set.duration.toString() : "");
-  const [distance, setDistance] = useState(set.distance != null ? set.distance.toString() : "");
-  const [speed, setSpeed] = useState(set.speed != null ? set.speed.toString() : "");
-  const [incline, setIncline] = useState(set.incline != null ? set.incline.toString() : "");
+  function change(field: Field, value: string) {
+    setText((prev) => ({ ...prev, [field]: value }));
+    onUpdate({ [field]: field === "reps" ? parseInteger(value) : parseDecimal(value) });
+  }
 
   function handleToggle() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    onToggle();
+    onToggle?.();
     if (!set.completed) onSetComplete?.();
-  }
-
-  function handleBlur() {
-    if (isCardio) {
-      onUpdate({
-        duration: parseFloat(duration) || 0,
-        distance: parseFloat(distance) || 0,
-        speed: parseFloat(speed) || 0,
-        incline: parseFloat(incline) || 0,
-      });
-    } else {
-      onUpdate({
-        reps: parseInt(reps) || 0,
-        weight: parseFloat(weight) || 0,
-      });
-    }
   }
 
   const inputStyle = [
@@ -70,8 +70,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
       style={[
         styles.row,
         {
-          backgroundColor: set.completed ? colors.primary + "18" : colors.card,
-          borderColor: set.completed ? colors.primary + "44" : colors.border,
+          backgroundColor: onToggle && set.completed ? colors.primary + "18" : colors.card,
+          borderColor: onToggle && set.completed ? colors.primary + "44" : colors.border,
         },
       ]}
     >
@@ -86,9 +86,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
             <View style={styles.cardioField}>
               <TextInput
                 style={inputStyle}
-                value={duration}
-                onChangeText={setDuration}
-                onBlur={handleBlur}
+                value={text.duration}
+                onChangeText={(v) => change("duration", v)}
                 keyboardType="decimal-pad"
                 maxLength={4}
                 placeholder="0"
@@ -100,9 +99,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
             <View style={styles.cardioField}>
               <TextInput
                 style={inputStyle}
-                value={distance}
-                onChangeText={setDistance}
-                onBlur={handleBlur}
+                value={text.distance}
+                onChangeText={(v) => change("distance", v)}
                 keyboardType="decimal-pad"
                 maxLength={5}
                 placeholder="0"
@@ -116,9 +114,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
             <View style={styles.cardioField}>
               <TextInput
                 style={inputStyle}
-                value={speed}
-                onChangeText={setSpeed}
-                onBlur={handleBlur}
+                value={text.speed}
+                onChangeText={(v) => change("speed", v)}
                 keyboardType="decimal-pad"
                 maxLength={4}
                 placeholder="0"
@@ -130,9 +127,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
             <View style={styles.cardioField}>
               <TextInput
                 style={inputStyle}
-                value={incline}
-                onChangeText={setIncline}
-                onBlur={handleBlur}
+                value={text.incline}
+                onChangeText={(v) => change("incline", v)}
                 keyboardType="decimal-pad"
                 maxLength={4}
                 placeholder="0"
@@ -149,9 +145,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
           <View style={styles.inputGroup}>
             <TextInput
               style={inputStyle}
-              value={reps}
-              onChangeText={setReps}
-              onBlur={handleBlur}
+              value={text.reps}
+              onChangeText={(v) => change("reps", v)}
               keyboardType="number-pad"
               maxLength={3}
               placeholder="0"
@@ -164,9 +159,8 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
           <View style={styles.inputGroup}>
             <TextInput
               style={inputStyle}
-              value={weight}
-              onChangeText={setWeight}
-              onBlur={handleBlur}
+              value={text.weight}
+              onChangeText={(v) => change("weight", v)}
               keyboardType="decimal-pad"
               maxLength={6}
               placeholder="0"
@@ -178,23 +172,25 @@ export default function SetRow({ set, index, isCardio, onToggle, onUpdate, onRem
         </View>
       )}
 
-      <TouchableOpacity
-        onPress={handleToggle}
-        style={[
-          styles.checkBtn,
-          {
-            backgroundColor: set.completed ? colors.primary : "transparent",
-            borderColor: set.completed ? colors.primary : colors.border,
-          },
-        ]}
-      >
-        {set.completed && (
-          <Feather name="check" size={14} color={colors.primaryForeground} />
-        )}
-      </TouchableOpacity>
+      {onToggle && (
+        <TouchableOpacity
+          onPress={handleToggle}
+          style={[
+            styles.checkBtn,
+            {
+              backgroundColor: set.completed ? colors.primary : "transparent",
+              borderColor: set.completed ? colors.primary : colors.border,
+            },
+          ]}
+        >
+          {set.completed && (
+            <Feather name="check" size={14} color={colors.primaryForeground} />
+          )}
+        </TouchableOpacity>
+      )}
 
       <TouchableOpacity onPress={onRemove} style={styles.deleteBtn}>
-        <Feather name="trash-2" size={14} color={colors.mutedForeground} />
+        <Feather name="trash-2" size={14} color={onToggle ? colors.mutedForeground : colors.destructive} />
       </TouchableOpacity>
     </View>
   );

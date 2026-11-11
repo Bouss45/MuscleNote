@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useState } from "react";
 import {
-  AppState,
-  AppStateStatus,
   StyleSheet,
   Text,
   TextInput,
@@ -11,12 +9,12 @@ import {
   View,
 } from "react-native";
 import { useColors } from "@/hooks/useColors";
-import { Exercise, WorkoutExercise } from "@/context/WorkoutContext";
-import { useWorkout } from "@/context/WorkoutContext";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { usePreferences } from "@/context/PreferencesContext";
+import { useRestTimer } from "@/context/RestTimerContext";
+import { Exercise, WorkoutExercise, useWorkout } from "@/context/WorkoutContext";
 import MuscleGroupBadge from "./MuscleGroupBadge";
 import SetRow from "./SetRow";
-
-const REST_SECONDS = 180; // 3 minutes
 
 interface Props {
   exercise: Exercise;
@@ -26,71 +24,15 @@ interface Props {
 
 export default function ExerciseCard({ exercise, workoutExercise, onNavigateHistory }: Props) {
   const colors = useColors();
+  const { t } = usePreferences();
+  const exerciseName = useExerciseName();
+  const restTimer = useRestTimer();
   const { addSet, updateSet, removeSet, toggleSetComplete, removeExerciseFromWorkout, updateExerciseNote } = useWorkout();
   const [collapsed, setCollapsed] = useState(false);
 
   // Note
   const [showNote, setShowNote] = useState(!!workoutExercise.note);
   const [noteText, setNoteText] = useState(workoutExercise.note ?? "");
-
-  // Rest timer — timestamp-based so it survives screen lock / background
-  const [restLeft, setRestLeft] = useState<number | null>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const restEndRef = useRef<number | null>(null); // absolute timestamp when rest ends
-
-  // Recalculate remaining time from the stored end timestamp
-  function tick() {
-    if (restEndRef.current === null) return;
-    const left = Math.round((restEndRef.current - Date.now()) / 1000);
-    if (left <= 0) {
-      clearInterval(timerRef.current!);
-      timerRef.current = null;
-      restEndRef.current = null;
-      setRestLeft(null);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      setRestLeft(left);
-    }
-  }
-
-  // When app comes back to foreground, immediately recalculate
-  useEffect(() => {
-    const sub = AppState.addEventListener("change", (state: AppStateStatus) => {
-      if (state === "active" && restEndRef.current !== null) {
-        tick();
-      }
-    });
-    return () => {
-      sub.remove();
-      if (timerRef.current) clearInterval(timerRef.current);
-    };
-  }, []);
-
-  function startRestTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    restEndRef.current = Date.now() + REST_SECONDS * 1000;
-    setRestLeft(REST_SECONDS);
-    timerRef.current = setInterval(tick, 1000);
-  }
-
-  function stopRestTimer() {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    restEndRef.current = null;
-    setRestLeft(null);
-  }
-
-  function formatRest(s: number) {
-    return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
-  }
-
-  function getTimerColor() {
-    if (restLeft === null) return colors.primary;
-    const pct = restLeft / REST_SECONDS;
-    if (pct > 0.5) return "#16A34A";
-    if (pct > 0.25) return "#f59e0b";
-    return "#ef4444";
-  }
 
   const isCardio = exercise.muscleGroup === "cardio";
 
@@ -110,7 +52,6 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
   }
 
   function handleNoteBlur() {
-    updateExerciseNote(exercise.id, noteText);
     if (!noteText.trim()) setShowNote(false);
   }
 
@@ -126,7 +67,7 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
       >
         <View style={styles.headerLeft}>
           <Text style={[styles.name, { color: colors.foreground }]}>
-            {exercise.name}
+            {exerciseName(exercise)}
           </Text>
           <View style={styles.badges}>
             <MuscleGroupBadge muscleGroup={exercise.muscleGroup} small />
@@ -174,9 +115,12 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
               <TextInput
                 style={[styles.noteInput, { color: colors.foreground }]}
                 value={noteText}
-                onChangeText={setNoteText}
+                onChangeText={(v) => {
+                  setNoteText(v);
+                  updateExerciseNote(exercise.id, v);
+                }}
                 onBlur={handleNoteBlur}
-                placeholder="Ajouter une note…"
+                placeholder={t("exerciseCard.notePlaceholder")}
                 placeholderTextColor={colors.mutedForeground}
                 multiline
                 autoFocus={!noteText}
@@ -208,7 +152,7 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
               onToggle={() => toggleSetComplete(exercise.id, set.id)}
               onUpdate={(data) => updateSet(exercise.id, set.id, data)}
               onRemove={() => removeSet(exercise.id, set.id)}
-              onSetComplete={startRestTimer}
+              onSetComplete={() => restTimer.start(exerciseName(exercise))}
             />
           ))}
 
@@ -218,29 +162,10 @@ export default function ExerciseCard({ exercise, workoutExercise, onNavigateHist
           >
             <Feather name="plus" size={16} color={colors.primary} />
             <Text style={[styles.addSetText, { color: colors.primary }]}>
-              Ajouter une série
+              {t("exerciseCard.addSet")}
             </Text>
           </TouchableOpacity>
 
-          {/* Rest timer */}
-          {restLeft !== null && (
-            <View style={[styles.timerBanner, { backgroundColor: getTimerColor() + "22", borderColor: getTimerColor() + "55" }]}>
-              <View style={styles.timerLeft}>
-                <Feather name="clock" size={13} color={getTimerColor()} />
-                <Text style={[styles.timerLabel, { color: getTimerColor() }]}>Repos</Text>
-                <Text style={[styles.timerCount, { color: getTimerColor() }]}>
-                  {formatRest(restLeft)}
-                </Text>
-              </View>
-              <View style={[styles.timerProgress, { backgroundColor: colors.border }]}>
-                <View style={[styles.timerFill, { backgroundColor: getTimerColor(), width: `${(restLeft / REST_SECONDS) * 100}%` as any }]} />
-              </View>
-              <TouchableOpacity onPress={stopRestTimer} style={styles.timerSkip}>
-                <Feather name="skip-forward" size={13} color={getTimerColor()} />
-                <Text style={[styles.timerSkipText, { color: getTimerColor() }]}>Passer</Text>
-              </TouchableOpacity>
-            </View>
-          )}
         </View>
       )}
     </View>
@@ -336,49 +261,6 @@ const styles = StyleSheet.create({
   },
   addSetText: {
     fontSize: 13,
-    fontFamily: "Inter_600SemiBold",
-  },
-  // Rest timer
-  timerBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginTop: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  timerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-  },
-  timerLabel: {
-    fontSize: 11,
-    fontFamily: "Inter_400Regular",
-  },
-  timerCount: {
-    fontSize: 15,
-    fontFamily: "Inter_700Bold",
-  },
-  timerProgress: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    overflow: "hidden",
-  },
-  timerFill: {
-    height: 4,
-    borderRadius: 2,
-  },
-  timerSkip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 3,
-  },
-  timerSkipText: {
-    fontSize: 11,
     fontFamily: "Inter_600SemiBold",
   },
 });

@@ -1,9 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useMemo } from "react";
+import React from "react";
 import {
-  Dimensions,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,59 +10,59 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useWorkout } from "@/context/WorkoutContext";
+import { useExerciseName } from "@/hooks/useExerciseName";
+import { Set as WorkoutSet, useWorkout } from "@/context/WorkoutContext";
+import { usePreferences } from "@/context/PreferencesContext";
+import { bestOneRepMax } from "@/utils/strength";
+import LineChart from "@/components/LineChart";
 import MuscleGroupBadge from "@/components/MuscleGroupBadge";
 
-const SCREEN_W = Dimensions.get("window").width;
-const CHART_W = SCREEN_W - 48;
-const CHART_H = 160;
+/** Cardio sets have no load: summarize them as duration / distance. */
+function formatCardioSet(s: WorkoutSet): string {
+  const parts = [`${s.duration ?? 0} min`];
+  if (s.distance) parts.push(`${s.distance} km`);
+  if (s.speed) parts.push(`${s.speed} km/h`);
+  if (s.incline) parts.push(`${s.incline} %`);
+  return parts.join(" · ");
+}
 
 export default function ExerciseHistoryScreen() {
   const colors = useColors();
+  const { t, locale } = usePreferences();
   const insets = useSafeAreaInsets();
   const { exerciseId } = useLocalSearchParams<{ exerciseId: string }>();
-  const { exercises, getExerciseHistory } = useWorkout();
+  const { exerciseById, getExerciseHistory } = useWorkout();
+  const exerciseName = useExerciseName();
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 20;
+  const topPad = insets.top;
+  const bottomPad = insets.bottom + 20;
 
-  const exercise = exercises.find((e) => e.id === exerciseId);
+  const exercise = exerciseById.get(exerciseId ?? "");
+  const isCardio = exercise?.muscleGroup === "cardio";
+  const unit = isCardio ? " min" : " kg";
   const history = getExerciseHistory(exerciseId ?? "");
 
-  const chartData = useMemo(() => {
-    return history.map((h) => {
-      const maxWeight = Math.max(...h.sets.map((s) => s.weight));
-      const maxVolume = h.sets.reduce((s, set) => s + set.reps * set.weight, 0);
-      return {
-        date: new Date(h.date),
-        maxWeight,
-        maxVolume,
-        bodyWeight: h.bodyWeight,
-        sets: h.sets,
-      };
-    });
-  }, [history]);
-
-  const maxW = chartData.length > 0 ? Math.max(...chartData.map((d) => d.maxWeight)) : 0;
-  const minW = chartData.length > 0 ? Math.min(...chartData.map((d) => d.maxWeight)) : 0;
-  const range = maxW - minW || 1;
-
-  function formatDate(d: Date) {
-    return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
-  }
+  // One point per session: max load, or total duration for cardio.
+  const chartData = history.map((h) => ({
+    label: new Date(h.date).toLocaleDateString(locale, { day: "2-digit", month: "2-digit" }),
+    value: isCardio
+      ? h.sets.reduce((sum, s) => sum + (s.duration ?? 0), 0)
+      : h.sets.reduce((max, s) => Math.max(max, s.weight), 0),
+  }));
 
   function formatFull(d: Date) {
-    return d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    return d.toLocaleDateString(locale, { weekday: "short", day: "numeric", month: "short" });
   }
 
-  const pb = chartData.length > 0 ? Math.max(...chartData.map((d) => d.maxWeight)) : null;
+  const pb = chartData.length > 0 ? Math.max(...chartData.map((d) => d.value)) : null;
+  const best1rm = isCardio ? 0 : history.reduce((best, h) => Math.max(best, bestOneRepMax(h.sets)), 0);
 
   if (!exercise) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}>
-        <Text style={{ color: colors.foreground }}>Exercice introuvable</Text>
+        <Text style={{ color: colors.foreground }}>{t("exerciseHistory.notFound")}</Text>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={{ color: colors.primary, marginTop: 12 }}>Retour</Text>
+          <Text style={{ color: colors.primary, marginTop: 12 }}>{t("common.back")}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -82,104 +80,53 @@ export default function ExerciseHistoryScreen() {
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={[styles.title, { color: colors.foreground }]}>
-            {exercise.name}
+            {exerciseName(exercise)}
           </Text>
           <MuscleGroupBadge muscleGroup={exercise.muscleGroup} small />
         </View>
       </View>
 
       {pb !== null && (
-        <View style={[styles.pbCard, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "55" }]}>
-          <Feather name="award" size={20} color={colors.primary} />
-          <View>
-            <Text style={[styles.pbLabel, { color: colors.mutedForeground }]}>
-              Record personnel
-            </Text>
-            <Text style={[styles.pbValue, { color: colors.primary }]}>
-              {pb} kg
-            </Text>
+        <View style={styles.statRow}>
+          <View style={[styles.pbCard, { backgroundColor: colors.primary + "18", borderColor: colors.primary + "55" }]}>
+            <Feather name="award" size={20} color={colors.primary} />
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.pbLabel, { color: colors.mutedForeground }]}>
+                {t(isCardio ? "exerciseHistory.longest" : "exerciseHistory.pr")}
+              </Text>
+              <Text style={[styles.pbValue, { color: colors.primary }]}>
+                {pb}{unit}
+              </Text>
+            </View>
           </View>
+          {best1rm > 0 && (
+            <View style={[styles.pbCard, { backgroundColor: colors.info + "18", borderColor: colors.info + "55" }]}>
+              <Feather name="zap" size={20} color={colors.info} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.pbLabel, { color: colors.mutedForeground }]}>
+                  {t("exerciseHistory.oneRm")}
+                </Text>
+                <Text style={[styles.pbValue, { color: colors.info }]}>
+                  {best1rm} kg
+                </Text>
+              </View>
+            </View>
+          )}
         </View>
       )}
 
       {chartData.length >= 2 ? (
         <View style={[styles.chartCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Text style={[styles.chartTitle, { color: colors.foreground }]}>
-            Charge maximale (kg)
+            {t(isCardio ? "exerciseHistory.durationChart" : "exerciseHistory.maxLoad")}
           </Text>
-          <View style={styles.chart}>
-            {/* Y-axis labels */}
-            <View style={styles.yAxis}>
-              <Text style={[styles.axisLabel, { color: colors.mutedForeground }]}>{maxW}</Text>
-              <Text style={[styles.axisLabel, { color: colors.mutedForeground }]}>{Math.round((maxW + minW) / 2)}</Text>
-              <Text style={[styles.axisLabel, { color: colors.mutedForeground }]}>{minW}</Text>
-            </View>
-
-            {/* Chart area */}
-            <View style={{ flex: 1 }}>
-              <View style={[styles.chartArea, { height: CHART_H }]}>
-                {/* Grid lines */}
-                {[0, 0.5, 1].map((pct) => (
-                  <View
-                    key={pct}
-                    style={[
-                      styles.gridLine,
-                      {
-                        bottom: CHART_H * pct,
-                        borderColor: colors.border,
-                      },
-                    ]}
-                  />
-                ))}
-
-                {/* Data points and lines */}
-                {chartData.map((d, i) => {
-                  const x = (i / (chartData.length - 1)) * 100;
-                  const y = ((d.maxWeight - minW) / range) * 100;
-                  return (
-                    <View
-                      key={i}
-                      style={[
-                        styles.dataPoint,
-                        {
-                          left: `${x}%`,
-                          bottom: `${y}%`,
-                          backgroundColor: d.maxWeight === maxW ? colors.primary : colors.primary + "88",
-                          transform: [{ translateX: -5 }, { translateY: 5 }],
-                        },
-                      ]}
-                    />
-                  );
-                })}
-              </View>
-
-              {/* X-axis labels */}
-              <View style={styles.xAxis}>
-                {chartData.map((d, i) => (
-                  <Text
-                    key={i}
-                    style={[
-                      styles.axisLabel,
-                      {
-                        color: colors.mutedForeground,
-                        position: "absolute",
-                        left: `${(i / (chartData.length - 1)) * 100}%`,
-                        transform: [{ translateX: -12 }],
-                      },
-                    ]}
-                  >
-                    {formatDate(d.date)}
-                  </Text>
-                ))}
-              </View>
-            </View>
-          </View>
+          <LineChart data={chartData} color={colors.primary} unit={unit} height={180} formatValue={(v) => `${Math.round(v * 10) / 10}`} />
         </View>
       ) : chartData.length === 1 ? (
         <View style={[styles.oneDataCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <Feather name="bar-chart-2" size={24} color={colors.mutedForeground} />
           <Text style={[styles.oneDataText, { color: colors.mutedForeground }]}>
-            Fais encore des séances pour voir ta progression !
+            {t("exerciseHistory.needMore")}
           </Text>
         </View>
       ) : null}
@@ -187,23 +134,24 @@ export default function ExerciseHistoryScreen() {
       {/* History list */}
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-          Historique
+          {t("exerciseHistory.historyTitle")}
         </Text>
 
         {history.length === 0 ? (
           <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Feather name="clock" size={24} color={colors.mutedForeground} />
             <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Aucune séance avec cet exercice
+              {t("exerciseHistory.empty")}
             </Text>
           </View>
         ) : (
-          history.map((h, idx) => {
+          history.map((h) => {
             const vol = h.sets.reduce((s, set) => s + set.reps * set.weight, 0);
-            const maxKg = Math.max(...h.sets.map((s) => s.weight));
+            const maxKg = h.sets.reduce((max, s) => Math.max(max, s.weight), 0);
+            const row1rm = isCardio ? 0 : bestOneRepMax(h.sets);
             return (
               <View
-                key={idx}
+                key={h.workoutId}
                 style={[styles.historyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
               >
                 <View style={styles.historyTop}>
@@ -211,7 +159,7 @@ export default function ExerciseHistoryScreen() {
                     {formatFull(new Date(h.date))}
                   </Text>
                   <Text style={[styles.historyBw, { color: colors.mutedForeground }]}>
-                    {h.bodyWeight} kg corps
+                    {t("exerciseHistory.bodyWeightSuffix", { weight: h.bodyWeight })}
                   </Text>
                 </View>
 
@@ -219,26 +167,34 @@ export default function ExerciseHistoryScreen() {
                   {h.sets.map((s, si) => (
                     <View key={si} style={[styles.historySet, { backgroundColor: colors.muted }]}>
                       <Text style={[styles.historySetText, { color: colors.foreground }]}>
-                        {s.reps} × {s.weight} kg
+                        {isCardio ? formatCardioSet(s) : `${s.reps} × ${s.weight} kg`}
                       </Text>
                     </View>
                   ))}
                 </View>
 
-                <View style={styles.historyStats}>
+                {!isCardio && <View style={styles.historyStats}>
                   <View style={styles.historyStat}>
                     <Feather name="trending-up" size={12} color={colors.primary} />
                     <Text style={[styles.historyStatText, { color: colors.mutedForeground }]}>
-                      Max {maxKg} kg
+                      {t("exerciseHistory.max", { value: maxKg })}
                     </Text>
                   </View>
                   <View style={styles.historyStat}>
                     <Feather name="layers" size={12} color={colors.mutedForeground} />
                     <Text style={[styles.historyStatText, { color: colors.mutedForeground }]}>
-                      Volume {Math.round(vol)} kg
+                      {t("exerciseHistory.volume", { value: Math.round(vol) })}
                     </Text>
                   </View>
-                </View>
+                  {row1rm > 0 && (
+                    <View style={styles.historyStat}>
+                      <Feather name="zap" size={12} color={colors.info} />
+                      <Text style={[styles.historyStatText, { color: colors.mutedForeground }]}>
+                        {t("exerciseHistory.rowOneRm", { value: row1rm })}
+                      </Text>
+                    </View>
+                  )}
+                </View>}
               </View>
             );
           })
@@ -263,15 +219,20 @@ const styles = StyleSheet.create({
     fontFamily: "Inter_700Bold",
     marginBottom: 6,
   },
+  statRow: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 10,
+    marginBottom: 16,
+  },
   pbCard: {
-    marginHorizontal: 20,
+    flex: 1,
     borderRadius: 14,
     borderWidth: 1,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
-    gap: 14,
-    marginBottom: 16,
+    gap: 12,
   },
   pbLabel: {
     fontSize: 12,
@@ -292,43 +253,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: "Inter_600SemiBold",
     marginBottom: 14,
-  },
-  chart: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  yAxis: {
-    justifyContent: "space-between",
-    height: CHART_H,
-    paddingVertical: 2,
-    width: 36,
-    alignItems: "flex-end",
-  },
-  chartArea: {
-    flex: 1,
-    position: "relative",
-  },
-  gridLine: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    borderTopWidth: 1,
-    borderStyle: "dashed",
-  },
-  dataPoint: {
-    position: "absolute",
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  xAxis: {
-    height: 20,
-    position: "relative",
-    marginTop: 4,
-  },
-  axisLabel: {
-    fontSize: 10,
-    fontFamily: "Inter_400Regular",
   },
   oneDataCard: {
     marginHorizontal: 20,

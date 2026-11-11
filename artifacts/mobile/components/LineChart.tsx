@@ -1,7 +1,8 @@
-import React from "react";
+import React, { useId, useState } from "react";
 import { Dimensions, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Defs, Line, LinearGradient, Path, Stop, Text as SvgText } from "react-native-svg";
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
 
 export interface DataPoint {
   label: string; // x-axis label (e.g. date)
@@ -24,9 +25,13 @@ const PADDING_BOTTOM = 36;
 
 export default function LineChart({ data, color, unit = "", height = 180, formatValue, goalLine }: Props) {
   const colors = useColors();
+  const { t } = usePreferences();
+  // Unique per chart: several charts share a screen and SVG ids are global.
+  const gradientId = `fillGrad-${useId().replace(/:/g, "")}`;
   const chartColor = color ?? colors.primary;
-  const screenW = Dimensions.get("window").width - 48;
-  const W = screenW;
+  // Fit the parent's width (measured); estimate from the screen until the first layout.
+  const [measuredW, setMeasuredW] = useState<number | null>(null);
+  const W = measuredW ?? Dimensions.get("window").width - 72;
   const H = height;
 
   const innerW = W - PADDING_LEFT - PADDING_RIGHT;
@@ -36,9 +41,7 @@ export default function LineChart({ data, color, unit = "", height = 180, format
     return (
       <View style={[styles.empty, { height: H }]}>
         <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-          {data.length === 0
-            ? "Aucune donnée"
-            : "Une seule séance — continue pour voir ta progression !"}
+          {data.length === 0 ? t("chart.noData") : t("chart.onePoint")}
         </Text>
       </View>
     );
@@ -95,130 +98,132 @@ export default function LineChart({ data, color, unit = "", height = 180, format
   const peakIdx = values.indexOf(maxVal);
 
   return (
-    <Svg width={W} height={H}>
-      <Defs>
-        <LinearGradient id="fillGrad" x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0%" stopColor={chartColor} stopOpacity="0.25" />
-          <Stop offset="100%" stopColor={chartColor} stopOpacity="0.02" />
-        </LinearGradient>
-      </Defs>
+    <View onLayout={(e) => setMeasuredW(e.nativeEvent.layout.width)}>
+      <Svg width={W} height={H}>
+        <Defs>
+          <LinearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0%" stopColor={chartColor} stopOpacity="0.25" />
+            <Stop offset="100%" stopColor={chartColor} stopOpacity="0.02" />
+          </LinearGradient>
+        </Defs>
 
-      {/* Horizontal grid lines */}
-      {yTicks.map((tick, i) => (
-        <Line
-          key={i}
-          x1={PADDING_LEFT}
-          y1={getY(tick)}
-          x2={W - PADDING_RIGHT}
-          y2={getY(tick)}
-          stroke={colors.border}
-          strokeWidth={1}
-          strokeDasharray="4 4"
-        />
-      ))}
-
-      {/* Y-axis labels */}
-      {yTicks.map((tick, i) => (
-        <SvgText
-          key={i}
-          x={PADDING_LEFT - 6}
-          y={getY(tick) + 4}
-          fontSize={10}
-          fill={colors.mutedForeground}
-          textAnchor="end"
-          fontFamily="Inter_400Regular"
-        >
-          {fmt(tick)}
-        </SvgText>
-      ))}
-
-      {/* Goal line */}
-      {goalLine != null && (
-        <>
+        {/* Horizontal grid lines */}
+        {yTicks.map((tick, i) => (
           <Line
-            x1={PADDING_LEFT}
-            y1={getY(goalLine)}
-            x2={W - PADDING_RIGHT}
-            y2={getY(goalLine)}
-            stroke={chartColor}
-            strokeWidth={1.5}
-            strokeDasharray="6 4"
-            strokeOpacity={0.5}
-          />
-          <SvgText
-            x={W - PADDING_RIGHT}
-            y={getY(goalLine) - 4}
-            fontSize={9}
-            fill={chartColor}
-            textAnchor="end"
-            fontFamily="Inter_600SemiBold"
-            fillOpacity={0.7}
-          >
-            Objectif
-          </SvgText>
-        </>
-      )}
-
-      {/* Fill area */}
-      <Path d={buildFill()} fill="url(#fillGrad)" />
-
-      {/* Line */}
-      <Path
-        d={buildPath()}
-        stroke={chartColor}
-        strokeWidth={2.5}
-        fill="none"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-
-      {/* Data points */}
-      {data.map((d, i) => {
-        const isPeak = i === peakIdx;
-        return (
-          <Circle
             key={i}
-            cx={getX(i)}
-            cy={getY(d.value)}
-            r={isPeak ? 5 : 3.5}
-            fill={isPeak ? chartColor : colors.background}
-            stroke={chartColor}
-            strokeWidth={isPeak ? 0 : 2}
+            x1={PADDING_LEFT}
+            y1={getY(tick)}
+            x2={W - PADDING_RIGHT}
+            y2={getY(tick)}
+            stroke={colors.border}
+            strokeWidth={1}
+            strokeDasharray="4 4"
           />
-        );
-      })}
+        ))}
 
-      {/* Peak value tooltip */}
-      {data.length > 1 && (
-        <>
+        {/* Y-axis labels */}
+        {yTicks.map((tick, i) => (
           <SvgText
-            x={getX(peakIdx)}
-            y={getY(maxVal) - 10}
-            fontSize={11}
-            fill={chartColor}
-            textAnchor="middle"
-            fontFamily="Inter_700Bold"
+            key={i}
+            x={PADDING_LEFT - 6}
+            y={getY(tick) + 4}
+            fontSize={10}
+            fill={colors.mutedForeground}
+            textAnchor="end"
+            fontFamily="Inter_400Regular"
           >
-            {fmt(maxVal)}{unit}
+            {fmt(tick)}
           </SvgText>
-        </>
-      )}
+        ))}
 
-      {/* X-axis labels */}
-      {xLabels.map(({ label, i }) => (
-        <SvgText
-          key={i}
-          x={getX(i)}
-          y={H - 6}
-          fontSize={9.5}
-          fill={colors.mutedForeground}
-          textAnchor="middle"
-          fontFamily="Inter_400Regular"
-        >
-          {label}
-        </SvgText>
-      ))}
-    </Svg>
+        {/* Goal line */}
+        {goalLine != null && (
+          <>
+            <Line
+              x1={PADDING_LEFT}
+              y1={getY(goalLine)}
+              x2={W - PADDING_RIGHT}
+              y2={getY(goalLine)}
+              stroke={chartColor}
+              strokeWidth={1.5}
+              strokeDasharray="6 4"
+              strokeOpacity={0.5}
+            />
+            <SvgText
+              x={W - PADDING_RIGHT}
+              y={getY(goalLine) - 4}
+              fontSize={9}
+              fill={chartColor}
+              textAnchor="end"
+              fontFamily="Inter_600SemiBold"
+              fillOpacity={0.7}
+            >
+              {t("chart.goal")}
+            </SvgText>
+          </>
+        )}
+
+        {/* Fill area */}
+        <Path d={buildFill()} fill={`url(#${gradientId})`} />
+
+        {/* Line */}
+        <Path
+          d={buildPath()}
+          stroke={chartColor}
+          strokeWidth={2.5}
+          fill="none"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {/* Data points */}
+        {data.map((d, i) => {
+          const isPeak = i === peakIdx;
+          return (
+            <Circle
+              key={i}
+              cx={getX(i)}
+              cy={getY(d.value)}
+              r={isPeak ? 5 : 3.5}
+              fill={isPeak ? chartColor : colors.background}
+              stroke={chartColor}
+              strokeWidth={isPeak ? 0 : 2}
+            />
+          );
+        })}
+
+        {/* Peak value tooltip */}
+        {data.length > 1 && (
+          <>
+            <SvgText
+              x={getX(peakIdx)}
+              y={getY(maxVal) - 10}
+              fontSize={11}
+              fill={chartColor}
+              textAnchor="middle"
+              fontFamily="Inter_700Bold"
+            >
+              {fmt(maxVal)}{unit}
+            </SvgText>
+          </>
+        )}
+
+        {/* X-axis labels */}
+        {xLabels.map(({ label, i }) => (
+          <SvgText
+            key={i}
+            x={getX(i)}
+            y={H - 6}
+            fontSize={9.5}
+            fill={colors.mutedForeground}
+            textAnchor="middle"
+            fontFamily="Inter_400Regular"
+          >
+            {label}
+          </SvgText>
+        ))}
+      </Svg>
+    </View>
   );
 }
 

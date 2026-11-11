@@ -1,13 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import {
+  FlatList,
   Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -16,7 +16,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/context/PreferencesContext";
 import { useWorkout, Workout } from "@/context/WorkoutContext";
+import { buildLocalDate } from "@/utils/date";
 
 // ── Streak computation ────────────────────────────────────────────────────────
 /** Returns ISO week key "YYYY-WW" for a given Date */
@@ -44,11 +46,17 @@ function shiftWeek(key: string, delta: number): string {
   return getWeekKey(target);
 }
 
+interface WeekCell {
+  count: number;                        // sessions logged that week
+  status: "active" | "pause" | "empty"; // validated (3+) / partial (1-2) / none
+  isCurrent: boolean;                   // the in-progress week
+}
+
 interface StreakResult {
   current: number;   // qualifying weeks in current streak
   best: number;      // best streak ever
   isAlive: boolean;  // streak still going (not broken yet)
-  lastWeeks: Array<"active" | "pause" | "empty">; // last 8 weeks status
+  lastWeeks: WeekCell[]; // last 8 weeks, oldest → current
 }
 
 function computeStreak(workouts: Workout[]): StreakResult {
@@ -118,15 +126,18 @@ function computeStreak(workouts: Workout[]): StreakResult {
   }
   best = Math.max(best, current);
 
-  // Last 8 weeks status for mini calendar
-  const lastWeeks: Array<"active" | "pause" | "empty"> = [];
+  // Last 8 weeks for the mini calendar (oldest → current), with session counts
+  const lastWeeks: WeekCell[] = [];
   for (let i = 7; i >= 0; i--) {
     const k = shiftWeek(nowKey, -i);
     const count = weekCounts.get(k) || 0;
-    if (k === nowKey && count < 3) lastWeeks.push("empty"); // current week in progress
-    else if (count >= 3) lastWeeks.push("active");
-    else if (weekCounts.has(k)) lastWeeks.push("pause");
-    else lastWeeks.push("empty");
+    const isCurrent = k === nowKey;
+    let status: WeekCell["status"];
+    if (isCurrent && count < 3) status = "empty"; // current week still in progress
+    else if (count >= 3) status = "active";
+    else if (weekCounts.has(k)) status = "pause";
+    else status = "empty";
+    lastWeeks.push({ count, status, isCurrent });
   }
 
   return { current, best, isAlive, lastWeeks };
@@ -134,11 +145,12 @@ function computeStreak(workouts: Workout[]): StreakResult {
 
 export default function HomeScreen() {
   const colors = useColors();
+  const { t, locale } = usePreferences();
   const insets = useSafeAreaInsets();
   const { workouts, currentWorkout, updateWorkoutDate, deleteWorkout } = useWorkout();
 
-  const topPad = Platform.OS === "web" ? 67 : insets.top + 10;
-  const bottomPad = Platform.OS === "web" ? 34 : insets.bottom + 90;
+  const topPad = insets.top + 10;
+  const bottomPad = insets.bottom + 90;
 
   // Date edit modal state
   const [editingWorkout, setEditingWorkout] = useState<Workout | null>(null);
@@ -147,14 +159,52 @@ export default function HomeScreen() {
   const [editYear, setEditYear] = useState("");
   const [editHour, setEditHour] = useState("");
   const [editMinute, setEditMinute] = useState("");
+  const [dateError, setDateError] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const recentWorkouts = workouts;
-  const streak = useMemo(() => computeStreak(workouts), [workouts]);
+  const streak = computeStreak(workouts);
+
+  const gymTimeStats = (() => {
+    const MIN_DURATION = 10;
+
+    // Average duration of valid sessions (>= 10 min) grouped by workout name
+    const durationsByName = new Map<string, number[]>();
+    for (const w of workouts) {
+      if ((w.durationMinutes ?? 0) >= MIN_DURATION) {
+        const list = durationsByName.get(w.name) ?? [];
+        list.push(w.durationMinutes!);
+        durationsByName.set(w.name, list);
+      }
+    }
+    const avgByName = new Map<string, number>();
+    for (const [name, durations] of durationsByName) {
+      avgByName.set(name, Math.round(durations.reduce((a, b) => a + b, 0) / durations.length));
+    }
+
+    let totalMinutes = 0;
+    let validCount = 0;
+    for (const w of workouts) {
+      const dur = w.durationMinutes ?? 0;
+      if (dur >= MIN_DURATION) {
+        totalMinutes += dur;
+        validCount++;
+      } else {
+        // Replace short session with the average of same-name sessions, if available
+        const avg = avgByName.get(w.name);
+        if (avg !== undefined) {
+          totalMinutes += avg;
+          validCount++;
+        }
+      }
+    }
+
+    const avgMinutes = validCount > 0 ? Math.round(totalMinutes / validCount) : 0;
+    return { totalMinutes, avgMinutes, validCount };
+  })();
 
   function formatDate(iso: string) {
     const d = new Date(iso);
-    return d.toLocaleDateString("fr-FR", {
+    return d.toLocaleDateString(locale, {
       weekday: "short",
       day: "numeric",
       month: "short",
@@ -163,7 +213,15 @@ export default function HomeScreen() {
 
   function formatTime(iso: string) {
     const d = new Date(iso);
-    return d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return d.toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  }
+
+  function formatGymTime(minutes: number): string {
+    const h = Math.floor(minutes / 60);
+    const m = minutes % 60;
+    if (h === 0) return `${m}m`;
+    if (m === 0) return `${h}h`;
+    return `${h}h ${m}m`;
   }
 
   function getTotalSets(workout: Workout) {
@@ -183,23 +241,25 @@ export default function HomeScreen() {
     setEditYear(String(d.getFullYear()));
     setEditHour(String(d.getHours()).padStart(2, "0"));
     setEditMinute(String(d.getMinutes()).padStart(2, "0"));
+    setDateError(false);
     setEditingWorkout(workout);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }
 
   function saveEditDate() {
     if (!editingWorkout) return;
-    const day = parseInt(editDay, 10);
-    const month = parseInt(editMonth, 10) - 1;
-    const year = parseInt(editYear, 10);
-    const hour = parseInt(editHour, 10);
-    const minute = parseInt(editMinute, 10);
-    if (
-      isNaN(day) || isNaN(month) || isNaN(year) ||
-      day < 1 || day > 31 || month < 0 || month > 11 ||
-      year < 2000 || year > 2100
-    ) return;
-    const d = new Date(year, month, day, isNaN(hour) ? 12 : hour, isNaN(minute) ? 0 : minute);
+    const d = buildLocalDate(
+      parseInt(editYear, 10),
+      parseInt(editMonth, 10),
+      parseInt(editDay, 10),
+      editHour.trim() ? parseInt(editHour, 10) : 12,
+      editMinute.trim() ? parseInt(editMinute, 10) : 0,
+    );
+    if (!d) {
+      setDateError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
     updateWorkoutDate(editingWorkout.id, d.toISOString());
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setEditingWorkout(null);
@@ -219,255 +279,300 @@ export default function HomeScreen() {
         resizeMode="cover"
         blurRadius={6}
       />
-      <ScrollView
+      <FlatList
+        data={workouts}
+        keyExtractor={(w) => w.id}
         style={[styles.container, { backgroundColor: "transparent" }]}
         contentContainerStyle={{ paddingTop: topPad, paddingBottom: bottomPad }}
         showsVerticalScrollIndicator={false}
-      >
-
-        {currentWorkout ? (
-          <TouchableOpacity
-            style={[styles.activeCard, { backgroundColor: colors.primary + "22", borderColor: colors.primary }]}
-            onPress={() => router.push("/workout")}
-            activeOpacity={0.8}
-          >
-            <View style={styles.activeCardLeft}>
-              <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
-              <View>
-                <Text style={[styles.activeTitle, { color: colors.primary }]}>
-                  {currentWorkout.name}
-                </Text>
-                <Text style={[styles.activeSubtitle, { color: colors.mutedForeground }]}>
-                  {currentWorkout.exercises.length} exercice{currentWorkout.exercises.length !== 1 ? "s" : ""} · {currentWorkout.bodyWeight} kg corps
-                </Text>
-              </View>
-            </View>
-            <Feather name="chevron-right" size={20} color={colors.primary} />
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.startBtn, { backgroundColor: colors.primary }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              router.push("/start-workout");
-            }}
-            activeOpacity={0.85}
-          >
-            <Feather name="play" size={20} color={colors.primaryForeground} />
-            <Text style={[styles.startBtnText, { color: colors.primaryForeground }]}>
-              Nouvelle séance
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {/* Streak card */}
-        {workouts.length > 0 && (
-          <View style={[
-            styles.streakCard,
-            {
-              backgroundColor: streak.current > 0 && streak.isAlive
-                ? colors.primary + "15"
-                : colors.card,
-              borderColor: streak.current > 0 && streak.isAlive
-                ? colors.primary
-                : colors.border,
-            },
-          ]}>
-            <View style={styles.streakTop}>
-              <View style={styles.streakLeft}>
-                <View style={[styles.streakIconCircle, { backgroundColor: streak.current > 0 && streak.isAlive ? colors.primary + "25" : colors.muted }]}>
-                  <Feather name="zap" size={18} color={streak.current > 0 && streak.isAlive ? colors.primary : colors.mutedForeground} />
-                </View>
-                <View>
-                  <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>Série en cours</Text>
-                  <View style={styles.streakCountRow}>
-                    <Text style={[styles.streakCount, { color: streak.current > 0 && streak.isAlive ? colors.primary : colors.foreground }]}>
-                      {streak.current}
+        ListHeaderComponent={
+          <>
+            {currentWorkout ? (
+              <TouchableOpacity
+                style={[styles.activeCard, { backgroundColor: colors.primary + "22", borderColor: colors.primary }]}
+                onPress={() => router.push("/workout")}
+                activeOpacity={0.8}
+              >
+                <View style={styles.activeCardLeft}>
+                  <View style={[styles.activeDot, { backgroundColor: colors.primary }]} />
+                  <View>
+                    <Text style={[styles.activeTitle, { color: colors.primary }]}>
+                      {currentWorkout.name}
                     </Text>
-                    <Text style={[styles.streakUnit, { color: colors.mutedForeground }]}>
-                      semaine{streak.current !== 1 ? "s" : ""}
+                    <Text style={[styles.activeSubtitle, { color: colors.mutedForeground }]}>
+                      {t("home.activeSubtitle", { exercises: t("common.exercisesCount", { count: currentWorkout.exercises.length }), weight: currentWorkout.bodyWeight })}
                     </Text>
                   </View>
                 </View>
-              </View>
-              <View style={styles.streakRight}>
-                <Text style={[styles.streakBestLabel, { color: colors.mutedForeground }]}>Meilleure</Text>
-                <Text style={[styles.streakBest, { color: colors.foreground }]}>
-                  {streak.best} sem.
+                <Feather name="chevron-right" size={20} color={colors.primary} />
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[styles.startBtn, { backgroundColor: colors.primary }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                  router.push("/start-workout");
+                }}
+                activeOpacity={0.85}
+              >
+                <Feather name="play" size={20} color={colors.primaryForeground} />
+                <Text style={[styles.startBtnText, { color: colors.primaryForeground }]}>
+                  {t("home.newSession")}
                 </Text>
-              </View>
-            </View>
-
-            {/* Mini week calendar */}
-            {streak.lastWeeks.length > 0 && (
-              <View style={styles.weeksRow}>
-                {streak.lastWeeks.map((status, i) => (
-                  <View key={i} style={styles.weekDot}>
-                    <View style={[
-                      styles.weekDotCircle,
-                      {
-                        backgroundColor:
-                          status === "active" ? colors.primary :
-                          status === "pause" ? colors.primary + "44" :
-                          colors.muted,
-                      },
-                    ]} />
-                    {i === streak.lastWeeks.length - 1 && (
-                      <Text style={[styles.weekDotLabel, { color: colors.mutedForeground }]}>S.</Text>
-                    )}
-                  </View>
-                ))}
-              </View>
+              </TouchableOpacity>
             )}
 
-            <Text style={[styles.streakHint, { color: colors.mutedForeground }]}>
-              {streak.current === 0
-                ? "Fais 3 séances cette semaine pour démarrer une série"
-                : streak.isAlive
-                ? "Minimum 3 séances/semaine · 1 pause autorisée"
-                : "Série terminée — recommence cette semaine !"}
-            </Text>
-          </View>
-        )}
-
-        {/* Stats row */}
-        {workouts.length > 0 && (
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.foreground }]}>
-                {workouts.length}
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Séances
-              </Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.foreground }]}>
-                {Math.round(workouts.reduce((s, w) => s + getTotalVolume(w), 0) / 1000)}t
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Volume total
-              </Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <Text style={[styles.statValue, { color: colors.foreground }]}>
-                {workouts[0]?.bodyWeight ?? "—"} kg
-              </Text>
-              <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
-                Dernier poids
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Workout history */}
-        {recentWorkouts.length > 0 && (
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
-              Séances récentes
-            </Text>
-            {recentWorkouts.map((workout) => (
-              <View
-                key={workout.id}
-                style={[styles.workoutCard, { backgroundColor: colors.card, borderColor: colors.border }]}
-              >
-                <View style={styles.workoutCardTop}>
-                  <View style={styles.workoutCardLeft}>
-                    <Text style={[styles.workoutName, { color: colors.foreground }]}>
-                      {workout.name || formatDate(workout.date)}
-                    </Text>
-                    <Text style={[styles.workoutTime, { color: colors.mutedForeground }]}>
-                      {formatDate(workout.date)} · {formatTime(workout.date)}
-                      {workout.durationMinutes ? ` · ${workout.durationMinutes} min` : ""}
-                    </Text>
+            {/* Streak card */}
+            {workouts.length > 0 && (
+              <View style={[
+                styles.streakCard,
+                {
+                  backgroundColor: streak.current > 0 && streak.isAlive
+                    ? colors.primary + "15"
+                    : colors.card,
+                  borderColor: streak.current > 0 && streak.isAlive
+                    ? colors.primary
+                    : colors.border,
+                },
+              ]}>
+                <View style={styles.streakTop}>
+                  <View style={styles.streakLeft}>
+                    <View style={[styles.streakIconCircle, { backgroundColor: streak.current > 0 && streak.isAlive ? colors.primary + "25" : colors.muted }]}>
+                      <Feather name="zap" size={18} color={streak.current > 0 && streak.isAlive ? colors.primary : colors.mutedForeground} />
+                    </View>
+                    <View>
+                      <Text style={[styles.streakLabel, { color: colors.mutedForeground }]}>{t("home.streak.current")}</Text>
+                      <View style={styles.streakCountRow}>
+                        <Text style={[styles.streakCount, { color: streak.current > 0 && streak.isAlive ? colors.primary : colors.foreground }]}>
+                          {streak.current}
+                        </Text>
+                        <Text style={[styles.streakUnit, { color: colors.mutedForeground }]}>
+                          {t("home.streak.weekUnit", { count: streak.current })}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.workoutCardActions}>
-                    <Text style={[styles.bodyWeightBadge, { color: colors.primary, backgroundColor: colors.primary + "15" }]}>
-                      {workout.bodyWeight} kg
+                  <View style={styles.streakRight}>
+                    <Text style={[styles.streakBestLabel, { color: colors.mutedForeground }]}>{t("home.streak.best")}</Text>
+                    <Text style={[styles.streakBest, { color: colors.foreground }]}>
+                      {t("home.streak.bestValue", { count: streak.best })}
                     </Text>
-                    <TouchableOpacity
-                      onPress={() => router.push({ pathname: "/edit-workout", params: { workoutId: workout.id } })}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[styles.iconBtn, { borderColor: colors.border }]}
-                    >
-                      <Feather name="edit-2" size={14} color={colors.mutedForeground} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => openEditDate(workout)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[styles.iconBtn, { borderColor: colors.border }]}
-                    >
-                      <Feather name="calendar" size={14} color={colors.mutedForeground} />
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={() => setConfirmDelete(workout.id)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[styles.iconBtn, { borderColor: colors.border }]}
-                    >
-                      <Feather name="trash-2" size={14} color={colors.destructive} />
-                    </TouchableOpacity>
                   </View>
                 </View>
 
-                {confirmDelete === workout.id ? (
-                  <View style={styles.deleteConfirmRow}>
-                    <Text style={[styles.deleteConfirmText, { color: colors.foreground }]}>
-                      Supprimer cette séance ?
+                {/* Mini week calendar — sessions per week over the last 8 weeks */}
+                {streak.lastWeeks.length > 0 && (
+                  <View style={styles.weeksSection}>
+                    <Text style={[styles.weeksHeading, { color: colors.mutedForeground }]}>
+                      {t("home.streak.last8weeks")}
                     </Text>
-                    <View style={styles.deleteConfirmBtns}>
-                      <TouchableOpacity
-                        onPress={() => setConfirmDelete(null)}
-                        style={[styles.deleteCancelBtn, { borderColor: colors.border }]}
-                      >
-                        <Text style={[styles.deleteCancelText, { color: colors.foreground }]}>Annuler</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => handleDelete(workout.id)}
-                        style={[styles.deleteOkBtn, { backgroundColor: colors.destructive }]}
-                      >
-                        <Text style={styles.deleteOkText}>Supprimer</Text>
-                      </TouchableOpacity>
+                    <View style={styles.weeksRow}>
+                      {streak.lastWeeks.map((w, i) => {
+                        const bg =
+                          w.status === "active" ? colors.primary :
+                          w.status === "pause" ? colors.primary + "33" :
+                          colors.muted;
+                        const fg =
+                          w.status === "active" ? colors.primaryForeground :
+                          w.status === "pause" ? colors.foreground :
+                          colors.mutedForeground;
+                        return (
+                          <View
+                            key={i}
+                            style={[
+                              styles.weekCell,
+                              { backgroundColor: bg },
+                              w.isCurrent && { borderWidth: 1.5, borderColor: colors.primary },
+                            ]}
+                          >
+                            <Text style={[styles.weekCellCount, { color: fg }]}>{w.count}</Text>
+                          </View>
+                        );
+                      })}
                     </View>
-                  </View>
-                ) : (
-                  <View style={styles.workoutStats}>
-                    <View style={styles.workoutStat}>
-                      <Feather name="layers" size={12} color={colors.mutedForeground} />
-                      <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
-                        {workout.exercises.length} exercices
-                      </Text>
-                    </View>
-                    <View style={styles.workoutStat}>
-                      <Feather name="repeat" size={12} color={colors.mutedForeground} />
-                      <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
-                        {getTotalSets(workout)} séries
-                      </Text>
-                    </View>
-                    <View style={styles.workoutStat}>
-                      <Feather name="trending-up" size={12} color={colors.mutedForeground} />
-                      <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
-                        {Math.round(getTotalVolume(workout))} kg vol.
-                      </Text>
+                    <View style={styles.legendRow}>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.primary }]} />
+                        <Text style={[styles.legendText, { color: colors.mutedForeground }]}>{t("home.streak.legendValidated")}</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.primary + "33" }]} />
+                        <Text style={[styles.legendText, { color: colors.mutedForeground }]}>{t("home.streak.legendPartial")}</Text>
+                      </View>
+                      <View style={styles.legendItem}>
+                        <View style={[styles.legendDot, { backgroundColor: colors.muted }]} />
+                        <Text style={[styles.legendText, { color: colors.mutedForeground }]}>{t("home.streak.legendNone")}</Text>
+                      </View>
                     </View>
                   </View>
                 )}
-              </View>
-            ))}
-          </View>
-        )}
 
-        {workouts.length === 0 && !currentWorkout && (
-          <View style={styles.empty}>
-            <Feather name="activity" size={48} color={colors.mutedForeground} />
-            <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
-              Prêt à s'entrainer ?
-            </Text>
-            <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
-              Lance ta première séance pour commencer à suivre tes progrès
-            </Text>
+                <Text style={[styles.streakHint, { color: colors.mutedForeground }]}>
+                  {streak.current === 0
+                    ? t("home.streak.hintStart")
+                    : streak.isAlive
+                    ? t("home.streak.hintAlive")
+                    : t("home.streak.hintOver")}
+                </Text>
+              </View>
+            )}
+
+            {/* Stats row */}
+            {workouts.length > 0 && (
+              <View style={styles.statsRow}>
+                <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>
+                    {workouts.length}
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                    {t("home.stat.sessions")}
+                  </Text>
+                </View>
+                <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>
+                    {Math.round(workouts.reduce((s, w) => s + getTotalVolume(w), 0) / 1000)}t
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                    {t("home.stat.totalVolume")}
+                  </Text>
+                </View>
+                <View style={[styles.statCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                  <Text style={[styles.statValue, { color: colors.foreground }]}>
+                    {workouts[0]?.bodyWeight ?? "—"} kg
+                  </Text>
+                  <Text style={[styles.statLabel, { color: colors.mutedForeground }]}>
+                    {t("home.stat.lastWeight")}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Gym time card */}
+            {gymTimeStats.validCount > 0 && (
+              <View style={[styles.gymTimeCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <View style={[styles.gymTimeIconCircle, { backgroundColor: colors.primary + "20" }]}>
+                  <Feather name="clock" size={18} color={colors.primary} />
+                </View>
+                <View style={styles.gymTimeTexts}>
+                  <Text style={[styles.gymTimeValue, { color: colors.foreground }]}>
+                    {formatGymTime(gymTimeStats.totalMinutes)}
+                  </Text>
+                  <Text style={[styles.gymTimeLabel, { color: colors.mutedForeground }]}>
+                    {t("home.gymTime", { avg: formatGymTime(gymTimeStats.avgMinutes) })}
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {workouts.length > 0 && (
+              <Text style={[styles.sectionTitle, styles.section, { color: colors.foreground }]}>
+                {t("home.recentSessions")}
+              </Text>
+            )}
+          </>
+        }
+        ListEmptyComponent={
+          currentWorkout ? null : (
+            <View style={styles.empty}>
+              <Feather name="activity" size={48} color={colors.mutedForeground} />
+              <Text style={[styles.emptyTitle, { color: colors.foreground }]}>
+                {t("home.empty.title")}
+              </Text>
+              <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>
+                {t("home.empty.text")}
+              </Text>
+            </View>
+          )
+        }
+        renderItem={({ item: workout }) => (
+          <View style={styles.section}>
+            <View
+              style={[styles.workoutCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+            >
+              <View style={styles.workoutCardTop}>
+                <View style={styles.workoutCardLeft}>
+                  <Text style={[styles.workoutName, { color: colors.foreground }]}>
+                    {workout.name || formatDate(workout.date)}
+                  </Text>
+                  <Text style={[styles.workoutTime, { color: colors.mutedForeground }]}>
+                    {formatDate(workout.date)} · {formatTime(workout.date)}
+                    {workout.durationMinutes ? ` · ${t("home.minutes", { count: workout.durationMinutes })}` : ""}
+                  </Text>
+                </View>
+                <View style={styles.workoutCardActions}>
+                  <Text style={[styles.bodyWeightBadge, { color: colors.primary, backgroundColor: colors.primary + "15" }]}>
+                    {workout.bodyWeight} kg
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => router.push({ pathname: "/edit-workout", params: { workoutId: workout.id } })}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[styles.iconBtn, { borderColor: colors.border }]}
+                  >
+                    <Feather name="edit-2" size={14} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => openEditDate(workout)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[styles.iconBtn, { borderColor: colors.border }]}
+                  >
+                    <Feather name="calendar" size={14} color={colors.mutedForeground} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setConfirmDelete(workout.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={[styles.iconBtn, { borderColor: colors.border }]}
+                  >
+                    <Feather name="trash-2" size={14} color={colors.destructive} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+
+              {confirmDelete === workout.id ? (
+                <View style={styles.deleteConfirmRow}>
+                  <Text style={[styles.deleteConfirmText, { color: colors.foreground }]}>
+                    {t("home.deleteConfirm")}
+                  </Text>
+                  <View style={styles.deleteConfirmBtns}>
+                    <TouchableOpacity
+                      onPress={() => setConfirmDelete(null)}
+                      style={[styles.deleteCancelBtn, { borderColor: colors.border }]}
+                    >
+                      <Text style={[styles.deleteCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => handleDelete(workout.id)}
+                      style={[styles.deleteOkBtn, { backgroundColor: colors.destructive }]}
+                    >
+                      <Text style={styles.deleteOkText}>{t("common.delete")}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <View style={styles.workoutStats}>
+                  <View style={styles.workoutStat}>
+                    <Feather name="layers" size={12} color={colors.mutedForeground} />
+                    <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
+                      {t("common.exercisesCount", { count: workout.exercises.length })}
+                    </Text>
+                  </View>
+                  <View style={styles.workoutStat}>
+                    <Feather name="repeat" size={12} color={colors.mutedForeground} />
+                    <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
+                      {t("common.setsCount", { count: getTotalSets(workout) })}
+                    </Text>
+                  </View>
+                  <View style={styles.workoutStat}>
+                    <Feather name="trending-up" size={12} color={colors.mutedForeground} />
+                    <Text style={[styles.workoutStatText, { color: colors.mutedForeground }]}>
+                      {t("home.volumeShort", { value: Math.round(getTotalVolume(workout)) })}
+                    </Text>
+                  </View>
+                </View>
+              )}
+            </View>
           </View>
         )}
-      </ScrollView>
+      />
 
       {/* Date edit modal */}
       <Modal
@@ -487,7 +592,7 @@ export default function HomeScreen() {
           />
           <View style={[styles.modalBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.modalTitle, { color: colors.foreground }]}>
-              Modifier la date
+              {t("home.editDate")}
             </Text>
             <Text style={[styles.modalSubtitle, { color: colors.mutedForeground }]}>
               {editingWorkout?.name}
@@ -495,42 +600,42 @@ export default function HomeScreen() {
 
             <View style={styles.dateRow}>
               <View style={styles.dateField}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>Jour</Text>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{t("home.date.day")}</Text>
                 <TextInput
                   style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
                   value={editDay}
                   onChangeText={setEditDay}
                   keyboardType="number-pad"
                   maxLength={2}
-                  placeholder="JJ"
+                  placeholder={t("date.day")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                 />
               </View>
               <Text style={[styles.dateSep, { color: colors.mutedForeground }]}>/</Text>
               <View style={styles.dateField}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>Mois</Text>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{t("home.date.month")}</Text>
                 <TextInput
                   style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
                   value={editMonth}
                   onChangeText={setEditMonth}
                   keyboardType="number-pad"
                   maxLength={2}
-                  placeholder="MM"
+                  placeholder={t("date.month")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                 />
               </View>
               <Text style={[styles.dateSep, { color: colors.mutedForeground }]}>/</Text>
               <View style={[styles.dateField, { flex: 2 }]}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>Année</Text>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{t("home.date.year")}</Text>
                 <TextInput
                   style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
                   value={editYear}
                   onChangeText={setEditYear}
                   keyboardType="number-pad"
                   maxLength={4}
-                  placeholder="AAAA"
+                  placeholder={t("date.year")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                 />
@@ -539,47 +644,51 @@ export default function HomeScreen() {
 
             <View style={styles.timeRow}>
               <View style={styles.dateField}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>Heure</Text>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{t("home.date.hour")}</Text>
                 <TextInput
                   style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
                   value={editHour}
                   onChangeText={setEditHour}
                   keyboardType="number-pad"
                   maxLength={2}
-                  placeholder="HH"
+                  placeholder={t("date.hh")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                 />
               </View>
               <Text style={[styles.dateSep, { color: colors.mutedForeground }]}>:</Text>
               <View style={styles.dateField}>
-                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>Min</Text>
+                <Text style={[styles.dateLabel, { color: colors.mutedForeground }]}>{t("home.date.minute")}</Text>
                 <TextInput
                   style={[styles.dateInput, { color: colors.foreground, backgroundColor: colors.background, borderColor: colors.border }]}
                   value={editMinute}
                   onChangeText={setEditMinute}
                   keyboardType="number-pad"
                   maxLength={2}
-                  placeholder="MM"
+                  placeholder={t("date.mm")}
                   placeholderTextColor={colors.mutedForeground}
                   selectTextOnFocus
                 />
               </View>
             </View>
 
+            {dateError && (
+              <Text style={[styles.dateError, { color: colors.destructive }]}>{t("date.invalid")}</Text>
+            )}
+
             <View style={styles.modalBtns}>
               <TouchableOpacity
                 style={[styles.modalCancel, { borderColor: colors.border }]}
                 onPress={() => setEditingWorkout(null)}
               >
-                <Text style={[styles.modalCancelText, { color: colors.foreground }]}>Annuler</Text>
+                <Text style={[styles.modalCancelText, { color: colors.foreground }]}>{t("common.cancel")}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.modalSave, { backgroundColor: colors.primary }]}
                 onPress={saveEditDate}
               >
                 <Feather name="check" size={16} color={colors.primaryForeground} />
-                <Text style={[styles.modalSaveText, { color: colors.primaryForeground }]}>Enregistrer</Text>
+                <Text style={[styles.modalSaveText, { color: colors.primaryForeground }]}>{t("common.save")}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -616,13 +725,25 @@ const styles = StyleSheet.create({
     gap: 10, marginBottom: 24,
   },
   startBtnText: { fontSize: 17, fontFamily: "Inter_700Bold" },
-  statsRow: { flexDirection: "row", paddingHorizontal: 20, gap: 10, marginBottom: 28 },
+  statsRow: { flexDirection: "row", paddingHorizontal: 20, gap: 10, marginBottom: 10 },
   statCard: {
     flex: 1, borderRadius: 12, borderWidth: 1,
     padding: 14, alignItems: "center", gap: 4,
   },
   statValue: { fontSize: 18, fontFamily: "Inter_700Bold" },
   statLabel: { fontSize: 10, fontFamily: "Inter_400Regular", textAlign: "center" },
+  gymTimeCard: {
+    marginHorizontal: 20, borderRadius: 12, borderWidth: 1,
+    padding: 14, flexDirection: "row", alignItems: "center",
+    gap: 12, marginBottom: 28,
+  },
+  gymTimeIconCircle: {
+    width: 40, height: 40, borderRadius: 20,
+    alignItems: "center", justifyContent: "center",
+  },
+  gymTimeTexts: { flex: 1 },
+  gymTimeValue: { fontSize: 22, fontFamily: "Inter_700Bold" },
+  gymTimeLabel: { fontSize: 11, fontFamily: "Inter_400Regular", marginTop: 2 },
   section: { paddingHorizontal: 20 },
   sectionTitle: { fontSize: 18, fontFamily: "Inter_700Bold", marginBottom: 14 },
   workoutCard: { borderRadius: 12, borderWidth: 1, padding: 14, marginBottom: 10 },
@@ -678,10 +799,15 @@ const styles = StyleSheet.create({
   streakRight: { alignItems: "flex-end" },
   streakBestLabel: { fontSize: 10, fontFamily: "Inter_400Regular", marginBottom: 2 },
   streakBest: { fontSize: 16, fontFamily: "Inter_700Bold" },
-  weeksRow: { flexDirection: "row", gap: 6, alignItems: "center" },
-  weekDot: { alignItems: "center", gap: 3 },
-  weekDotCircle: { width: 10, height: 10, borderRadius: 5 },
-  weekDotLabel: { fontSize: 9, fontFamily: "Inter_400Regular" },
+  weeksSection: { gap: 8 },
+  weeksHeading: { fontSize: 10, fontFamily: "Inter_500Medium" },
+  weeksRow: { flexDirection: "row", gap: 5 },
+  weekCell: { flex: 1, height: 34, borderRadius: 8, alignItems: "center", justifyContent: "center" },
+  weekCellCount: { fontSize: 13, fontFamily: "Inter_700Bold" },
+  legendRow: { flexDirection: "row", gap: 14, flexWrap: "wrap", marginTop: 1 },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  legendDot: { width: 9, height: 9, borderRadius: 3 },
+  legendText: { fontSize: 10, fontFamily: "Inter_400Regular" },
   streakHint: { fontSize: 11, fontFamily: "Inter_400Regular" },
   // Modal
   modalOverlay: {
@@ -707,6 +833,7 @@ const styles = StyleSheet.create({
     fontSize: 20, fontFamily: "Inter_600SemiBold",
     paddingBottom: 10,
   },
+  dateError: { fontSize: 13, fontFamily: "Inter_500Medium", marginTop: -4 },
   modalBtns: { flexDirection: "row", gap: 10, marginTop: 4 },
   modalCancel: {
     flex: 1, paddingVertical: 13, borderRadius: 12, borderWidth: 1,
