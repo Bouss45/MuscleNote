@@ -2,6 +2,8 @@ package com.musclenote.android.data
 
 import com.musclenote.android.data.backup.BackupData
 import com.musclenote.android.data.backup.BackupWriter
+import com.musclenote.android.data.nutrition.ReminderRef
+import com.musclenote.android.data.nutrition.SupplementReminders
 import com.musclenote.android.data.repository.NutritionRepository
 import com.musclenote.android.data.repository.PreferencesRepository
 import com.musclenote.android.data.repository.RestTimerEffects
@@ -9,6 +11,7 @@ import com.musclenote.android.data.repository.RestTimerRepository
 import com.musclenote.android.data.repository.WorkoutRepository
 import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.data.storage.StorageMeta
+import com.musclenote.android.data.util.CurrentDay
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.workout.WorkoutEnd
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,6 +35,7 @@ class AppContainer(
     val time: TimeSource = TimeSource.System,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     restTimerEffects: RestTimerEffects = RestTimerEffects.None,
+    private val supplementReminders: SupplementReminders = SupplementReminders.None,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -39,13 +43,18 @@ class AppContainer(
     private val files = DataFiles(dataDir, appScope, ioDispatcher)
 
     val workouts = WorkoutRepository(files.workouts, files.exercises, files.currentWorkout, time)
-    val nutrition = NutritionRepository(files.bodyWeights, files.supplements, files.supplementsTaken, files.dailyTracker, time)
+    val nutrition = NutritionRepository(files.bodyWeights, files.supplements, files.supplementsTaken, files.dailyTracker, time, supplementReminders)
+
+    /** Jour local courant (§ 3.12) : minuit, retour au premier plan, changement de fuseau. */
+    val currentDay = CurrentDay(time, appScope)
     val preferences = PreferencesRepository(files.preferences, files.localPreferences)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
 
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
         loadAll()
+        // Resynchronisation complète des rappels au démarrage (§ 7.3).
+        supplementReminders.sync(emptyList()) { nutrition.supplements.value }
     }
 
     /** Attend la fin du chargement initial : rien ne doit être exporté ou importé avant. */
@@ -66,6 +75,7 @@ class AppContainer(
      * une séance finalisée ou abandonnée arrête le repos en cours.
      */
     fun onAppForeground() {
+        currentDay.refresh()
         appScope.launch {
             awaitReady()
             if (workouts.finalizeStaleSession() != null) restTimer.stop()
@@ -88,6 +98,22 @@ class AppContainer(
         restTimer.finish(endsAt, inForeground)
     }
 
+    /**
+     * Resynchronisation complète des rappels (§ 7.3) : redémarrage du téléphone, mise à jour de
+     * l'app, changement d'heure ou de fuseau, droit aux alarmes exactes. Le jour courant est relu.
+     */
+    suspend fun resyncReminders() {
+        awaitReady()
+        currentDay.refresh()
+        supplementReminders.sync(emptyList()) { nutrition.supplements.value }
+    }
+
+    /** Sonnerie d'un rappel de complément (récepteur, § 7.3). */
+    suspend fun onSupplementReminderAlarm(ref: ReminderRef) {
+        awaitReady()
+        supplementReminders.onAlarm(ref) { nutrition.supplements.value }
+    }
+
     /** « Passer » depuis la notification en cours (§ 7.2). */
     suspend fun skipRest() {
         awaitReady()
@@ -105,10 +131,13 @@ class AppContainer(
      */
     suspend fun importBackup(data: BackupData) {
         awaitReady()
+        val previousSupplements = nutrition.supplements.value
         workouts.replaceFromBackup(data.workouts, data.exercises)
         nutrition.replaceFromBackup(data.bodyWeights, data.supplements, data.supplementsTaken, data.dailyTracker)
         preferences.replaceFromBackup(data.preferences)
         loadAll()
+        // § 7.3 : les rappels qui existaient avant et n'existent plus sont annulés d'abord.
+        supplementReminders.sync(previousSupplements) { nutrition.supplements.value }
     }
 
     /** Export JSON v2 de l'état courant (§ 5.2) ; la séance en cours n'en fait pas partie. */
