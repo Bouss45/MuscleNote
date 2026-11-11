@@ -76,6 +76,11 @@
     <string name="settings_import_invalid_format">Format invalide</string>
     <string name="settings_import_invalid_key">contenu invalide pour %1$s</string>
     <string name="settings_share_json">Exporter mes données MuscleNote</string>
+    <string name="settings_export_csv_title">Exporter en CSV</string>
+    <string name="settings_export_csv_desc">Génère des fichiers CSV (séances, séries, poids, nutrition) lisibles dans Excel ou Sheets</string>
+    <string name="settings_export_success_csv">Fichiers CSV exportés !</string>
+    <string name="settings_export_no_data">Aucune donnée à exporter.</string>
+    <string name="settings_share_csv">Exporter en CSV</string>
     <string name="settings_import_newer_version">Ce fichier vient d\'une version plus récente de MuscleNote</string>
     <string name="settings_info">Le fichier exporté contient toutes tes séances, tes exercices personnalisés et l\'historique de poids de corps. Garde-le en lieu sûr.</string>
 
@@ -362,4 +367,25 @@
     <string name="nutrition_taken_no">Non pris aujourd\'hui</string>
     <string name="nutrition_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="nutrition_info_mobile">Les rappels sont des notifications locales. L\'app doit avoir la permission d\'envoyer des notifications.</string>
+
+    <!-- En-têtes de l'export CSV (§ 8) -->
+    <string name="excel_col_date">Date</string>
+    <string name="excel_col_time">Heure</string>
+    <string name="excel_col_session_name">Nom de la séance</string>
+    <string name="excel_col_session">Séance</string>
+    <string name="excel_col_duration">Durée (min)</string>
+    <string name="excel_col_body_weight">Poids de corps (kg)</string>
+    <string name="excel_col_exercises">Exercices</string>
+    <string name="excel_col_total_sets">Séries totales</string>
+    <string name="excel_col_total_volume">Volume total (kg)</string>
+    <string name="excel_col_exercise">Exercice</string>
+    <string name="excel_col_muscle_group">Groupe musculaire</string>
+    <string name="excel_col_set_number">Série n°</string>
+    <string name="excel_col_distance">Distance (km)</string>
+    <string name="excel_col_speed">Vitesse (km/h)</string>
+    <string name="excel_col_incline">Inclinaison (%)</string>
+    <string name="excel_col_reps">Répétitions</string>
+    <string name="excel_col_weight">Poids (kg)</string>
+    <string name="excel_col_calories">Calories (kcal)</string>
+    <string name="excel_col_water">Eau (ml)</string>
 </resources>

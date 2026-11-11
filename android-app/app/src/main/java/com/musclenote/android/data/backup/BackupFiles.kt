@@ -3,11 +3,12 @@ package com.musclenote.android.data.backup
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
+import com.musclenote.android.data.export.CsvFile
 import java.io.File
 import java.io.IOException
 import java.time.LocalDate
 
-/** Fichiers échangés avec les autres apps lors d'un export ou d'un import (SPEC § 5.4, § 5.6). */
+/** Fichiers échangés avec les autres apps lors d'un export ou d'un import (SPEC § 5.4, § 5.6, § 8). */
 object BackupFiles {
 
     /** Au-delà, le fichier n'est pas une sauvegarde MuscleNote (quelques Mo au plus). */
@@ -24,6 +25,22 @@ object BackupFiles {
         val file = File(dir, "musclenote_backup_$today.json")
         file.writeText(json, Charsets.UTF_8)
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+    }
+
+    /**
+     * Écrit les fichiers de l'export CSV (§ 8) dans `cacheDir/exports/`, en UTF-8 (le BOM est en
+     * tête du contenu), et renvoie leurs URI `FileProvider`, à partager ensemble. Les exports
+     * précédents sont effacés.
+     */
+    fun writeCsvExport(context: Context, files: List<CsvFile>): List<Uri> {
+        val dir = File(context.cacheDir, "exports")
+        dir.deleteRecursively()
+        if (!dir.mkdirs()) throw IOException("Impossible de créer ${dir.name}")
+        return files.map { csv ->
+            val file = File(dir, csv.name)
+            file.writeText(csv.content, Charsets.UTF_8)
+            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        }
     }
 
     /** Lit un fichier choisi ou partagé, en UTF-8. */

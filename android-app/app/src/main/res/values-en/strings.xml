@@ -75,6 +75,11 @@
     <string name="settings_import_invalid_format">Invalid format</string>
     <string name="settings_import_invalid_key">invalid content for %1$s</string>
     <string name="settings_share_json">Export my MuscleNote data</string>
+    <string name="settings_export_csv_title">Export as CSV</string>
+    <string name="settings_export_csv_desc">Creates CSV files (sessions, sets, weight, nutrition) for Excel or Sheets</string>
+    <string name="settings_export_success_csv">CSV files exported!</string>
+    <string name="settings_export_no_data">No data to export.</string>
+    <string name="settings_share_csv">Export as CSV</string>
     <string name="settings_import_newer_version">This file comes from a newer version of MuscleNote</string>
     <string name="settings_info">The exported file contains all your workouts, custom exercises, and body weight history. Keep it safe.</string>
 
@@ -360,4 +365,25 @@
     <string name="nutrition_taken_no">Not taken today</string>
     <string name="nutrition_delete_confirm">Delete “%1$s”?</string>
     <string name="nutrition_info_mobile">Reminders are local notifications. The app needs permission to send notifications.</string>
+
+    <!-- CSV export headers (§ 8) -->
+    <string name="excel_col_date">Date</string>
+    <string name="excel_col_time">Time</string>
+    <string name="excel_col_session_name">Session name</string>
+    <string name="excel_col_session">Session</string>
+    <string name="excel_col_duration">Duration (min)</string>
+    <string name="excel_col_body_weight">Body weight (kg)</string>
+    <string name="excel_col_exercises">Exercises</string>
+    <string name="excel_col_total_sets">Total sets</string>
+    <string name="excel_col_total_volume">Total volume (kg)</string>
+    <string name="excel_col_exercise">Exercise</string>
+    <string name="excel_col_muscle_group">Muscle group</string>
+    <string name="excel_col_set_number">Set #</string>
+    <string name="excel_col_distance">Distance (km)</string>
+    <string name="excel_col_speed">Speed (km/h)</string>
+    <string name="excel_col_incline">Incline (%)</string>
+    <string name="excel_col_reps">Reps</string>
+    <string name="excel_col_weight">Weight (kg)</string>
+    <string name="excel_col_calories">Calories (kcal)</string>
+    <string name="excel_col_water">Water (ml)</string>
 </resources>

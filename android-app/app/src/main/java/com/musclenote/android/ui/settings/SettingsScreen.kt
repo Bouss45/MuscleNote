@@ -74,7 +74,8 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
     val haptics = rememberHaptics()
     val colors = MuscleNoteTheme.colors
 
-    val chooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_json))
+    val jsonChooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_json))
+    val csvChooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_csv))
     val shareLauncher = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) {
         backupViewModel.onShareSheetClosed()
     }
@@ -82,9 +83,14 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
         if (uri != null) backupViewModel.onFileReceived(uri)
     }
     LaunchedEffect(backupViewModel) {
-        backupViewModel.shareRequests.collect { uri ->
+        backupViewModel.shareRequests.collect { request ->
             try {
-                shareLauncher.launch(shareIntent(uri, chooserTitle))
+                shareLauncher.launch(
+                    when (request) {
+                        is ShareRequest.Json -> shareIntent(request.uri, jsonChooserTitle)
+                        is ShareRequest.Csv -> csvShareIntent(request.uris, csvChooserTitle)
+                    },
+                )
             } catch (e: ActivityNotFoundException) {
                 backupViewModel.onShareSheetUnavailable(e.localizedMessage ?: e.javaClass.simpleName)
             }
@@ -133,6 +139,15 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
                 onClick = backupViewModel::export,
             )
             ActionCard(
+                icon = R.drawable.ic_table_view,
+                tint = FixedColors.csvExport,
+                title = stringResource(R.string.settings_export_csv_title),
+                description = stringResource(R.string.settings_export_csv_desc),
+                loading = state.operation == BackupOperation.CsvExport,
+                enabled = !busy,
+                onClick = backupViewModel::exportCsv,
+            )
+            ActionCard(
                 icon = R.drawable.ic_download,
                 tint = FixedColors.dataImport,
                 title = stringResource(R.string.settings_import_title),
@@ -160,6 +175,17 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
             SettingsInfoBox()
         }
     }
+}
+
+/** Fichiers CSV partagés ensemble (`ACTION_SEND_MULTIPLE`, `text/csv`, § 8). */
+private fun csvShareIntent(uris: List<Uri>, title: String): Intent {
+    val send = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+        type = "text/csv"
+        putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
+        clipData = ClipData.newRawUri(null, uris.first()).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    }
+    return Intent.createChooser(send, title)
 }
 
 private fun shareIntent(uri: Uri, title: String): Intent {
@@ -436,7 +462,7 @@ private fun ImportConfirmation(workoutCount: Int, onCancel: () -> Unit, onConfir
 @Composable
 private fun StatusMessage(status: BackupStatus) {
     val colors = MuscleNoteTheme.colors
-    val success = status is BackupStatus.ExportShared || status is BackupStatus.ImportSucceeded
+    val success = status is BackupStatus.ExportShared || status is BackupStatus.CsvExported || status is BackupStatus.ImportSucceeded
     val tint = if (success) colors.primary else colors.destructive
     val shape = RoundedCornerShape(12.dp)
     Row(
@@ -468,6 +494,8 @@ private fun StatusMessage(status: BackupStatus) {
 @Composable
 private fun BackupStatus.message(): String = when (this) {
     BackupStatus.ExportShared -> stringResource(R.string.settings_export_success_share)
+    BackupStatus.CsvExported -> stringResource(R.string.settings_export_success_csv)
+    BackupStatus.NothingToExport -> stringResource(R.string.settings_export_no_data)
     is BackupStatus.ExportFailed -> stringResource(R.string.settings_export_error, detail)
     BackupStatus.ImportSucceeded -> stringResource(R.string.settings_import_success)
     is BackupStatus.ReadFailed -> stringResource(R.string.settings_import_read_error, detail)
