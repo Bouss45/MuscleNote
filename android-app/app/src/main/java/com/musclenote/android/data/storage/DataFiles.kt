@@ -6,6 +6,7 @@ import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.Preferences
+import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.Workout
 import kotlinx.coroutines.CoroutineDispatcher
@@ -46,5 +47,8 @@ class DataFiles(
 
     /** Préférences propres à l'appareil, jamais exportées ni remplacées par un import. */
     val localPreferences = document("local_preferences.json", LocalPreferences.serializer())
+
+    /** Repos en cours (§ 7.2) ; fichier absent hors repos. */
+    val restTimer = document("rest_timer.json", RestTimerState.serializer())
     val meta = document("meta.json", StorageMeta.serializer())
 }

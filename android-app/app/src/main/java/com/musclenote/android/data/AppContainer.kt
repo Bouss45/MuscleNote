@@ -4,10 +4,13 @@ import com.musclenote.android.data.backup.BackupData
 import com.musclenote.android.data.backup.BackupWriter
 import com.musclenote.android.data.repository.NutritionRepository
 import com.musclenote.android.data.repository.PreferencesRepository
+import com.musclenote.android.data.repository.RestTimerEffects
+import com.musclenote.android.data.repository.RestTimerRepository
 import com.musclenote.android.data.repository.WorkoutRepository
 import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.data.storage.StorageMeta
 import com.musclenote.android.data.util.TimeSource
+import com.musclenote.android.data.workout.WorkoutEnd
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -28,6 +31,7 @@ class AppContainer(
     dataDir: File,
     val time: TimeSource = TimeSource.System,
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    restTimerEffects: RestTimerEffects = RestTimerEffects.None,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -37,6 +41,7 @@ class AppContainer(
     val workouts = WorkoutRepository(files.workouts, files.exercises, files.currentWorkout, time)
     val nutrition = NutritionRepository(files.bodyWeights, files.supplements, files.supplementsTaken, files.dailyTracker, time)
     val preferences = PreferencesRepository(files.preferences, files.localPreferences)
+    val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
 
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
@@ -56,12 +61,37 @@ class AppContainer(
     fun launchMutation(block: suspend () -> Unit): Job =
         appScope.launch(start = CoroutineStart.UNDISPATCHED) { block() }
 
-    /** Retour de l'app au premier plan (`ON_START`) : contrôle des séances de plus de 24 h (§ 3.4). */
+    /**
+     * Retour de l'app au premier plan (`ON_START`) : contrôle des séances de plus de 24 h (§ 3.4) ;
+     * une séance finalisée ou abandonnée arrête le repos en cours.
+     */
     fun onAppForeground() {
         appScope.launch {
             awaitReady()
-            workouts.finalizeStaleSession()
+            if (workouts.finalizeStaleSession() != null) restTimer.stop()
         }
+    }
+
+    /**
+     * Fin de la séance en cours (§ 3.3), ou abandon sans série validée : le repos en cours
+     * s'arrête aussi (§ 7.2).
+     */
+    suspend fun endWorkout(): WorkoutEnd? {
+        val end = workouts.endWorkout()
+        restTimer.stop()
+        return end
+    }
+
+    /** Alarme de fin de repos (récepteur) : attend le chargement, puis termine le repos (§ 7.2). */
+    suspend fun onRestTimerAlarm(endsAt: Long, inForeground: Boolean) {
+        awaitReady()
+        restTimer.finish(endsAt, inForeground)
+    }
+
+    /** « Passer » depuis la notification en cours (§ 7.2). */
+    suspend fun skipRest() {
+        awaitReady()
+        restTimer.stop()
     }
 
     /** Mise en arrière-plan (`ON_STOP`) : écritures différées forcées (§ 4.2). */
@@ -97,10 +127,13 @@ class AppContainer(
     }
 
     private suspend fun loadAll() {
-        coroutineScope {
-            launch { workouts.load() }
+        val finalized = coroutineScope {
             launch { nutrition.load() }
             launch { preferences.load() }
+            launch { restTimer.load() }
+            workouts.load()
         }
+        // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).
+        if (finalized != null) restTimer.stop()
     }
 }

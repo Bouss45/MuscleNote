@@ -60,10 +60,10 @@ class WorkoutRepository(
 
     /**
      * (Re)lit les trois documents depuis le disque, puis finalise une séance en cours de plus de
-     * 24 h (§ 3.4).
+     * 24 h (§ 3.4) : renvoie alors son issue, pour que le repos en cours soit arrêté.
      */
-    suspend fun load() {
-        mutex.withLock {
+    suspend fun load(): WorkoutEnd? {
+        return mutex.withLock {
             // Une écriture différée de la séance en cours doit précéder sa relecture.
             currentWorkoutDoc.flush()
             _workouts.value = sortedByDateDesc(workoutsDoc.read().orEmpty())

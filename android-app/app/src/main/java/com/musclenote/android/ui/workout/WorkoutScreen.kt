@@ -176,8 +176,9 @@ fun WorkoutScreen(
             onConfirm = { completed ->
                 if (completed) haptics.success() else haptics.warning()
                 onFinished()
-                // Termine (ou abandonne, sans série validée) après avoir quitté l'écran (§ 3.3).
-                container.launchMutation { repository.endWorkout() }
+                // Termine (ou abandonne, sans série validée) après avoir quitté l'écran (§ 3.3) ; le
+                // repos en cours s'arrête aussi (§ 7.2).
+                container.launchMutation { container.endWorkout() }
             },
         )
     }
