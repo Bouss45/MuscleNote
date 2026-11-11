@@ -37,6 +37,14 @@ npm_config_user_agent="pnpm/0.0.0 node/0.0.0 linux x64" pnpm install
 
 `pnpm-workspace.yaml` enforces `minimumReleaseAge: 1440` (a package version must be ≥1 day old before it can be installed) as a supply-chain defense — do not disable it. `react`/`react-dom` are pinned to exactly `19.1.0` (Expo requirement) via the workspace catalog. The `overrides` block in that file is a Replit leftover that strips every non-linux-x64 native binary (esbuild, lightningcss, rollup, ngrok…); it is harmless on Linux but would likely need trimming to develop on macOS/Windows. The gitignored `.local/` directory is likewise leftover Replit agent state, not app code.
 
+## Native rewrite — `android-app/` (branch `native`)
+
+A Kotlin + Jetpack Compose rewrite of the Expo app is in progress in `android-app/`; **`SPEC.md` is its single reference** (behaviour, data format, theme, strings, decisions in § 11). Identity: `applicationId`/namespace `com.musclenote.android`, label « MuscleNote 2 », minSdk 26, compile/targetSdk 37. It coexists with the Expo app; data moves over by sharing a JSON backup (SPEC § 5.5).
+
+- Gradle Kotlin DSL + version catalog (`gradle/libs.versions.toml`), committed wrapper (checksum-pinned `distributionSha256Sum`). AGP 9 compiles Kotlin itself ("built-in Kotlin"): **never apply `org.jetbrains.kotlin.android` in a module** — the root build only declares it `apply false` to pin the Kotlin version (keep it equal to the Compose compiler plugin version).
+- There is no local Android SDK: builds run in CI. `.github/workflows/native-dev.yml` triggers on pushes to `native` touching `android-app/**`, builds a signed release APK (`versionCode = run_number`, `versionName = 0.1.<run_number>`; keystore decoded from secrets into `$RUNNER_TEMP`, passed through `ANDROID_KEYSTORE_PATH` / `ANDROID_KEYSTORE_PASSWORD` / `ANDROID_KEY_ALIAS` / `ANDROID_KEY_PASSWORD`) and publishes the GitHub pre-release `v0.1.<run_number>`. Follow with `gh run watch`, debug with `gh run view --log-failed`. The repo is public: never print signing details in CI logs.
+- Strings: `res/values/strings.xml` (FR, default) + `res/values-en/strings.xml`, keys converted from `constants/i18n/*.ts` (SPEC § 9.4). Theme tokens: `ui/theme/Color.kt` (`MuscleNoteTheme.colors`), Inter through Google downloadable fonts. Icons: Material Symbols vectors in `res/drawable`.
+
 ## Mobile app architecture
 
 Stack: Expo SDK 54, React Native 0.81 (New Architecture **on**), expo-router 6 (typed routes), React 19 with the **React Compiler enabled** (`app.json` `experiments.reactCompiler` + `babel.config.js`). Because components/values are auto-memoized, prefer algorithmic / data-structure wins over hand-written `useMemo`/`useCallback`. One file opts out with a top-of-file `"use no memo"` — `components/SortableExerciseList.tsx` — because its Reanimated worklets are incompatible with the compiler. Path alias `@/*` → `artifacts/mobile/`.

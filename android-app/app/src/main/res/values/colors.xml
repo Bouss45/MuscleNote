@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Couleurs utilisées hors Compose (fenêtre, splash, icône). Thème clair ; le sombre est
+     dans values-night. Palette complète : ui/theme/Color.kt (§ 9.1). -->
+<resources>
+    <color name="window_background">#FAF7F8</color>
+    <color name="splash_background">#FAF7F8</color>
+    <color name="ic_launcher_background">#060204</color>
+</resources>

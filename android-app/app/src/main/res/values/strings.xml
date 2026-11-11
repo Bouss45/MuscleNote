@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Français : langue par défaut (§ 9.4). Clés de constants/i18n/fr.ts en snake_case. -->
+<resources>
+    <string name="app_name" translatable="false">MuscleNote 2</string>
+
+    <string name="tabs_home">Accueil</string>
+    <string name="tabs_progress">Progrès</string>
+    <string name="tabs_nutrition">Nutrition</string>
+    <string name="tabs_settings">Paramètres</string>
+
+    <string name="progress_title">Progression</string>
+    <string name="nutrition_title">Nutrition</string>
+    <string name="settings_title">Paramètres</string>
+</resources>

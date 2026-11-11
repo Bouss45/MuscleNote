@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Thème de fenêtre minimal : tout le rendu est en Compose (ui/theme). AppCompat est
+         requis pour la langue par application (§ 9.4) ; DayNight suit le thème système. -->
+    <style name="Theme.MuscleNote" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+    </style>
+</resources>

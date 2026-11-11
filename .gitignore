@@ -47,3 +47,14 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Claude Code (réglages locaux)
+.claude/settings.local.json
+
+# Android natif (android-app/)
+*.jks
+*.keystore
+local.properties
+build/
+.gradle/
+.kotlin/
