@@ -1,31 +1,30 @@
-name: native-dev
+name: release
 
-# APK de développement de l'app native : à chaque push sur la branche native, build de l'APK
-# release signé puis publication en pré-release GitHub v0.1.<run_number>.
+# Release de l'app : à chaque push sur main touchant android-app/, tests JVM, build de l'APK
+# release signé, puis Release GitHub v1.0.<run_number> (installée et mise à jour par Obtainium).
 on:
   push:
-    branches: [native]
+    branches: [main]
     paths:
       - "android-app/**"
-      - ".github/workflows/native-dev.yml"
+      - ".github/workflows/release.yml"
 
 permissions:
   contents: write # création de la release
 
 concurrency:
-  group: native-dev
+  group: release
   cancel-in-progress: false
 
 jobs:
   apk:
-    name: APK release signé + pré-release
+    name: Tests, APK release signé, Release
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      VERSION_CODE: ${{ github.run_number }}
-      VERSION_NAME: 0.1.${{ github.run_number }}
-      TAG: v0.1.${{ github.run_number }}
-      APK_NAME: MuscleNote-v0.1.${{ github.run_number }}.apk
+      VERSION_NAME: 1.0.${{ github.run_number }}
+      TAG: v1.0.${{ github.run_number }}
+      APK_NAME: MuscleNote-v1.0.${{ github.run_number }}.apk
     defaults:
       run:
         working-directory: android-app
@@ -45,7 +44,12 @@ jobs:
             android-app/**/*.gradle.kts
             android-app/gradle/wrapper/gradle-wrapper.properties
 
-      # Tests JVM (validation et migrations de la sauvegarde, stockage) : un échec bloque le build.
+      # versionCode = 1000 + run_number : toujours au-dessus des pré-releases v0.1.* (versionCode =
+      # run_number de l'ancien workflow, < 1000), pour qu'Android accepte la mise à jour.
+      - name: Numéro de version
+        run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+
+      # Tests JVM (règles métier, sauvegarde, stockage, textes) : un échec bloque le build.
       - name: Tests unitaires
         run: ./gradlew :app:testDebugUnitTest --stacktrace
 
@@ -81,11 +85,11 @@ jobs:
           cp "$APK" "$RUNNER_TEMP/$APK_NAME"
           ls -l "$RUNNER_TEMP/$APK_NAME"
 
-      - name: Publier la pré-release
+      - name: Publier la Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="Build de développement de l'app native (branche native, commit ${GITHUB_SHA::7})."
+          NOTES="MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}."
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             # Relance d'un même run : on remplace l'APK de la release existante.
             gh release upload "$TAG" "$RUNNER_TEMP/$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
@@ -93,8 +97,8 @@ jobs:
             gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
-              --prerelease \
-              --title "MuscleNote 2 v$VERSION_NAME" \
+              --latest \
+              --title "MuscleNote v$VERSION_NAME" \
               --notes "$NOTES"
           fi
 
