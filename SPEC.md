@@ -32,6 +32,7 @@
 10. [Cas particuliers](#10-cas-particuliers)
 11. [Décisions](#11-décisions)
 12. [Questions restantes](#12-questions-restantes)
+13. [État d'avancement](#13-état-davancement)
 
 ---
 
@@ -716,8 +717,13 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
   (langue du système par défaut, surcharge possible FR/EN). Un changement de langue recrée
   l'activité, renomme les canaux de notification ; les textes des notifications sont
   calculés au moment où elles sont affichées, donc rien à reprogrammer.
-- Locale de formatage : la locale effective de l'app (`fr-*` ou `en-*`).
-- Préférences locales non sauvegardées : carte de transfert masquée (§ 2.2).
+- Locale de formatage : la locale effective de l'app (`fr-*` ou `en-*`), c'est-à-dire celle
+  des textes affichés : la première locale de la liste (langues du système, ou choix FR / EN
+  de l'app) dont la langue a des textes, région comprise (`en-GB`, `fr-CA`) ; aucune →
+  français, comme les textes (§ 9.4).
+- Préférences locales non sauvegardées : carte de transfert masquée (§ 2.2) ; copie de la
+  langue choisie dans l'app, relue par les notifications construites hors activité avant
+  Android 13 (§ 9.4).
 
 ### 3.15 Identifiants
 
@@ -837,7 +843,7 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `supplements_taken.json` | `TakenRecord` |
 | `daily_tracker.json` | `DailyTracker` |
 | `preferences.json` | `Preferences` |
-| `local_preferences.json` | `{ migrateCardDismissed }` — préférences locales (§ 3.14), hors sauvegarde |
+| `local_preferences.json` | `{ migrateCardDismissed, appLanguage? }` — préférences locales (§ 3.14), hors sauvegarde |
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
 | `meta.json` | `{ "schemaVersion": 2 }` — version du schéma de stockage |
 
@@ -1142,21 +1148,24 @@ comprises : `calfraize`, `legrise`).
 
 ### 6.2 Groupes musculaires (ordre d'affichage, libellés, couleur)
 
-| id | FR | EN | couleur |
-|---|---|---|---|
-| `dos` | Dos | Back | `#3b82f6` |
-| `pecs` | Pecs | Chest | `#f97316` |
-| `biceps` | Biceps | Biceps | `#a855f7` |
-| `triceps` | Triceps | Triceps | `#8b5cf6` |
-| `jambes` | Jambes | Legs | `#22c55e` |
-| `épaules` | Épaules | Shoulders | `#f59e0b` |
-| `abdos` | Abdos | Abs | `#ef4444` |
-| `cardio` | Cardio | Cardio | `#ec4899` |
-| `avant-bras` | Avant-bras | Forearms | `#14b8a6` |
+| id | FR | EN | couleur | texte en thème clair (🔄 D23) |
+|---|---|---|---|---|
+| `dos` | Dos | Back | `#3b82f6` | `#1d4ed8` |
+| `pecs` | Pecs | Chest | `#f97316` | `#c2410c` |
+| `biceps` | Biceps | Biceps | `#a855f7` | `#7e22ce` |
+| `triceps` | Triceps | Triceps | `#8b5cf6` | `#6d28d9` |
+| `jambes` | Jambes | Legs | `#22c55e` | `#15803d` |
+| `épaules` | Épaules | Shoulders | `#f59e0b` | `#b45309` |
+| `abdos` | Abdos | Abs | `#ef4444` | `#b91c1c` |
+| `cardio` | Cardio | Cardio | `#ec4899` | `#be185d` |
+| `avant-bras` | Avant-bras | Forearms | `#14b8a6` | `#0f766e` |
 
 Badge de groupe : fond couleur à 13 %, bordure couleur à 33 %, texte couleur, forme pilule ;
 taille normale 12 sp (padding 10×4), petite 10 sp (padding 7×2), Inter 600. Mêmes couleurs
-dans les deux thèmes (vérifier le contraste du texte en thème clair, § 9.1).
+dans les deux thèmes pour les fonds, bordures et courbes ; 🔄 D23 — en thème clair, le **texte
+et les icônes** en couleur de groupe (badges, onglets et statistiques de Progrès) prennent la
+nuance foncée de la dernière colonne : la couleur de base sur fond clair tombait à 1,9 – 3,6:1,
+la nuance foncée donne 4,5 – 6,1:1. Thème sombre inchangé (4,1 – 7,4:1).
 
 ### 6.3 Préréglages de séance (🔄 D3)
 
@@ -1170,15 +1179,16 @@ Identifiants stockés dans `Workout.preset` ; libellé = chaîne `startWorkout.p
 | Split | `pecs` | Pecs | Chest |
 | Split | `dos` | Dos | Back |
 | Split | `shoulders` | Épaules | Shoulders |
-| Split | `legsSplit` | Jambes | Legs |
+| Split | `legsSplit` | Jambes | Legs (split) |
 | Split | `arms` | Bras | Arms |
 | Autre | `fullBody` | Full Body | Full Body |
 | Autre | `isolation` | Isolation | Isolation |
 | Autre | `cardio` | Cardio | Cardio |
 
-⚠️ En anglais, `legs` et `legsSplit` ont le même libellé « Legs » mais restent deux
-préréglages distincts (clés différentes). Option d'amélioration : libellé EN de `legsSplit`
-« Legs (split) ».
+⚠️ Dans l'app Expo, `legs` et `legsSplit` avaient le même libellé anglais « Legs » (deux
+préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche « Legs (split) » pour
+`legsSplit` en anglais. Les anciennes séances anglaises nommées « Legs » restent rattachées à
+`legs` à l'import (§ 5.3).
 
 ---
 
@@ -1369,6 +1379,14 @@ Autres couleurs fixes (deux thèmes) : CSV `#217346` ; import `#3B82F6` ; ambre 
 `rgba(0,0,0,0.6)` ; couleurs des groupes musculaires (§ 6.2) ; fond du splash
 (`windowSplashScreenBackground`) `#0A0F0B` en sombre, `#FAF7F8` en clair. Les barres de
 statut/navigation suivent le thème (icônes claires en sombre, foncées en clair).
+🔄 D23 — en thème clair, le texte et les icônes dans ces couleurs prennent une nuance foncée :
+ambre du minuteur `#B45309`, top 3 `#166534`, `#1D4ED8`, `#7E22CE`, groupes au § 6.2 (fonds,
+bordures et courbes inchangés).
+
+Le splash et le fond de fenêtre suivent le thème **choisi dans l'app** : sur Android 12+, le
+choix est transmis au système (`UiModeManager.setApplicationNightMode`, « Système » = pas de
+surcharge), ce qui recrée l'activité quand le thème effectif change ; avant Android 12, le
+splash suit le thème du système.
 
 **Transparences** : l'app Expo concaténait un suffixe d'alpha (`#RRGGBB` + `AA`). En Compose,
 `Color(0xAARRGGBB)` met l'alpha **au début** : utiliser `couleur.copy(alpha = …)`. Les
@@ -1460,8 +1478,11 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 - **Langue** : celle du système par défaut ; surcharge par app « Français » / « English »
   (`AppCompatDelegate.setApplicationLocales`, `res/xml/locales_config.xml` déclarant `fr` et
   `en`, `autoStoreLocales` pour Android < 13). Système dans une autre langue → français
-  (ressources par défaut). Les récepteurs (notifications) construisent leur texte avec la
-  locale de l'app (`AppCompatDelegate.getApplicationLocales()`).
+  (ressources par défaut), textes **et** formats (§ 3.14). Les récepteurs (notifications)
+  construisent leur texte avec la locale de l'app (`AppCompatDelegate.getApplicationLocales()`) ;
+  avant Android 13, AppCompat ne la connaît qu'après la création d'une activité : dans un
+  processus relancé par une alarme, les récepteurs relisent la copie gardée dans les
+  préférences locales (§ 3.14).
 - Restent non traduits : unités courtes (`kg`, `reps`, `min`, `km`, `km/h`, `% inc.`, `t`,
   `L`, `ml`, `kcal`), unités de compléments, libellés de langue (`Français 🇫🇷`,
   `English 🇬🇧`).
@@ -1586,7 +1607,8 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 
 Réponses données aux questions ouvertes de la première version de ce document, et leur
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
-aux questions de la deuxième version (cf. § 12).
+aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
+vérification finale (§ 13).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1612,6 +1634,8 @@ aux questions de la deuxième version (cf. § 12).
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
 | D22 | Nom affiché pendant la transition | « MuscleNote 2 » | `app_name` = « MuscleNote 2 » (FR et EN), cible du partage au § 5.5 (§ 1, 9.5) |
+| D23 | Contraste des couleurs de groupe en thème clair | texte foncé en thème clair | texte et icônes en nuance foncée (contraste ≥ 4,5:1) en thème clair : groupes, ambre du minuteur, top 3 ; fonds, bordures, courbes et thème sombre inchangés (§ 6.2, 9.1) |
+| D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1647,3 +1671,84 @@ Aucune. Les quatre questions de la version précédente ont été tranchées :
 2. **minSdk / targetSdk** → minSdk 26, targetSdk = dernière API stable (D8, § 1).
 3. **Anciennes séries non cochées** → toutes marquées validées à la migration (D21, § 5.3).
 4. **Nom affiché** → « MuscleNote 2 » pendant la transition (D22, § 1).
+
+---
+
+## 13. État d'avancement
+
+Vérification finale avant la bascule (11 novembre 2026) :
+l'app native (`android-app/`, branche `native`) a été comparée à ce document section par
+section. Les chemins ci-dessous sont relatifs à
+`android-app/app/src/main/java/com/musclenote/android/`.
+
+### 13.1 Fait
+
+Tout ce que décrivent les § 1 à 10 est implémenté. Les règles métier pures sont couvertes par
+245 tests JVM (23 classes, `app/src/test/`), lancés par la CI à chaque push avant la
+construction de l'APK.
+
+| § | sujet | où |
+|---|---|---|
+| 1 | identité (`com.musclenote.android`, « MuscleNote 2 », portrait), SDK 26 / 37, socle technique ; permissions = la liste fermée de D19, sans `INTERNET` (vérifié dans le manifeste fusionné de l'APK) | `app/build.gradle.kts`, `AndroidManifest.xml` |
+| 2.1 | navigation, 4 onglets, entrées externes (notifications, fichier partagé) | `ui/MuscleNoteApp.kt`, `MainActivity.kt` |
+| 2.2 | Accueil : fond flouté, séance en cours, carte de transfert, série hebdo, stats, temps en salle, séances avec édition / date / suppression | `ui/home/` |
+| 2.3 – 2.6 | démarrer une séance, séance en cours (chronomètre, échauffement, glisser-déposer, fin ou abandon), carte d'exercice, ligne de série | `ui/workout/` |
+| 2.7 – 2.9 | sélecteur d'exercices, historique d'un exercice, éditeur de séance (copie de travail, renommage, dialogue de sortie) | `ui/workout/`, `ui/history/` |
+| 2.10 | Progrès : poids corps et pesées, calories, eau, groupes musculaires | `ui/progress/`, `data/progress/ProgressStats.kt` |
+| 2.11 | Nutrition : suivi du jour, compléments, rappels au `TimePicker` | `ui/nutrition/` |
+| 2.12 | Paramètres : mes données, langue, thème, minuteur, notifications, sauvegarde, export CSV, import, rapport de plantage | `ui/settings/` |
+| 2.13 | graphique linéaire au `Canvas` | `ui/components/LineChart.kt` |
+| 3 | règles métier (séance, 1RM, série hebdo, temps en salle, volume, archivage, Progrès, pesées, nutrition, préférences, séries validées) | `data/workout/`, `data/progress/`, `data/nutrition/`, `data/repository/` |
+| 4 | modèle, un fichier JSON par document, écritures atomiques et différées, fichiers illisibles mis de côté | `data/model/`, `data/storage/` |
+| 5 | sauvegarde v2, import v1 / v2 (validation, migration, normalisation), transfert depuis l'app Expo | `data/backup/`, `ui/settings/BackupViewModel.kt` |
+| 6 | 42 exercices intégrés, 9 groupes, 11 préréglages | `data/catalog/`, `data/model/` |
+| 7 | canaux, minuteur de repos (notification en cours, alarme exacte), rappels de compléments (alarmes exactes, resynchronisations) | `notifications/`, `data/repository/RestTimerRepository.kt` |
+| 8 | export CSV | `data/export/CsvExport.kt`, `ui/settings/CsvExportTexts.kt` |
+| 9 | palettes sombre et claire, Inter, icônes Material Symbols, textes FR / EN | `ui/theme/`, `res/` |
+| 10 | virgule décimale, jour local, dates impossibles, recherche, rapport de plantage | `data/util/`, `CrashHandler.kt`, `data/crash/` |
+
+Textes : les 320 clés de `constants/i18n/fr.ts` sont reprises, sauf celles que le § 9.4
+écarte (Excel) et trois sans objet dans l'app native : `notFound.*` (écran 404
+d'expo-router ; une route inconnue n'existe pas) et `settings.export.noShare` (Android a
+toujours une feuille de partage ; son absence donne l'erreur d'export générique). Toutes les
+clés du § 9.5 existent en FR et EN (même jeu de clés et d'arguments, vérifié par un test).
+
+### 13.2 Corrigé lors de la vérification
+
+| écart relevé | correction |
+|---|---|
+| Dates et nombres formatés dans la première langue du système même quand l'app s'affiche dans une autre (système en allemand → textes en français, dates en allemand ; liste [de, en] → en-têtes CSV anglais avec séparateur français) | locale de formatage = celle des textes (§ 3.14) ; `data/util/AppLocales.kt` |
+| Avant Android 13, notification construite dans un processus relancé par une alarme : texte dans la langue du système au lieu de la langue choisie dans l'app | copie de la langue dans les préférences locales (§ 3.14, § 9.4) |
+| Splash et fond de fenêtre au thème du système, pas au choix Clair / Sombre de l'app (flash de l'autre thème au lancement) | Android 12+ : `setApplicationNightMode` (§ 9.1) ; `ui/theme/SystemNightMode.kt` |
+| Texte en couleur de groupe peu lisible en thème clair (1,9 – 3,6:1) | décision D23 : nuance foncée en thème clair (§ 6.2, 9.1) |
+| Deux préréglages « Legs » en anglais | décision D24 : « Legs (split) » (§ 6.3) |
+
+### 13.3 Manque
+
+Rien de fonctionnel. Restent à valider **à l'œil, sur l'appareil**, ce que la spec présente
+comme des propositions :
+- la palette claire (§ 9.1) ;
+- l'opacité de l'image de fond de l'Accueil, 0,35 en sombre et 0,12 en clair (§ 2.2).
+
+### 13.4 Diffère (interprétations et limites connues)
+
+Écarts mineurs, assumés, par rapport à une lecture littérale du document :
+- **Changement de thème** (Android 12+) : appliqué tout de suite à l'interface, puis
+  l'activité est recréée une fois (comme pour un changement de langue) pour que le système
+  prenne le nouveau thème ; avant Android 12, le splash suit le thème du système (pas d'API).
+- **Langue des canaux de notification** : dans un processus relancé par une alarme avant
+  Android 13, les noms de canaux restent dans la langue du système jusqu'à la prochaine
+  ouverture de l'app (ils ne sont visibles que dans les réglages système).
+- **Permission `POST_NOTIFICATIONS`** « seulement si elle peut encore être demandée »
+  (§ 2.3, 7.1) : l'app la demande tant qu'elle n'est pas accordée ; après deux refus,
+  Android ne montre plus la demande et répond « refusé » aussitôt, sans bloquer.
+- **Notification « Repos en cours »** : `setTimeoutAfter` reçoit le temps restant (égal à
+  `restSeconds × 1000` au démarrage), pour rester juste quand la notification est republiée
+  dans une autre langue en cours de repos.
+- **Partage vers l'app** (§ 5.4) : `ACTION_SEND` est déclaré pour `application/json` seulement
+  (type utilisé par l'app Expo), pour ne pas apparaître dans tous les partages de texte ;
+  `ACTION_VIEW` accepte `application/json` et `text/plain`.
+- **Valeurs ≥ 1000 du graphique des calories** : `2,5k` en français, `2.5k` en anglais
+  (séparateur décimal de la locale, § 9.4).
+- **`DUMP`** apparaît dans le manifeste fusionné : c'est la permission qui *protège* le
+  récepteur d'`androidx.profileinstaller`, pas une permission demandée par l'app.
