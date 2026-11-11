@@ -51,6 +51,8 @@ android {
 
     buildFeatures {
         compose = true
+        // Version de l'app dans les rapports de plantage (§ 10.9).
+        buildConfig = true
     }
 
     androidResources {

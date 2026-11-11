@@ -5,6 +5,7 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.musclenote.android.data.AppContainer
+import com.musclenote.android.data.crash.CrashReports
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
@@ -17,8 +18,17 @@ class MuscleNoteApplication : Application() {
     lateinit var container: AppContainer
         private set
 
+    /** Rapports de plantage locaux (§ 10.9), partagés ou supprimés depuis Paramètres (§ 2.12). */
+    lateinit var crashReports: CrashReports
+        private set
+
     override fun onCreate() {
         super.onCreate()
+        // En premier : un plantage pendant la création des données laisse aussi un rapport.
+        crashReports = CrashReports(File(filesDir, CrashReports.DIR_NAME))
+        CrashHandler.install(crashReports) {
+            if (::container.isInitialized) container.workouts.flushPendingWrites()
+        }
         container = AppContainer(
             File(filesDir, "data"),
             restTimerEffects = RestTimerNotifier(this),

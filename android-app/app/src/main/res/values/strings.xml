@@ -83,6 +83,9 @@
     <string name="settings_share_csv">Exporter en CSV</string>
     <string name="settings_import_newer_version">Ce fichier vient d\'une version plus récente de MuscleNote</string>
     <string name="settings_info">Le fichier exporté contient toutes tes séances, tes exercices personnalisés et l\'historique de poids de corps. Garde-le en lieu sûr.</string>
+    <string name="settings_crash_title">Rapport de plantage</string>
+    <string name="settings_crash_desc">Dernier plantage le %1$s</string>
+    <string name="settings_crash_share">Partager</string>
 
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Dos</string>

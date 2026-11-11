@@ -82,6 +82,9 @@
     <string name="settings_share_csv">Export as CSV</string>
     <string name="settings_import_newer_version">This file comes from a newer version of MuscleNote</string>
     <string name="settings_info">The exported file contains all your workouts, custom exercises, and body weight history. Keep it safe.</string>
+    <string name="settings_crash_title">Crash report</string>
+    <string name="settings_crash_desc">Last crash on %1$s</string>
+    <string name="settings_crash_share">Share</string>
 
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Back</string>

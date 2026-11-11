@@ -62,7 +62,7 @@ private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 /**
  * Onglet Paramètres (SPEC § 2.12) : « Mes données » ; « PRÉFÉRENCES » (langue, thème, minuteur de
  * repos, avertissement « Notifications désactivées ») ; « SAUVEGARDE » (export JSON v2, import avec
- * confirmation § 5.4) ; encart de statut ; encart d'info.
+ * confirmation § 5.4) ; encart de statut ; encart d'info ; rapport de plantage s'il y en a un (§ 10.9).
  */
 @Composable
 fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifier) {
@@ -173,6 +173,7 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
             }
             state.status?.let { StatusMessage(it) }
             SettingsInfoBox()
+            CrashReportCard()
         }
     }
 }
