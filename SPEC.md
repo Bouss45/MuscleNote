@@ -1954,8 +1954,9 @@ au style des cartes de Paramètres :
   `release.yml` à la seule étape de build de l'APK release, et injecté par
   `app/build.gradle.kts` dans `BuildConfig.FEEDBACK_WEBHOOK_URL`. Elle n'est jamais dans le dépôt.
 - Absente (build local, build debug des tests) → chaîne vide → section masquée. Présente mais
-  différente de `https://discord.com/api/webhooks/<id>/<jeton>` (ou `discordapp.com`, espaces
-  autour ignorés) → le build échoue, sans afficher l'URL.
+  différente de `https://discord.com/api/webhooks/<id>/<jeton>` (ou `discordapp.com`,
+  `canary.discord.com`, `ptb.discord.com` ; espaces autour ignorés) → le build échoue, sans
+  afficher l'URL.
 - **Limite assumée** : l'URL est incluse dans l'APK, qui est public. Quiconque le décompile peut
   la lire et poster dans le salon sans passer par les limites de l'app (§ 14.3). Parades : un
   webhook dans un **salon privé** que seul le développeur voit ; en cas d'abus, supprimer le

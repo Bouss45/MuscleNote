@@ -108,8 +108,8 @@ object FeedbackRules {
     /** Plafond des informations jointes (Discord limite un champ à 1 024 caractères). */
     private const val ENVIRONMENT_MAX = 100
 
-    private val WEBHOOK_URL = Regex("""https://(discord|discordapp)\.com/api/webhooks/\d+/[A-Za-z0-9_-]+""")
-    private val LINE_BREAKS = Regex("""[\r\n  ]+""")
+    private val WEBHOOK_URL = Regex("""https://((canary|ptb)\.)?discord(app)?\.com/api/webhooks/\d+/[A-Za-z0-9_-]+""")
+    private val LINE_BREAKS = Regex("""[\r\n\u2028\u2029]+""")
     private val json = Json { ignoreUnknownKeys = true }
 
     /** URL de webhook Discord valable : sans elle, la section « Ton avis » est masquée (§ 14.5). */

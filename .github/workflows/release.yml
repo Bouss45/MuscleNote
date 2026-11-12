@@ -65,11 +65,22 @@ jobs:
           printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
           echo "ANDROID_KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
+      # Envoi d'un avis (SPEC § 14.5) : sans le secret, l'APK est construit sans la section « Ton avis ».
+      - name: Webhook des avis
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$DISCORD_WEBHOOK_URL" ]; then
+            echo "::warning::Secret DISCORD_WEBHOOK_URL manquant : section « Ton avis » masquée dans l'APK"
+          fi
+
       - name: Build de l'APK release
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # URL du webhook des avis, injectée dans BuildConfig (jamais affichée dans les logs).
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
         run: >-
           ./gradlew :app:assembleRelease
           -PversionCode="$VERSION_CODE"

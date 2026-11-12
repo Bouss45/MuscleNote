@@ -121,6 +121,7 @@ class FeedbackRulesTest {
     fun `pseudo sur une ligne et tronque a 32 caracteres`() {
         assertEquals("Théo le costaud", parse(FeedbackDraft(message = "x", name = " Théo\nle\r\ncostaud ")).fields().getValue("Pseudo"))
         assertEquals("b".repeat(32), parse(FeedbackDraft(message = "x", name = "b".repeat(50))).fields().getValue("Pseudo"))
+        assertEquals("a b", parse(FeedbackDraft(message = "x", name = "a\u2028b")).fields().getValue("Pseudo"))
     }
 
     @Test
@@ -157,6 +158,9 @@ class FeedbackRulesTest {
     fun `seules les URL de webhook Discord sont acceptees`() {
         assertTrue(FeedbackRules.isWebhookUrl("https://discord.com/api/webhooks/123456789012345678/AbC-d_e"))
         assertTrue(FeedbackRules.isWebhookUrl("https://discordapp.com/api/webhooks/1/x"))
+        assertTrue(FeedbackRules.isWebhookUrl("https://canary.discord.com/api/webhooks/1/x"))
+        assertTrue(FeedbackRules.isWebhookUrl("https://ptb.discord.com/api/webhooks/1/x"))
+        assertFalse(FeedbackRules.isWebhookUrl("https://evil.discord.com.example/api/webhooks/1/x"))
         assertFalse(FeedbackRules.isWebhookUrl(""))
         assertFalse(FeedbackRules.isWebhookUrl("http://discord.com/api/webhooks/1/x"))
         assertFalse(FeedbackRules.isWebhookUrl("https://evil.example/api/webhooks/1/x"))

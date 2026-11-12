@@ -8,6 +8,16 @@ plugins {
 // jamais dans le dépôt). Sans ANDROID_KEYSTORE_PATH, l'APK release est produit non signé.
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_PATH")
 
+// Envoi d'un avis (SPEC § 14.5) : URL du webhook Discord, fournie par la CI (secret
+// DISCORD_WEBHOOK_URL) au seul build release, jamais dans le dépôt. Absente → chaîne vide et section
+// « Ton avis » masquée ; mal formée → build en échec, sans afficher l'URL.
+val feedbackWebhookUrl = providers.environmentVariable("DISCORD_WEBHOOK_URL").map { it.trim() }.getOrElse("")
+if (feedbackWebhookUrl.isNotEmpty() &&
+    !Regex("""https://((canary|ptb)\.)?discord(app)?\.com/api/webhooks/\d+/[A-Za-z0-9_-]+""").matches(feedbackWebhookUrl)
+) {
+    throw GradleException("DISCORD_WEBHOOK_URL n'est pas une URL de webhook Discord (https://discord.com/api/webhooks/<id>/<jeton>)")
+}
+
 android {
     namespace = "com.musclenote.android"
     compileSdk = 37
@@ -19,6 +29,7 @@ android {
         // La CI passe -PversionCode=<run_number> -PversionName=0.1.<run_number>.
         versionCode = providers.gradleProperty("versionCode").map { it.toInt() }.getOrElse(1)
         versionName = providers.gradleProperty("versionName").getOrElse("0.1.0-dev")
+        buildConfigField("String", "FEEDBACK_WEBHOOK_URL", "\"$feedbackWebhookUrl\"")
     }
 
     signingConfigs {
@@ -51,7 +62,7 @@ android {
 
     buildFeatures {
         compose = true
-        // Version de l'app dans les rapports de plantage (§ 10.9).
+        // Version de l'app dans les rapports de plantage (§ 10.9), URL du webhook des avis (§ 14.5).
         buildConfig = true
     }
 
