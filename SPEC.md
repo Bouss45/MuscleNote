@@ -40,6 +40,7 @@
 12. [Questions restantes](#12-questions-restantes)
 13. [État d'avancement](#13-état-davancement)
 14. [Envoyer un avis](#14-envoyer-un-avis)
+15. [Évolutions](#15-évolutions)
 
 ---
 
@@ -58,6 +59,10 @@
 
   Exception indirecte : la police Inter est obtenue via les polices téléchargeables de Google
   Play Services (🔄 D12).
+
+  Deux écritures hors de l'app, **sur le téléphone** et seulement si l'utilisateur les active :
+  la sauvegarde automatique dans un dossier qu'il choisit (🔄 D28, § 15.2) et l'envoi des
+  séances et du poids à Health Connect (🔄 D29, § 15.3). Aucune ne passe par le réseau.
 - **Identité Android** (🔄 D5, D22) : nouvel `applicationId` `com.musclenote.android`, nom
   affiché **« MuscleNote »** (un suffixe « 2 » le distinguait de l'app Expo pendant la
   transition, retiré à la bascule), orientation **portrait** uniquement. L'app Expo
@@ -71,7 +76,9 @@
   - AppCompat pour la langue par application (🔄 D9) ;
   - `androidx.compose.ui:ui-text-google-fonts` pour Inter (🔄 D12) ;
   - `sh.calvin.reorderable` pour le glisser-déposer (🔄 D14) ;
-  - graphiques dessinés au `Canvas` Compose (🔄 D13).
+  - graphiques dessinés au `Canvas` Compose (🔄 D13) ;
+  - WorkManager (`androidx.work`) pour la sauvegarde automatique quotidienne (🔄 D28) ;
+  - `androidx.health.connect:connect-client` pour Health Connect (🔄 D29).
 - **SDK** (D8) : `minSdk 26` (Android 8.0), `compileSdk` / `targetSdk` = dernière API stable,
   soit **37** (Android 17) au démarrage du projet.
 - **Permissions** (🔄 D19 — uniquement celles qui servent) :
@@ -80,17 +87,22 @@
   | `POST_NOTIFICATIONS` | minuteur de repos et rappels (demandée à l'exécution, Android 13+) |
   | `USE_EXACT_ALARM` | alarmes exactes, Android 13+ (accordée d'office ; acceptable hors Play Store) |
   | `SCHEDULE_EXACT_ALARM` (`maxSdkVersion="32"`) | alarmes exactes, Android 12–12L |
-  | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage |
+  | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage ; WorkManager s'en sert aussi pour la sauvegarde automatique (🔄 D28) |
   | `VIBRATE` | vibration de fin de repos depuis le récepteur d'alarme |
   | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
-  Aucune permission de stockage (fichiers via le sélecteur système et `FileProvider`), de
-  localisation ni de caméra.
+  | `WAKE_LOCK` (🔄 D28) | ajoutée par WorkManager : exécution de la sauvegarde automatique (§ 15.2) ; permission normale, sans demande |
+  | `health.WRITE_EXERCISE` (🔄 D29) | écrire les séances dans Health Connect (§ 15.3) ; accordée dans l'écran de Health Connect, quand l'utilisateur active l'option |
+  | `health.WRITE_WEIGHT` (🔄 D29) | écrire le poids (séances et pesées) dans Health Connect (§ 15.3) ; idem |
+  Aucune permission de stockage (fichiers via le sélecteur système, le dossier de la sauvegarde
+  automatique avec une autorisation persistante, et `FileProvider`), de localisation ni de
+  caméra ; aucune permission de **lecture** Health Connect. `ACCESS_NETWORK_STATE` et
+  `FOREGROUND_SERVICE`, déclarées par WorkManager, sont retirées du manifeste fusionné (§ 15.2).
 - Quatre domaines fonctionnels :
   1. **Séances** (démarrer, saisir et valider les séries, terminer, éditer l'historique) ;
   2. **Progrès** (graphiques poids de corps, calories, eau, par groupe musculaire) ;
   3. **Nutrition** (calories et eau du jour, compléments + rappels) ;
-  4. **Paramètres** (langue, thème, minuteur, sauvegarde/restauration JSON, export CSV,
-     mises à jour, rapport de plantage, envoi d'un avis).
+  4. **Paramètres** (langue, thème, minuteur, sauvegarde/restauration JSON, sauvegarde
+     automatique, export CSV, Health Connect, mises à jour, rapport de plantage, envoi d'un avis).
 
 ---
 
@@ -516,12 +528,16 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
      (§ 5.4).
    Pendant une opération, l'icône devient un indicateur de chargement et les actions sont
    désactivées.
+   - **Sauvegarde automatique** (🔄 D28) : carte avec interrupteur, dossier, dernière sauvegarde
+     et [Sauvegarder maintenant], décrite au § 15.2.
 4. **Encart de statut** sous les actions : succès (fond `primary` à 8 %, texte `primary`,
    icône `check_circle`) ou erreur (fond `destructive` à 8 %, texte `destructive`, icône
    `error`), avec le message (`settings.export.*` / `settings.import.*`, erreur technique
    dans `{{error}}`).
 5. **Encart info** permanent : `settings.info`.
-6. Section **« APPLICATION »** :
+6. Section **« SANTÉ »** (🔄 D29, seulement si Health Connect est disponible) : carte Health
+   Connect (interrupteur, autorisations, dernier envoi, [Envoyer l'historique]), § 15.3.
+7. Section **« APPLICATION »** :
    - **Mises à jour** (🔄 D25, icône `download`, § 3.17) : « Version {installée} · … » —
      installée par Obtainium : « mises à jour gérées par Obtainium », rien d'autre ; sinon
      « pas encore de vérification », « à jour (vérification du {date heure}) » ou « la {version}
@@ -531,7 +547,7 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
    - **Rapport de plantage** (🔄 D17, affiché seulement si un rapport existe, § 10.9) :
      « Dernier plantage le {date} » + [Partager] (feuille de partage, `text/plain`)
      [Supprimer] (efface tous les rapports).
-7. Section **« TON AVIS »** (🔄 D26, seulement si l'URL du webhook a été fournie au build) :
+8. Section **« TON AVIS »** (🔄 D26, seulement si l'URL du webhook a été fournie au build) :
    formulaire d'envoi d'un avis, décrit au § 14.1.
 
 ### 2.13 Graphique linéaire
@@ -904,6 +920,8 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
 | `update_check.json` | `{ checkedAt, latestVersion?, pageUrl?, apkUrl?, dismissedVersion? }` — vérification des mises à jour (§ 3.17), hors sauvegarde |
 | `feedback.json` | `{ lastSentAt, blockedUntil }` — délais entre deux avis (§ 14.3), hors sauvegarde |
+| `auto_backup.json` | `{ enabled, folderUri?, folderName?, lastSuccessAt?, lastFailureAt?, failure?, failureDetail? }` — sauvegarde automatique (§ 15.2), hors sauvegarde |
+| `health_connect.json` | `{ enabled, sent, pending, lastVersion, lastSyncAt?, lastError? }` — envois à Health Connect (§ 15.3), hors sauvegarde |
 | `meta.json` | `{ "schemaVersion": 2 }` — version du schéma de stockage |
 
 Volume attendu : quelques centaines de séances (< 1–2 Mo), entièrement chargées en mémoire au
@@ -1681,7 +1699,8 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 Réponses données aux questions ouvertes de la première version de ce document, et leur
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
-vérification finale (§ 13), D25 et D26 après la bascule.
+vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
+(§ 15).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1703,7 +1722,7 @@ vérification finale (§ 13), D25 et D26 après la bascule.
 | D16 | `muscleGroup` inconnu à l'import | ranger dans un groupe | normalisation puis groupe `dos` par défaut (§ 5.3) |
 | D17 | Écran d'erreur fatale | rapport de crash local | § 10.9, § 2.12 |
 | D18 | Format d'export JSON | au plus scalable | `version: 2` + chaîne de migrations, v1 toujours importée, v2 lisible par l'app Expo (§ 5.1) |
-| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur |
+| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur ; `WAKE_LOCK` avec D28 (WorkManager, dont `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE` sont retirées) ; `health.WRITE_EXERCISE` et `health.WRITE_WEIGHT` avec D29, accordées dans Health Connect quand l'utilisateur active l'option, aucune permission de lecture |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
 | D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
@@ -1711,6 +1730,9 @@ vérification finale (§ 13), D25 et D26 après la bascule.
 | D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
 | D25 | Mises à jour d'une app installée sans Obtainium | vérification intégrée | requête quotidienne à l'API GitHub, permission `INTERNET`, annonce sur l'Accueil et carte dans Paramètres ; désactivée quand Obtainium installe l'app (§ 1, 2.2, 2.12, 3.17) |
 | D26 | Retours des utilisateurs | envoyer un avis depuis l'app vers le serveur Discord du développeur | section « Ton avis » dans Paramètres ; webhook Discord dont l'URL vient d'un secret GitHub injecté au build (section masquée sans elle) ; envoi seulement sur appui, aucune donnée d'entraînement, aucune mention possible, un envoi par minute (§ 1, 2.12, 14) |
+| D27 | Notes de version | lister les commits depuis la Release précédente | titres des commits depuis le tag de la dernière Release, sans fusions ni commits qui ne touchent que la doc ou la CI, calculés par un module JVM testé ; titres de commit en français, écrits pour l'utilisateur ; vérification des pull requests (§ 15.1) |
+| D28 | Sauvegarde automatique | export JSON quotidien dans un dossier choisi | WorkManager toutes les 24 h, dossier du sélecteur système avec autorisation persistante, même nom que l'export manuel (remplacé le même jour), 14 fichiers gardés, « Sauvegarder maintenant », message si le dossier est inaccessible (§ 1, 2.12, 15.2) |
+| D29 | Health Connect | écrire les séances et le poids | option masquée sans Health Connect ; `ExerciseSessionRecord` musculation et `WeightRecord` (séances et pesées), `clientRecordId` stables pour mettre à jour et supprimer, « Envoyer l'historique » ; activité de politique de confidentialité ; aucune lecture (§ 1, 2.12, 15.3) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1992,3 +2014,258 @@ au style des cartes de Paramètres :
 
 Le délai (`{{delay}}`) réutilise les formats du minuteur (`settings.restTimer.seconds` /
 `settings.restTimer.minutes` : « 42 s », « 3 min »).
+
+---
+
+## 15. Évolutions
+
+Fonctionnalités ajoutées après la bascule, par lots ; chacune a sa décision au § 11. Le **lot 1**
+(notes de version, sauvegarde automatique, Health Connect) ne change pas le design : il réutilise
+les cartes, interrupteurs, boutons et encarts existants de Paramètres (§ 2.12, § 2.11, § 9).
+
+### 15.1 Notes de version (🔄 D27)
+
+**Texte de chaque Release** publiée par `release.yml` (§ 13.5) :
+
+```markdown
+MuscleNote 1.0.12 (versionCode 1012), commit 1a2b3c4.
+
+## Changements
+- Sauvegarde automatique : choix du dossier et sauvegarde quotidienne
+- Health Connect : envoi des séances et du poids
+
+Tous les commits : https://github.com/Bouss45/MuscleNote/compare/v1.0.11...v1.0.12
+```
+
+- **Release précédente** : la dernière Release (ni brouillon ni pré-release) au moment du run, lue
+  avant de créer la nouvelle. Les commits examinés sont ceux de `<son tag>..<commit construit>`,
+  listés du plus ancien au plus récent. Le dépôt est récupéré avec tout son historique
+  (`fetch-depth: 0`).
+- **Commits retenus** : ni les commits de fusion (plus d'un parent), ni ceux qui ne touchent que la
+  documentation ou la CI. Documentation = tout fichier `*.md` (`SPEC.md`, `README.md`,
+  `CLAUDE.md`…) ; CI = tout fichier sous `.github/`. Un commit qui touche aussi autre chose est
+  retenu ; un commit sans fichier modifié ne l'est pas.
+- **Une ligne par commit** : son titre (première ligne du message), tel quel. Au plus 50 lignes ;
+  au-delà, une dernière ligne « … et N autres changements ».
+- **Aucun commit retenu** (seule la CI a changé, par exemple) : « Aucun changement dans l'app :
+  nouvelle compilation. » à la place de la liste.
+- **Pas de Release précédente**, ou tag introuvable dans l'historique : « Liste des changements
+  indisponible. », sans lien de comparaison.
+- **Relance d'un run** dont la Release existe déjà : l'APK est remplacé, le texte ne change pas.
+- **Calcul** : la sélection et la mise en forme sont du Kotlin pur, dans un petit module JVM
+  `android-app/release-notes/` (sans Android), couvert par des tests JVM lancés à l'étape « Tests
+  unitaires ». Le workflow lui passe la sortie de `git log` (parents, titre et fichiers de chaque
+  commit) et publie le Markdown produit.
+- **Règle d'écriture** (`CLAUDE.md`) : le titre d'un commit décrit le changement **pour
+  l'utilisateur, en français** (« Sauvegarde automatique : choix du dossier », pas « Refactor du
+  BackupViewModel ») ; il finit tel quel dans les notes de version.
+- **Vérification des pull requests** : nouveau workflow `checks.yml`, sur chaque pull request vers
+  `main` touchant `android-app/**` ou ce workflow : tests JVM (app et notes de version) et
+  `assembleDebug`, sans secret ni Release. Une branche est validée avant sa fusion ; seule la fusion
+  publie une Release.
+
+### 15.2 Sauvegarde automatique (🔄 D28)
+
+**Carte « Sauvegarde automatique »**, dans la section « SAUVEGARDE » de Paramètres, après
+« Importer des données » (§ 2.12, point 3) ; style de la carte du minuteur (icône ronde `folder`
+en `primary`, titre, description) avec, à droite, l'interrupteur des rappels (§ 2.11).
+
+- Description : « Chaque jour, une sauvegarde JSON dans le dossier de ton choix. Les 14 plus
+  récentes sont gardées. »
+- **Interrupteur** :
+  - activé sans dossier retenu → sélecteur de dossier du système (`ACTION_OPEN_DOCUMENT_TREE`) ;
+    dossier choisi → sauvegarde automatique activée et **première sauvegarde tout de suite** ;
+    sélecteur annulé → reste désactivée ;
+  - activé avec un dossier déjà retenu → réactivée sur ce dossier, première sauvegarde tout de
+    suite (dossier inaccessible → message ci-dessous) ;
+  - désactivé → plus de sauvegarde planifiée ; le dossier reste retenu et les fichiers déjà écrits
+    ne sont pas touchés.
+- **Activée**, sous l'en-tête :
+  - « Dossier : {nom} » + bouton [Changer] (même sélecteur ; l'autorisation de l'ancien dossier
+    est rendue) ;
+  - « Dernière sauvegarde : {date heure} » ou « Aucune sauvegarde pour l'instant »
+    (`mutedForeground`) ;
+  - après un échec, en `destructive` : dossier inaccessible → « Le dossier de sauvegarde n'est plus
+    accessible (supprimé, renommé ou autorisation retirée). Choisis-le à nouveau. » + bouton
+    [Choisir un dossier] ; autre erreur → « Échec de la sauvegarde du {date heure} : {erreur} » ;
+  - bouton [Sauvegarder maintenant] : indicateur pendant l'écriture, désactivé pendant une autre
+    sauvegarde ; succès → retour haptique et « Dernière sauvegarde » à jour.
+
+**Dossier** : choisi dans le sélecteur du système ; l'app garde une **autorisation persistante** de
+lecture et d'écriture (`takePersistableUriPermission`), sans permission de stockage. Android ne
+propose pas la racine du stockage, `Download` ni `Android/data` : on choisit ou crée un
+sous-dossier (par ex. `Documents/MuscleNote`). Un dossier synchronisé par une autre app (Syncthing,
+Nextcloud…) met les sauvegardes hors du téléphone.
+
+**Planification** : WorkManager, tâche périodique unique `auto-backup`, toutes les 24 h, sans
+contrainte ; la première échéance est 24 h après l'activation (la sauvegarde de l'activation est
+faite directement). Android choisit le moment exact dans la période (la mise en veille peut la
+retarder). Planifiée à l'activation, annulée à la désactivation ; au démarrage de l'app, planifiée
+de nouveau si elle est activée et absente (`KEEP`). WorkManager la garde après un redémarrage ou
+une mise à jour de l'app.
+
+**Fichier** : même contenu que « Exporter mes données » (§ 5.6) — JSON v2 (§ 5.2), UTF-8, séance
+en cours exclue — et même nom, `musclenote_backup_AAAA-MM-JJ.json` (jour local de la sauvegarde).
+- Un fichier de ce nom existe déjà dans le dossier (sauvegarde du même jour) → son contenu est
+  **remplacé** ; sinon il est créé (`application/json`).
+- **Rotation**, seulement après une écriture réussie : parmi les fichiers du dossier nommés
+  exactement `musclenote_backup_AAAA-MM-JJ.json` (date valide), les **14 aux dates les plus
+  récentes** sont gardés, les autres supprimés. Rien d'autre n'est touché (copies `… (1).json`,
+  autres noms, sous-dossiers) ; un export manuel enregistré dans ce dossier sous ce nom compte parmi
+  les 14.
+- Une sauvegarde à la fois : la tâche planifiée et le bouton partagent un verrou.
+
+**État** — `auto_backup.json` (§ 4.2), propre à l'appareil, hors sauvegarde, non touché par un
+import : `{ enabled, folderUri?, folderName?, lastSuccessAt?, lastFailureAt?, failure?,
+failureDetail? }`, `failure` = `"folder"` (dossier inaccessible) ou `"write"`. Une réussite efface
+l'échec.
+- **Dossier inaccessible** : autorisation persistante absente, dossier introuvable, illisible ou
+  qui refuse la création (`SecurityException`, `FileNotFoundException`,
+  `IllegalArgumentException`…). La tâche se termine sans nouvel essai immédiat et réessaie à
+  l'échéance suivante (carte SD remise, par ex.). Le message reste affiché jusqu'à la prochaine
+  réussite. Pas de notification : l'état se lit dans Paramètres.
+
+**Permissions** : WorkManager ajoute au manifeste fusionné `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`
+(déjà déclarée), `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE`. Les deux dernières sont
+**retirées** (`tools:node="remove"`) : la tâche n'a ni contrainte réseau ni travail au premier
+plan. `WAKE_LOCK` (permission normale, accordée à l'installation) reste, WorkManager peut s'en
+servir pour exécuter la tâche.
+
+### 15.3 Health Connect (🔄 D29)
+
+Health Connect est le stockage de santé du téléphone (intégré au système depuis Android 14 ; app
+Health Connect sur Android 8 à 13). MuscleNote y **écrit** ses séances et le poids de corps, que
+d'autres apps de santé lisent avec l'accord de l'utilisateur. Rien ne passe par le réseau ;
+MuscleNote ne **lit** rien dans Health Connect.
+
+**Disponibilité** : `HealthConnectClient.getSdkStatus(context) == SDK_AVAILABLE`, relu à chaque
+affichage de Paramètres (retour au premier plan compris). Sinon (Android 8 à 13 sans l'app Health
+Connect, ou avec une version trop ancienne) la section est **masquée**, titre compris, et rien
+n'est envoyé.
+
+**Installation hors Play Store** : pas d'obstacle. Health Connect ne regarde pas la source
+d'installation ; la déclaration des permissions de santé dans la Play Console ne concerne que la
+distribution par le Play Store, et des apps distribuées par F-Droid (Gadgetbridge, openScale sync)
+écrivent dans Health Connect. La condition est l'activité de politique de confidentialité
+ci-dessous : sans elle, Health Connect refuse la demande sans afficher d'écran.
+
+**Manifeste** :
+- permissions `android.permission.health.WRITE_EXERCISE` et `android.permission.health.WRITE_WEIGHT`
+  (aucune permission de lecture) ;
+- `<queries>` vers `com.google.android.apps.healthdata` (app Health Connect, Android 8 à 13) ;
+- **activité de politique de confidentialité** `HealthPermissionsActivity`, exigée par Health
+  Connect qui l'ouvre depuis son écran d'autorisation et ses réglages :
+  - Android 14 et plus : `activity-alias` exporté vers cette activité, action
+    `android.intent.action.VIEW_PERMISSION_USAGE`, catégorie
+    `android.intent.category.HEALTH_PERMISSIONS`,
+    `android:permission="android.permission.START_VIEW_PERMISSION_USAGE"` ;
+  - Android 13 et moins : l'activité elle-même, exportée, action
+    `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE`.
+
+**Écran de politique de confidentialité** (thème, langue et en-tête avec retour de l'app) : titre
+« MuscleNote et Health Connect », puis :
+- **Ce qui est écrit** : tes séances terminées (type musculation, début, fin, nom) et ton poids
+  (celui saisi au début des séances et tes pesées).
+- **Quand** : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes
+  une pesée, et quand tu appuies sur « Envoyer l'historique ».
+- **Rien d'autre** : MuscleNote ne lit aucune donnée de Health Connect et n'envoie rien sur
+  internet ; tes données restent sur ton téléphone.
+- **Arrêter** : coupe l'interrupteur Health Connect dans Paramètres. Les données déjà écrites
+  s'effacent depuis les réglages de Health Connect.
+
+**Carte « Health Connect »** — nouvelle section « SANTÉ » de Paramètres, entre « SAUVEGARDE » et
+« APPLICATION » ; même style que la carte de sauvegarde automatique (icône ronde `monitor_heart`
+en `primary`, interrupteur) :
+- Description : « Envoie tes séances de musculation et ton poids à Health Connect, pour les
+  retrouver dans tes autres apps de santé. »
+- **Interrupteur** :
+  - activé → écran d'autorisation de Health Connect pour les deux permissions ; au retour, au moins
+    une accordée → activé ; aucune → reste désactivé, « Autorisation refusée : rien n'est
+    envoyé. » ;
+  - désactivé → plus aucun envoi ; ce qui est déjà dans Health Connect y reste (on l'efface depuis
+    Health Connect) ; les autorisations ne sont pas retirées (elles se gèrent dans Health Connect).
+- **Activé**, sous l'en-tête :
+  - autorisation manquante (refusée en partie, ou retirée depuis Health Connect) : « Séances non
+    autorisées : elles ne sont pas envoyées. » et / ou « Poids non autorisé : il n'est pas
+    envoyé. » + bouton [Autoriser] (redemande ; si Health Connect ne montre plus la demande,
+    ouvre ses réglages des données de MuscleNote) ;
+  - « Dernier envoi : {date heure} » ou « Rien d'envoyé pour l'instant » (`mutedForeground`) ;
+  - après un échec, en `destructive` : « Envoi impossible ({erreur}). Nouvel essai à la prochaine
+    modification ou au prochain lancement. » ;
+  - bouton [Envoyer l'historique] : envoie toutes les séances terminées et toutes les pesées
+    (indicateur pendant l'envoi) ; résultat dans un encart sous la carte (style § 2.12, point 4) :
+    « Historique envoyé à Health Connect : {n} séances, {m} mesures de poids. » ou l'erreur. Ce qui
+    était déjà envoyé est remplacé, jamais dupliqué.
+
+**Enregistrements écrits** :
+
+| source | enregistrement | champs | `clientRecordId` |
+|---|---|---|---|
+| séance terminée avec une durée | `ExerciseSessionRecord` | type `EXERCISE_TYPE_STRENGTH_TRAINING` (musculation) ; début = `date` ; fin = début + `durationMinutes` (au moins 1 min) ; décalage horaire du fuseau du téléphone à chacun de ces instants ; titre = nom affiché (§ 3.1 : préréglage dans la langue de l'app au moment de l'envoi, sinon nom, sinon date) ; ni notes, ni segments | `musclenote-workout-{id}` |
+| poids d'une séance (`bodyWeight > 0`) | `WeightRecord` | instant = début de la séance ; poids en kg | `musclenote-workout-weight-{id}` |
+| pesée (§ 3.11) | `WeightRecord` | instant = `date` (midi local) ; poids en kg | `musclenote-weighin-{date}` |
+
+- Séance **sans durée** (finalisée automatiquement après 24 h, § 3.4) : pas de séance dans Health
+  Connect (fin inconnue ; une durée inventée fausserait le temps d'activité) ; son poids est envoyé.
+- Poids hors de ]0 ; 1000] kg (limites de Health Connect) : non envoyé.
+- Métadonnées : saisie manuelle (`Metadata.manualEntry`), `clientRecordId` ci-dessus,
+  `clientRecordVersion` = instant de l'envoi en ms, toujours supérieur au précédent
+  (`max(dernière version + 1, maintenant)`). Health Connect **remplace** l'enregistrement de même
+  `clientRecordId` quand la version est plus grande : modifier une séance ou une pesée met à jour
+  Health Connect sans doublon ; supprimer supprime par `clientRecordId`.
+
+**Envois automatiques** (interrupteur activé) :
+- **Déclencheurs** : fin d'une séance (et finalisation après 24 h) ; modification dans l'éditeur
+  (nom, préréglage, poids) ou de la date (Accueil) ; suppression d'une séance ; ajout, remplacement
+  ou suppression d'une pesée ; import d'une sauvegarde (§ 5.4 : ce qui a changé est envoyé, ce qui
+  a disparu est supprimé). Changer seulement les exercices ou les séries d'une séance ne renvoie
+  rien (ils ne font pas partie de l'enregistrement).
+- Ce qui existait avant l'activation n'est envoyé que par [Envoyer l'historique], ou quand il est
+  modifié.
+- **Mécanisme** : à chaque changement des séances ou des pesées, l'app compare l'avant et l'après
+  et met en attente les `clientRecordId` concernés (enregistrés sur disque) ; la file est traitée
+  une opération à la fois — suppressions puis écritures, par lots de 100. Un enregistrement dont le
+  type n'est pas autorisé reste en attente jusqu'à l'autorisation. Échec (Health Connect
+  indisponible, autorisation retirée, erreur) → la file est gardée et retentée au prochain
+  changement, au retour au premier plan et sur [Envoyer l'historique] ; pas de tâche de fond.
+- **Registre** — `health_connect.json` (§ 4.2), propre à l'appareil, hors sauvegarde :
+  `{ enabled, sent: { clientRecordId: empreinte }, pending: [clientRecordId], lastVersion,
+  lastSyncAt?, lastError? }`. L'empreinte résume les champs source de l'enregistrement (date, durée,
+  préréglage, nom, poids). Au démarrage, un enregistrement envoyé dont l'empreinte a changé ou dont
+  la source a disparu (modifiée pendant que l'interrupteur était coupé, par exemple) est remis en
+  attente. Changer la langue de l'app ne renvoie rien : le titre d'une séance change de langue à son
+  prochain envoi.
+
+### 15.4 Textes (FR et EN)
+
+| clé | FR | EN |
+|---|---|---|
+| `settings.autoBackup.title` | Sauvegarde automatique | Automatic backup |
+| `settings.autoBackup.desc` | Chaque jour, une sauvegarde JSON dans le dossier de ton choix. Les 14 plus récentes sont gardées. | Every day, a JSON backup in the folder of your choice. The 14 most recent are kept. |
+| `settings.autoBackup.folder` | Dossier : {{name}} | Folder: {{name}} |
+| `settings.autoBackup.change` | Changer | Change |
+| `settings.autoBackup.last` | Dernière sauvegarde : {{date}} | Last backup: {{date}} |
+| `settings.autoBackup.never` | Aucune sauvegarde pour l'instant | No backup yet |
+| `settings.autoBackup.folderLost` | Le dossier de sauvegarde n'est plus accessible (supprimé, renommé ou autorisation retirée). Choisis-le à nouveau. | The backup folder can't be reached anymore (deleted, renamed or access removed). Choose it again. |
+| `settings.autoBackup.chooseFolder` | Choisir un dossier | Choose a folder |
+| `settings.autoBackup.failed` | Échec de la sauvegarde du {{date}} : {{error}} | Backup of {{date}} failed: {{error}} |
+| `settings.autoBackup.now` | Sauvegarder maintenant | Back up now |
+| `settings.section.health` | SANTÉ | HEALTH |
+| `health.title` | Health Connect | Health Connect |
+| `health.desc` | Envoie tes séances de musculation et ton poids à Health Connect, pour les retrouver dans tes autres apps de santé. | Sends your strength sessions and body weight to Health Connect, so your other health apps can use them. |
+| `health.denied` | Autorisation refusée : rien n'est envoyé. | Permission denied: nothing is sent. |
+| `health.missingSessions` | Séances non autorisées : elles ne sont pas envoyées. | Sessions not allowed: they aren't sent. |
+| `health.missingWeight` | Poids non autorisé : il n'est pas envoyé. | Weight not allowed: it isn't sent. |
+| `health.allow` | Autoriser | Allow |
+| `health.last` | Dernier envoi : {{date}} | Last sent: {{date}} |
+| `health.never` | Rien d'envoyé pour l'instant | Nothing sent yet |
+| `health.failed` | Envoi impossible ({{error}}). Nouvel essai à la prochaine modification ou au prochain lancement. | Couldn't send ({{error}}). Will retry on the next change or the next launch. |
+| `health.sendHistory` | Envoyer l'historique | Send history |
+| `health.historySent` | Historique envoyé à Health Connect : {{sessions}}, {{weights}}. | History sent to Health Connect: {{sessions}}, {{weights}}. |
+| `health.sessions_one` / `_other` | {{count}} séance / {{count}} séances | {{count}} session / {{count}} sessions |
+| `health.weights_one` / `_other` | {{count}} mesure de poids / {{count}} mesures de poids | {{count}} weight entry / {{count}} weight entries |
+| `health.privacy.title` | MuscleNote et Health Connect | MuscleNote and Health Connect |
+| `health.privacy.written` | Ce qui est écrit : tes séances terminées (type musculation, début, fin, nom) et ton poids (celui saisi au début des séances et tes pesées). | What is written: your finished sessions (strength training, start, end, name) and your body weight (the one entered when starting a session, and your weigh-ins). |
+| `health.privacy.when` | Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l'historique ». | When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”. |
+| `health.privacy.nothingElse` | Rien d'autre : MuscleNote ne lit aucune donnée de Health Connect et n'envoie rien sur internet ; tes données restent sur ton téléphone. | Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone. |
+| `health.privacy.stop` | Arrêter : coupe l'interrupteur Health Connect dans Paramètres. Les données déjà écrites s'effacent depuis les réglages de Health Connect. | To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect's settings. |
