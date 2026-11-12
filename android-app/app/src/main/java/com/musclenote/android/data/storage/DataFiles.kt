@@ -1,6 +1,7 @@
 package com.musclenote.android.data.storage
 
 import com.musclenote.android.data.backup.AppJson
+import com.musclenote.android.data.feedback.FeedbackThrottle
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
@@ -54,5 +55,8 @@ class DataFiles(
 
     /** Vérification des mises à jour (§ 3.17), propre à l'appareil, hors sauvegarde. */
     val updateCheck = document("update_check.json", UpdateCheckState.serializer())
+
+    /** Délais entre deux avis (§ 14.3), propres à l'appareil, hors sauvegarde. */
+    val feedback = document("feedback.json", FeedbackThrottle.serializer())
     val meta = document("meta.json", StorageMeta.serializer())
 }
