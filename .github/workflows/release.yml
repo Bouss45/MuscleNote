@@ -56,6 +56,32 @@ jobs:
       - name: Tests unitaires
         run: ./gradlew :app:testDebugUnitTest :release-notes:test --stacktrace
 
+      # Notes de version (SPEC § 15.1) : commits depuis le tag de la dernière Release, sans les
+      # fusions ni ceux qui ne touchent que la doc ou la CI (module :release-notes). Avant le
+      # keystore : une fois ANDROID_KEYSTORE_PATH défini, toute commande Gradle configure la
+      # signature et réclame les mots de passe, fournis à la seule étape de build.
+      - name: Notes de version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          LOG_ARGS=""
+          PREV_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2> /dev/null || true)"
+          if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG^{commit}" > /dev/null; then
+            git -c core.quotePath=false log --reverse --name-only --format='%x1e%H%x1f%P%x1f%s' \
+              "$PREV_TAG..$GITHUB_SHA" > "$RUNNER_TEMP/commits.log"
+            LOG_ARGS="--log $RUNNER_TEMP/commits.log --compare $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREV_TAG...$TAG"
+            echo "Notes depuis $PREV_TAG"
+          else
+            echo "::warning::Pas de Release précédente dans l'historique : notes sans liste des changements"
+          fi
+          if ! ./gradlew -q :release-notes:run \
+            --args="--version $VERSION_NAME --code $VERSION_CODE --commit $GITHUB_SHA --out $NOTES_FILE $LOG_ARGS"; then
+            echo "::warning::Notes de version impossibles à calculer : en-tête seul"
+            echo "MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}." > "$NOTES_FILE"
+          fi
+          cat "$NOTES_FILE"
+
       # Le keystore n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
       - name: Décoder le keystore
         env:
@@ -99,8 +125,6 @@ jobs:
           cp "$APK" "$RUNNER_TEMP/$APK_NAME"
           ls -l "$RUNNER_TEMP/$APK_NAME"
 
-      # Notes de version (SPEC § 15.1) : commits depuis le tag de la dernière Release, sans les
-      # fusions ni ceux qui ne touchent que la doc ou la CI (module :release-notes).
       - name: Publier la Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -108,33 +132,14 @@ jobs:
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
             # Relance d'un même run : on remplace l'APK de la release existante, texte inchangé.
             gh release upload "$TAG" "$RUNNER_TEMP/$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
-            exit 0
-          fi
-
-          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
-          LOG_ARGS=""
-          PREV_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2> /dev/null || true)"
-          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG^{commit}" > /dev/null; then
-            git -c core.quotePath=false log --reverse --name-only --format='%x1e%H%x1f%P%x1f%s' \
-              "$PREV_TAG..$GITHUB_SHA" > "$RUNNER_TEMP/commits.log"
-            LOG_ARGS="--log $RUNNER_TEMP/commits.log --compare $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREV_TAG...$TAG"
-            echo "Notes depuis $PREV_TAG"
           else
-            echo "::warning::Pas de Release précédente dans l'historique : notes sans liste des changements"
+            gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$GITHUB_SHA" \
+              --latest \
+              --title "MuscleNote v$VERSION_NAME" \
+              --notes-file "$RUNNER_TEMP/release-notes.md"
           fi
-          if ! ./gradlew -q :release-notes:run \
-            --args="--version $VERSION_NAME --code $VERSION_CODE --commit $GITHUB_SHA --out $NOTES_FILE $LOG_ARGS"; then
-            echo "::warning::Notes de version impossibles à calculer : en-tête seul"
-            echo "MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}." > "$NOTES_FILE"
-          fi
-          cat "$NOTES_FILE"
-
-          gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --latest \
-            --title "MuscleNote v$VERSION_NAME" \
-            --notes-file "$NOTES_FILE"
 
       - name: Supprimer le keystore
         if: always()
