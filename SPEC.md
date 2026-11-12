@@ -92,7 +92,7 @@
   | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
   | `WAKE_LOCK` (🔄 D28) | ajoutée par WorkManager : exécution de la sauvegarde automatique (§ 15.2) ; permission normale, sans demande |
   | `health.WRITE_EXERCISE` (🔄 D29) | écrire les séances dans Health Connect (§ 15.3) ; accordée dans l'écran de Health Connect, quand l'utilisateur active l'option |
-  | `health.WRITE_WEIGHT` (🔄 D29) | écrire le poids (séances et pesées) dans Health Connect (§ 15.3) ; idem |
+  | `health.WRITE_WEIGHT` (🔄 D29) | écrire le poids (un par jour : la pesée, sinon celui de la séance) dans Health Connect (§ 15.3) ; idem |
   Aucune permission de stockage (fichiers via le sélecteur système, le dossier de la sauvegarde
   automatique avec une autorisation persistante, et `FileProvider`), de localisation ni de
   caméra ; aucune permission de **lecture** Health Connect. `ACCESS_NETWORK_STATE` et
@@ -1700,7 +1700,7 @@ Réponses données aux questions ouvertes de la première version de ce document
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
-(§ 15).
+(§ 15), D30 avec le correctif de Health Connect (§ 15.3).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1733,6 +1733,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D27 | Notes de version | lister les commits depuis la Release précédente | titres des commits depuis le tag de la dernière Release, sans fusions ni commits qui ne touchent que la doc ou la CI, calculés par un module JVM testé ; titres de commit en français, écrits pour l'utilisateur ; vérification des pull requests (§ 15.1) |
 | D28 | Sauvegarde automatique | export JSON quotidien dans un dossier choisi | WorkManager toutes les 24 h, dossier du sélecteur système avec autorisation persistante, même nom que l'export manuel (remplacé le même jour), 14 fichiers gardés, « Sauvegarder maintenant », message si le dossier est inaccessible (§ 1, 2.12, 15.2) |
 | D29 | Health Connect | écrire les séances et le poids | option masquée sans Health Connect ; `ExerciseSessionRecord` musculation et `WeightRecord` (séances et pesées), `clientRecordId` stables pour mettre à jour et supprimer, « Envoyer l'historique » ; activité de politique de confidentialité ; aucune lecture (§ 1, 2.12, 15.3) |
+| D30 | Health Connect : poids en double, séances absentes, compteur (retour d'un utilisateur, v1.0.5) | un poids par jour, durée estimée, ne compter que le confirmé | un `WeightRecord` par jour local avec la règle de Progrès (§ 3.10 : la pesée remplace le poids de séance), anciens enregistrements supprimés ; séance de moins de 10 min ou sans durée envoyée avec l'estimation du temps en salle (§ 3.7, sinon 10 min), sans jamais finir après sa fin dans l'app ; envoi par type, seuls les enregistrements confirmés par Health Connect sont comptés et retenus ; état de la carte (écrit, dernier envoi, dernière erreur datée) (§ 15.3) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2039,6 +2040,8 @@ Le délai (`{{delay}}`) réutilise les formats du minuteur (`settings.restTimer.
 Fonctionnalités ajoutées après la bascule, par lots ; chacune a sa décision au § 11. Le **lot 1**
 (notes de version, sauvegarde automatique, Health Connect) ne change pas le design : il réutilise
 les cartes, interrupteurs, boutons et encarts existants de Paramètres (§ 2.12, § 2.11, § 9).
+**Correctif de Health Connect** après la v1.0.5 (🔄 D30) : un poids par jour, durée des séances
+courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2148,7 +2151,7 @@ l'échec.
 plan. `WAKE_LOCK` (permission normale, accordée à l'installation) reste, WorkManager peut s'en
 servir pour exécuter la tâche.
 
-### 15.3 Health Connect (🔄 D29)
+### 15.3 Health Connect (🔄 D29, D30)
 
 Health Connect est le stockage de santé du téléphone (intégré au système depuis Android 14 ; app
 Health Connect sur Android 8 à 13). MuscleNote y **écrit** ses séances et le poids de corps, que
@@ -2181,8 +2184,8 @@ ci-dessous : sans elle, Health Connect refuse la demande sans afficher d'écran.
 
 **Écran de politique de confidentialité** (thème, langue et en-tête avec retour de l'app) : titre
 « MuscleNote et Health Connect », puis :
-- **Ce qui est écrit** : tes séances terminées (type musculation, début, fin, nom) et ton poids
-  (celui saisi au début des séances et tes pesées).
+- **Ce qui est écrit** : tes séances terminées (type musculation, début, fin, nom) et ton poids,
+  une mesure par jour (ta pesée, sinon le poids saisi au début de ta dernière séance du jour).
 - **Quand** : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes
   une pesée, et quand tu appuies sur « Envoyer l'historique ».
 - **Rien d'autre** : MuscleNote ne lit aucune donnée de Health Connect et n'envoie rien sur
@@ -2206,25 +2209,56 @@ en `primary`, interrupteur) :
     autorisées : elles ne sont pas envoyées. » et / ou « Poids non autorisé : il n'est pas
     envoyé. » + bouton [Autoriser] (redemande ; si Health Connect ne montre plus la demande,
     ouvre ses réglages des données de MuscleNote) ;
-  - « Dernier envoi : {date heure} » ou « Rien d'envoyé pour l'instant » (`mutedForeground`) ;
-  - après un échec, en `destructive` : « Envoi impossible ({erreur}). Nouvel essai à la prochaine
-    modification ou au prochain lancement. » ;
-  - bouton [Envoyer l'historique] : envoie toutes les séances terminées et toutes les pesées
-    (indicateur pendant l'envoi) ; résultat dans un encart sous la carte (style § 2.12, point 4) :
-    « Historique envoyé à Health Connect : {n} séances, {m} mesures de poids. » ou l'erreur. Ce qui
-    était déjà envoyé est remplacé, jamais dupliqué.
+  - « Dernier envoi : {date heure} » (dernier envoi dont Health Connect a confirmé au moins une
+    écriture ou suppression) ou « Rien d'envoyé pour l'instant » (`mutedForeground`) ;
+  - 🔄 D30 — dès que le registre n'est pas vide, « Écrit dans Health Connect : {n séances},
+    {m mesures de poids} » (`mutedForeground`) : ce que Health Connect a confirmé et qui y est
+    encore, d'après le registre ;
+  - 🔄 D30 — tant que la dernière erreur n'est pas effacée par un envoi sans erreur, en
+    `destructive` : « Dernière erreur ({date heure}) : {détail} Nouvel essai à la prochaine
+    modification ou au prochain lancement. », {détail} = « Séances : échec ({erreur}). »,
+    « Poids : échec ({erreur}). » ou, quand Health Connect ne répond pas du tout, « Envoi
+    impossible ({erreur}). » ;
+  - bouton [Envoyer l'historique] : envoie toutes les séances terminées et tous les poids
+    (indicateur pendant l'envoi) ; résultat dans un encart sous la carte (style § 2.12, point 4),
+    🔄 D30 : « Health Connect a confirmé {n séances} et {m mesures de poids}. » — **seulement les
+    écritures que Health Connect a confirmées pendant cet envoi** —, puis une ligne par type en
+    échec (« Séances : échec ({erreur}). ») et par type non autorisé ; encart rouge si un type a
+    échoué. Health Connect ne répond pas → « Envoi impossible ({erreur}). ». Ce qui était déjà
+    envoyé est remplacé, jamais dupliqué.
 
 **Enregistrements écrits** :
 
 | source | enregistrement | champs | `clientRecordId` |
 |---|---|---|---|
-| séance terminée avec une durée | `ExerciseSessionRecord` | type `EXERCISE_TYPE_STRENGTH_TRAINING` (musculation) ; début = `date` ; fin = début + `durationMinutes` (au moins 1 min) ; décalage horaire du fuseau du téléphone à chacun de ces instants ; titre = nom affiché (§ 3.1 : préréglage dans la langue de l'app au moment de l'envoi, sinon nom, sinon date) ; ni notes, ni segments | `musclenote-session-{id}` |
-| poids d'une séance (`bodyWeight > 0`) | `WeightRecord` | instant = début de la séance ; poids en kg | `musclenote-weight-workout-{id}` |
-| pesée (§ 3.11) | `WeightRecord` | instant = `date` (midi local) ; poids en kg | `musclenote-weight-weighin-{date}` |
+| séance terminée | `ExerciseSessionRecord` | type `EXERCISE_TYPE_STRENGTH_TRAINING` (musculation) ; début et fin : voir « Durée » ci-dessous ; décalage horaire du fuseau du téléphone à chacun de ces instants ; titre = nom affiché (§ 3.1 : préréglage dans la langue de l'app au moment de l'envoi, sinon nom, sinon date) ; ni notes, ni segments | `musclenote-session-{id}` |
+| poids d'un jour local (🔄 D30) | `WeightRecord` | la règle du graphique de Progrès (§ 3.10) : la pesée du jour (§ 3.11) si elle existe, instant = sa `date` (midi local) ; sinon le `bodyWeight > 0` de la séance la plus récente du jour, instant = début de cette séance ; poids en kg | `musclenote-weight-{AAAA-MM-JJ}` |
 
-- Séance **sans durée** (finalisée automatiquement après 24 h, § 3.4) : pas de séance dans Health
-  Connect (fin inconnue ; une durée inventée fausserait le temps d'activité) ; son poids est envoyé.
-- Poids hors de ]0 ; 1000] kg (limites de Health Connect) : non envoyé.
+- **Un seul poids par jour** (🔄 D30). La v1.0.5 écrivait un poids par séance et un par pesée
+  (`musclenote-weight-workout-{id}`, `musclenote-weight-weighin-{date}`) : une séance et une pesée
+  le même jour donnaient deux mesures, et l'encart annonçait « 2 mesures de poids » pour une seule
+  pesée. Au premier envoi après la mise à jour, ces anciens enregistrements (ceux du registre)
+  sont supprimés, et le poids de leur jour est écrit dans le même envoi (le jour se lit dans
+  l'empreinte d'époque `{instant}|{kg}`). Ajouter une pesée un jour qui avait déjà un poids de
+  séance remplace l'enregistrement du jour (même `clientRecordId`).
+- **Durée** (🔄 D30) :
+  - au moins 10 min (seuil du temps en salle, § 3.7) → début = `date`, fin = début +
+    `durationMinutes` ;
+  - moins de 10 min (séance saisie après coup) → l'estimation du temps en salle (§ 3.7 :
+    moyenne arrondie des séances d'au moins 10 min de même clé, § 3.1), sinon 10 min ; la séance
+    **finit** au moment où elle a été terminée dans l'app (`date` + `durationMinutes`) et commence
+    l'estimation plus tôt ;
+  - sans durée (finalisée automatiquement après 24 h, § 3.4) → début = `date`, fin = début +
+    l'estimation (même règle). Avant D30 elle n'était pas envoyée du tout ; une séance existante
+    de ce type n'est envoyée que par [Envoyer l'historique] ou quand elle est modifiée.
+  - Ainsi la fin est toujours après le début (Health Connect l'exige) et Health Connect montre le
+    même temps que « Temps en salle ». Une séance de 0 min partait avec 1 min en v1.0.5.
+- **Type d'exercice** : `EXERCISE_TYPE_STRENGTH_TRAINING` (« Musculation » dans Health Connect) ;
+  `EXERCISE_TYPE_WEIGHTLIFTING` désigne l'haltérophilie. Une séance écrite est visible dans l'app
+  Health Connect (Données et accès › Activité › Exercice) ; ce qu'en montrent les autres apps
+  (Fitbit / Google Health…) dépend de ce qu'elles importent et de leurs autorisations de lecture,
+  hors du contrôle de MuscleNote (non vérifiable sans appareil).
+- Poids hors de ]0 ; 1000] kg (limites de Health Connect) : non envoyé ce jour-là.
 - Métadonnées : saisie manuelle (`Metadata.manualEntry`), `clientRecordId` ci-dessus,
   `clientRecordVersion` = instant de l'envoi en ms, toujours supérieur au précédent
   (`max(dernière version + 1, maintenant)`). Le préfixe de l'identifiant donne le type
@@ -2242,14 +2276,20 @@ en `primary`, interrupteur) :
   modifié.
 - **Mécanisme** : à chaque changement des séances ou des pesées, l'app compare l'avant et l'après
   et met en attente les `clientRecordId` concernés (enregistrés sur disque) ; la file est traitée
-  une opération à la fois — suppressions puis écritures, par lots de 100. Un enregistrement dont le
-  type n'est pas autorisé reste en attente jusqu'à l'autorisation. Échec (Health Connect
+  une opération à la fois, 🔄 D30 **type par type** (séances, puis poids ; pour chacun
+  suppressions puis écritures, par lots de 100). Une écriture ne compte que si Health Connect la
+  confirme (identifiants renvoyés par `insertRecords`) : seule une écriture confirmée entre dans
+  le registre et quitte la file ; un type en échec n'empêche pas l'autre. Seul un enregistrement
+  du registre est supprimé dans Health Connect (un enregistrement jamais écrit quitte simplement
+  la file). Un enregistrement dont le type n'est pas autorisé reste en attente jusqu'à
+  l'autorisation. Échec (Health Connect
   indisponible, autorisation retirée, erreur) → la file est gardée et retentée au prochain
   changement, au retour au premier plan et sur [Envoyer l'historique] ; pas de tâche de fond.
 - **Registre** — `health_connect.json` (§ 4.2), propre à l'appareil, hors sauvegarde :
   `{ enabled, sent: { clientRecordId: empreinte }, pending: [clientRecordId], lastVersion,
-  lastSyncAt?, lastError? }`. L'empreinte résume les champs source de l'enregistrement (date, durée,
-  préréglage, nom, poids). Au démarrage, un enregistrement envoyé dont l'empreinte a changé ou dont
+  lastSyncAt?, lastError?, lastErrorAt?, lastErrorType? }` (`lastErrorType` = `Session`, `Weight`,
+  ou absent quand Health Connect ne répond pas). L'empreinte résume ce qui est écrit : début et fin,
+  préréglage et nom d'une séance ; instant et poids d'un poids. Au démarrage, un enregistrement envoyé dont l'empreinte a changé ou dont
   la source a disparu (modifiée pendant que l'interrupteur était coupé, par exemple) est remis en
   attente. Changer la langue de l'app ne renvoie rien : le titre d'une séance change de langue à son
   prochain envoi.
@@ -2277,13 +2317,17 @@ en `primary`, interrupteur) :
 | `health.allow` | Autoriser | Allow |
 | `health.last` | Dernier envoi : {{date}} | Last sent: {{date}} |
 | `health.never` | Rien d'envoyé pour l'instant | Nothing sent yet |
-| `health.failed` | Envoi impossible ({{error}}). Nouvel essai à la prochaine modification ou au prochain lancement. | Couldn't send ({{error}}). Will retry on the next change or the next launch. |
+| `health.written` (🔄 D30) | Écrit dans Health Connect : {{sessions}}, {{weights}} | Written to Health Connect: {{sessions}}, {{weights}} |
+| `health.failed` (🔄 D30) | Dernière erreur ({{date}}) : {{detail}} Nouvel essai à la prochaine modification ou au prochain lancement. | Last error ({{date}}): {{detail}} Will retry on the next change or the next launch. |
+| `health.unavailable` (🔄 D30) | Envoi impossible ({{error}}). | Couldn't send ({{error}}). |
+| `health.typeFailedSessions` (🔄 D30) | Séances : échec ({{error}}). | Sessions: failed ({{error}}). |
+| `health.typeFailedWeight` (🔄 D30) | Poids : échec ({{error}}). | Weight: failed ({{error}}). |
 | `health.sendHistory` | Envoyer l'historique | Send history |
-| `health.historySent` | Historique envoyé à Health Connect : {{sessions}}, {{weights}}. | History sent to Health Connect: {{sessions}}, {{weights}}. |
+| `health.historySent` (🔄 D30) | Health Connect a confirmé {{sessions}} et {{weights}}. | Health Connect confirmed {{sessions}} and {{weights}}. |
 | `health.sessions_one` / `_other` | {{count}} séance / {{count}} séances | {{count}} session / {{count}} sessions |
 | `health.weights_one` / `_other` | {{count}} mesure de poids / {{count}} mesures de poids | {{count}} weight entry / {{count}} weight entries |
 | `health.privacy.title` | MuscleNote et Health Connect | MuscleNote and Health Connect |
-| `health.privacy.written` | Ce qui est écrit : tes séances terminées (type musculation, début, fin, nom) et ton poids (celui saisi au début des séances et tes pesées). | What is written: your finished sessions (strength training, start, end, name) and your body weight (the one entered when starting a session, and your weigh-ins). |
+| `health.privacy.written` (🔄 D30) | Ce qui est écrit : tes séances terminées (type musculation, début, fin, nom) et ton poids, une mesure par jour (ta pesée, sinon le poids saisi au début de ta dernière séance du jour). | What is written: your finished sessions (strength training, start, end, name) and your body weight, one entry per day (your weigh-in, otherwise the weight entered when starting your last session of the day). |
 | `health.privacy.when` | Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l'historique ». | When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”. |
 | `health.privacy.nothingElse` | Rien d'autre : MuscleNote ne lit aucune donnée de Health Connect et n'envoie rien sur internet ; tes données restent sur ton téléphone. | Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone. |
 | `health.privacy.stop` | Arrêter : coupe l'interrupteur Health Connect dans Paramètres. Les données déjà écrites s'effacent depuis les réglages de Health Connect. | To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect's settings. |

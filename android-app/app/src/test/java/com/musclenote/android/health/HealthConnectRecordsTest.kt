@@ -31,7 +31,7 @@ class HealthConnectRecordsTest {
 
     @Test
     fun `une séance devient une séance de musculation en saisie manuelle`() {
-        val spec = HealthRecords.forWorkout(workout, paris).first { it is HealthRecordSpec.Session }
+        val spec = HealthRecords.all(listOf(workout), emptyList(), paris).values.first { it is HealthRecordSpec.Session }
         val record = HealthConnectRecords.toRecord(spec, version = 1_762_800_000_000) { "Titre ${it.name}" } as ExerciseSessionRecord
         assertEquals(ExerciseSessionRecord.EXERCISE_TYPE_STRENGTH_TRAINING, record.exerciseType)
         assertEquals(Instant.parse("2026-11-10T17:05:12.345Z"), record.startTime)
@@ -48,20 +48,21 @@ class HealthConnectRecordsTest {
 
     @Test
     fun `le poids d'une séance et une pesée deviennent des mesures de poids`() {
-        val fromWorkout = HealthRecords.forWorkout(workout, paris).first { it is HealthRecordSpec.Weight }
+        val records = HealthRecords.all(listOf(workout), listOf(BodyWeightEntry("2026-11-09T11:00:00.000Z", 78.2)), paris)
+        val fromWorkout = records.getValue("musclenote-weight-2026-11-10")
         val record = HealthConnectRecords.toRecord(fromWorkout, version = 7) { error("pas de titre pour un poids") } as WeightRecord
         assertEquals(Instant.parse("2026-11-10T17:05:12.345Z"), record.time)
         assertEquals(ZoneOffset.ofHours(1), record.zoneOffset)
         assertEquals(78.5, record.weight.inKilograms, 1e-9)
-        assertEquals("musclenote-weight-workout-w1", record.metadata.clientRecordId)
+        assertEquals("musclenote-weight-2026-11-10", record.metadata.clientRecordId)
         assertEquals(7L, record.metadata.clientRecordVersion)
         assertEquals(Metadata.RECORDING_METHOD_MANUAL_ENTRY, record.metadata.recordingMethod)
 
-        val weighIn = HealthRecords.forWeighIn(BodyWeightEntry("2026-11-09T11:00:00.000Z", 78.2), paris)!!
+        val weighIn = records.getValue("musclenote-weight-2026-11-09")
         val weighInRecord = HealthConnectRecords.toRecord(weighIn, version = 8) { "" } as WeightRecord
         assertEquals(Instant.parse("2026-11-09T11:00:00Z"), weighInRecord.time)
         assertEquals(78.2, weighInRecord.weight.inKilograms, 1e-9)
-        assertEquals("musclenote-weight-weighin-2026-11-09T11:00:00.000Z", weighInRecord.metadata.clientRecordId)
+        assertEquals("musclenote-weight-2026-11-09", weighInRecord.metadata.clientRecordId)
     }
 
     @Test

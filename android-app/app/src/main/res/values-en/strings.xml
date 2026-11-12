@@ -440,9 +440,13 @@
     <string name="health_allow">Allow</string>
     <string name="health_last">Last sent: %1$s</string>
     <string name="health_never">Nothing sent yet</string>
-    <string name="health_failed">Couldn\'t send (%1$s). Will retry on the next change or the next launch.</string>
+    <string name="health_written">Written to Health Connect: %1$s, %2$s</string>
+    <string name="health_unavailable">Couldn\'t send (%1$s).</string>
+    <string name="health_type_failed_sessions">Sessions: failed (%1$s).</string>
+    <string name="health_type_failed_weight">Weight: failed (%1$s).</string>
+    <string name="health_failed">Last error (%1$s): %2$s Will retry on the next change or the next launch.</string>
     <string name="health_send_history">Send history</string>
-    <string name="health_history_sent">History sent to Health Connect: %1$s, %2$s.</string>
+    <string name="health_history_sent">Health Connect confirmed %1$s and %2$s.</string>
     <plurals name="health_sessions">
         <item quantity="one">%1$d session</item>
         <item quantity="other">%1$d sessions</item>
@@ -452,7 +456,7 @@
         <item quantity="other">%1$d weight entries</item>
     </plurals>
     <string name="health_privacy_title">MuscleNote and Health Connect</string>
-    <string name="health_privacy_written">What is written: your finished sessions (strength training, start, end, name) and your body weight (the one entered when starting a session, and your weigh-ins).</string>
+    <string name="health_privacy_written">What is written: your finished sessions (strength training, start, end, name) and your body weight, one entry per day (your weigh-in, otherwise the weight entered when starting your last session of the day).</string>
     <string name="health_privacy_when">When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”.</string>
     <string name="health_privacy_nothing_else">Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone.</string>
     <string name="health_privacy_stop">To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect\'s settings.</string>
