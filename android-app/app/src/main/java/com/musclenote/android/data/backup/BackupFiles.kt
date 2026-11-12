@@ -22,7 +22,7 @@ object BackupFiles {
         val dir = File(context.cacheDir, "exports")
         dir.deleteRecursively()
         if (!dir.mkdirs()) throw IOException("Impossible de créer ${dir.name}")
-        val file = File(dir, "musclenote_backup_$today.json")
+        val file = File(dir, AutoBackupRules.fileName(today))
         file.writeText(json, Charsets.UTF_8)
         return FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
     }

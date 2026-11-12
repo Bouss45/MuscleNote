@@ -2,10 +2,16 @@ package com.musclenote.android.data
 
 import com.musclenote.android.data.backup.BackupData
 import com.musclenote.android.data.backup.BackupWriter
+import com.musclenote.android.data.health.HealthRecords
 import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.SupplementReminders
+import com.musclenote.android.data.repository.AutoBackupRepository
+import com.musclenote.android.data.repository.AutoBackupScheduler
+import com.musclenote.android.data.repository.BackupFolders
 import com.musclenote.android.data.repository.FeedbackRepository
 import com.musclenote.android.data.repository.FeedbackSender
+import com.musclenote.android.data.repository.HealthConnectGateway
+import com.musclenote.android.data.repository.HealthSyncRepository
 import com.musclenote.android.data.repository.NutritionRepository
 import com.musclenote.android.data.repository.PreferencesRepository
 import com.musclenote.android.data.repository.ReleaseSource
@@ -27,6 +33,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -50,6 +57,11 @@ class AppContainer(
     val updateChecksEnabled: Boolean = false,
     /** Webhook de l'envoi d'un avis (§ 14) ; `null` = pas d'URL au build, section masquée. */
     feedbackSender: FeedbackSender? = null,
+    /** Dossier de la sauvegarde automatique (§ 15.2) : Storage Access Framework sur l'appareil. */
+    backupFolders: BackupFolders = BackupFolders.None,
+    autoBackupScheduler: AutoBackupScheduler = AutoBackupScheduler.None,
+    /** Health Connect (§ 15.3) ; `null` = jamais disponible (tests). */
+    healthConnect: HealthConnectGateway? = null,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -66,9 +78,28 @@ class AppContainer(
     val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
     val feedback = FeedbackRepository(files.feedback, time, feedbackSender)
 
+    /** Sauvegarde automatique quotidienne (§ 15.2) : même contenu que « Exporter mes données ». */
+    val autoBackup = AutoBackupRepository(files.autoBackup, time, backupFolders, autoBackupScheduler) { exportBackupJson() }
+
+    /** Envoi des séances et du poids à Health Connect (§ 15.3), d'après les données actuelles. */
+    val health = HealthSyncRepository(files.healthConnect, time, healthConnect) {
+        HealthRecords.all(workouts.workouts.value, nutrition.bodyWeights.value, time.zone())
+    }
+
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
-        loadAll()
+        val finalized = loadAll()
+        // Réglages propres à l'appareil, jamais remplacés par un import : lus une seule fois.
+        autoBackup.load()
+        autoBackup.ensureScheduled()
+        health.load()
+        watchHealthChanges()
+        // Séance de plus de 24 h finalisée au chargement : un changement comme un autre (§ 15.3).
+        if (finalized is WorkoutEnd.Finished) {
+            health.enqueue(HealthRecords.forWorkout(finalized.workout, time.zone()).map { it.clientRecordId })
+        }
+        // Hors du chargement : awaitReady() n'attend pas Health Connect.
+        appScope.launch { health.sync() }
         // Resynchronisation complète des rappels au démarrage (§ 7.3).
         supplementReminders.sync(emptyList()) { nutrition.supplements.value }
     }
@@ -96,6 +127,14 @@ class AppContainer(
         appScope.launch {
             awaitReady()
             if (workouts.finalizeStaleSession() != null) restTimer.stop()
+        }
+        // Envois à Health Connect en attente (échec précédent, autorisation rendue…), § 15.3.
+        appScope.launch {
+            awaitReady()
+            if (health.state.value.enabled) {
+                health.refreshPermissions()
+                health.sync()
+            }
         }
         // Au plus une fois par jour, et seulement sans gestionnaire de mises à jour (§ 3.17).
         if (updateChecksEnabled) {
@@ -191,7 +230,29 @@ class AppContainer(
         return BackupWriter.write(data, time.now())
     }
 
-    private suspend fun loadAll() {
+    /**
+     * Health Connect (§ 15.3) : à chaque changement des séances terminées ou des pesées, les
+     * enregistrements ajoutés, modifiés ou retirés sont mis en attente puis envoyés. L'état chargé
+     * sert de point de départ : ce qui existait avant n'est envoyé que par « Envoyer
+     * l'historique ». Un import passe aussi par ici.
+     */
+    private fun watchHealthChanges() {
+        var previous = HealthRecords.fingerprints(workouts.workouts.value, nutrition.bodyWeights.value, time.zone())
+        appScope.launch {
+            combine(workouts.workouts, nutrition.bodyWeights) { list, weighIns -> HealthRecords.fingerprints(list, weighIns, time.zone()) }
+                .collect { current ->
+                    val changed = HealthRecords.changedIds(previous, current)
+                    previous = current
+                    if (changed.isNotEmpty() && health.state.value.enabled) {
+                        health.enqueue(changed)
+                        launch { health.sync() }
+                    }
+                }
+        }
+    }
+
+    /** Recharge les documents ; renvoie l'issue d'une séance de plus de 24 h finalisée au passage. */
+    private suspend fun loadAll(): WorkoutEnd? {
         val finalized = coroutineScope {
             launch { nutrition.load() }
             launch { preferences.load() }
@@ -202,5 +263,6 @@ class AppContainer(
         }
         // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).
         if (finalized != null) restTimer.stop()
+        return finalized
     }
 }

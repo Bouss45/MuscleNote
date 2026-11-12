@@ -19,6 +19,24 @@
          seulement si l'app n'est pas installée par Obtainium ; aucune donnée envoyée.
          Envoi d'un avis (§ 14, 🔄 D26) : seulement quand l'utilisateur appuie sur « Envoyer ». -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) : WorkManager déclare aussi WAKE_LOCK (gardée) et
+         RECEIVE_BOOT_COMPLETED (déjà là). La tâche n'a ni contrainte réseau ni travail au premier
+         plan : les deux permissions suivantes, ajoutées par WorkManager, sont retirées. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
+    <!-- Health Connect (§ 15.3, 🔄 D29) : écriture des séances et du poids, accordée dans l'écran
+         de Health Connect quand l'utilisateur active l'option. Aucune permission de lecture. -->
+    <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
+    <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
+
+    <!-- App Health Connect (Android 8 à 13 ; intégrée au système depuis Android 14). -->
+    <queries>
+        <package android:name="com.google.android.apps.healthdata" />
+    </queries>
 
     <application
         android:name=".MuscleNoteApplication"
@@ -57,6 +75,32 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <!--
+          Politique de confidentialité exigée par Health Connect (§ 15.3) : sans elle, la demande
+          d'autorisation ne s'affiche pas. Android 13 et moins : ACTION_SHOW_PERMISSIONS_RATIONALE.
+        -->
+        <activity
+            android:name=".health.HealthPermissionsActivity"
+            android:exported="true"
+            android:screenOrientation="portrait"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            <intent-filter>
+                <action android:name="androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE" />
+            </intent-filter>
+        </activity>
+
+        <!-- Android 14 et plus : VIEW_PERMISSION_USAGE + HEALTH_PERMISSIONS, réservé au système. -->
+        <activity-alias
+            android:name="ViewPermissionUsageActivity"
+            android:exported="true"
+            android:permission="android.permission.START_VIEW_PERMISSION_USAGE"
+            android:targetActivity=".health.HealthPermissionsActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW_PERMISSION_USAGE" />
+                <category android:name="android.intent.category.HEALTH_PERMISSIONS" />
+            </intent-filter>
+        </activity-alias>
 
         <!-- Minuteur de repos (§ 7.2) : alarme de fin et action « Passer », intents explicites. -->
         <receiver

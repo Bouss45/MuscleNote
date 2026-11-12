@@ -4,11 +4,14 @@ import android.app.Application
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.musclenote.android.backup.SafBackupFolders
+import com.musclenote.android.backup.WorkManagerAutoBackupScheduler
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.crash.CrashReports
 import com.musclenote.android.data.feedback.FeedbackRules
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.feedback.DiscordWebhookSender
+import com.musclenote.android.health.AndroidHealthConnectGateway
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
@@ -52,6 +55,11 @@ class MuscleNoteApplication : Application() {
             feedbackSender = BuildConfig.FEEDBACK_WEBHOOK_URL
                 .takeIf(FeedbackRules::isWebhookUrl)
                 ?.let { DiscordWebhookSender(it, BuildConfig.VERSION_NAME) },
+            // Sauvegarde automatique (§ 15.2) : dossier choisi par l'utilisateur, WorkManager.
+            backupFolders = SafBackupFolders(this),
+            autoBackupScheduler = WorkManagerAutoBackupScheduler(this),
+            // Health Connect (§ 15.3) : disponibilité relue à chaque utilisation.
+            healthConnect = AndroidHealthConnectGateway(this),
         )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(
