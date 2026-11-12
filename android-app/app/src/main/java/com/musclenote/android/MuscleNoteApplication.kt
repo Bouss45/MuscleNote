@@ -11,6 +11,7 @@ import com.musclenote.android.data.crash.CrashReports
 import com.musclenote.android.data.feedback.FeedbackRules
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.feedback.DiscordWebhookSender
+import com.musclenote.android.health.AndroidHealthConnectGateway
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
@@ -57,6 +58,8 @@ class MuscleNoteApplication : Application() {
             // Sauvegarde automatique (§ 15.2) : dossier choisi par l'utilisateur, WorkManager.
             backupFolders = SafBackupFolders(this),
             autoBackupScheduler = WorkManagerAutoBackupScheduler(this),
+            // Health Connect (§ 15.3) : disponibilité relue à chaque utilisation.
+            healthConnect = AndroidHealthConnectGateway(this),
         )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(

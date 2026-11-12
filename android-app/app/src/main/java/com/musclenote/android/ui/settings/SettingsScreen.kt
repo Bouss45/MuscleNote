@@ -62,7 +62,8 @@ private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 /**
  * Onglet Paramètres (SPEC § 2.12) : « Mes données » ; « PRÉFÉRENCES » (langue, thème, minuteur de
  * repos, avertissement « Notifications désactivées ») ; « SAUVEGARDE » (export JSON v2, import avec
- * confirmation § 5.4) ; encart de statut ; encart d'info ; « APPLICATION » (mises à jour § 3.17,
+ * confirmation § 5.4, sauvegarde automatique § 15.2) ; encart de statut ; encart d'info ; « SANTÉ »
+ * (Health Connect § 15.3, si disponible) ; « APPLICATION » (mises à jour § 3.17,
  * rapport de plantage s'il y en a un § 10.9) ; « TON AVIS » (§ 14), seulement si l'URL du webhook
  * a été fournie au build.
  */
@@ -177,6 +178,9 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
             state.status?.let { StatusMessage(it) }
             SettingsInfoBox()
 
+            // Health Connect (§ 15.3) : section masquée si Health Connect n'est pas disponible.
+            HealthConnectSection()
+
             SectionTitle(stringResource(R.string.settings_section_app))
             UpdateCard()
             CrashReportCard()
@@ -211,7 +215,7 @@ private fun shareIntent(uri: Uri, title: String): Intent {
 }
 
 @Composable
-private fun SectionTitle(text: String) {
+internal fun SectionTitle(text: String) {
     Text(
         text = text,
         color = MuscleNoteTheme.colors.mutedForeground,

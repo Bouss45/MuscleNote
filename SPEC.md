@@ -2201,16 +2201,17 @@ en `primary`, interrupteur) :
 
 | source | enregistrement | champs | `clientRecordId` |
 |---|---|---|---|
-| séance terminée avec une durée | `ExerciseSessionRecord` | type `EXERCISE_TYPE_STRENGTH_TRAINING` (musculation) ; début = `date` ; fin = début + `durationMinutes` (au moins 1 min) ; décalage horaire du fuseau du téléphone à chacun de ces instants ; titre = nom affiché (§ 3.1 : préréglage dans la langue de l'app au moment de l'envoi, sinon nom, sinon date) ; ni notes, ni segments | `musclenote-workout-{id}` |
-| poids d'une séance (`bodyWeight > 0`) | `WeightRecord` | instant = début de la séance ; poids en kg | `musclenote-workout-weight-{id}` |
-| pesée (§ 3.11) | `WeightRecord` | instant = `date` (midi local) ; poids en kg | `musclenote-weighin-{date}` |
+| séance terminée avec une durée | `ExerciseSessionRecord` | type `EXERCISE_TYPE_STRENGTH_TRAINING` (musculation) ; début = `date` ; fin = début + `durationMinutes` (au moins 1 min) ; décalage horaire du fuseau du téléphone à chacun de ces instants ; titre = nom affiché (§ 3.1 : préréglage dans la langue de l'app au moment de l'envoi, sinon nom, sinon date) ; ni notes, ni segments | `musclenote-session-{id}` |
+| poids d'une séance (`bodyWeight > 0`) | `WeightRecord` | instant = début de la séance ; poids en kg | `musclenote-weight-workout-{id}` |
+| pesée (§ 3.11) | `WeightRecord` | instant = `date` (midi local) ; poids en kg | `musclenote-weight-weighin-{date}` |
 
 - Séance **sans durée** (finalisée automatiquement après 24 h, § 3.4) : pas de séance dans Health
   Connect (fin inconnue ; une durée inventée fausserait le temps d'activité) ; son poids est envoyé.
 - Poids hors de ]0 ; 1000] kg (limites de Health Connect) : non envoyé.
 - Métadonnées : saisie manuelle (`Metadata.manualEntry`), `clientRecordId` ci-dessus,
   `clientRecordVersion` = instant de l'envoi en ms, toujours supérieur au précédent
-  (`max(dernière version + 1, maintenant)`). Health Connect **remplace** l'enregistrement de même
+  (`max(dernière version + 1, maintenant)`). Le préfixe de l'identifiant donne le type
+  (`musclenote-session-` / `musclenote-weight-`). Health Connect **remplace** l'enregistrement de même
   `clientRecordId` quand la version est plus grande : modifier une séance ou une pesée met à jour
   Health Connect sans doublon ; supprimer supprime par `clientRecordId`.
 

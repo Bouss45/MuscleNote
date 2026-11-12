@@ -3,6 +3,7 @@ package com.musclenote.android.data.storage
 import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.backup.AutoBackupState
 import com.musclenote.android.data.feedback.FeedbackThrottle
+import com.musclenote.android.data.health.HealthSyncState
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
@@ -62,5 +63,8 @@ class DataFiles(
 
     /** Sauvegarde automatique (§ 15.2) : réglage et dernier résultat, hors sauvegarde. */
     val autoBackup = document("auto_backup.json", AutoBackupState.serializer())
+
+    /** Envois à Health Connect (§ 15.3) : option, registre et file d'attente, hors sauvegarde. */
+    val healthConnect = document("health_connect.json", HealthSyncState.serializer())
     val meta = document("meta.json", StorageMeta.serializer())
 }

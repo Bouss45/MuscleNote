@@ -102,6 +102,8 @@ dependencies {
     implementation(libs.reorderable)
     // Sauvegarde automatique quotidienne (§ 15.2).
     implementation(libs.androidx.work.runtime)
+    // Envoi des séances et du poids à Health Connect (§ 15.3).
+    implementation(libs.androidx.health.connect.client)
     debugImplementation(libs.androidx.compose.ui.tooling)
 
     testImplementation(libs.junit)
