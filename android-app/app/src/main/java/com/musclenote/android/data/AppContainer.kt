@@ -4,6 +4,9 @@ import com.musclenote.android.data.backup.BackupData
 import com.musclenote.android.data.backup.BackupWriter
 import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.SupplementReminders
+import com.musclenote.android.data.repository.AutoBackupRepository
+import com.musclenote.android.data.repository.AutoBackupScheduler
+import com.musclenote.android.data.repository.BackupFolders
 import com.musclenote.android.data.repository.FeedbackRepository
 import com.musclenote.android.data.repository.FeedbackSender
 import com.musclenote.android.data.repository.NutritionRepository
@@ -50,6 +53,9 @@ class AppContainer(
     val updateChecksEnabled: Boolean = false,
     /** Webhook de l'envoi d'un avis (§ 14) ; `null` = pas d'URL au build, section masquée. */
     feedbackSender: FeedbackSender? = null,
+    /** Dossier de la sauvegarde automatique (§ 15.2) : Storage Access Framework sur l'appareil. */
+    backupFolders: BackupFolders = BackupFolders.None,
+    autoBackupScheduler: AutoBackupScheduler = AutoBackupScheduler.None,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -66,9 +72,15 @@ class AppContainer(
     val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
     val feedback = FeedbackRepository(files.feedback, time, feedbackSender)
 
+    /** Sauvegarde automatique quotidienne (§ 15.2) : même contenu que « Exporter mes données ». */
+    val autoBackup = AutoBackupRepository(files.autoBackup, time, backupFolders, autoBackupScheduler) { exportBackupJson() }
+
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
         loadAll()
+        // Réglages propres à l'appareil, jamais remplacés par un import : lus une seule fois.
+        autoBackup.load()
+        autoBackup.ensureScheduled()
         // Resynchronisation complète des rappels au démarrage (§ 7.3).
         supplementReminders.sync(emptyList()) { nutrition.supplements.value }
     }

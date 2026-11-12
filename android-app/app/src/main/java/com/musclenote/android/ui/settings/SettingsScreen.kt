@@ -165,6 +165,7 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
                     }
                 },
             )
+            AutoBackupCard()
 
             if (state.pendingImport != null) {
                 ImportConfirmation(

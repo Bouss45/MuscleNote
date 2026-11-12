@@ -4,6 +4,8 @@ import android.app.Application
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
+import com.musclenote.android.backup.SafBackupFolders
+import com.musclenote.android.backup.WorkManagerAutoBackupScheduler
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.crash.CrashReports
 import com.musclenote.android.data.feedback.FeedbackRules
@@ -52,6 +54,9 @@ class MuscleNoteApplication : Application() {
             feedbackSender = BuildConfig.FEEDBACK_WEBHOOK_URL
                 .takeIf(FeedbackRules::isWebhookUrl)
                 ?.let { DiscordWebhookSender(it, BuildConfig.VERSION_NAME) },
+            // Sauvegarde automatique (§ 15.2) : dossier choisi par l'utilisateur, WorkManager.
+            backupFolders = SafBackupFolders(this),
+            autoBackupScheduler = WorkManagerAutoBackupScheduler(this),
         )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(

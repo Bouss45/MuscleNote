@@ -19,6 +19,15 @@
          seulement si l'app n'est pas installée par Obtainium ; aucune donnée envoyée.
          Envoi d'un avis (§ 14, 🔄 D26) : seulement quand l'utilisateur appuie sur « Envoyer ». -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) : WorkManager déclare aussi WAKE_LOCK (gardée) et
+         RECEIVE_BOOT_COMPLETED (déjà là). La tâche n'a ni contrainte réseau ni travail au premier
+         plan : les deux permissions suivantes, ajoutées par WorkManager, sont retirées. -->
+    <uses-permission
+        android:name="android.permission.ACCESS_NETWORK_STATE"
+        tools:node="remove" />
+    <uses-permission
+        android:name="android.permission.FOREGROUND_SERVICE"
+        tools:node="remove" />
 
     <application
         android:name=".MuscleNoteApplication"

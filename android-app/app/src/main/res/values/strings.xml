@@ -420,4 +420,42 @@
     <string name="excel_col_weight">Poids (kg)</string>
     <string name="excel_col_calories">Calories (kcal)</string>
     <string name="excel_col_water">Eau (ml)</string>
+    <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) -->
+    <string name="settings_auto_backup_title">Sauvegarde automatique</string>
+    <string name="settings_auto_backup_desc">Chaque jour, une sauvegarde JSON dans le dossier de ton choix. Les 14 plus récentes sont gardées.</string>
+    <string name="settings_auto_backup_folder">Dossier : %1$s</string>
+    <string name="settings_auto_backup_change">Changer</string>
+    <string name="settings_auto_backup_last">Dernière sauvegarde : %1$s</string>
+    <string name="settings_auto_backup_never">Aucune sauvegarde pour l\'instant</string>
+    <string name="settings_auto_backup_folder_lost">Le dossier de sauvegarde n\'est plus accessible (supprimé, renommé ou autorisation retirée). Choisis-le à nouveau.</string>
+    <string name="settings_auto_backup_choose_folder">Choisir un dossier</string>
+    <string name="settings_auto_backup_failed">Échec de la sauvegarde du %1$s : %2$s</string>
+    <string name="settings_auto_backup_now">Sauvegarder maintenant</string>
+
+    <!-- Health Connect (§ 15.3, 🔄 D29) -->
+    <string name="settings_section_health">SANTÉ</string>
+    <string name="health_title">Health Connect</string>
+    <string name="health_desc">Envoie tes séances de musculation et ton poids à Health Connect, pour les retrouver dans tes autres apps de santé.</string>
+    <string name="health_denied">Autorisation refusée : rien n\'est envoyé.</string>
+    <string name="health_missing_sessions">Séances non autorisées : elles ne sont pas envoyées.</string>
+    <string name="health_missing_weight">Poids non autorisé : il n\'est pas envoyé.</string>
+    <string name="health_allow">Autoriser</string>
+    <string name="health_last">Dernier envoi : %1$s</string>
+    <string name="health_never">Rien d\'envoyé pour l\'instant</string>
+    <string name="health_failed">Envoi impossible (%1$s). Nouvel essai à la prochaine modification ou au prochain lancement.</string>
+    <string name="health_send_history">Envoyer l\'historique</string>
+    <string name="health_history_sent">Historique envoyé à Health Connect : %1$s, %2$s.</string>
+    <plurals name="health_sessions">
+        <item quantity="one">%1$d séance</item>
+        <item quantity="other">%1$d séances</item>
+    </plurals>
+    <plurals name="health_weights">
+        <item quantity="one">%1$d mesure de poids</item>
+        <item quantity="other">%1$d mesures de poids</item>
+    </plurals>
+    <string name="health_privacy_title">MuscleNote et Health Connect</string>
+    <string name="health_privacy_written">Ce qui est écrit : tes séances terminées (type musculation, début, fin, nom) et ton poids (celui saisi au début des séances et tes pesées).</string>
+    <string name="health_privacy_when">Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l\'historique ».</string>
+    <string name="health_privacy_nothing_else">Rien d\'autre : MuscleNote ne lit aucune donnée de Health Connect et n\'envoie rien sur internet ; tes données restent sur ton téléphone.</string>
+    <string name="health_privacy_stop">Arrêter : coupe l\'interrupteur Health Connect dans Paramètres. Les données déjà écrites s\'effacent depuis les réglages de Health Connect.</string>
 </resources>
