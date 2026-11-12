@@ -63,7 +63,8 @@ private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
  * Onglet Paramètres (SPEC § 2.12) : « Mes données » ; « PRÉFÉRENCES » (langue, thème, minuteur de
  * repos, avertissement « Notifications désactivées ») ; « SAUVEGARDE » (export JSON v2, import avec
  * confirmation § 5.4) ; encart de statut ; encart d'info ; « APPLICATION » (mises à jour § 3.17,
- * rapport de plantage s'il y en a un § 10.9).
+ * rapport de plantage s'il y en a un § 10.9) ; « TON AVIS » (§ 14), seulement si l'URL du webhook
+ * a été fournie au build.
  */
 @Composable
 fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifier) {
@@ -178,6 +179,11 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
             SectionTitle(stringResource(R.string.settings_section_app))
             UpdateCard()
             CrashReportCard()
+
+            if (container.feedback.enabled) {
+                SectionTitle(stringResource(R.string.settings_section_feedback))
+                FeedbackCard()
+            }
         }
     }
 }
@@ -466,8 +472,14 @@ private fun ImportConfirmation(workoutCount: Int, onCancel: () -> Unit, onConfir
 /** Encart de succès ou d'erreur sous les actions (§ 2.12, point 4). */
 @Composable
 private fun StatusMessage(status: BackupStatus) {
-    val colors = MuscleNoteTheme.colors
     val success = status is BackupStatus.ExportShared || status is BackupStatus.CsvExported || status is BackupStatus.ImportSucceeded
+    StatusBox(success = success, message = status.message())
+}
+
+/** Encart de succès (`primary`) ou d'erreur (`destructive`) : sauvegarde (§ 2.12), avis (§ 14.4). */
+@Composable
+internal fun StatusBox(success: Boolean, message: String) {
+    val colors = MuscleNoteTheme.colors
     val tint = if (success) colors.primary else colors.destructive
     val shape = RoundedCornerShape(12.dp)
     Row(
@@ -486,7 +498,7 @@ private fun StatusMessage(status: BackupStatus) {
             modifier = Modifier.size(16.dp),
         )
         Text(
-            text = status.message(),
+            text = message,
             color = tint,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
