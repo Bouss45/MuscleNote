@@ -308,16 +308,26 @@
     <string name="edit_workout_keep_editing">Continuer l\'édition</string>
     <string name="edit_workout_rename">Renommer la séance</string>
     <!-- Canaux de notification (§ 7.1) -->
-    <string name="channel_rest_timer_ongoing">Repos en cours</string>
+    <string name="channel_workout_ongoing">Séance en cours</string>
     <string name="channel_rest_timer">Timer de repos</string>
     <string name="channel_supplements">Rappels suppléments</string>
 
     <!-- Minuteur de repos (§ 7.2) -->
-    <string name="rest_timer_ongoing_title">Repos en cours</string>
-    <string name="rest_timer_ongoing_text">Prochaine série : %1$s</string>
     <string name="rest_timer_notif_title">Repos terminé 💪</string>
     <string name="rest_timer_notif_body">C\'est parti pour %1$s !</string>
     <string name="rest_timer_skip">Passer</string>
+    <string name="workout_notif_rest_title">%1$s · Repos</string>
+    <string name="workout_notif_set">Série %1$d · %2$s</string>
+    <string name="workout_notif_set_only">Série %1$d</string>
+    <string name="workout_notif_strength">%1$d × %2$s kg</string>
+    <string name="workout_notif_reps">%1$d reps</string>
+    <string name="workout_notif_minutes">%1$s min</string>
+    <string name="workout_notif_km">%1$s km</string>
+    <string name="workout_notif_next">Prochaine : %1$s</string>
+    <string name="workout_notif_all_done">Toutes les séries sont validées</string>
+    <string name="workout_notif_complete_set">Valider la série</string>
+    <string name="workout_notif_minus_30">−30 s</string>
+    <string name="workout_notif_plus_30">+30 s</string>
     <string name="rest_timer_label">Repos</string>
 
     <!-- Progrès (§ 2.10) -->

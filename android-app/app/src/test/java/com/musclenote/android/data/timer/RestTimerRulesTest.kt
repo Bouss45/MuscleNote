@@ -3,6 +3,7 @@ package com.musclenote.android.data.timer
 import com.musclenote.android.data.model.RestTimerState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -92,5 +93,32 @@ class RestTimerRulesTest {
         assertFalse(RestTimerRules.isStale(rest, start + 180_000 + RestTimerRules.STALE_AFTER_MS))
         assertTrue(RestTimerRules.isStale(rest, start + 180_001 + RestTimerRules.STALE_AFTER_MS))
         assertTrue(RestTimerRules.isStale(rest.copy(total = 0), start))
+    }
+
+    @Test
+    fun `plus 30 s repousse la fin et allonge la durée totale`() {
+        val longer = RestTimerRules.adjust(rest, 30, start + 60_000)!!
+        assertEquals(rest.endsAt + 30_000, longer.endsAt)
+        assertEquals(210, longer.total)
+        assertEquals("Squat", longer.exerciseName)
+    }
+
+    @Test
+    fun `moins 30 s avance la fin, la durée totale ne descend pas sous le temps restant`() {
+        val shorter = RestTimerRules.adjust(rest, -30, start + 10_000)!!
+        assertEquals(rest.endsAt - 30_000, shorter.endsAt)
+        assertEquals(150, shorter.total)
+        // Repos de 60 s raccourci de 30 s : la barre reste pleine, jamais au-delà.
+        val short = RestTimerRules.start(start, 60, "Squat")
+        val adjusted = RestTimerRules.adjust(short, -30, start)!!
+        assertEquals(30, adjusted.total)
+        assertEquals(1.0, RestTimerRules.remainingFraction(adjusted, start), 0.0)
+    }
+
+    @Test
+    fun `moins 30 s avec moins de 30 s restantes termine le repos`() {
+        assertNull(RestTimerRules.adjust(rest, -30, rest.endsAt - 29_000))
+        assertNull(RestTimerRules.adjust(rest, -30, rest.endsAt - 30_000))
+        assertEquals(rest.endsAt - 30_000, RestTimerRules.adjust(rest, -30, rest.endsAt - 31_000)!!.endsAt)
     }
 }

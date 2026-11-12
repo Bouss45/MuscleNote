@@ -14,6 +14,7 @@ import com.musclenote.android.data.util.newId
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.CustomExerciseDeletion
 import com.musclenote.android.data.workout.WorkoutEnd
+import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutRules
 import com.musclenote.android.data.workout.mapExercise
 import com.musclenote.android.data.workout.mapSet
@@ -201,6 +202,23 @@ class WorkoutRepository(
             completed
         }
     }
+
+    /**
+     * « Valider la série » de la notification de séance (§ 15.5) : valide la prochaine série
+     * ([WorkoutNotificationRules.nextSet], exercices connus seulement) et renvoie l'id de son
+     * exercice, pour lancer le repos ; `null` sans séance en cours ou si tout est validé.
+     */
+    suspend fun completeNextSet(): String? {
+        return mutex.withLock {
+            val current = _currentWorkout.value ?: return null
+            val next = WorkoutNotificationRules.nextSet(current) { muscleGroupOf(it) != null } ?: return null
+            commitCurrent(current.mapSet(next.exercise.exerciseId, next.set.id) { it.copy(completed = true) })
+            next.exercise.exerciseId
+        }
+    }
+
+    /** Une série de la séance en cours reste à valider (exercices connus seulement, § 15.5). */
+    fun hasNextSet(): Boolean = _currentWorkout.value?.let { w -> WorkoutNotificationRules.nextSet(w) { muscleGroupOf(it) != null } } != null
 
     private suspend fun updateCurrent(transform: (Workout) -> Workout) {
         mutex.withLock {

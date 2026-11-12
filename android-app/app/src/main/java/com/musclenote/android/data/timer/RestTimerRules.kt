@@ -37,6 +37,19 @@ object RestTimerRules {
         return RestTimerState(endsAt = nowMillis + total * 1000L, total = total, exerciseName = exerciseName)
     }
 
+    /**
+     * « −30 s » / « +30 s » (notification de séance, § 15.5) : la fin du repos recule ou avance de
+     * [deltaSeconds] ; la durée totale suit (la barre du bandeau garde son sens), sans descendre
+     * sous le temps restant. `null` si le repos se termine ainsi (moins de 30 s restantes pour
+     * « −30 s ») : il s'arrête comme avec « Passer ».
+     */
+    fun adjust(state: RestTimerState, deltaSeconds: Int, nowMillis: Long): RestTimerState? {
+        val endsAt = state.endsAt + deltaSeconds * 1000L
+        if (endsAt <= nowMillis) return null
+        val remaining = ceil((endsAt - nowMillis) / 1000.0).toInt()
+        return state.copy(endsAt = endsAt, total = maxOf(state.total + deltaSeconds, remaining))
+    }
+
     /** Le repos est fini dès que `maintenant ≥ endsAt` : le bandeau disparaît. */
     fun isFinished(state: RestTimerState, nowMillis: Long): Boolean = nowMillis >= state.endsAt
 

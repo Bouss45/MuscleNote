@@ -15,20 +15,26 @@ import kotlinx.coroutines.sync.withLock
  * logique reste testable sur la JVM. Appelés sous le verrou du dépôt, dans l'ordre des mutations.
  */
 interface RestTimerEffects {
-    /** Repos démarré ou repris : notification en cours et alarme de fin (remplacent les précédentes). */
+    /**
+     * Repos démarré, repris ou décalé : alarme de fin (remplace la précédente). Le repos s'affiche
+     * dans la notification de séance (§ 15.5), pas dans une notification à lui.
+     */
     fun show(state: RestTimerState)
 
-    /** Repos arrêté : alarme et notification en cours annulées. */
+    /** Repos arrêté : alarme annulée. */
     fun cancel()
 
-    /** Fin du repos : notification en cours retirée ; vibration au premier plan, sinon notification. */
-    fun finished(state: RestTimerState, inForeground: Boolean)
+    /**
+     * Fin du repos : vibration au premier plan, sinon alerte « Repos terminé », avec « Valider la
+     * série » si [canCompleteSet] (une série reste à valider).
+     */
+    fun finished(state: RestTimerState, inForeground: Boolean, canCompleteSet: Boolean)
 
     /** Aucun effet (tests, et tant que l'app n'a pas fourni les siens). */
     object None : RestTimerEffects {
         override fun show(state: RestTimerState) = Unit
         override fun cancel() = Unit
-        override fun finished(state: RestTimerState, inForeground: Boolean) = Unit
+        override fun finished(state: RestTimerState, inForeground: Boolean, canCompleteSet: Boolean) = Unit
     }
 }
 
@@ -54,8 +60,9 @@ class RestTimerRepository(
     val state: StateFlow<RestTimerState?> = _state.asStateFlow()
 
     /**
-     * Relit l'état. Un repos encore en cours retrouve sa notification et son alarme (perdues au
-     * redémarrage du téléphone) ; un état périmé est effacé sans alerte.
+     * Relit l'état. Un repos encore en cours retrouve son alarme (perdue au redémarrage du
+     * téléphone) ; la notification de séance le montre de nouveau (§ 15.5). Un état périmé est
+     * effacé sans alerte.
      */
     suspend fun load() {
         mutex.withLock {
@@ -86,13 +93,18 @@ class RestTimerRepository(
     }
 
     /**
-     * Republie la notification du repos en cours (alarme comprise, à l'identique) : après un
-     * changement de langue, son texte suit la nouvelle langue.
+     * « −30 s » / « +30 s » (§ 15.5) : décale la fin du repos en cours et son alarme ; un repos qui
+     * se termine ainsi s'arrête comme avec « Passer ». Sans effet sans repos en cours.
      */
-    suspend fun refreshNotification() {
+    suspend fun adjust(deltaSeconds: Int) {
         mutex.withLock {
             val current = _state.value ?: return
-            if (!RestTimerRules.isFinished(current, now())) effects.show(current)
+            val now = now()
+            if (RestTimerRules.isFinished(current, now)) return
+            val next = RestTimerRules.adjust(current, deltaSeconds, now)
+            _state.value = next
+            document.saveNow(next)
+            if (next == null) effects.cancel() else effects.show(next)
         }
     }
 
@@ -110,13 +122,13 @@ class RestTimerRepository(
      * (arrêté, ou remplacé par un nouveau repos pendant que l'alarme était en route). Renvoie
      * `true` si le repos a été terminé.
      */
-    suspend fun finish(endsAt: Long, inForeground: Boolean): Boolean {
+    suspend fun finish(endsAt: Long, inForeground: Boolean, canCompleteSet: Boolean): Boolean {
         return mutex.withLock {
             val current = _state.value
             if (current == null || current.endsAt != endsAt) return false
             _state.value = null
             document.saveNow(null)
-            effects.finished(current, inForeground)
+            effects.finished(current, inForeground, canCompleteSet)
             true
         }
     }

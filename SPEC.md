@@ -89,6 +89,7 @@
   | `SCHEDULE_EXACT_ALARM` (`maxSdkVersion="32"`) | alarmes exactes, Android 12–12L |
   | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage ; WorkManager s'en sert aussi pour la sauvegarde automatique (🔄 D28) |
   | `VIBRATE` | vibration de fin de repos depuis le récepteur d'alarme |
+  | `POST_PROMOTED_NOTIFICATIONS` (🔄 D31) | proposer la notification « Séance en cours » en Live Update (Android 16+, § 15.5) ; permission normale, sans demande, que l'utilisateur peut couper dans les réglages de notification de l'app |
   | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
   | `WAKE_LOCK` (🔄 D28) | ajoutée par WorkManager : exécution de la sauvegarde automatique (§ 15.2) ; permission normale, sans demande |
   | `health.WRITE_EXERCISE` (🔄 D29) | écrire les séances dans Health Connect (§ 15.3) ; accordée dans l'écran de Health Connect, quand l'utilisateur active l'option |
@@ -1285,10 +1286,12 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
 
 | id | nom FR | nom EN | importance | son | vibration | écran verrouillé |
 |---|---|---|---|---|---|---|
-| `rest-timer-ongoing` (🔄 D6) | Repos en cours | Rest in progress | LOW | non | non | public |
+| `workout-ongoing` (🔄 D31) | Séance en cours | Workout in progress | LOW | non | non | public |
 | `rest-timer` | Timer de repos | Rest timer | HIGH | défaut | `[0, 250, 250, 250]` ms | public |
 | `supplements` | Rappels suppléments | Supplement reminders | HIGH | défaut | `[0, 250, 250, 250]` ms | privé |
 
+- 🔄 D31 : le canal `rest-timer-ongoing` (« Repos en cours », 🔄 D6) des versions jusqu'à la
+  v1.0.6 est **supprimé** au démarrage ; la notification « Séance en cours » (§ 15.5) le remplace.
 - Petite icône : silhouette blanche sur transparent (vecteur dérivé de
   `assets/images/notification-icon.png`), couleur d'accent `#9B1C1C`. Pas de badge.
 - Notification affichée app ouverte : oui (comportement Android standard des canaux HIGH),
@@ -1305,25 +1308,28 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
 - **Démarrage** : en validant une série en séance (non validée → validée). Dévalider ne fait
   rien. Durée = `restSeconds` au moment du démarrage.
 - **Au démarrage du repos** :
-  1. notification **en cours** sur `rest-timer-ongoing`, visible sur l'écran de
-     verrouillage : titre « Repos en cours », texte « Prochaine série : {exercice} »,
-     compte à rebours **géré par le système** (`setUsesChronometer(true)`,
-     `setChronometerCountDown(true)`, `setWhen(endsAt)`), `setOngoing(true)`,
-     `setOnlyAlertOnce(true)`, `setSilent(true)`, `setTimeoutAfter(restSeconds × 1000)`,
-     `VISIBILITY_PUBLIC`, catégorie `CATEGORY_STOPWATCH` ; action **« Passer »** ; toucher →
-     écran `workout`. Pas de service de premier plan : aucune mise à jour périodique n'est
-     nécessaire ;
+  1. 🔄 D31 — le repos s'affiche dans la notification **« Séance en cours »** (§ 15.5) : titre
+     « {séance} · Repos », compte à rebours **géré par le système** jusqu'à `endsAt`, prochaine
+     série, actions « −30 s », « +30 s », « Passer ». (Jusqu'à la v1.0.6 : notification à part
+     « Repos en cours » sur `rest-timer-ongoing`, action « Passer ».) Pas de service de premier
+     plan : aucune mise à jour périodique n'est nécessaire ;
   2. **alarme exacte** `setExactAndAllowWhileIdle(RTC_WAKEUP, endsAt)` vers le récepteur de
      fin de repos (une seule alarme active, remplacée à chaque démarrage).
 - **Fin du repos** (récepteur d'alarme = source unique de l'événement, pas de double
-  alerte) : supprime la notification en cours et `rest_timer.json`, puis :
+  alerte) : supprime `rest_timer.json`, remet la notification de séance hors repos (§ 15.5), puis :
   - app **au premier plan** (`ProcessLifecycleOwner` ≥ `STARTED`) : vibration « succès »
     seulement, pas de notification ;
   - app **en arrière-plan** ou processus tué : notification sur `rest-timer` : titre
     « Repos terminé 💪 », texte « C'est parti pour {exercice} ! », son + vibration,
-    `VISIBILITY_PUBLIC`, auto-annulable ; toucher → `workout`.
+    `VISIBILITY_PUBLIC`, auto-annulable ; toucher → `workout` ; 🔄 D31 : action « Valider la
+    série » quand une série reste à valider (§ 15.5).
 - **Arrêt** (action « Passer » de la notification, bouton « Passer » du bandeau, fin ou
-  abandon de séance) : annule l'alarme, la notification en cours et l'état persisté.
+  abandon de séance) : annule l'alarme et l'état persisté ; la notification de séance repasse
+  hors repos (ou disparaît avec la séance).
+- 🔄 D31 — **« −30 s » / « +30 s »** (notification de séance, § 15.5) : `endsAt` recule ou avance
+  de 30 s, l'alarme est reprogrammée ; `total` suit (sans descendre sous le temps restant), pour
+  que la barre du bandeau garde son sens. « −30 s » avec moins de 30 s restantes arrête le repos
+  comme « Passer » (sans alerte).
 - **Bandeau** (pied de l'écran de séance) : icône horloge, « Repos », compte à rebours
   `m:ss` (17 sp gras, recalculé chaque seconde depuis `endsAt`), barre de progression
   (restant / total), bouton « ⏭ Passer ». Couleur selon la part restante : > 50 % →
@@ -1598,9 +1604,7 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `editWorkout.discard` | Abandonner | Discard |
 | `editWorkout.keepEditing` | Continuer l'édition | Keep editing |
 | `editWorkout.rename` | Renommer la séance | Rename session |
-| `restTimer.ongoingTitle` | Repos en cours | Resting |
-| `restTimer.ongoingText` | Prochaine série : {{exercise}} | Next set: {{exercise}} |
-| `channel.restTimerOngoing` | Repos en cours | Rest in progress |
+| `channel.workoutOngoing` (🔄 D31, remplace `channel.restTimerOngoing` et `restTimer.ongoing*`) | Séance en cours | Workout in progress |
 | `nutrition.reminderTimeTitle` | Heure du rappel | Reminder time |
 | `home.update.title` | Mise à jour disponible | Update available |
 | `home.update.text` | MuscleNote {{version}} est disponible (version installée : {{installed}}). | MuscleNote {{version}} is available (installed version: {{installed}}). |
@@ -1700,7 +1704,8 @@ Réponses données aux questions ouvertes de la première version de ce document
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
-(§ 15), D30 avec le correctif de Health Connect (§ 15.3).
+(§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
+(§ 15.5).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1722,7 +1727,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D16 | `muscleGroup` inconnu à l'import | ranger dans un groupe | normalisation puis groupe `dos` par défaut (§ 5.3) |
 | D17 | Écran d'erreur fatale | rapport de crash local | § 10.9, § 2.12 |
 | D18 | Format d'export JSON | au plus scalable | `version: 2` + chaîne de migrations, v1 toujours importée, v2 lisible par l'app Expo (§ 5.1) |
-| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur ; `WAKE_LOCK` avec D28 (WorkManager, dont `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE` sont retirées) ; `health.WRITE_EXERCISE` et `health.WRITE_WEIGHT` avec D29, accordées dans Health Connect quand l'utilisateur active l'option, aucune permission de lecture |
+| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur ; `WAKE_LOCK` avec D28 (WorkManager, dont `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE` sont retirées) ; `health.WRITE_EXERCISE` et `health.WRITE_WEIGHT` avec D29, accordées dans Health Connect quand l'utilisateur active l'option, aucune permission de lecture ; `POST_PROMOTED_NOTIFICATIONS` avec D31 (Live Update, sans demande) |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
 | D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
@@ -1734,6 +1739,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D28 | Sauvegarde automatique | export JSON quotidien dans un dossier choisi | WorkManager toutes les 24 h, dossier du sélecteur système avec autorisation persistante, même nom que l'export manuel (remplacé le même jour), 14 fichiers gardés, « Sauvegarder maintenant », message si le dossier est inaccessible (§ 1, 2.12, 15.2) |
 | D29 | Health Connect | écrire les séances et le poids | option masquée sans Health Connect ; `ExerciseSessionRecord` musculation et `WeightRecord` (séances et pesées), `clientRecordId` stables pour mettre à jour et supprimer, « Envoyer l'historique » ; activité de politique de confidentialité ; aucune lecture (§ 1, 2.12, 15.3) |
 | D30 | Health Connect : poids en double, séances absentes, compteur (retour d'un utilisateur, v1.0.5) | un poids par jour, durée estimée, ne compter que le confirmé | un `WeightRecord` par jour local avec la règle de Progrès (§ 3.10 : la pesée remplace le poids de séance), anciens enregistrements supprimés ; séance de moins de 10 min ou sans durée envoyée avec l'estimation du temps en salle (§ 3.7, sinon 10 min), sans jamais finir après sa fin dans l'app ; envoi par type, seuls les enregistrements confirmés par Health Connect sont comptés et retenus ; état de la carte (écrit, dernier envoi, dernière erreur datée) (§ 15.3) |
+| D31 | Notification de séance avec actions | une notification « Séance en cours » qui remplace celle du repos | séance, chronomètre, exercice et prochaine série ; « Valider la série » hors repos, « −30 s », « +30 s », « Passer » pendant le repos ; Live Update sur Android 16+ (`POST_PROMOTED_NOTIFICATIONS`, sans demande), sinon notification en cours ; montres : l'alerte de fin de repos, relayée par Android, vibre et propose « Valider la série » (une notification en cours n'est pas relayée) ; pas d'app Wear OS, notée comme piste ; pas de service de premier plan (§ 1, 7.1, 7.2, 15.5) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1841,9 +1847,10 @@ comme des propositions :
 - **Permission `POST_NOTIFICATIONS`** « seulement si elle peut encore être demandée »
   (§ 2.3, 7.1) : l'app la demande tant qu'elle n'est pas accordée ; après deux refus,
   Android ne montre plus la demande et répond « refusé » aussitôt, sans bloquer.
-- **Notification « Repos en cours »** : `setTimeoutAfter` reçoit le temps restant (égal à
-  `restSeconds × 1000` au démarrage), pour rester juste quand la notification est republiée
-  dans une autre langue en cours de repos.
+- **Notification « Repos en cours »** (jusqu'à la v1.0.6) : `setTimeoutAfter` recevait le temps
+  restant, pour rester juste quand la notification était republiée dans une autre langue en
+  cours de repos. 🔄 D31 : remplacée par la notification « Séance en cours » (§ 15.5), sans
+  délai d'expiration (elle vit autant que la séance).
 - **Partage vers l'app** (§ 5.4) : `ACTION_SEND` est déclaré pour `application/json` seulement
   (type utilisé par l'app Expo), pour ne pas apparaître dans tous les partages de texte ;
   `ACTION_VIEW` accepte `application/json` et `text/plain`.
@@ -1887,6 +1894,18 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   - Restent à vérifier **sur l'appareil** : l'écran d'autorisation de Health Connect (Android 14+
     et app Health Connect avant), le sélecteur de dossier avec un fournisseur autre que le stockage
     interne, et le passage quotidien de la tâche.
+- Correctif de Health Connect (🔄 D30, § 15.3) : un poids par jour (`BodyWeightRules.dailyWeights`,
+  partagé avec Progrès), durée estimée (`WorkoutStats.countedMinutes`), envoi type par type et
+  comptage des écritures confirmées ; tests de reproduction du signalement dans
+  `HealthRecordsTest` et `HealthSyncRepositoryTest`.
+- Notification de séance (🔄 D31, § 15.5) : règles pures `data/workout/WorkoutNotificationRules.kt`
+  (prochaine série, contenu), `RestTimerRules.adjust` (±30 s), `WorkoutRepository.completeNextSet`,
+  publication `notifications/WorkoutNotifier.kt` derrière `WorkoutNotifications`, actions dans
+  `RestTimerReceiver` ; tests `WorkoutNotificationRulesTest` (prochaine série, textes FR et EN
+  lus dans les ressources), `RestTimerRulesTest` et `RestTimerRepositoryTest` (±30 s, alerte avec
+  « Valider la série »), `WorkoutRepositoryTest` (validation depuis la notification). À vérifier
+  **sur l'appareil** : la promotion en Live Update (Android 16+, règles du fabricant), le relais
+  de l'alerte et de son action sur une montre, les actions écran verrouillé.
 
 ---
 
@@ -2041,7 +2060,9 @@ Fonctionnalités ajoutées après la bascule, par lots ; chacune a sa décision 
 (notes de version, sauvegarde automatique, Health Connect) ne change pas le design : il réutilise
 les cartes, interrupteurs, boutons et encarts existants de Paramètres (§ 2.12, § 2.11, § 9).
 **Correctif de Health Connect** après la v1.0.5 (🔄 D30) : un poids par jour, durée des séances
-courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3).
+courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3). **Notification de
+séance** avec actions (🔄 D31, § 15.5) : elle remplace la notification de repos, sans écran ni
+réglage nouveau.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2331,3 +2352,80 @@ en `primary`, interrupteur) :
 | `health.privacy.when` | Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l'historique ». | When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”. |
 | `health.privacy.nothingElse` | Rien d'autre : MuscleNote ne lit aucune donnée de Health Connect et n'envoie rien sur internet ; tes données restent sur ton téléphone. | Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone. |
 | `health.privacy.stop` | Arrêter : coupe l'interrupteur Health Connect dans Paramètres. Les données déjà écrites s'effacent depuis les réglages de Health Connect. | To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect's settings. |
+
+### 15.5 Notification de séance (🔄 D31)
+
+Pendant une séance en cours, une seule notification **« Séance en cours »** résume la séance et
+permet d'avancer sans ouvrir l'app. Elle remplace la notification « Repos en cours » (§ 7.2) et
+son canal (§ 7.1).
+
+**Publication** : canal `workout-ongoing` (LOW, silencieux, `VISIBILITY_PUBLIC`),
+`setOngoing(true)`, `setOnlyAlertOnce(true)`, `setSilent(true)`, `BigTextStyle`, toucher → écran
+`workout`. Publiée dès qu'une séance est en cours (démarrage, chargement de l'app — après un
+redémarrage du téléphone, par exemple —, changement de langue), republiée à chaque changement de
+la séance, du repos ou des exercices perso (au plus 4 fois par seconde, le dernier état est
+toujours publié), retirée à la fin, à l'abandon et à la finalisation après 24 h (§ 3.4). Pas de
+service de premier plan : le chronomètre est celui du système (`setUsesChronometer`). Sans
+notifications autorisées, rien n'est publié. Android 14+ permet de balayer une notification en
+cours : elle revient au changement suivant de la séance ou du repos.
+
+| moment | titre | chronomètre | texte | actions |
+|---|---|---|---|---|
+| hors repos | nom de la séance (§ 3.1) | durée de la séance (`setWhen(date)`) | « {exercice} · Série {n} · {détail} » | « Valider la série » |
+| repos (§ 7.2) | « {séance} · Repos » | compte à rebours jusqu'à `endsAt` | « Prochaine : {exercice} · Série {n} · {détail} » | « −30 s », « +30 s », « Passer » |
+| tout validé | nom de la séance | durée de la séance | « Toutes les séries sont validées » | aucune (hors repos) |
+
+- **Prochaine série** : dans l'ordre de la séance, la première série non validée **après la
+  dernière série validée** ; s'il n'y en a pas, la première non validée depuis le début (une série
+  sautée plus haut). Un exercice absent de l'écran de séance (inconnu) est ignoré. {n} = rang de
+  la série dans son exercice (à partir de 1).
+- **Détail** : force « {reps} × {poids} kg » (poids à la locale, `82,5` en français), ou
+  « {reps} reps » à 0 kg ; cardio : durée et distance renseignées, « 30 min · 5 km », rien sans
+  l'une ni l'autre.
+- **Actions** (récepteur `RestTimerReceiver`, intents explicites, `FLAG_IMMUTABLE`, utilisables
+  écran verrouillé ; chacune attend le chargement des données si l'app était fermée, puis
+  republie la notification) :
+  - « Valider la série » : valide la prochaine série et lance le repos, exactement comme un appui
+    dans l'écran de séance (§ 2.6, § 7.2) ;
+  - « −30 s » / « +30 s » : § 7.2 ;
+  - « Passer » : arrêt du repos (§ 7.2).
+  Android ne montre que trois actions : pendant le repos, « Valider la série » n'y est pas.
+- **Live Update** (Android 16 et plus) : la notification demande sa promotion
+  (`setRequestPromotedOngoing(true)`, permission `POST_PROMOTED_NOTIFICATIONS`, § 1). La pastille
+  de la barre d'état montre le compte à rebours pendant le repos, sinon « Série {n} »
+  (`setShortCriticalText`). L'utilisateur (réglages de notification de l'app) ou le fabricant
+  peuvent la refuser : c'est alors une notification en cours classique, avec le même contenu.
+  Avant Android 16, notification en cours classique.
+- **Montres** : Android ne relaie pas une notification **en cours** vers une montre connectée
+  (règle de Wear OS ; Wear OS 7 relaie les Live Updates selon le fabricant). Ce qui arrive sur la
+  montre et la fait vibrer, c'est l'**alerte « Repos terminé »** (§ 7.2, canal `rest-timer`, son et
+  vibration, pas en cours), qui porte l'action « Valider la série » quand une série reste à
+  valider : au poignet, la boucle est complète — vibration de fin de repos, la série, « Valider la
+  série », nouveau repos. Les actions « −30 s », « +30 s » et « Passer » restent sur le téléphone.
+  L'alerte n'est publiée que l'app en arrière-plan ou fermée (§ 7.2) : app ouverte au premier
+  plan, seul le téléphone vibre.
+
+**Textes** :
+
+| clé | FR | EN |
+|---|---|---|
+| `channel.workoutOngoing` | Séance en cours | Workout in progress |
+| `workoutNotif.restTitle` | {{workout}} · Repos | {{workout}} · Rest |
+| `workoutNotif.set` | Série {{n}} · {{detail}} | Set {{n}} · {{detail}} |
+| `workoutNotif.setOnly` | Série {{n}} | Set {{n}} |
+| `workoutNotif.strength` | {{reps}} × {{weight}} kg | {{reps}} × {{weight}} kg |
+| `workoutNotif.reps` | {{reps}} reps | {{reps}} reps |
+| `workoutNotif.minutes` | {{value}} min | {{value}} min |
+| `workoutNotif.km` | {{value}} km | {{value}} km |
+| `workoutNotif.next` | Prochaine : {{set}} | Next: {{set}} |
+| `workoutNotif.allDone` | Toutes les séries sont validées | All sets are done |
+| `workoutNotif.completeSet` | Valider la série | Complete set |
+| `workoutNotif.minus30` / `plus30` | −30 s / +30 s | −30 s / +30 s |
+
+### 15.6 Pistes
+
+- **App Wear OS** : une app sur la montre (Ongoing Activity, tuile du repos) donnerait au poignet
+  ce qu'une notification de téléphone ne peut pas y montrer : le compte à rebours, « −30 s »,
+  « +30 s » et « Passer » pendant le repos. Elle demanderait un module Wear, la synchronisation de
+  la séance entre téléphone et montre (Data Layer) et une publication à part : hors du périmètre
+  actuel (§ 15.5).

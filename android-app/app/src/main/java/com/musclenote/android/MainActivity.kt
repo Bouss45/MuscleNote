@@ -49,9 +49,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         val app = application as MuscleNoteApplication
         // Noms des canaux dans la langue de l'app : l'activité est recréée à chaque changement (§ 7.1),
-        // et la notification d'un repos en cours est republiée dans cette langue.
+        // et la notification de la séance en cours est republiée dans cette langue (§ 15.5).
         NotificationChannels.createOrUpdate(this)
-        app.container.launchMutation { app.container.restTimer.refreshNotification() }
+        app.container.launchMutation { app.container.refreshWorkoutNotification() }
         // AppCompat connaît la langue choisie une fois l'activité créée : copie pour les
         // notifications construites hors activité avant Android 13 (§ 9.4).
         val languages = AppCompatDelegate.getApplicationLocales()
