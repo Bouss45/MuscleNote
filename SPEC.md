@@ -1839,8 +1839,14 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
 ### 13.6 Après la bascule
 
 - Vérification des mises à jour intégrée pour une app installée sans Obtainium (🔄 D25,
-  § 3.17) ; c'est la seule requête réseau de l'app et la seule raison de la permission
-  `INTERNET`.
+  § 3.17) ; elle a ajouté la permission `INTERNET`.
+- Envoi d'un avis vers le serveur Discord du développeur (🔄 D26, § 14) : section « Ton avis » de
+  Paramètres (`ui/settings/FeedbackCard.kt`), règles pures `data/feedback/FeedbackRules.kt`, dépôt
+  `data/repository/FeedbackRepository.kt`, envoi `feedback/DiscordWebhookSender.kt` ; URL du webhook
+  injectée au build par `release.yml` depuis le secret `DISCORD_WEBHOOK_URL`. Tests JVM
+  `FeedbackRulesTest` (corps JSON, échappement, troncature, `allowed_mentions`, validation,
+  délais, réponse 429) et `FeedbackRepositoryTest` (succès, échecs, délai entre deux envois). Les
+  deux accès réseau de l'app passent par `INTERNET` ; l'avis est le seul envoi de données.
 
 ---
 
@@ -1933,7 +1939,7 @@ au style des cartes de Paramètres :
   seconde supérieure, plafonné à 1 h ; aucun envoi avant sa fin.
 - Les deux instants (`lastSentAt`, `blockedUntil`) sont enregistrés dans `feedback.json` (§ 4.2,
   hors sauvegarde) : fermer l'app ne remet pas le délai à zéro. Si l'horloge du téléphone recule,
-  l'attente ne dépasse jamais 60 s (après un envoi) ni le délai demandé (après un 429).
+  l'attente ne dépasse jamais 60 s après un envoi, ni 1 h après un 429.
 - Un échec réseau ou une erreur autre que 429 n'impose aucun délai : on peut réessayer tout de
   suite.
 - Ces limites évitent les doubles envois et l'emballement ; elles ne protègent pas le webhook

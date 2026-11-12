@@ -1,6 +1,6 @@
 # MuscleNote
 
-Carnet de musculation pour Android, **hors ligne** : séances, progression, nutrition et compléments, sans compte ni serveur. Toutes les données restent sur le téléphone ; la seule requête réseau est la vérification des mises à jour quand l'app n'est pas installée par Obtainium.
+Carnet de musculation pour Android, **hors ligne** : séances, progression, nutrition et compléments, sans compte ni serveur. Toutes les données restent sur le téléphone. L'app ne se connecte que pour vérifier les mises à jour (quand elle n'est pas installée par Obtainium) et pour envoyer un avis, seulement quand on appuie sur « Envoyer ».
 
 Application native (Kotlin, Jetpack Compose), en français et en anglais. Elle n'est pas publiée sur le Play Store : chaque version est une [Release GitHub](https://github.com/Bouss45/MuscleNote/releases) avec son APK signé.
 
@@ -17,7 +17,7 @@ Sans Obtainium : télécharger l'APK depuis la page [Releases](https://github.co
 
 Toutes les versions sont signées avec la même clé : une mise à jour s'installe par-dessus la précédente et garde les données. Les versions de test de la transition (pré-releases `v0.1.*`) sont la même app (`com.musclenote.android`) : les Releases `v1.0.*` s'installent par-dessus.
 
-Permissions : notifications (minuteur de repos, rappels de compléments), alarmes exactes, redémarrage (reprogrammer les rappels), vibration, Internet (uniquement pour la vérification des mises à jour, qui ne lit que la dernière Release GitHub et n'envoie aucune donnée). Aucune permission de stockage, de localisation ni de caméra.
+Permissions : notifications (minuteur de repos, rappels de compléments), alarmes exactes, redémarrage (reprogrammer les rappels), vibration, Internet (vérification des mises à jour, qui ne lit que la dernière Release GitHub et n'envoie aucune donnée ; envoi d'un avis, uniquement sur appui de « Envoyer »). Aucune permission de stockage, de localisation ni de caméra.
 
 ### Venir de l'ancienne app (Expo)
 
@@ -59,6 +59,7 @@ Une fois les données vérifiées, l'ancienne app peut être désinstallée.
 - **Export CSV** (séances, séries, pesées, nutrition), lisible dans Excel ou Google Sheets.
 - Mises à jour (sans Obtainium) : version installée, vérification, téléchargement de la nouvelle version.
 - Rapport de plantage local, à partager ou supprimer.
+- **Ton avis** : une idée, un bug ou une remarque envoyés au développeur (serveur Discord), avec la version de l'app et d'Android, le modèle du téléphone et la langue, affichés sous le formulaire ; aucune donnée d'entraînement.
 
 ## Stack technique
 
@@ -97,7 +98,7 @@ Prérequis : JDK 21 et le SDK Android (ou un simple push : la CI construit tout)
 
 ## Releases
 
-`.github/workflows/release.yml` tourne à chaque push sur `main` qui touche `android-app/` : tests JVM, build de l'APK release signé, vérification de la signature, puis **Release GitHub** `v1.0.<n>` (`versionName` 1.0.<n>, `versionCode` 1000 + n). Les secrets du dépôt fournissent la clé de signature : `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`.
+`.github/workflows/release.yml` tourne à chaque push sur `main` qui touche `android-app/` : tests JVM, build de l'APK release signé, vérification de la signature, puis **Release GitHub** `v1.0.<n>` (`versionName` 1.0.<n>, `versionCode` 1000 + n). Les secrets du dépôt fournissent la clé de signature (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) et l'URL du webhook Discord des avis (`DISCORD_WEBHOOK_URL` ; sans elle, la section « Ton avis » est masquée). Cette URL n'est pas dans le dépôt, mais elle est lisible dans l'APK publié : le webhook doit poster dans un salon privé, et se régénère en cas d'abus.
 
 ## Données
 
