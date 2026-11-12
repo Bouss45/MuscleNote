@@ -22,3 +22,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "MuscleNote"
 include(":app")
+// Notes de version des Releases (SPEC § 15.1) : outil JVM lancé par la CI.
+include(":release-notes")

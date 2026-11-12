@@ -2060,9 +2060,9 @@ Tous les commits : https://github.com/Bouss45/MuscleNote/compare/v1.0.11...v1.0.
   l'utilisateur, en français** (« Sauvegarde automatique : choix du dossier », pas « Refactor du
   BackupViewModel ») ; il finit tel quel dans les notes de version.
 - **Vérification des pull requests** : nouveau workflow `checks.yml`, sur chaque pull request vers
-  `main` touchant `android-app/**` ou ce workflow : tests JVM (app et notes de version) et
-  `assembleDebug`, sans secret ni Release. Une branche est validée avant sa fusion ; seule la fusion
-  publie une Release.
+  `main` touchant `android-app/**` ou ce workflow : tests JVM (app et notes de version) et APK
+  release non signé (R8 compris), sans secret ni Release. Une branche est validée avant sa fusion ;
+  seule la fusion publie une Release.
 
 ### 15.2 Sauvegarde automatique (🔄 D28)
 

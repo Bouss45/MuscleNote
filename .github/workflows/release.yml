@@ -30,9 +30,11 @@ jobs:
         working-directory: android-app
 
     steps:
+      # Tout l'historique et les tags : notes de version depuis la Release précédente (SPEC § 15.1).
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
@@ -49,9 +51,10 @@ jobs:
       - name: Numéro de version
         run: echo "VERSION_CODE=$((1000 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
 
-      # Tests JVM (règles métier, sauvegarde, stockage, textes) : un échec bloque le build.
+      # Tests JVM (règles métier, sauvegarde, stockage, textes, notes de version) : un échec bloque
+      # le build.
       - name: Tests unitaires
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        run: ./gradlew :app:testDebugUnitTest :release-notes:test --stacktrace
 
       # Le keystore n'existe que dans le dossier temporaire du runner, jamais dans le dépôt.
       - name: Décoder le keystore
@@ -96,22 +99,42 @@ jobs:
           cp "$APK" "$RUNNER_TEMP/$APK_NAME"
           ls -l "$RUNNER_TEMP/$APK_NAME"
 
+      # Notes de version (SPEC § 15.1) : commits depuis le tag de la dernière Release, sans les
+      # fusions ni ceux qui ne touchent que la doc ou la CI (module :release-notes).
       - name: Publier la Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          NOTES="MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}."
           if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            # Relance d'un même run : on remplace l'APK de la release existante.
+            # Relance d'un même run : on remplace l'APK de la release existante, texte inchangé.
             gh release upload "$TAG" "$RUNNER_TEMP/$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
-          else
-            gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$GITHUB_SHA" \
-              --latest \
-              --title "MuscleNote v$VERSION_NAME" \
-              --notes "$NOTES"
+            exit 0
           fi
+
+          NOTES_FILE="$RUNNER_TEMP/release-notes.md"
+          LOG_ARGS=""
+          PREV_TAG="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2> /dev/null || true)"
+          if [ -n "$PREV_TAG" ] && git rev-parse -q --verify "refs/tags/$PREV_TAG^{commit}" > /dev/null; then
+            git -c core.quotePath=false log --reverse --name-only --format='%x1e%H%x1f%P%x1f%s' \
+              "$PREV_TAG..$GITHUB_SHA" > "$RUNNER_TEMP/commits.log"
+            LOG_ARGS="--log $RUNNER_TEMP/commits.log --compare $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$PREV_TAG...$TAG"
+            echo "Notes depuis $PREV_TAG"
+          else
+            echo "::warning::Pas de Release précédente dans l'historique : notes sans liste des changements"
+          fi
+          if ! ./gradlew -q :release-notes:run \
+            --args="--version $VERSION_NAME --code $VERSION_CODE --commit $GITHUB_SHA --out $NOTES_FILE $LOG_ARGS"; then
+            echo "::warning::Notes de version impossibles à calculer : en-tête seul"
+            echo "MuscleNote $VERSION_NAME (versionCode $VERSION_CODE), commit ${GITHUB_SHA::7}." > "$NOTES_FILE"
+          fi
+          cat "$NOTES_FILE"
+
+          gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --latest \
+            --title "MuscleNote v$VERSION_NAME" \
+            --notes-file "$NOTES_FILE"
 
       - name: Supprimer le keystore
         if: always()

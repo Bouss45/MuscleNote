@@ -1,0 +1,48 @@
+name: checks
+
+# Vérification des pull requests vers main (SPEC § 15.1) : tests JVM et APK release non signé,
+# sans secret ni Release. Seule la fusion dans main publie une Release (release.yml).
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "android-app/**"
+      - ".github/workflows/checks.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Tests et build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android-app
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            android-app/gradle/libs.versions.toml
+            android-app/**/*.gradle.kts
+            android-app/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Tests unitaires
+        run: ./gradlew :app:testDebugUnitTest :release-notes:test --stacktrace
+
+      # Même build que la Release (R8 compris), non signé, sans l'URL du webhook des avis.
+      - name: Build de l'APK release
+        run: ./gradlew :app:assembleRelease --stacktrace
