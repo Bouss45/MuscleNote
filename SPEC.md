@@ -1869,6 +1869,23 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   `FeedbackRulesTest` (corps JSON, échappement, troncature, `allowed_mentions`, validation,
   délais, réponse 429) et `FeedbackRepositoryTest` (succès, échecs, délai entre deux envois). Les
   deux accès réseau de l'app passent par `INTERNET` ; l'avis est le seul envoi de données.
+- Lot 1 des évolutions (§ 15, 🔄 D27 – D29) :
+  - notes de version : module JVM `android-app/release-notes/` lancé par `release.yml`, tests
+    `ReleaseNotesTest` (lecture de `git log`, fusions et commits de doc / CI écartés, texte) ;
+    vérification des pull requests par `checks.yml` ;
+  - sauvegarde automatique : règles `data/backup/AutoBackupRules.kt`, dépôt
+    `data/repository/AutoBackupRepository.kt`, dossier et tâche WorkManager dans `backup/`, carte
+    `ui/settings/AutoBackupCard.kt` ; tests `AutoBackupRulesTest` (noms, rotation des 14) et
+    `AutoBackupRepositoryTest` (activation, fichier du jour, rotation, échecs, dossier perdu) ;
+  - Health Connect : conversion `data/health/HealthRecords.kt`, dépôt
+    `data/repository/HealthSyncRepository.kt`, SDK et écran de politique de confidentialité dans
+    `health/`, carte `ui/settings/HealthConnectCard.kt` ; tests `HealthRecordsTest` (séance,
+    poids, pesée, décalages horaires, empreintes), `HealthConnectRecordsTest` (enregistrements du
+    SDK, permissions) et `HealthSyncRepositoryTest` (file, mises à jour, suppressions, échecs,
+    autorisations partielles).
+  - Restent à vérifier **sur l'appareil** : l'écran d'autorisation de Health Connect (Android 14+
+    et app Health Connect avant), le sélecteur de dossier avec un fournisseur autre que le stockage
+    interne, et le passage quotidien de la tâche.
 
 ---
 

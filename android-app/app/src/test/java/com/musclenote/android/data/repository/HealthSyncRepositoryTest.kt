@@ -205,7 +205,7 @@ class HealthSyncRepositoryTest {
     }
 
     @Test
-    fun `coupée, rien ne part ; réactivée, ce qui avait été envoyé puis modifié est remis à jour`() = runBlocking<Unit> {
+    fun `coupée rien ne part, réactivée ce qui avait été envoyé puis modifié est remis à jour`() = runBlocking<Unit> {
         coroutineScope {
             val repo = repository()
             repo.onPermissionsResult(HealthRecordType.entries.toSet())

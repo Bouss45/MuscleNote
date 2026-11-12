@@ -96,7 +96,7 @@ class HealthRecordsTest {
     fun `l'empreinte change avec les champs envoyés, pas avec les exercices`() {
         fun fingerprints(w: Workout) = HealthRecords.forWorkout(w, paris).associate { it.clientRecordId to it.fingerprint }
         val base = fingerprints(workout())
-        val sets = workout().copy(exercises = listOf(com.musclenote.android.data.model.WorkoutExercise("bench", emptyList())))
+        val sets = workout().copy(exercises = listOf(com.musclenote.android.data.model.WorkoutExercise(exerciseId = "bench", sets = emptyList())))
         assertEquals(base, fingerprints(sets))
         val renamed = fingerprints(workout(preset = null, name = "Haut du corps"))
         assertNotEquals(base["musclenote-session-w1"], renamed["musclenote-session-w1"])
