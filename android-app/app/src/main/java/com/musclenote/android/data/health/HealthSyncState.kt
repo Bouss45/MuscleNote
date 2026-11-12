@@ -15,10 +15,14 @@ data class HealthSyncState(
     val pending: List<String> = emptyList(),
     /** Dernière `clientRecordVersion` utilisée : la suivante est toujours plus grande. */
     val lastVersion: Long = 0,
-    /** Instant (ms) du dernier envoi réussi. */
+    /** Instant (ms) du dernier envoi dont Health Connect a confirmé au moins une écriture ou suppression. */
     val lastSyncAt: Long? = null,
-    /** Erreur du dernier essai, effacée par un envoi réussi. */
+    /** Dernière erreur, effacée par un envoi suivant sans erreur. */
     val lastError: String? = null,
+    /** Instant (ms) de [lastError]. */
+    val lastErrorAt: Long? = null,
+    /** Type concerné par [lastError] ; `null` = Health Connect entier (autorisations illisibles…). */
+    val lastErrorType: HealthRecordType? = null,
 ) {
     companion object {
         val DEFAULT = HealthSyncState()

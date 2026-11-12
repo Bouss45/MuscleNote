@@ -5,8 +5,8 @@ import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.nutrition.BodyWeightRules
 import com.musclenote.android.data.util.isDayKey
-import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.WorkoutStats
 import java.time.Instant
 import java.time.LocalDate
@@ -87,20 +87,8 @@ object ProgressStats {
      * nul ; puis chaque pesée manuelle écrase la valeur de son jour (la plus récente si deux
      * pesées tombent le même jour). Tri par jour croissant.
      */
-    fun bodyWeightSeries(workouts: List<Workout>, bodyWeights: List<BodyWeightEntry>, zone: ZoneId): List<DayValue> {
-        val byDay = HashMap<LocalDate, Double>()
-        for (workout in workouts) {
-            if (workout.bodyWeight == 0.0) continue
-            val day = localDay(workout.date, zone) ?: continue
-            // Séances de la plus récente à la plus ancienne : la première du jour gagne.
-            byDay.putIfAbsent(day, workout.bodyWeight)
-        }
-        bodyWeights
-            .mapNotNull { entry -> parseInstantOrNull(entry.date, zone)?.let { it to entry } }
-            .sortedBy { it.first }
-            .forEach { (instant, entry) -> byDay[instant.atZone(zone).toLocalDate()] = entry.weight }
-        return byDay.entries.sortedBy { it.key }.map { DayValue(it.key, it.value) }
-    }
+    fun bodyWeightSeries(workouts: List<Workout>, bodyWeights: List<BodyWeightEntry>, zone: ZoneId): List<DayValue> =
+        BodyWeightRules.dailyWeights(workouts, bodyWeights, zone).map { DayValue(it.day, it.weight) }
 
     /** Actuel (dernier point), évolution (dernier − premier, au dixième), min et max ; `null` sans point. */
     fun bodyWeightStats(series: List<DayValue>): BodyWeightStats? {
@@ -208,6 +196,4 @@ object ProgressStats {
             maxVolume = maxVolume,
         )
     }
-
-    private fun localDay(date: String, zone: ZoneId): LocalDate? = parseInstantOrNull(date, zone)?.atZone(zone)?.toLocalDate()
 }

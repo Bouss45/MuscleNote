@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.health.HealthRecordType
+import com.musclenote.android.data.health.HealthRecords
 import com.musclenote.android.data.repository.HealthHistoryResult
 import com.musclenote.android.health.HealthConnectRecords
 import com.musclenote.android.ui.LocalAppContainer
@@ -154,8 +155,31 @@ private fun HealthConnectCard() {
                     fontSize = 12.sp,
                     lineHeight = 18.sp,
                 )
-                state.lastError?.let {
-                    Text(stringResource(R.string.health_failed, it), color = colors.destructive, fontSize = 12.sp, lineHeight = 18.sp)
+                if (state.sent.isNotEmpty()) {
+                    val written = remember(state.sent) { HealthRecords.countByType(state.sent.keys) }
+                    val sessions = written[HealthRecordType.Session] ?: 0
+                    val weights = written[HealthRecordType.Weight] ?: 0
+                    Text(
+                        stringResource(
+                            R.string.health_written,
+                            pluralStringResource(R.plurals.health_sessions, sessions, sessions),
+                            pluralStringResource(R.plurals.health_weights, weights, weights),
+                        ),
+                        color = colors.mutedForeground,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                    )
+                }
+                state.lastError?.let { error ->
+                    val detail = healthErrorText(state.lastErrorType, error)
+                    val at = state.lastErrorAt
+                    Text(
+                        if (at == null) detail
+                        else stringResource(R.string.health_failed, rememberDateTime(at, appLocale(), container.time.zone()), detail),
+                        color = colors.destructive,
+                        fontSize = 12.sp,
+                        lineHeight = 18.sp,
+                    )
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -180,8 +204,8 @@ private fun HealthConnectCard() {
                     onClick = {
                         haptics.light()
                         container.launchMutation {
-                            when (health.sendHistory()) {
-                                is HealthHistoryResult.Sent -> haptics.success()
+                            when (val result = health.sendHistory()) {
+                                is HealthHistoryResult.Done -> if (result.failures.isEmpty()) haptics.success() else haptics.warning()
                                 is HealthHistoryResult.Failed -> haptics.warning()
                             }
                         }
@@ -192,18 +216,34 @@ private fun HealthConnectCard() {
     }
     if (state.enabled) {
         when (val result = historyResult) {
-            is HealthHistoryResult.Sent -> StatusBox(
-                success = true,
-                message = stringResource(
-                    R.string.health_history_sent,
-                    pluralStringResource(R.plurals.health_sessions, result.sessions, result.sessions),
-                    pluralStringResource(R.plurals.health_weights, result.weights, result.weights),
-                ),
-            )
-            is HealthHistoryResult.Failed -> StatusBox(success = false, message = stringResource(R.string.health_failed, result.detail))
+            is HealthHistoryResult.Done -> {
+                // Seulement ce que Health Connect a confirmé, puis chaque échec et type non autorisé.
+                val lines = buildList {
+                    add(
+                        stringResource(
+                            R.string.health_history_sent,
+                            pluralStringResource(R.plurals.health_sessions, result.sessions, result.sessions),
+                            pluralStringResource(R.plurals.health_weights, result.weights, result.weights),
+                        ),
+                    )
+                    result.failures.forEach { (type, error) -> add(healthErrorText(type, error)) }
+                    if (HealthRecordType.Session in result.notGranted) add(stringResource(R.string.health_missing_sessions))
+                    if (HealthRecordType.Weight in result.notGranted) add(stringResource(R.string.health_missing_weight))
+                }
+                StatusBox(success = result.failures.isEmpty(), message = lines.joinToString("\n"))
+            }
+            is HealthHistoryResult.Failed -> StatusBox(success = false, message = stringResource(R.string.health_unavailable, result.detail))
             null -> Unit
         }
     }
+}
+
+/** Erreur d'un type (« Séances : échec (…). ») ou de Health Connect entier (« Envoi impossible (…). »). */
+@Composable
+private fun healthErrorText(type: HealthRecordType?, error: String): String = when (type) {
+    HealthRecordType.Session -> stringResource(R.string.health_type_failed_sessions, error)
+    HealthRecordType.Weight -> stringResource(R.string.health_type_failed_weight, error)
+    null -> stringResource(R.string.health_unavailable, error)
 }
 
 /** Réglages de Health Connect pour les données de MuscleNote (autorisations, suppression). */

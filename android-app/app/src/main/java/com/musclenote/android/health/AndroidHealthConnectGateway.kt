@@ -26,9 +26,10 @@ class AndroidHealthConnectGateway(context: Context) : HealthConnectGateway {
     override suspend fun grantedTypes(): Set<HealthRecordType> =
         HealthConnectRecords.typesOf(client().permissionController.getGrantedPermissions())
 
-    override suspend fun upsert(records: List<HealthRecordSpec>, version: Long) {
+    /** Nombre d'identifiants renvoyés par Health Connect : ce qu'il a réellement écrit. */
+    override suspend fun upsert(records: List<HealthRecordSpec>, version: Long): Int {
         val title = sessionTitles()
-        client().insertRecords(records.map { HealthConnectRecords.toRecord(it, version, title) })
+        return client().insertRecords(records.map { HealthConnectRecords.toRecord(it, version, title) }).recordIdsList.size
     }
 
     override suspend fun delete(type: HealthRecordType, clientRecordIds: List<String>) {

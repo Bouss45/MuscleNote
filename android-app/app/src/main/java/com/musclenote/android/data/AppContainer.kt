@@ -96,7 +96,7 @@ class AppContainer(
         watchHealthChanges()
         // Séance de plus de 24 h finalisée au chargement : un changement comme un autre (§ 15.3).
         if (finalized is WorkoutEnd.Finished) {
-            health.enqueue(HealthRecords.forWorkout(finalized.workout, time.zone()).map { it.clientRecordId })
+            health.enqueue(HealthRecords.idsFor(finalized.workout, time.zone()))
         }
         // Hors du chargement : awaitReady() n'attend pas Health Connect.
         appScope.launch { health.sync() }
