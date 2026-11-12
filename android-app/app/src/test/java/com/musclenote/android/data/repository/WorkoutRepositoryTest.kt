@@ -282,6 +282,35 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun `valider depuis la notification valide la prochaine série et donne son exercice`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.startWorkout(80.0, null, "Haut du corps")
+            repo.addExerciseToWorkout(LIFT)
+            repo.addSet(LIFT)
+            repo.addSet(LIFT)
+            assertTrue(repo.hasNextSet())
+            assertEquals(LIFT, repo.completeNextSet())
+            assertEquals(listOf(true, false), repo.sets(LIFT).map { it.completed })
+            assertEquals(LIFT, repo.completeNextSet())
+            assertFalse(repo.hasNextSet())
+            assertNull(repo.completeNextSet())
+            assertEquals(listOf(true, true), repo.sets(LIFT).map { it.completed })
+        }
+        // Enregistrée comme une validation dans l'écran.
+        coroutineScope { assertEquals(listOf(true, true), repository().sets(LIFT).map { it.completed }) }
+    }
+
+    @Test
+    fun `sans séance en cours il n'y a rien à valider`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            assertFalse(repo.hasNextSet())
+            assertNull(repo.completeNextSet())
+        }
+    }
+
+    @Test
     fun `la note est enregistrée et une note vidée est retirée`() = runBlocking<Unit> {
         coroutineScope {
             val repo = repository()

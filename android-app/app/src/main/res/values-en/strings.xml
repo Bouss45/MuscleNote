@@ -306,16 +306,26 @@
     <string name="edit_workout_keep_editing">Keep editing</string>
     <string name="edit_workout_rename">Rename session</string>
     <!-- Notification channels (§ 7.1) -->
-    <string name="channel_rest_timer_ongoing">Rest in progress</string>
+    <string name="channel_workout_ongoing">Workout in progress</string>
     <string name="channel_rest_timer">Rest timer</string>
     <string name="channel_supplements">Supplement reminders</string>
 
     <!-- Rest timer (§ 7.2) -->
-    <string name="rest_timer_ongoing_title">Resting</string>
-    <string name="rest_timer_ongoing_text">Next set: %1$s</string>
     <string name="rest_timer_notif_title">Rest complete 💪</string>
     <string name="rest_timer_notif_body">Ready for %1$s!</string>
     <string name="rest_timer_skip">Skip</string>
+    <string name="workout_notif_rest_title">%1$s · Rest</string>
+    <string name="workout_notif_set">Set %1$d · %2$s</string>
+    <string name="workout_notif_set_only">Set %1$d</string>
+    <string name="workout_notif_strength">%1$d × %2$s kg</string>
+    <string name="workout_notif_reps">%1$d reps</string>
+    <string name="workout_notif_minutes">%1$s min</string>
+    <string name="workout_notif_km">%1$s km</string>
+    <string name="workout_notif_next">Next: %1$s</string>
+    <string name="workout_notif_all_done">All sets are done</string>
+    <string name="workout_notif_complete_set">Complete set</string>
+    <string name="workout_notif_minus_30">−30 s</string>
+    <string name="workout_notif_plus_30">+30 s</string>
     <string name="rest_timer_label">Rest</string>
 
     <!-- Progrès (§ 2.10) -->

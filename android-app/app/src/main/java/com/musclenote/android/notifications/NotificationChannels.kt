@@ -26,10 +26,13 @@ enum class AppChannel(
     val alerting: Boolean,
     val lockscreenVisibility: Int,
 ) {
-    /** Notification en cours du repos (🔄 D6) : silencieuse, compte à rebours système. */
-    RestTimerOngoing(
-        "rest-timer-ongoing",
-        R.string.channel_rest_timer_ongoing,
+    /**
+     * Notification « Séance en cours » (§ 15.5, 🔄 D31) : silencieuse, chronomètre système ; elle
+     * remplace la notification de repos et son canal `rest-timer-ongoing`.
+     */
+    WorkoutOngoing(
+        "workout-ongoing",
+        R.string.channel_workout_ongoing,
         NotificationManager.IMPORTANCE_LOW,
         alerting = false,
         lockscreenVisibility = Notification.VISIBILITY_PUBLIC,
@@ -57,6 +60,9 @@ enum class AppChannel(
 object NotificationChannels {
     /** Vibration des canaux qui alertent : `[0, 250, 250, 250]` ms. */
     private val VIBRATION_PATTERN = longArrayOf(0, 250, 250, 250)
+
+    /** Canaux d'anciennes versions, supprimés (« Repos en cours », remplacé par `workout-ongoing`). */
+    private val REMOVED_CHANNEL_IDS = listOf("rest-timer-ongoing")
 
     /**
      * Crée les canaux, ou met à jour leur nom dans la langue courante de l'app : appelé au
@@ -88,6 +94,7 @@ object NotificationChannels {
             }
         }
         manager.createNotificationChannels(channels)
+        REMOVED_CHANNEL_IDS.forEach(manager::deleteNotificationChannel)
     }
 }
 

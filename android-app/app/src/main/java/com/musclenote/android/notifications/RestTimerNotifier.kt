@@ -14,10 +14,10 @@ import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.repository.RestTimerEffects
 
 /**
- * Effets système du minuteur de repos (SPEC § 7.2, 🔄 D6) : notification en cours avec compte à
- * rebours géré par le système, alarme exacte de fin, puis vibration (app au premier plan) ou
- * notification « Repos terminé » (arrière-plan). Pas de service de premier plan : rien n'est mis
- * à jour périodiquement.
+ * Effets système du minuteur de repos (SPEC § 7.2, 🔄 D6) : alarme exacte de fin, puis vibration
+ * (app au premier plan) ou alerte « Repos terminé » (arrière-plan). Le repos en cours s'affiche
+ * dans la notification de séance (§ 15.5, [WorkoutNotifier]). Pas de service de premier plan :
+ * rien n'est mis à jour périodiquement.
  */
 class RestTimerNotifier(context: Context) : RestTimerEffects {
     private val context = context.applicationContext
@@ -26,46 +26,26 @@ class RestTimerNotifier(context: Context) : RestTimerEffects {
         // Un ancien « Repos terminé » n'a plus lieu d'être pendant un nouveau repos.
         AppNotifications.cancel(context, AppNotifications.ID_REST_TIMER_FINISHED)
         ExactAlarms.schedule(context, state.endsAt, endAlarm(state.endsAt))
-        AppNotifications.post(context, AppNotifications.ID_REST_TIMER_ONGOING, ongoingNotification(state))
     }
 
     override fun cancel() {
         ExactAlarms.cancel(context, endAlarm(endsAt = 0))
-        AppNotifications.cancel(context, AppNotifications.ID_REST_TIMER_ONGOING)
     }
 
-    override fun finished(state: RestTimerState, inForeground: Boolean) {
-        AppNotifications.cancel(context, AppNotifications.ID_REST_TIMER_ONGOING)
+    override fun finished(state: RestTimerState, inForeground: Boolean, canCompleteSet: Boolean) {
         if (inForeground) {
             vibrateSuccess()
         } else {
-            AppNotifications.post(context, AppNotifications.ID_REST_TIMER_FINISHED, finishedNotification(state))
+            AppNotifications.post(context, AppNotifications.ID_REST_TIMER_FINISHED, finishedNotification(state, canCompleteSet))
         }
     }
 
-    /** « Repos en cours » : compte à rebours système jusqu'à `endsAt`, action « Passer ». */
-    private fun ongoingNotification(state: RestTimerState) = context.withAppLocale().let { localized ->
-        val remaining = (state.endsAt - System.currentTimeMillis()).coerceAtLeast(1)
-        AppNotifications.builder(context, AppChannel.RestTimerOngoing)
-            .setContentTitle(localized.getString(R.string.rest_timer_ongoing_title))
-            .setContentText(localized.getString(R.string.rest_timer_ongoing_text, state.exerciseName))
-            .setWhen(state.endsAt)
-            .setShowWhen(true)
-            .setUsesChronometer(true)
-            .setChronometerCountDown(true)
-            .setOngoing(true)
-            .setOnlyAlertOnce(true)
-            .setSilent(true)
-            .setTimeoutAfter(remaining)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setCategory(NotificationCompat.CATEGORY_STOPWATCH)
-            .setContentIntent(openWorkout(context))
-            .addAction(R.drawable.ic_skip_next, localized.getString(R.string.rest_timer_skip), skipAction())
-            .build()
-    }
-
-    /** « Repos terminé 💪 » : son et vibration du canal, effacée au toucher. */
-    private fun finishedNotification(state: RestTimerState) = context.withAppLocale().let { localized ->
+    /**
+     * « Repos terminé 💪 » : son et vibration du canal, effacée au toucher. Pas « en cours » : Android
+     * la relaie sur une montre connectée, qui vibre et montre l'action « Valider la série »
+     * ([canCompleteSet]) ; la valider lance le repos suivant, dont la fin revient ici (§ 15.5).
+     */
+    private fun finishedNotification(state: RestTimerState, canCompleteSet: Boolean) = context.withAppLocale().let { localized ->
         AppNotifications.builder(context, AppChannel.RestTimer)
             .setContentTitle(localized.getString(R.string.rest_timer_notif_title))
             .setContentText(localized.getString(R.string.rest_timer_notif_body, state.exerciseName))
@@ -74,6 +54,15 @@ class RestTimerNotifier(context: Context) : RestTimerEffects {
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
             .setContentIntent(openWorkout(context))
+            .apply {
+                if (canCompleteSet) {
+                    addAction(
+                        R.drawable.ic_check,
+                        localized.getString(R.string.workout_notif_complete_set),
+                        RestTimerReceiver.action(context, RestTimerReceiver.ACTION_COMPLETE_SET),
+                    )
+                }
+            }
             .build()
     }
 
@@ -87,11 +76,6 @@ class RestTimerNotifier(context: Context) : RestTimerEffects {
             .setAction(RestTimerReceiver.ACTION_END)
             .putExtra(RestTimerReceiver.EXTRA_ENDS_AT, endsAt)
         return PendingIntent.getBroadcast(context, REQUEST_END, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-    }
-
-    private fun skipAction(): PendingIntent {
-        val intent = Intent(context, RestTimerReceiver::class.java).setAction(RestTimerReceiver.ACTION_SKIP)
-        return PendingIntent.getBroadcast(context, REQUEST_SKIP, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
     }
 
     /** Vibration « succès » de fin de repos, app au premier plan (pas de notification). */
@@ -108,7 +92,6 @@ class RestTimerNotifier(context: Context) : RestTimerEffects {
 
     companion object {
         private const val REQUEST_END = 1
-        private const val REQUEST_SKIP = 2
         private const val REQUEST_OPEN_WORKOUT = 3
 
         /** Deux impulsions courtes, assez nettes pour être senties téléphone posé. */

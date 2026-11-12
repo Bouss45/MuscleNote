@@ -22,9 +22,16 @@ object AppNotifications {
     /** Couleur d'accent des notifications (`primary`, identique dans les deux thèmes). */
     const val ACCENT_COLOR = 0xFF9B1C1C.toInt()
 
-    /** Identifiants des notifications de l'app. */
+    // Identifiants des notifications de l'app.
+
+    /** Ancienne notification « Repos en cours » (jusqu'à la v1.0.6), retirée si elle est encore affichée. */
     const val ID_REST_TIMER_ONGOING = 1001
+
+    /** Alerte « Repos terminé » (§ 7.2). */
     const val ID_REST_TIMER_FINISHED = 1002
+
+    /** « Séance en cours » (§ 15.5). */
+    const val ID_WORKOUT_ONGOING = 1003
 
     /** Rappels de compléments : même id, une étiquette par complément. */
     const val ID_SUPPLEMENT = 2001

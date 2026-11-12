@@ -13,6 +13,9 @@
         android:maxSdkVersion="32" />
     <!-- Vibration de fin de repos depuis le récepteur d'alarme. -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Live Update de la séance en cours (Android 16+, § 15.5, 🔄 D31) : permission normale, sans
+         demande ; l'utilisateur peut la couper dans les réglages de notification de l'app. -->
+    <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- Reprogrammer les rappels de compléments après un redémarrage. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <!-- Vérification des mises à jour (§ 3.17, 🔄 D25) : une requête par jour à l'API GitHub,
