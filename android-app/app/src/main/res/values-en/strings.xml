@@ -94,6 +94,24 @@
     <string name="settings_update_failed">Couldn\'t check: no connection?</string>
     <string name="settings_update_check">Check now</string>
 
+    <!-- Envoi d'un avis (§ 14) -->
+    <string name="settings_section_feedback">YOUR FEEDBACK</string>
+    <string name="feedback_title">Your feedback</string>
+    <string name="feedback_desc">An idea, a bug? Send it straight to the developer.</string>
+    <string name="feedback_type_idea">Idea</string>
+    <string name="feedback_type_bug">Bug</string>
+    <string name="feedback_type_other">Other</string>
+    <string name="feedback_message_placeholder">Describe your idea or the problem…</string>
+    <string name="feedback_counter">%1$s / %2$s</string>
+    <string name="feedback_name_placeholder">Nickname (optional)</string>
+    <string name="feedback_send">Send</string>
+    <string name="feedback_wait">You can send again in %1$s</string>
+    <string name="feedback_attached">Attached automatically: MuscleNote %1$s · Android %2$s · %3$s · language %4$s. Nothing else: no workout data.</string>
+    <string name="feedback_success">Thanks, your feedback has been sent!</string>
+    <string name="feedback_error_network">Couldn\'t send: check your connection. Your message is kept.</string>
+    <string name="feedback_error_rate_limited">Too many messages right now. Your message is kept.</string>
+    <string name="feedback_error_server">Sending failed (error %1$d). Your message is kept; try again later.</string>
+
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Back</string>
     <string name="muscle_pecs">Chest</string>

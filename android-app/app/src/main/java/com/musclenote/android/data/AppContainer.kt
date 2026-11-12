@@ -4,6 +4,8 @@ import com.musclenote.android.data.backup.BackupData
 import com.musclenote.android.data.backup.BackupWriter
 import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.SupplementReminders
+import com.musclenote.android.data.repository.FeedbackRepository
+import com.musclenote.android.data.repository.FeedbackSender
 import com.musclenote.android.data.repository.NutritionRepository
 import com.musclenote.android.data.repository.PreferencesRepository
 import com.musclenote.android.data.repository.ReleaseSource
@@ -46,6 +48,8 @@ class AppContainer(
      * (Obtainium s'en charge sinon), § 3.17, 🔄 D25.
      */
     val updateChecksEnabled: Boolean = false,
+    /** Webhook de l'envoi d'un avis (§ 14) ; `null` = pas d'URL au build, section masquée. */
+    feedbackSender: FeedbackSender? = null,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -60,6 +64,7 @@ class AppContainer(
     val preferences = PreferencesRepository(files.preferences, files.localPreferences)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
     val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
+    val feedback = FeedbackRepository(files.feedback, time, feedbackSender)
 
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
@@ -192,6 +197,7 @@ class AppContainer(
             launch { preferences.load() }
             launch { restTimer.load() }
             launch { updates.load() }
+            launch { feedback.load() }
             workouts.load()
         }
         // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).

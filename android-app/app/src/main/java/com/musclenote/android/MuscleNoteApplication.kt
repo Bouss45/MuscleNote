@@ -6,7 +6,9 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.crash.CrashReports
+import com.musclenote.android.data.feedback.FeedbackRules
 import com.musclenote.android.data.util.TimeSource
+import com.musclenote.android.feedback.DiscordWebhookSender
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
@@ -46,6 +48,10 @@ class MuscleNoteApplication : Application() {
             releaseSource = GitHubReleaseSource(BuildConfig.VERSION_NAME),
             // Installée par Obtainium : c'est lui qui suit les Releases (§ 3.17).
             updateChecksEnabled = !InstallSource.isManagedByUpdater(this),
+            // Envoi d'un avis (§ 14) : seulement si la CI a fourni l'URL du webhook.
+            feedbackSender = BuildConfig.FEEDBACK_WEBHOOK_URL
+                .takeIf(FeedbackRules::isWebhookUrl)
+                ?.let { DiscordWebhookSender(it, BuildConfig.VERSION_NAME) },
         )
         NotificationChannels.createOrUpdate(this)
         ProcessLifecycleOwner.get().lifecycle.addObserver(

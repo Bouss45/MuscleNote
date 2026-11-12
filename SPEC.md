@@ -39,6 +39,7 @@
 11. [Décisions](#11-décisions)
 12. [Questions restantes](#12-questions-restantes)
 13. [État d'avancement](#13-état-davancement)
+14. [Envoyer un avis](#14-envoyer-un-avis)
 
 ---
 
@@ -47,10 +48,16 @@
 - **MuscleNote** : carnet de musculation personnel, en français et en anglais, qui suit **la
   langue du système** (🔄 D9). Installé par APK (Releases GitHub, suivies par Obtainium),
   **pas de publication Play Store**.
-- **Hors ligne** : aucun compte, aucune donnée envoyée. **Une seule requête réseau** (🔄 D25) :
-  la vérification des mises à jour (§ 3.17), au plus une fois par jour et seulement si l'app
-  n'est pas installée par Obtainium. Exception indirecte : la police Inter est obtenue via les
-  polices téléchargeables de Google Play Services (🔄 D12).
+- **Hors ligne** : aucun compte, aucune donnée d'entraînement envoyée. **Deux accès réseau
+  seulement** :
+  - la vérification des mises à jour (🔄 D25, § 3.17), au plus une fois par jour et seulement
+    si l'app n'est pas installée par Obtainium ; aucune donnée de l'app envoyée ;
+  - l'envoi d'un avis (🔄 D26, § 14), **uniquement quand l'utilisateur appuie sur
+    « Envoyer »** : le type, le message, le pseudo facultatif et les quatre informations
+    techniques affichées sous le formulaire. C'est le seul envoi de données de l'app.
+
+  Exception indirecte : la police Inter est obtenue via les polices téléchargeables de Google
+  Play Services (🔄 D12).
 - **Identité Android** (🔄 D5, D22) : nouvel `applicationId` `com.musclenote.android`, nom
   affiché **« MuscleNote »** (un suffixe « 2 » le distinguait de l'app Expo pendant la
   transition, retiré à la bascule), orientation **portrait** uniquement. L'app Expo
@@ -75,7 +82,7 @@
   | `SCHEDULE_EXACT_ALARM` (`maxSdkVersion="32"`) | alarmes exactes, Android 12–12L |
   | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage |
   | `VIBRATE` | vibration de fin de repos depuis le récepteur d'alarme |
-  | `INTERNET` (🔄 D25) | vérification des mises à jour (§ 3.17) |
+  | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
   Aucune permission de stockage (fichiers via le sélecteur système et `FileProvider`), de
   localisation ni de caméra.
 - Quatre domaines fonctionnels :
@@ -83,7 +90,7 @@
   2. **Progrès** (graphiques poids de corps, calories, eau, par groupe musculaire) ;
   3. **Nutrition** (calories et eau du jour, compléments + rappels) ;
   4. **Paramètres** (langue, thème, minuteur, sauvegarde/restauration JSON, export CSV,
-     rapport de plantage).
+     mises à jour, rapport de plantage, envoi d'un avis).
 
 ---
 
@@ -524,6 +531,8 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
    - **Rapport de plantage** (🔄 D17, affiché seulement si un rapport existe, § 10.9) :
      « Dernier plantage le {date} » + [Partager] (feuille de partage, `text/plain`)
      [Supprimer] (efface tous les rapports).
+7. Section **« TON AVIS »** (🔄 D26, seulement si l'URL du webhook a été fournie au build) :
+   formulaire d'envoi d'un avis, décrit au § 14.1.
 
 ### 2.13 Graphique linéaire
 
@@ -894,6 +903,7 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `local_preferences.json` | `{ migrateCardDismissed, appLanguage? }` — préférences locales (§ 3.14), hors sauvegarde |
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
 | `update_check.json` | `{ checkedAt, latestVersion?, pageUrl?, apkUrl?, dismissedVersion? }` — vérification des mises à jour (§ 3.17), hors sauvegarde |
+| `feedback.json` | `{ lastSentAt, blockedUntil }` — délais entre deux avis (§ 14.3), hors sauvegarde |
 | `meta.json` | `{ "schemaVersion": 2 }` — version du schéma de stockage |
 
 Volume attendu : quelques centaines de séances (< 1–2 Mo), entièrement chargées en mémoire au
@@ -1503,6 +1513,7 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `rotate-ccw` | `restart_alt` | remise à zéro |
 | `globe` | `language` | langue |
 | — | `contrast` | thème (nouveau) |
+| — | `forum` / `send` | envoi d'un avis (nouveau, § 14) |
 | `upload` / `download` | `upload` / `download` | export / import |
 | `grid` | `table_view` | export CSV |
 | `alert-circle` / `check-circle` | `error` / `check_circle` | statut |
@@ -1584,6 +1595,8 @@ pourcentages de ce document correspondent aux suffixes Expo : `10`→6 %, `12`�
 | `settings.update.available` | Version {{installed}} · la {{version}} est disponible | Version {{installed}} · {{version}} is available |
 | `settings.update.failed` | Vérification impossible : pas de connexion ? | Couldn't check: no connection? |
 | `settings.update.check` | Vérifier | Check now |
+
+Textes de l'envoi d'un avis (`feedback.*`) : § 14.6.
 
 ---
 
@@ -1668,7 +1681,7 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 Réponses données aux questions ouvertes de la première version de ce document, et leur
 traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajoutées, en réponse
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
-vérification finale (§ 13), D25 après la bascule.
+vérification finale (§ 13), D25 et D26 après la bascule.
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1690,13 +1703,14 @@ vérification finale (§ 13), D25 après la bascule.
 | D16 | `muscleGroup` inconnu à l'import | ranger dans un groupe | normalisation puis groupe `dos` par défaut (§ 5.3) |
 | D17 | Écran d'erreur fatale | rapport de crash local | § 10.9, § 2.12 |
 | D18 | Format d'export JSON | au plus scalable | `version: 2` + chaîne de migrations, v1 toujours importée, v2 lisible par l'app Expo (§ 5.1) |
-| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) |
+| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
 | D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
 | D23 | Contraste des couleurs de groupe en thème clair | texte foncé en thème clair | texte et icônes en nuance foncée (contraste ≥ 4,5:1) en thème clair : groupes, ambre du minuteur, top 3 ; fonds, bordures, courbes et thème sombre inchangés (§ 6.2, 9.1) |
 | D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
 | D25 | Mises à jour d'une app installée sans Obtainium | vérification intégrée | requête quotidienne à l'API GitHub, permission `INTERNET`, annonce sur l'Accueil et carte dans Paramètres ; désactivée quand Obtainium installe l'app (§ 1, 2.2, 2.12, 3.17) |
+| D26 | Retours des utilisateurs | envoyer un avis depuis l'app vers le serveur Discord du développeur | section « Ton avis » dans Paramètres ; webhook Discord dont l'URL vient d'un secret GitHub injecté au build (section masquée sans elle) ; envoi seulement sur appui, aucune donnée d'entraînement, aucune mention possible, un envoi par minute (§ 1, 2.12, 14) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1825,5 +1839,156 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
 ### 13.6 Après la bascule
 
 - Vérification des mises à jour intégrée pour une app installée sans Obtainium (🔄 D25,
-  § 3.17) ; c'est la seule requête réseau de l'app et la seule raison de la permission
-  `INTERNET`.
+  § 3.17) ; elle a ajouté la permission `INTERNET`.
+- Envoi d'un avis vers le serveur Discord du développeur (🔄 D26, § 14) : section « Ton avis » de
+  Paramètres (`ui/settings/FeedbackCard.kt`), règles pures `data/feedback/FeedbackRules.kt`, dépôt
+  `data/repository/FeedbackRepository.kt`, envoi `feedback/DiscordWebhookSender.kt` ; URL du webhook
+  injectée au build par `release.yml` depuis le secret `DISCORD_WEBHOOK_URL`. Tests JVM
+  `FeedbackRulesTest` (corps JSON, échappement, troncature, `allowed_mentions`, validation,
+  délais, réponse 429) et `FeedbackRepositoryTest` (succès, échecs, délai entre deux envois). Les
+  deux accès réseau de l'app passent par `INTERNET` ; l'avis est le seul envoi de données.
+
+---
+
+## 14. Envoyer un avis
+
+🔄 D26. Un formulaire de Paramètres envoie une idée, un bug ou une remarque sur le serveur
+Discord du développeur, par un webhook. C'est le **seul envoi de données** de l'app, et il n'a
+lieu que lorsque l'utilisateur appuie sur « Envoyer » : pas d'envoi automatique, pas de file
+d'attente, pas de nouvel essai en arrière-plan.
+
+### 14.1 Formulaire (Paramètres, section « TON AVIS »)
+
+Dernière section de Paramètres (après « APPLICATION », § 2.12), **affichée seulement si l'URL
+du webhook a été fournie au build** (§ 14.5) ; sinon elle est absente, titre compris. Une carte
+au style des cartes de Paramètres :
+
+- **En-tête** : icône ronde `forum` (`primary`), titre « Ton avis », description « Une idée, un
+  bug ? Envoie-le directement au développeur. ».
+- **Type** : puces « Idée » (choisie par défaut), « Bug », « Autre » ; choix unique, style des
+  puces du minuteur.
+- **Message** : champ multiligne (4 lignes visibles, grandit jusqu'à 8 puis défile),
+  indication « Décris ton idée ou le problème… », majuscule en début de phrase. **1 000
+  caractères au plus** : la saisie s'arrête à la limite et un collage trop long est tronqué.
+  Caractère = point de code Unicode (un emoji simple compte pour 1 et n'est jamais coupé en
+  deux). Compteur « {n} / 1 000 » aligné à droite sous le champ (`mutedForeground`, `destructive`
+  à 1 000), nombres formatés dans la locale de l'app (§ 3.14).
+- **Pseudo** (facultatif) : champ d'une ligne, indication « Pseudo (facultatif) », 32 caractères
+  au plus, touche « Terminé ».
+- **Bouton plein « Envoyer »** (`primary`, icône `send`), actif seulement si le message contient
+  autre chose que des espaces, qu'aucun envoi n'est en cours et qu'aucun délai ne court
+  (§ 14.3). Pendant l'envoi : indicateur dans le bouton, puces et champs désactivés. Pendant un
+  délai : bouton désactivé et, dessous, « Prochain envoi possible dans {délai} », décompté à la
+  seconde (« 42 s » ; à partir d'une minute, en minutes arrondies au-dessus : « 3 min »).
+- **Informations jointes**, en petit (`mutedForeground`, 11 sp, icône `info`) sous le bouton :
+  « Joint automatiquement : MuscleNote {version} · Android {version} · {modèle} · langue
+  {langue}. Rien d'autre : aucune donnée d'entraînement. », avec exactement les valeurs envoyées
+  (§ 14.2).
+- **Encart de résultat** sous le formulaire, au style de l'encart de statut (§ 2.12, point 4) :
+  succès ou erreur (§ 14.4) ; il disparaît dès que le formulaire est modifié.
+- **Brouillon** gardé en mémoire tant que l'app tourne : changer d'onglet, de langue ou de thème
+  ne le perd pas. Il n'est pas écrit sur disque.
+
+### 14.2 Requête
+
+- `POST` HTTPS vers l'URL du webhook ; en-têtes `Content-Type: application/json; charset=utf-8`
+  et `User-Agent: MuscleNote-Android/{version}` ; délais d'attente **5 s** (connexion) et
+  **10 s** (lecture) ; redirections non suivies. `HttpURLConnection` sur `Dispatchers.IO`, sans
+  bibliothèque ajoutée.
+- Corps : un message Discord avec un seul embed, construit avec kotlinx.serialization (guillemets,
+  barres obliques inverses, retours à la ligne et caractères de contrôle correctement échappés) :
+  ```json
+  {
+    "username": "MuscleNote",
+    "allowed_mentions": { "parse": [] },
+    "embeds": [{
+      "title": "💡 Idée",
+      "description": "Pouvoir réordonner les compléments.",
+      "color": 16096779,
+      "fields": [
+        { "name": "Pseudo", "value": "Théo", "inline": true },
+        { "name": "Version", "value": "1.0.42 (1042)", "inline": true },
+        { "name": "Android", "value": "15 (API 35)", "inline": true },
+        { "name": "Appareil", "value": "Google Pixel 8", "inline": true },
+        { "name": "Langue", "value": "fr-FR", "inline": true }
+      ]
+    }]
+  }
+  ```
+- **Type** → titre et couleur de l'embed : Idée « 💡 Idée », ambre `#F59E0B` (16096779) ; Bug
+  « 🐞 Bug », rouge `#EF4444` (15680580) ; Autre « 💬 Autre », bleu `#3B82F6` (3900150). Les
+  libellés de l'embed sont toujours en français (lus par le développeur), quelle que soit la
+  langue de l'app.
+- **Message** : espaces de début et de fin retirés, puis tronqué à 1 000 caractères (déjà
+  garanti par la saisie ; la troncature protège des limites de Discord).
+- **Pseudo** : retours à la ligne remplacés par des espaces, espaces de début et de fin retirés,
+  tronqué à 32 caractères ; vide → « anonyme » (Discord refuse un champ vide).
+- **`allowed_mentions.parse = []`** : aucune mention (`@everyone`, `@here`, rôle, membre) ne peut
+  notifier qui que ce soit, même écrite dans le message ou le pseudo.
+- **Informations jointes** (mêmes sources que le rapport de plantage, § 10.9) : version =
+  `versionName (versionCode)` ; Android = `Build.VERSION.RELEASE (API SDK_INT)` ; appareil =
+  `Build.MANUFACTURER Build.MODEL` ; langue = locale des textes de l'app (§ 3.14), ex. `fr-FR`.
+- **Rien d'autre** : ni séance, ni poids, ni nutrition, ni identifiant d'appareil. Comme pour
+  toute requête, Discord voit l'adresse IP du téléphone.
+
+### 14.3 Anti-abus (côté app)
+
+- **Un envoi par minute au plus** : après un envoi réussi, le bouton reste désactivé 60 s.
+- **Réponse 429** (trop de requêtes) : délai lu dans `retry_after` du corps JSON (secondes,
+  décimales possibles), à défaut dans l'en-tête `Retry-After`, à défaut 60 s ; arrondi à la
+  seconde supérieure, plafonné à 1 h ; aucun envoi avant sa fin.
+- Les deux instants (`lastSentAt`, `blockedUntil`) sont enregistrés dans `feedback.json` (§ 4.2,
+  hors sauvegarde) : fermer l'app ne remet pas le délai à zéro. Si l'horloge du téléphone recule,
+  l'attente ne dépasse jamais 60 s après un envoi, ni 1 h après un 429.
+- Un échec réseau ou une erreur autre que 429 n'impose aucun délai : on peut réessayer tout de
+  suite.
+- Ces limites évitent les doubles envois et l'emballement ; elles ne protègent pas le webhook
+  lui-même (§ 14.5).
+
+### 14.4 Résultats
+
+| issue | encart | formulaire |
+|---|---|---|
+| réponse 2xx | succès : « Merci, ton avis a été envoyé ! » (+ retour haptique) | vidé : type « Idée », message et pseudo vides |
+| pas de réseau, délai dépassé, erreur TLS | « Envoi impossible : vérifie ta connexion. Ton message est conservé. » | conservé |
+| 429 | « Trop d'envois pour le moment. Ton message est conservé. » + délai sous le bouton (§ 14.3) | conservé |
+| autre 4xx / 5xx | « L'envoi a échoué (erreur {code}). Ton message est conservé ; réessaie plus tard. » | conservé |
+
+### 14.5 URL du webhook
+
+- Elle vient du **secret GitHub `DISCORD_WEBHOOK_URL`**, passé en variable d'environnement par
+  `release.yml` à la seule étape de build de l'APK release, et injecté par
+  `app/build.gradle.kts` dans `BuildConfig.FEEDBACK_WEBHOOK_URL`. Elle n'est jamais dans le dépôt.
+- Absente (build local, build debug des tests) → chaîne vide → section masquée. Présente mais
+  différente de `https://discord.com/api/webhooks/<id>/<jeton>` (ou `discordapp.com`,
+  `canary.discord.com`, `ptb.discord.com` ; espaces autour ignorés) → le build échoue, sans
+  afficher l'URL.
+- **Limite assumée** : l'URL est incluse dans l'APK, qui est public. Quiconque le décompile peut
+  la lire et poster dans le salon sans passer par les limites de l'app (§ 14.3). Parades : un
+  webhook dans un **salon privé** que seul le développeur voit ; en cas d'abus, supprimer le
+  webhook sur Discord, en créer un autre, mettre à jour le secret et publier une Release (les
+  versions précédentes obtiennent alors une erreur 401 / 404, donc le message d'échec).
+
+### 14.6 Textes (FR et EN)
+
+| clé | FR | EN |
+|---|---|---|
+| `settings.section.feedback` | TON AVIS | YOUR FEEDBACK |
+| `feedback.title` | Ton avis | Your feedback |
+| `feedback.desc` | Une idée, un bug ? Envoie-le directement au développeur. | An idea, a bug? Send it straight to the developer. |
+| `feedback.type.idea` | Idée | Idea |
+| `feedback.type.bug` | Bug | Bug |
+| `feedback.type.other` | Autre | Other |
+| `feedback.message.placeholder` | Décris ton idée ou le problème… | Describe your idea or the problem… |
+| `feedback.counter` | {{count}} / {{max}} | {{count}} / {{max}} |
+| `feedback.name.placeholder` | Pseudo (facultatif) | Nickname (optional) |
+| `feedback.send` | Envoyer | Send |
+| `feedback.wait` | Prochain envoi possible dans {{delay}} | You can send again in {{delay}} |
+| `feedback.attached` | Joint automatiquement : MuscleNote {{app}} · Android {{android}} · {{device}} · langue {{language}}. Rien d'autre : aucune donnée d'entraînement. | Attached automatically: MuscleNote {{app}} · Android {{android}} · {{device}} · language {{language}}. Nothing else: no workout data. |
+| `feedback.success` | Merci, ton avis a été envoyé ! | Thanks, your feedback has been sent! |
+| `feedback.error.network` | Envoi impossible : vérifie ta connexion. Ton message est conservé. | Couldn't send: check your connection. Your message is kept. |
+| `feedback.error.rateLimited` | Trop d'envois pour le moment. Ton message est conservé. | Too many messages right now. Your message is kept. |
+| `feedback.error.server` | L'envoi a échoué (erreur {{code}}). Ton message est conservé ; réessaie plus tard. | Sending failed (error {{code}}). Your message is kept; try again later. |
+
+Le délai (`{{delay}}`) réutilise les formats du minuteur (`settings.restTimer.seconds` /
+`settings.restTimer.minutes` : « 42 s », « 3 min »).

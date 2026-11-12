@@ -95,6 +95,24 @@
     <string name="settings_update_failed">Vérification impossible : pas de connexion ?</string>
     <string name="settings_update_check">Vérifier</string>
 
+    <!-- Envoi d'un avis (§ 14) -->
+    <string name="settings_section_feedback">TON AVIS</string>
+    <string name="feedback_title">Ton avis</string>
+    <string name="feedback_desc">Une idée, un bug ? Envoie-le directement au développeur.</string>
+    <string name="feedback_type_idea">Idée</string>
+    <string name="feedback_type_bug">Bug</string>
+    <string name="feedback_type_other">Autre</string>
+    <string name="feedback_message_placeholder">Décris ton idée ou le problème…</string>
+    <string name="feedback_counter">%1$s / %2$s</string>
+    <string name="feedback_name_placeholder">Pseudo (facultatif)</string>
+    <string name="feedback_send">Envoyer</string>
+    <string name="feedback_wait">Prochain envoi possible dans %1$s</string>
+    <string name="feedback_attached">Joint automatiquement : MuscleNote %1$s · Android %2$s · %3$s · langue %4$s. Rien d\'autre : aucune donnée d\'entraînement.</string>
+    <string name="feedback_success">Merci, ton avis a été envoyé !</string>
+    <string name="feedback_error_network">Envoi impossible : vérifie ta connexion. Ton message est conservé.</string>
+    <string name="feedback_error_rate_limited">Trop d\'envois pour le moment. Ton message est conservé.</string>
+    <string name="feedback_error_server">L\'envoi a échoué (erreur %1$d). Ton message est conservé ; réessaie plus tard.</string>
+
     <!-- Groupes musculaires (§ 6.2) -->
     <string name="muscle_dos">Dos</string>
     <string name="muscle_pecs">Pecs</string>
