@@ -24,6 +24,7 @@ import com.musclenote.android.data.storage.StorageMeta
 import com.musclenote.android.data.util.CurrentDay
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.workout.WorkoutEnd
+import com.musclenote.android.data.workout.WorkoutNotifications
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
@@ -33,8 +34,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 
 /**
@@ -62,6 +67,8 @@ class AppContainer(
     autoBackupScheduler: AutoBackupScheduler = AutoBackupScheduler.None,
     /** Health Connect (§ 15.3) ; `null` = jamais disponible (tests). */
     healthConnect: HealthConnectGateway? = null,
+    /** Notification « Séance en cours » avec actions (§ 15.5). */
+    private val workoutNotifications: WorkoutNotifications = WorkoutNotifications.None,
 ) {
     /** Portée de l'application : écritures disque et tâches de fond. */
     val appScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -86,6 +93,9 @@ class AppContainer(
         HealthRecords.all(workouts.workouts.value, nutrition.bodyWeights.value, time.zone())
     }
 
+    /** Une publication de la notification de séance à la fois (§ 15.5) ; déclaré avant le chargement qui s'en sert. */
+    private val notificationMutex = Mutex()
+
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
         val finalized = loadAll()
@@ -96,10 +106,12 @@ class AppContainer(
         watchHealthChanges()
         // Séance de plus de 24 h finalisée au chargement : un changement comme un autre (§ 15.3).
         if (finalized is WorkoutEnd.Finished) {
-            health.enqueue(HealthRecords.forWorkout(finalized.workout, time.zone()).map { it.clientRecordId })
+            health.enqueue(HealthRecords.idsFor(finalized.workout, time.zone()))
         }
         // Hors du chargement : awaitReady() n'attend pas Health Connect.
         appScope.launch { health.sync() }
+        // Notification de la séance en cours (§ 15.5), republiée après un redémarrage du téléphone.
+        watchWorkoutNotification()
         // Resynchronisation complète des rappels au démarrage (§ 7.3).
         supplementReminders.sync(emptyList()) { nutrition.supplements.value }
     }
@@ -152,13 +164,68 @@ class AppContainer(
     suspend fun endWorkout(): WorkoutEnd? {
         val end = workouts.endWorkout()
         restTimer.stop()
+        refreshWorkoutNotification()
         return end
     }
 
-    /** Alarme de fin de repos (récepteur) : attend le chargement, puis termine le repos (§ 7.2). */
+    /**
+     * Alarme de fin de repos (récepteur) : attend le chargement, termine le repos (§ 7.2) — l'alerte
+     * propose « Valider la série » s'il en reste une — et remet la notification de séance hors
+     * repos (§ 15.5).
+     */
     suspend fun onRestTimerAlarm(endsAt: Long, inForeground: Boolean) {
         awaitReady()
-        restTimer.finish(endsAt, inForeground)
+        restTimer.finish(endsAt, inForeground, canCompleteSet = workouts.hasNextSet())
+        refreshWorkoutNotification()
+    }
+
+    /**
+     * « Valider la série » (notification de séance ou alerte de fin de repos, § 15.5) : valide la
+     * prochaine série et lance le repos, comme un appui dans l'écran de séance.
+     */
+    suspend fun completeNextSet() {
+        awaitReady()
+        val exerciseId = workouts.completeNextSet()
+        if (exerciseId != null) restTimer.start(workoutNotifications.exerciseName(exerciseId, workouts.customExercises.value))
+        refreshWorkoutNotification()
+    }
+
+    /** « −30 s » / « +30 s » de la notification de séance (§ 15.5). */
+    suspend fun adjustRest(deltaSeconds: Int) {
+        awaitReady()
+        restTimer.adjust(deltaSeconds)
+        refreshWorkoutNotification()
+    }
+
+    /**
+     * (Re)publie la notification « Séance en cours » d'après l'état le plus récent, ou la retire
+     * sans séance en cours (§ 15.5). Une publication à la fois : la dernière montre toujours le
+     * dernier état. Aussi après un changement de langue (activité recréée). Attend le chargement :
+     * avant, l'absence de séance ne voudrait rien dire.
+     */
+    suspend fun refreshWorkoutNotification() {
+        awaitReady()
+        notificationMutex.withLock {
+            val workout = workouts.currentWorkout.value
+            if (workout == null) workoutNotifications.cancel()
+            else workoutNotifications.show(workout, restTimer.state.value, workouts.customExercises.value)
+        }
+    }
+
+    /**
+     * Séance en cours, repos ou exercices perso modifiés → notification republiée, au plus une fois
+     * par [NOTIFICATION_THROTTLE_MS] (une frappe dans une série en change le texte ; Android limite
+     * le rythme des mises à jour) ; le dernier état est toujours publié.
+     */
+    private fun watchWorkoutNotification() {
+        appScope.launch {
+            combine(workouts.currentWorkout, restTimer.state, workouts.customExercises) { _, _, _ -> }
+                .conflate()
+                .collect {
+                    refreshWorkoutNotification()
+                    delay(NOTIFICATION_THROTTLE_MS)
+                }
+        }
     }
 
     /**
@@ -177,10 +244,11 @@ class AppContainer(
         supplementReminders.onAlarm(ref) { nutrition.supplements.value }
     }
 
-    /** « Passer » depuis la notification en cours (§ 7.2). */
+    /** « Passer » depuis la notification de séance (§ 7.2, § 15.5). */
     suspend fun skipRest() {
         awaitReady()
         restTimer.stop()
+        refreshWorkoutNotification()
     }
 
     /**
@@ -264,5 +332,10 @@ class AppContainer(
         // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).
         if (finalized != null) restTimer.stop()
         return finalized
+    }
+
+    private companion object {
+        /** Intervalle minimal entre deux publications de la notification de séance. */
+        const val NOTIFICATION_THROTTLE_MS = 250L
     }
 }

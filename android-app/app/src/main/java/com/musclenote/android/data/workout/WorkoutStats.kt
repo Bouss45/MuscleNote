@@ -180,16 +180,11 @@ object WorkoutStats {
      * même clé (§ 3.1) ; sans moyenne, elle est ignorée.
      */
     fun gymTime(workouts: List<Workout>): GymTime {
-        val averageByKey = workouts
-            .mapNotNull { w -> w.durationMinutes?.takeIf { it >= MIN_GYM_MINUTES }?.let { WorkoutRules.sessionKey(w) to it } }
-            .groupBy({ it.first }, { it.second })
-            .mapValues { (_, durations) -> durations.average().roundToInt() }
-
+        val averageByKey = averageMinutesByKey(workouts)
         var total = 0
         var count = 0
         for (workout in workouts) {
-            val minutes = workout.durationMinutes ?: 0
-            val counted = if (minutes >= MIN_GYM_MINUTES) minutes else averageByKey[WorkoutRules.sessionKey(workout)]
+            val counted = countedMinutes(workout, averageByKey)
             if (counted != null) {
                 total += counted
                 count++
@@ -197,6 +192,21 @@ object WorkoutStats {
         }
         val average = if (count > 0) (total.toDouble() / count).roundToInt() else 0
         return GymTime(total, average, count)
+    }
+
+    /** Durée moyenne (arrondie) des séances d'au moins [MIN_GYM_MINUTES] min, par clé (§ 3.1). */
+    fun averageMinutesByKey(workouts: List<Workout>): Map<String, Int> = workouts
+        .mapNotNull { w -> w.durationMinutes?.takeIf { it >= MIN_GYM_MINUTES }?.let { WorkoutRules.sessionKey(w) to it } }
+        .groupBy({ it.first }, { it.second })
+        .mapValues { (_, durations) -> durations.average().roundToInt() }
+
+    /**
+     * Durée comptée pour [workout] (§ 3.7) : la sienne à partir de [MIN_GYM_MINUTES] min, sinon
+     * (plus courte ou inconnue) la moyenne de sa clé dans [averageByKey] ; `null` sans moyenne.
+     */
+    fun countedMinutes(workout: Workout, averageByKey: Map<String, Int>): Int? {
+        val minutes = workout.durationMinutes ?: 0
+        return if (minutes >= MIN_GYM_MINUTES) minutes else averageByKey[WorkoutRules.sessionKey(workout)]
     }
 
     /** Durée en minutes : `45m`, `1h`, `1h 5m` (§ 3.7). */

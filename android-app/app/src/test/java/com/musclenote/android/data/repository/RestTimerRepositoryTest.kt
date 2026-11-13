@@ -48,8 +48,9 @@ class RestTimerRepositoryTest {
         override fun cancel() {
             calls += "cancel"
         }
-        override fun finished(state: RestTimerState, inForeground: Boolean) {
-            calls += "finished:${state.exerciseName}:${if (inForeground) "foreground" else "background"}"
+        override fun finished(state: RestTimerState, inForeground: Boolean, canCompleteSet: Boolean) {
+            calls += "finished:${state.exerciseName}:${if (inForeground) "foreground" else "background"}" +
+                if (canCompleteSet) ":valider" else ""
         }
     }
 
@@ -130,11 +131,11 @@ class RestTimerRepositoryTest {
             repo.start("Squat")
             val endsAt = repo.state.value!!.endsAt
             clock = clock.plusSeconds(90)
-            assertTrue(repo.finish(endsAt, inForeground = false))
+            assertTrue(repo.finish(endsAt, inForeground = false, canCompleteSet = false))
             assertNull(repo.state.value)
             assertEquals("finished:Squat:background", effects.calls.last())
             // Une seconde livraison de la même alarme ne fait rien.
-            assertFalse(repo.finish(endsAt, inForeground = false))
+            assertFalse(repo.finish(endsAt, inForeground = false, canCompleteSet = false))
         }
         assertFalse(timerFile.exists())
     }
@@ -147,11 +148,11 @@ class RestTimerRepositoryTest {
             val oldEndsAt = repo.state.value!!.endsAt
             clock = clock.plusSeconds(10)
             repo.start("Presse")
-            assertFalse(repo.finish(oldEndsAt, inForeground = true))
+            assertFalse(repo.finish(oldEndsAt, inForeground = true, canCompleteSet = false))
             assertEquals("Presse", repo.state.value?.exerciseName)
 
             repo.stop()
-            assertFalse(repo.finish(oldEndsAt, inForeground = true))
+            assertFalse(repo.finish(oldEndsAt, inForeground = true, canCompleteSet = false))
             assertTrue(effects.calls.none { it.startsWith("finished") })
         }
     }
@@ -171,9 +172,56 @@ class RestTimerRepositoryTest {
             // Fini : ni notification en cours ni alarme reprogrammées au chargement…
             assertTrue(effects.calls.isEmpty())
             // … mais l'alarme peut encore le terminer et prévenir.
-            assertTrue(repo.finish(endsAt, inForeground = false))
+            assertTrue(repo.finish(endsAt, inForeground = false, canCompleteSet = false))
             assertEquals(listOf("finished:Squat:background"), effects.calls)
         }
+    }
+
+    @Test
+    fun `l'alerte de fin propose de valider la série quand il en reste une`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.start("Squat")
+            val endsAt = repo.state.value!!.endsAt
+            assertTrue(repo.finish(endsAt, inForeground = false, canCompleteSet = true))
+            assertEquals("finished:Squat:background:valider", effects.calls.last())
+        }
+    }
+
+    @Test
+    fun `plus ou moins 30 s décalent la fin du repos et son alarme, enregistrées sur disque`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.start("Squat")
+            val endsAt = repo.state.value!!.endsAt
+            repo.adjust(30)
+            assertEquals(endsAt + 30_000, repo.state.value!!.endsAt)
+            assertEquals(120, repo.state.value!!.total)
+            assertEquals("show:Squat:${endsAt + 30_000}", effects.calls.last())
+            repo.adjust(-30)
+            repo.adjust(-30)
+            assertEquals(endsAt - 30_000, repo.state.value!!.endsAt)
+            assertEquals("show:Squat:${endsAt - 30_000}", effects.calls.last())
+            // L'ancienne fin n'est plus celle de l'alarme : ignorée.
+            assertFalse(repo.finish(endsAt, inForeground = false, canCompleteSet = false))
+        }
+        coroutineScope { assertEquals(Instant.parse("2026-03-14T17:01:00Z").toEpochMilli(), repository().state.value!!.endsAt) }
+    }
+
+    @Test
+    fun `moins 30 s avec moins de 30 s restantes arrête le repos comme Passer`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.start("Squat")
+            clock = clock.plusSeconds(70)
+            repo.adjust(-30)
+            assertNull(repo.state.value)
+            assertEquals("cancel", effects.calls.last())
+            // Sans repos en cours, rien ne se passe.
+            repo.adjust(30)
+            assertNull(repo.state.value)
+        }
+        assertFalse(timerFile.exists())
     }
 
     @Test
