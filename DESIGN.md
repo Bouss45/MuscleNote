@@ -124,7 +124,8 @@ Archivo (largeur 100) et **Archivo condensée (largeur 75)**.
 | `bodyLineStrong` | — | 16 · 600 | valeur à droite d'une ligne |
 | `actionSmall` | — | 15 · 700 | bouton 48 dp, mini-barre |
 | `emphasis` | — | 15 · 600 | variation sous un héros, date de l'Accueil, sélecteur de période (sélection 800) |
-| `body` | — | 14 · 400 · 1,45 | texte de sheet ou d'état vide, puces (700 si colorée), segmenté (600 / 700), lien « Tout voir » (600) |
+| `body` | — | 14 · 400 | puces (700 si colorée), segmenté (600 / 700), lien « Tout voir » (600), phrase d'aide d'un formulaire |
+| `paragraph` | — | 14 · 400 · 1,45 | texte d'une sheet de confirmation, d'un état vide |
 | `caption` | texte.legende | 13 · 400 | légendes, sous-titres de ligne, variation de ligne (600), mini-puce |
 | `label` | etiquette | 12 · 700 · capitales · +12 % | « En cours », « Repos » |
 | `small` | — | 12 · 400 | libellés d'onglets (500 / 700), axes de courbe (400 / 700), légende des semaines |
@@ -132,6 +133,10 @@ Archivo (largeur 100) et **Archivo condensée (largeur 75)**.
 
 Les graisses qui varient selon l'état (onglet, segmenté, puce, valeur pré-remplie ou validée)
 sont appliquées par le composant, jamais par l'écran.
+
+**Interligne inférieur à la police** (0,85 des grands chiffres) : appliqué comme en CSS, boîte de
+la hauteur de l'interligne et glyphes centrés qui débordent (`RollingText`) ; Compose seul ne
+descend pas sous la hauteur de la police.
 
 ## 4. Espacements
 
@@ -286,6 +291,8 @@ c'est la brique des gabarits hub et fiche.
 
 - Taille **moyenne** (48, `actionSmall`) pour les rangées de boutons (repos) et l'état vide ;
   **petite** (44) pour la mini-barre et les icônes en ligne (bloc exercice, pavé).
+- Marge latérale : 4 pour un bouton plein (texte centré, souvent dans une colonne étroite), 12
+  pour un bouton texte ou petit, 20 pour un bouton à la largeur de son texte (état vide).
 - Icône de tête optionnelle (22, 8 avant le texte), ex. « + Nouvelle mesure ».
 - Ton `textSecondary` possible pour un bouton texte ou icône discret (« Relancer », fermer le pavé).
 - Un bouton icône aligné sur un bord déborde de 12 pour que son icône tombe sur la marge.
@@ -314,9 +321,14 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
 | à faire, pré-remplie | 600, `textTertiary` | contour 2 `textTertiary`, rayon 12 |
 | en saisie | champ actif : fond `liveDim`, rayon 12, hauteur 44, déborde de 8 à gauche, valeur 700 `textPrimary` + curseur 2 × 26 `liveText` ; l'autre valeur reste pré-remplie | contour 2 `textTertiary` |
 | validée | 700, `textPrimary` | `inverse` + `check` 24 `onInverse` |
-| validée avec record | idem + « Record » (`label` sans capitales, 12 · 700, `up`) après les reps | idem |
+| validée avec record | idem + « Record » (`small` 700, `up`) après les reps | idem |
 
 La validation anime la case avec `expressive`.
+
+**Ligne « + Série »** — `AddSetRow`. Sous la dernière série de chaque bloc exercice, **toujours
+visible** : ajouter une série est fréquent en séance, ce n'est pas une option de menu. Hauteur 48,
+alignée sur la colonne des numéros : icône `add` 22 `textSecondary`, 6, libellé `actionSmall`
+`textPrimary` (« Série »). Pressée : fond `surfaceRaised` qui déborde de 12, rayon 12.
 
 **Bandeau de repos** — `RestBanner`. Entre deux séries, **sans fond** : padding 12 en haut, 14 en
 bas, filet en bas, éléments espacés de 10.
@@ -427,8 +439,9 @@ Ce qui se passe maintenant : la séance (demain, un cardio guidé). **Pas d'ongl
 le temps qui passe, les actions sous le pouce.
 
 1. `LiveHeader` (réduire · titre · chrono) ; 8 ; `SetProgress`.
-2. Blocs exercice (24 entre eux) : `ExerciseBlockHeader`, en-tête de colonnes, `SetRow`, et le
-   `RestBanner` juste après la dernière série validée.
+2. Blocs exercice (24 entre eux) : `ExerciseBlockHeader`, en-tête de colonnes, `SetRow`, le
+   `RestBanner` juste après la dernière série validée, et la ligne « + Série » (`AddSetRow`) sous
+   la dernière série.
 3. En bas, fixe : la bottom sheet du pavé numérique quand une valeur est en saisie, sinon une barre
    d'actions (valider, terminer).
 
@@ -499,23 +512,36 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | padding haut des surfaces du hub Progrès | 18 | 20 (`screen`) |
 | puces de saisie rapide (Stock) | 14 · 600 | puces de filtre (400 / 700) |
 | en-tête de colonne « Préc. » | 11 px | `columnHeader` 11 sp |
+| bloc titre du résumé sous sa barre | 8 | 4, comme toutes les fiches |
+| barre de titre du hub Progrès | tassée par le navigateur (contenu plus haut que la planche) | 56, comme tous les hubs |
+| marge latérale des boutons | aucune (bouton HTML par défaut) | 4 / 12 / 20 (§ 9.2) |
 
 Les mesures internes des composants (14 entre éléments d'une ligne, 6 sous une légende de héros,
 3 entre titre et sous-titre…) sont gardées telles quelles.
 
-## 13. Hors périmètre, questions ouvertes
+## 13. Décisions hors maquette, hors périmètre, questions ouvertes
+
+Décidé (13/11/2026) :
+
+- **Suppression** (séance, série, exercice) : une bottom sheet de confirmation
+  (`ConfirmSheetContent`) dont le texte dit ce qui est supprimé et dont le bouton principal reste
+  `inverse` (noir / blanc) ; le rouge reste réservé à la baisse.
+- **Ajouter une série** : la ligne « + Série » (`AddSetRow`) sous la dernière série du bloc, pas
+  le menu ⋮ — c'est une action fréquente en séance.
+
+Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
   Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part.
 - **Logo** : trois variantes d'haltère (« Deux disques », « Pyramide », « Compacte »), jaune sur
-  graphite, à choisir. Rien n'est fait tant qu'aucune n'est retenue.
-- **Suppression** (séance, série, exercice) : la maquette ne la dessine pas. Proposition : une
-  bottom sheet de confirmation dont le bouton principal reste `inverse` et dont le texte dit ce
-  qui est supprimé ; le rouge reste réservé à la baisse.
-- **Séance en cours** : « Ajouter une série », notes et retrait d'un exercice ne sont pas
-  dessinés ; proposition : dans le menu `more_vert` du bloc exercice.
+  graphite, non tranchées.
+
+Ouvert :
+
+- **Notes et retrait d'un exercice** en séance : non dessinés ; proposition, le menu ⋮ du bloc
+  exercice — à confirmer à la migration de la séance en cours.
 - **Échauffement, recherche d'exercice, formulaires longs** (rappels de compléments) : à composer
   avec les gabarits et composants existants au moment de leur migration.
 
@@ -526,11 +552,19 @@ Les mesures internes des composants (14 entre éléments d'une ligne, 6 sous une
   `StudioColors`, `StudioTypography` (familles Archivo et Archivo condensée), `StudioSpacing`,
   `StudioShapes`, `StudioMotion`. Accès : `Studio.colors.live`, `Studio.typography.numberHero`,
   `Studio.spacing.screen`, `Studio.shapes.control`, `Studio.motion.fast`.
-- `ui/designsystem/components/` : un fichier par composant du § 9.
-- `ui/designsystem/templates/` : les quatre gabarits du § 10, en composables à emplacements.
+- `ui/designsystem/components/` : les composants du § 9 (`Foundation.kt` : icône, variation,
+  point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille).
+- `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate`,
+  `FicheTemplate`, `LiveTemplate`, `FormSheetTemplate`), en composables à emplacements ; ils
+  reçoivent les insets du système (`ScreenInsets`).
+- Icônes `res/drawable/ds_ic_*.xml` ; police `res/font/archivo.ttf` (+ licence
+  `assets/licenses/archivo-OFL.txt`) ; libellés d'accessibilité `ds_*` dans `strings.xml`.
 - Aperçus : chaque composant et gabarit a ses `@Preview` en sombre et en clair, dans le source set
   `debug` (`app/src/debug/java/com/musclenote/android/ui/designsystem/`), comme les aperçus des
-  écrans actuels.
+  écrans actuels : un aperçu par composant (`DataComponentPreviews`, `ActionComponentPreviews`,
+  `TemplatePiecePreviews`), les deux planches de composants recomposées à la taille de la
+  maquette (`BoardPreviews`, 1400 × 1320) et les gabarits remplis comme les écrans de la maquette
+  (`TemplatePreviews`, 412 × 915, insets de la maquette).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`) reste tant que les écrans n'ont pas migré ; un écran migré
   n'utilise plus que `Studio`.
