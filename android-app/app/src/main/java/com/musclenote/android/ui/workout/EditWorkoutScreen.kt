@@ -82,6 +82,7 @@ import com.musclenote.android.ui.components.filterExercises
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.components.workoutDisplayName
+import com.musclenote.android.ui.components.dashedBorder
 import com.musclenote.android.ui.theme.MuscleNoteTheme
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -684,5 +685,45 @@ private fun RenameDialog(
                 }
             }
         }
+    }
+}
+
+/** « ⊕ Ajouter un exercice » en pointillés (éditeur de séance, § 2.9 ; ancien style). */
+@Composable
+private fun AddExerciseButton(onClick: () -> Unit) {
+    val colors = MuscleNoteTheme.colors
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(colors.card)
+            .dashedBorder(1.5.dp, colors.border, 14.dp)
+            .clickable(onClick = onClick)
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_add_circle), contentDescription = null, tint = colors.primary, modifier = Modifier.size(20.dp))
+        Text(stringResource(R.string.workout_add_exercise), color = colors.primary, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+    }
+}
+
+/** « + Ajouter une série » en pointillés (éditeur de séance, § 2.9 ; ancien style). */
+@Composable
+private fun AddSetButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val colors = MuscleNoteTheme.colors
+    Row(
+        modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp))
+            .background(colors.primary.copy(alpha = 0.06f))
+            .dashedBorder(1.dp, colors.primary.copy(alpha = 0.33f), 10.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(painterResource(R.drawable.ic_add), contentDescription = null, tint = colors.primary, modifier = Modifier.size(16.dp))
+        Text(stringResource(R.string.exercise_card_add_set), color = colors.primary, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
     }
 }

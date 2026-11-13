@@ -67,28 +67,28 @@ object SetEntryRules {
     fun decimalSeparator(locale: Locale): Char = DecimalFormatSymbols.getInstance(locale).decimalSeparator
 
     /**
-     * Touche [key] (chiffre ou séparateur de la [locale]) appliquée à [text]. Sans effet : un
-     * séparateur sur un champ entier ou en double, une décimale au-delà de [MAX_DECIMALS], un texte
-     * plus long que la longueur maximale du champ, toute autre touche. Pas de zéro inutile en tête ;
-     * un séparateur sur un champ vide donne « 0, ».
+     * Touche [key] (chiffre ou séparateur de la [locale]) appliquée à [text] ; `null` si elle est
+     * sans effet — le champ, même neuf, reste alors tel quel : séparateur sur un champ entier ou en
+     * double, décimale au-delà de [MAX_DECIMALS], texte plus long que la longueur maximale du champ,
+     * toute autre touche. Pas de zéro inutile en tête ; un séparateur sur un champ vide donne « 0, ».
      */
-    fun type(text: String, fresh: Boolean, key: Char, field: SetEntryField, locale: Locale): String {
+    fun type(text: String, fresh: Boolean, key: Char, field: SetEntryField, locale: Locale): String? {
         val separator = decimalSeparator(locale)
         val base = if (fresh) "" else text
         val next = when {
             key == separator -> when {
-                !field.decimals || separator in base -> return base
+                !field.decimals || separator in base -> return null
                 base.isEmpty() -> "0$separator"
                 else -> base + separator
             }
             key.isDigit() -> when {
-                separator in base && base.substringAfter(separator).length >= MAX_DECIMALS -> return base
+                separator in base && base.substringAfter(separator).length >= MAX_DECIMALS -> return null
                 base == "0" -> key.toString()
                 else -> base + key
             }
-            else -> return base
+            else -> return null
         }
-        return if (next.length > field.maxLength) base else next
+        return next.takeIf { it.length <= field.maxLength }
     }
 
     /** Effacer : tout le champ s'il est neuf, sinon le dernier caractère. */

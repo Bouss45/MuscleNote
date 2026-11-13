@@ -267,6 +267,55 @@
     <string name="exercise_card_remove_confirm">Remove “%1$s” from this session?</string>
     <string name="exercise_card_remove">Remove</string>
 
+    <!-- Workout in progress, "Studio épuré" redesign (§ 15.7, D32) -->
+    <plurals name="workout_subtitle">
+        <item quantity="one">%1$s kg · %2$d / %3$d set</item>
+        <item quantity="other">%1$s kg · %2$d / %3$d sets</item>
+    </plurals>
+    <plurals name="workout_subtitle_no_weight">
+        <item quantity="one">%1$d / %2$d set</item>
+        <item quantity="other">%1$d / %2$d sets</item>
+    </plurals>
+    <string name="workout_col_index">#</string>
+    <string name="workout_col_previous">Prev.</string>
+    <string name="workout_col_kg">Kg</string>
+    <string name="workout_col_reps">Reps</string>
+    <string name="workout_col_min">Min</string>
+    <string name="workout_col_km">Km</string>
+    <string name="workout_previous_strength">%1$s\u202F×\u202F%2$d</string>
+    <string name="workout_previous_reps">%1$d reps</string>
+    <string name="workout_previous_cardio">%1$s · %2$s</string>
+    <string name="workout_previous_minutes">%1$s min</string>
+    <string name="workout_previous_copy">Copy previous set %1$s</string>
+    <string name="workout_last_time">Last time on %1$s</string>
+    <string name="workout_suggest_plus_kg">+%1$s kg</string>
+    <string name="workout_suggest_plus_rep">+1 rep</string>
+    <string name="workout_suggest_same_weight">Same weight</string>
+    <string name="workout_suggest_same_reps">Same reps</string>
+    <string name="workout_suggest_apply">Apply suggestion: %1$s</string>
+    <string name="workout_add_set_row">Set</string>
+    <string name="workout_set_check">Complete set %1$d</string>
+    <string name="workout_set_checked">Set %1$d completed</string>
+    <string name="workout_rest_total">of %1$s</string>
+    <string name="workout_keypad_first">%1$s · set %2$d</string>
+    <string name="workout_keypad_speed">Km/h</string>
+    <string name="workout_keypad_incline" formatted="false">%</string>
+    <string name="workout_keypad_next">Next</string>
+    <string name="workout_keypad_ok">OK</string>
+    <string name="workout_delete_set">Delete set</string>
+    <string name="workout_delete_set_title">Delete set %1$d?</string>
+    <string name="workout_delete_set_message">It will be removed from this session.</string>
+    <string name="workout_exercise_remove">Remove from session</string>
+    <string name="workout_exercise_remove_message">Its sets in this session will be lost.</string>
+    <plurals name="workout_finish_message">
+        <item quantity="one">%1$d set completed in %2$s. You can edit the session afterwards.</item>
+        <item quantity="other">%1$d sets completed in %2$s. You can edit the session afterwards.</item>
+    </plurals>
+    <string name="workout_abandon_title">Abandon the session?</string>
+    <string name="workout_continue">Keep going</string>
+    <string name="workout_empty_title">No exercises</string>
+    <string name="workout_no_active_message">Start a session from Home.</string>
+
     <!-- Exercise picker (§ 2.7) -->
     <string name="exercise_picker_title">Exercises</string>
     <string name="exercise_picker_search_placeholder">Search for an exercise...</string>

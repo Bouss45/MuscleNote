@@ -1926,8 +1926,20 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   **sur l'appareil** : la promotion en Live Update (Android 16+, règles du fabricant), le relais
   de l'alerte et de son action sur une montre, les actions écran verrouillé.
 - Refonte « Studio épuré » (DESIGN.md), branche `redesign` : design system dans
-  `ui/designsystem/` (étape 1) ; **séance en cours** (🔄 D32, § 15.7, étape 2) : spécifiée,
-  implémentation en cours.
+  `ui/designsystem/` (étape 1) ; **séance en cours** (🔄 D32, § 15.7, étape 2) : écran
+  `ui/workout/WorkoutScreen.kt` au gabarit « en direct » (blocs `LiveExerciseBlock.kt`, pavé
+  `WorkoutKeypad.kt`, bottom sheets `WorkoutSheets.kt`), posé dans `StudioTheme` par la navigation ;
+  règles pures `data/workout/SessionInsights.kt` (séance de référence, « Préc. », suggestion, place
+  du repos) et `data/workout/SetEntryRules.kt` (saisie au pavé) ; dépôt : `completeSet`,
+  `updateExerciseSets`. Design system : case à cocher de `ListRow`, puce à action, « Préc. »
+  touchable et série validée en saisie dans `SetRow`, « Supprimer la série » dans l'en-tête du
+  pavé, champ texte `StudioTextField`, gabarit « en direct » à en-tête fixe et liste paresseuse.
+  Tests `SetEntryRulesTest` (séparateur de la langue, décimales, longueurs, pas arrondis, champ et
+  série suivants), `SessionInsightsTest` (référence, rang, recopie, suggestion et son application,
+  repos) et `WorkoutRepositoryTest` (valider sans dévalider, séries d'un exercice). Les anciens
+  `ExerciseCard`, `RestTimerBanner` et `WarmupCard` sont retirés. À vérifier **sur l'appareil** :
+  saisie au pavé, défilement vers le champ en saisie, recopie de « Préc. », suggestion, repos et
+  notification de séance.
 
 ---
 
@@ -2487,8 +2499,9 @@ migration.
     § 15.5). Il disparaît à la fin du repos, comme avant ;
   - la ligne **« + Série »**, toujours visible sous la dernière série du bloc : ajoute une série
     (règles du § 2.5).
-- Fin de liste : « Ajouter un exercice » (→ sélecteur, § 2.7). Sans exercice : état vide
-  « Ajoute des exercices pour commencer » avec la même action.
+- Fin de liste : « Ajouter un exercice » (→ sélecteur, § 2.7). Sans exercice : état vide « Aucun
+  exercice » / « Ajoute des exercices pour commencer » avec la même action. Sans séance en cours :
+  « Aucune séance active » et « Retour ».
 - **En bas, fixe** : le pavé numérique quand une valeur est en saisie (§ 15.7.4), sinon
   « Terminer la séance », qui ouvre une confirmation en bottom sheet : « Terminer la séance ? »,
   ou, sans série validée, « Abandonner la séance ? » (elle ne sera pas enregistrée, 🔄 D15). Le
@@ -2568,35 +2581,37 @@ Remplace le clavier du système pour les séries de la séance en cours.
 
 #### 15.7.5 Textes (FR et EN)
 
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Terminer la séance », « Ajouter
+un exercice », « Repos », « Passer », « −30 s », « +30 s », « Valider la série », échauffement,
+note, retrait).
+
 | clé | FR | EN |
 |---|---|---|
-| `workout.subtitle` | {{weight}} kg · {{done}} / {{total}} séries | {{weight}} kg · {{done}} / {{total}} sets |
-| `workout.subtitleNoWeight` | {{done}} / {{total}} séries | {{done}} / {{total}} sets |
-| `workout.col.index` / `previous` | # / Préc. | # / Prev. |
-| `workout.col.kg` / `reps` | Kg / Reps | Kg / Reps |
-| `workout.col.min` / `km` | Min / Km | Min / Km |
-| `workout.previous.strength` | {{weight}} × {{reps}} | {{weight}} × {{reps}} |
-| `workout.previous.reps` | {{reps}} reps | {{reps}} reps |
-| `workout.previous.cardio` | {{min}} · {{km}} | {{min}} · {{km}} |
-| `workout.previous.minutes` | {{min}} min | {{min}} min |
-| `workout.previous.copy` | Recopier la série précédente {{value}} | Copy previous set {{value}} |
-| `workout.lastTime` | Dernière fois le {{date}} | Last time on {{date}} |
-| `workout.suggest.plusKg` | +{{value}} kg | +{{value}} kg |
-| `workout.suggest.plusRep` | +1 rep | +1 rep |
-| `workout.suggest.sameWeight` | Même charge | Same weight |
-| `workout.suggest.sameReps` | Mêmes reps | Same reps |
-| `workout.suggest.apply` | Appliquer la suggestion : {{value}} | Apply suggestion: {{value}} |
-| `workout.addSetRow` | Série | Set |
-| `workout.set.check` / `uncheck` | Valider la série {{n}} / Série {{n}} validée | Complete set {{n}} / Set {{n}} completed |
-| `workout.rest.total` | sur {{total}} | of {{total}} |
-| `workout.keypad.first` | {{field}} · série {{n}} | {{field}} · set {{n}} |
-| `workout.keypad.speed` / `incline` | Km/h / % | Km/h / % |
-| `workout.keypad.next` | Suivant | Next |
-| `workout.keypad.ok` | OK | OK |
-| `workout.deleteSet` | Supprimer la série | Delete set |
-| `workout.deleteSet.title` | Supprimer la série {{n}} ? | Delete set {{n}}? |
-| `workout.deleteSet.message` | Elle sera retirée de cette séance. | It will be removed from this session. |
-| `workout.exercise.removeMessage` | Ses séries de cette séance seront perdues. | Its sets in this session will be lost. |
-| `workout.finish.message` | {{sets}} validées en {{duration}}. Tu pourras corriger la séance ensuite. | {{sets}} completed in {{duration}}. You can edit the session afterwards. |
-| `workout.abandon.title` | Abandonner la séance ? | Abandon the session? |
-| `workout.continue` | Continuer la séance | Keep going |
+| `workout_subtitle` (pluriel sur le total) | {{poids}} kg · {{faites}} / {{total}} séries | {{weight}} kg · {{done}} / {{total}} sets |
+| `workout_subtitle_no_weight` (pluriel) | {{faites}} / {{total}} séries | {{done}} / {{total}} sets |
+| `workout_col_index` / `_previous` | # / Préc. | # / Prev. |
+| `workout_col_kg` / `_reps` / `_min` / `_km` | Kg / Reps / Min / Km | Kg / Reps / Min / Km |
+| `workout_previous_strength` | {{charge}} × {{reps}} | {{weight}} × {{reps}} |
+| `workout_previous_reps` | {{reps}} reps | {{reps}} reps |
+| `workout_previous_cardio` / `_minutes` | {{min}} · {{km}} / {{min}} min | {{min}} · {{km}} / {{min}} min |
+| `workout_previous_copy` | Recopier la série précédente {{valeur}} | Copy previous set {{value}} |
+| `workout_last_time` | Dernière fois le {{date}} | Last time on {{date}} |
+| `workout_suggest_plus_kg` / `_plus_rep` | +{{valeur}} kg / +1 rep | +{{value}} kg / +1 rep |
+| `workout_suggest_same_weight` / `_same_reps` | Même charge / Mêmes reps | Same weight / Same reps |
+| `workout_suggest_apply` | Appliquer la suggestion : {{valeur}} | Apply suggestion: {{value}} |
+| `workout_add_set_row` | Série | Set |
+| `workout_set_check` / `_checked` | Valider la série {{n}} / Série {{n}} validée | Complete set {{n}} / Set {{n}} completed |
+| `workout_rest_total` | sur {{total}} | of {{total}} |
+| `workout_keypad_first` | {{champ}} · série {{n}} | {{field}} · set {{n}} |
+| `workout_keypad_speed` / `_incline` | Km/h / % | Km/h / % |
+| `workout_keypad_next` / `_ok` | Suivant / OK | Next / OK |
+| `workout_delete_set` | Supprimer la série | Delete set |
+| `workout_delete_set_title` | Supprimer la série {{n}} ? | Delete set {{n}}? |
+| `workout_delete_set_message` | Elle sera retirée de cette séance. | It will be removed from this session. |
+| `workout_exercise_remove` | Retirer de la séance | Remove from session |
+| `workout_exercise_remove_message` | Ses séries de cette séance seront perdues. | Its sets in this session will be lost. |
+| `workout_finish_message` (pluriel) | {{n}} séries validées en {{durée}}. Tu pourras corriger la séance ensuite. | {{n}} sets completed in {{duration}}. You can edit the session afterwards. |
+| `workout_abandon_title` | Abandonner la séance ? | Abandon the session? |
+| `workout_continue` | Continuer la séance | Keep going |
+| `workout_empty_title` | Aucun exercice | No exercises |
+| `workout_no_active_message` | Démarre une séance depuis l'Accueil. | Start a session from Home. |

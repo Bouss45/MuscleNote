@@ -3,6 +3,7 @@ package com.musclenote.android.ui.designsystem.templates
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -15,6 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
@@ -147,35 +152,38 @@ fun FicheTemplate(
 }
 
 /**
- * Gabarit **en direct** (DESIGN.md § 10.3) : ce qui se passe maintenant (la séance). En-tête
- * (réduire · titre · chrono), progression, blocs espacés de 24 ; en bas, fixe, le pavé numérique
- * ou une barre d'actions ([bottom] reçoit l'inset du bas). Pas d'onglets.
+ * Gabarit **en direct** (DESIGN.md § 10.3) : ce qui se passe maintenant (la séance). En haut, fixes,
+ * l'en-tête (réduire · titre · chrono) et la progression (optionnelle) ; puis la liste paresseuse
+ * des blocs, espacés de 24 ([listState] : glisser-déposer, défilement vers le champ en saisie) ; en
+ * bas, fixe, le pavé numérique ou une barre d'actions ([bottom] reçoit l'inset du bas). Pas
+ * d'onglets.
  */
 @Composable
 fun LiveTemplate(
     header: @Composable () -> Unit,
-    progress: @Composable () -> Unit,
+    progress: (@Composable () -> Unit)?,
     bottom: @Composable (bottomInset: Dp) -> Unit,
     modifier: Modifier = Modifier,
     insets: ScreenInsets = systemScreenInsets(),
-    blocks: @Composable ColumnScope.() -> Unit,
+    listState: LazyListState = rememberLazyListState(),
+    blocks: LazyListScope.() -> Unit,
 ) {
     val spacing = Studio.spacing
     Column(modifier.fillMaxSize().background(Studio.colors.background)) {
-        Column(
-            Modifier
-                .weight(1f)
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(start = spacing.screen, end = spacing.screen, top = insets.top),
-        ) {
+        Column(Modifier.fillMaxWidth().padding(start = spacing.screen, end = spacing.screen, top = insets.top)) {
             header()
-            Spacer(Modifier.height(spacing.xs))
-            progress()
-            Spacer(Modifier.height(spacing.l))
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.l), content = blocks)
-            Spacer(Modifier.height(spacing.l))
+            if (progress != null) {
+                Spacer(Modifier.height(spacing.xs))
+                progress()
+            }
         }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(start = spacing.screen, end = spacing.screen, top = spacing.l, bottom = spacing.l),
+            verticalArrangement = Arrangement.spacedBy(spacing.l),
+            content = blocks,
+        )
         bottom(insets.bottom)
     }
 }

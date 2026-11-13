@@ -183,18 +183,20 @@ private fun LiveTemplateSeancePreview() = StudioPreviewTheme {
         },
         insets = MockupInsets,
     ) {
-        Column {
-            ExerciseBlockHeader("Développé couché", {}, {}) {
-                StudioChip("3 × 8 · 80 kg", icon = R.drawable.ds_ic_history)
-                StudioChip("+2,5 kg", tone = ChipTone.Up)
+        item {
+            Column {
+                ExerciseBlockHeader("Développé couché", {}, {}) {
+                    StudioChip("3 × 8 · 80 kg", icon = R.drawable.ds_ic_history)
+                    StudioChip("+2,5 kg", tone = ChipTone.Up)
+                }
+                Spacer(Modifier.height(Studio.spacing.m))
+                SetTableHeader("#", "Préc.", "Kg", "Reps")
+                SetRow("1", "80 × 8", "82,5", "8", SetRowState.Done, "Série 1 validée", {})
+                SetRow("2", "80 × 8", "82,5", "8", SetRowState.Done, "Série 2 validée", {})
+                RestBanner("Repos", "1:48", "sur 2:30", 0.28f, "−30 s", "+30 s", "Passer", {}, {}, {})
+                SetRow("3", "80 × 8", "82,5", "8", SetRowState.Editing, "Valider la série 3", {}, showDivider = false)
+                AddSetRow("Série", {})
             }
-            Spacer(Modifier.height(Studio.spacing.m))
-            SetTableHeader("#", "Préc.", "Kg", "Reps")
-            SetRow("1", "80 × 8", "82,5", "8", SetRowState.Done, "Série 1 validée", {})
-            SetRow("2", "80 × 8", "82,5", "8", SetRowState.Done, "Série 2 validée", {})
-            RestBanner("Repos", "1:48", "sur 2:30", 0.28f, "−30 s", "+30 s", "Passer", {}, {}, {})
-            SetRow("3", "80 × 8", "82,5", "8", SetRowState.Editing, "Valider la série 3", {}, showDivider = false)
-            AddSetRow("Série", {})
         }
     }
 }

@@ -2,6 +2,7 @@ package com.musclenote.android.ui.designsystem.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -29,7 +30,8 @@ enum class ChipTone { Neutral, Up, Down, Live, Record }
 
 /**
  * Puce informative — `StudioChip` (DESIGN.md § 9.1) : 32 de haut, rayon 12. Neutre (icône
- * optionnelle en texte secondaire), hausse, baisse, en direct, record.
+ * optionnelle en texte secondaire), hausse, baisse, en direct, record. Avec [onClick], elle porte
+ * une action (suggestion de charge à appliquer) ; [onClickLabel] la décrit.
  */
 @Composable
 fun StudioChip(
@@ -37,6 +39,8 @@ fun StudioChip(
     modifier: Modifier = Modifier,
     tone: ChipTone = ChipTone.Neutral,
     @DrawableRes icon: Int? = null,
+    onClick: (() -> Unit)? = null,
+    onClickLabel: String? = null,
 ) {
     val colors = Studio.colors
     val (background, content) = when (tone) {
@@ -54,7 +58,12 @@ fun StudioChip(
     }
     val hasLeading = toneIcon != null || tone == ChipTone.Live
     val gap = if (tone == ChipTone.Neutral || tone == ChipTone.Live) 6.dp else Studio.spacing.xxs
-    ChipBox(background, if (hasLeading) ChipPaddingWithIcon else ChipPadding, gap, modifier) {
+    val action = if (onClick != null) {
+        Modifier.clip(Studio.shapes.control).clickable(onClickLabel = onClickLabel, role = Role.Button, onClick = onClick)
+    } else {
+        Modifier
+    }
+    ChipBox(background, if (hasLeading) ChipPaddingWithIcon else ChipPadding, gap, modifier.then(action)) {
         if (tone == ChipTone.Live) LiveDot()
         if (toneIcon != null) {
             StudioIcon(

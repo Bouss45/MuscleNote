@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -98,8 +99,10 @@ fun SetTableHeader(
 
 /**
  * Ligne de série — `SetRow` (DESIGN.md § 9.2) : 56 de haut, filet en bas. À faire (pré-remplie,
- * `textTertiary`), en saisie (champ [editingField] sur `liveDim` avec curseur), validée, validée
- * avec record. La case anime sa validation avec `Studio.motion.expressive`.
+ * `textTertiary`), validée, validée avec record ; en saisie, le champ [editingField] est sur
+ * `liveDim` avec un curseur — une série validée peut être en saisie ([SetRowState.Editing] =
+ * série à faire en saisie sur la charge). « Préc. » se touche pour recopier la série précédente
+ * ([onPreviousClick]). La case anime sa validation avec `Studio.motion.expressive`.
  */
 @Composable
 fun SetRow(
@@ -111,14 +114,17 @@ fun SetRow(
     checkDescription: String,
     onCheck: () -> Unit,
     modifier: Modifier = Modifier,
-    editingField: SetField = SetField.Weight,
+    editingField: SetField? = null,
     onFieldClick: ((SetField) -> Unit)? = null,
+    onPreviousClick: (() -> Unit)? = null,
+    previousClickLabel: String? = null,
     recordLabel: String? = null,
     showDivider: Boolean = true,
 ) {
     val colors = Studio.colors
     val done = state == SetRowState.Done || state == SetRowState.DoneRecord
-    val editing = state == SetRowState.Editing
+    val activeField = editingField ?: SetField.Weight.takeIf { state == SetRowState.Editing }
+    val editing = activeField != null
     SetColumns(
         modifier.height(SetRowHeight).bottomDivider(colors.separator, showDivider),
         index = {
@@ -129,13 +135,28 @@ fun SetRow(
             )
         },
         previous = {
-            Text(previous, style = Studio.typography.caption, color = colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(
+                previous,
+                modifier = if (onPreviousClick != null) {
+                    Modifier
+                        .fillMaxWidth()
+                        .height(SetRowHeight)
+                        .wrapContentHeight(Alignment.CenterVertically)
+                        .clickable(onClickLabel = previousClickLabel, role = Role.Button, onClick = onPreviousClick)
+                } else {
+                    Modifier
+                },
+                style = Studio.typography.caption,
+                color = colors.textSecondary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         },
         weight = {
-            SetValue(weight, done, editing && editingField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } })
+            SetValue(weight, done, activeField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } })
         },
         reps = {
-            SetValue(reps, done, editing && editingField == SetField.Reps, onFieldClick?.let { { it(SetField.Reps) } })
+            SetValue(reps, done, activeField == SetField.Reps, onFieldClick?.let { { it(SetField.Reps) } })
             if (state == SetRowState.DoneRecord && recordLabel != null) {
                 Text(
                     recordLabel,
@@ -176,7 +197,15 @@ private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (()
     } else {
         Text(
             value,
-            modifier = click,
+            modifier = if (onClick != null) {
+                Modifier
+                    .fillMaxWidth()
+                    .height(SetRowHeight)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .then(click)
+            } else {
+                Modifier
+            },
             style = Studio.typography.numberMedium.copy(fontWeight = if (done) FontWeight.Bold else FontWeight.SemiBold),
             color = if (done) colors.textPrimary else colors.textTertiary,
             maxLines = 1,
@@ -186,6 +215,20 @@ private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (()
 
 @Composable
 private fun SetCheck(done: Boolean, description: String, onCheck: () -> Unit) {
+    CheckBoxVisual(
+        done,
+        Modifier
+            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Checkbox, onClick = onCheck)
+            .semantics { contentDescription = description },
+    )
+}
+
+/**
+ * Case de série, sans action : 48, contour 2 `textTertiary` ; cochée, `inverse` avec ✓ et le
+ * rebond `expressive`. Sert aussi de fin de ligne à cocher ([ListRowTrailing.Check]).
+ */
+@Composable
+internal fun CheckBoxVisual(done: Boolean, modifier: Modifier = Modifier) {
     val colors = Studio.colors
     val scale = remember { Animatable(1f) }
     var previous by remember { mutableStateOf(done) }
@@ -208,8 +251,7 @@ private fun SetCheck(done: Boolean, description: String, onCheck: () -> Unit) {
                     Modifier.border(CheckBorder, colors.textTertiary, Studio.shapes.control)
                 },
             )
-            .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, role = Role.Checkbox, onClick = onCheck)
-            .semantics { contentDescription = description },
+            .then(modifier),
         contentAlignment = Alignment.Center,
     ) {
         if (done) StudioIcon(R.drawable.ds_ic_check, contentDescription = null, tint = colors.onInverse)

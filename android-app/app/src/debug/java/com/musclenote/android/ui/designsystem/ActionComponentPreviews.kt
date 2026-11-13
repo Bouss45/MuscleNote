@@ -32,11 +32,13 @@ import com.musclenote.android.ui.designsystem.components.NumericKeypad
 import com.musclenote.android.ui.designsystem.components.RestBanner
 import com.musclenote.android.ui.designsystem.components.RestFinishedBanner
 import com.musclenote.android.ui.designsystem.components.SetRow
+import com.musclenote.android.ui.designsystem.components.SetField
 import com.musclenote.android.ui.designsystem.components.SetRowState
 import com.musclenote.android.ui.designsystem.components.SetTableHeader
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
 import com.musclenote.android.ui.designsystem.components.StudioNavigationBar
+import com.musclenote.android.ui.designsystem.components.StudioTextField
 import com.musclenote.android.ui.designsystem.theme.Studio
 
 /*
@@ -246,3 +248,35 @@ private fun NumericKeypadPreview() = StudioComponentPreview { KeypadSample() }
 @StudioComponentPreviews
 @Composable
 private fun NavigationPreview() = StudioComponentPreview { MiniBarAndNavSample() }
+
+/** Hors maquette (séance en cours, § 15.7) : série validée en saisie sur les reps, « Préc. » à toucher. */
+@StudioComponentPreviews
+@Composable
+private fun SetRowEditingDonePreview() = StudioComponentPreview {
+    StateCaption("Validée, en saisie (reps)")
+    SetRow("2", "80 × 8", "82,5", "9", SetRowState.Done, "Série 2 validée", {}, editingField = SetField.Reps, onPreviousClick = {})
+    StateCaption("À faire, en saisie (charge), sans « Préc. »")
+    SetRow("5", "—", "82,", "8", SetRowState.Todo, "Valider la série 5", {}, editingField = SetField.Weight, showDivider = false)
+}
+
+/** Hors maquette : en-tête du pavé avec « Supprimer la série » (séance en cours, § 15.7.4). */
+@StudioComponentPreviews
+@Composable
+private fun KeypadHeaderDeletePreview() = StudioComponentPreview {
+    KeypadPanel(shape = Studio.shapes.surface) {
+        KeypadHeader(listOf("Kg · série 3", "Reps"), selectedIndex = 1, onSelect = {}, onHide = {}, onDelete = {}, deleteDescription = "Supprimer la série")
+    }
+    KeypadPanel(shape = Studio.shapes.surface) {
+        KeypadHeader(listOf("Min · série 1", "Km", "Km/h", "%"), selectedIndex = 2, onSelect = {}, onHide = {}, onDelete = {}, deleteDescription = "Supprimer la série")
+    }
+}
+
+/** Hors maquette : champ texte (note d'un exercice), vide puis rempli. */
+@StudioComponentPreviews
+@Composable
+private fun TextFieldPreview() = StudioComponentPreview {
+    StateCaption("Vide")
+    StudioTextField("", {}, placeholder = "Ajouter une note…")
+    StateCaption("Rempli")
+    StudioTextField("Prise un peu plus serrée, coudes à 45°", {}, placeholder = "Ajouter une note…")
+}

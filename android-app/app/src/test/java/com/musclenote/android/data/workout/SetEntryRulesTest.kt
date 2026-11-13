@@ -33,7 +33,7 @@ class SetEntryRulesTest {
     @Test
     fun `virgule, un seul séparateur, zéro devant sur un champ vide`() {
         assertEquals("0,", type("", ','))
-        assertEquals("82,5", type("82,5", ','))
+        assertNull(type("82,5", ','))
         assertEquals("82,", type("82", ','))
     }
 
@@ -41,15 +41,16 @@ class SetEntryRulesTest {
     fun `le séparateur suit la langue`() {
         assertEquals("82.", type("82", '.', locale = en))
         // La virgule n'est pas la touche du pavé anglais : sans effet.
-        assertEquals("82", type("82", ',', locale = en))
+        assertNull(type("82", ',', locale = en))
         assertEquals('.', SetEntryRules.decimalSeparator(en))
         assertEquals(',', SetEntryRules.decimalSeparator(fr))
     }
 
     @Test
     fun `pas de séparateur pour les reps`() {
-        assertEquals("12", type("12", ',', SetEntryField.Reps))
-        assertEquals("", type("12", ',', SetEntryField.Reps, fresh = true))
+        assertNull(type("12", ',', SetEntryField.Reps))
+        // Champ neuf : la touche refusée ne le vide pas.
+        assertNull(type("12", ',', SetEntryField.Reps, fresh = true))
     }
 
     @Test
@@ -63,19 +64,20 @@ class SetEntryRulesTest {
     @Test
     fun `deux décimales au plus`() {
         assertEquals("62,25", type("62,2", '5'))
-        assertEquals("62,25", type("62,25", '5'))
+        assertNull(type("62,25", '5'))
     }
 
     @Test
     fun `longueur maximale de chaque champ`() {
-        assertEquals("123", type("123", '4', SetEntryField.Reps))
+        assertNull(type("123", '4', SetEntryField.Reps))
         assertEquals("102,25", type("102,2", '5'))
         assertEquals("1000,5", type("1000,", '5'))
-        assertEquals("99999", type("99999", '9', SetEntryField.Distance))
-        assertEquals("1234", type("1234", '5', SetEntryField.Duration))
-        assertEquals("12,5", type("12,5", '0', SetEntryField.Speed))
-        assertEquals("1500", type("1500", '0', SetEntryField.Incline))
-        assertEquals("100000", type("100000", '0'))
+        assertNull(type("99999", '9', SetEntryField.Distance))
+        assertNull(type("1234", '5', SetEntryField.Duration))
+        assertNull(type("12,5", '0', SetEntryField.Speed))
+        assertNull(type("1500", '0', SetEntryField.Incline))
+        assertNull(type("100000", '0'))
+        assertNull(type("82", 'x'))
         // Même un champ neuf garde sa longueur maximale (champ vide : la touche passe).
         assertEquals("9", type("123", '9', SetEntryField.Reps, fresh = true))
     }

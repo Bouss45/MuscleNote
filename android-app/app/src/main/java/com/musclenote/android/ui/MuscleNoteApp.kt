@@ -45,6 +45,7 @@ import com.musclenote.android.ui.workout.ExercisePickerScreen
 import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
 import kotlinx.coroutines.flow.Flow
+import com.musclenote.android.ui.designsystem.theme.StudioTheme
 
 /** Écran demandé de l'extérieur de l'app (toucher d'une notification). */
 enum class ExternalDestination { Workout, Nutrition }
@@ -126,12 +127,15 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                 )
             }
             composable(Routes.WORKOUT) {
-                WorkoutScreen(
-                    onBack = { navController.backToHome() },
-                    onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
-                    onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
-                    onFinished = { navController.backToHome() },
-                )
+                // Écran migré au design system « Studio épuré » (DESIGN.md), au thème choisi dans l'app.
+                StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
+                    WorkoutScreen(
+                        onBack = { navController.backToHome() },
+                        onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
+                        onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
+                        onFinished = { navController.backToHome() },
+                    )
+                }
             }
             composable(Routes.EXERCISE_PICKER) {
                 ExercisePickerScreen(onClose = { navController.popBackStack() })

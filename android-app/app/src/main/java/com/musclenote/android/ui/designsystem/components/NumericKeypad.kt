@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -135,7 +136,8 @@ private fun Key(
 }
 
 /**
- * En-tête du pavé : segmenté compact (« Kg · série 3 » / « Reps ») et bouton « fermer le pavé ».
+ * En-tête du pavé : segmenté compact (« Kg · série 3 » / « Reps »), puis à droite, en discret,
+ * « Supprimer la série » (optionnel, [onDelete]) et « Fermer le pavé ».
  */
 @Composable
 fun KeypadHeader(
@@ -145,13 +147,24 @@ fun KeypadHeader(
     onHide: () -> Unit,
     modifier: Modifier = Modifier,
     hideDescription: String = stringResource(R.string.ds_keypad_hide),
+    onDelete: (() -> Unit)? = null,
+    deleteDescription: String? = null,
 ) {
     Row(
         modifier.fillMaxWidth().padding(start = Studio.spacing.xxs),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         SegmentedControl(options, selectedIndex, onSelect, compact = true)
+        Spacer(Modifier.weight(1f))
+        if (onDelete != null) {
+            StudioIconButton(
+                R.drawable.ds_ic_delete,
+                contentDescription = deleteDescription.orEmpty(),
+                onClick = onDelete,
+                size = ButtonSize.Small,
+                tone = ButtonTone.Subtle,
+            )
+        }
         StudioIconButton(
             R.drawable.ds_ic_keyboard_hide,
             contentDescription = hideDescription,

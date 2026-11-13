@@ -204,7 +204,8 @@ Tailles : 24 (défaut), 22 (pastille de ligne, coche du pavé, chevron d'une lig
 Jeu de la maquette : `home`, `calendar_month`, `monitoring`, `restaurant` (+ pleines),
 `settings`, `arrow_back`, `close`, `more_vert`, `keyboard_arrow_down`, `chevron_right`, `add`,
 `check`, `backspace`, `keyboard_hide`, `history`, `arrow_upward`, `arrow_downward`,
-`emoji_events`, `edit_note`, `straighten`, `photo_camera`.
+`emoji_events`, `edit_note`, `straighten`, `photo_camera` ; ajoutées avec la séance en cours :
+`delete` (supprimer la série, en-tête du pavé), `fitness_center` (état vide de la séance).
 
 ## 9. Composants
 
@@ -239,7 +240,9 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   + rangée de **mini-puces** (`caption` sur `surfaceControl`, rayon 8, padding 3 × 8, espacées de 4).
 - Fin, au choix : valeur `bodyLineStrong` ; valeur + 3 + variation (`caption` 600, `up` / `down`,
   ou « Record » en `up`) ; variation seule (`emphasis`, colorée, ou « identique » en
-  `textSecondary`) ; chevron 24 `textSecondary`.
+  `textSecondary`) ; chevron 24 `textSecondary` ; **case à cocher** (`ListRowTrailing.Check`, la
+  case 48 de la ligne de série) — toute la ligne la bascule (rôle case à cocher) : échauffement de
+  la séance en cours.
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
 
 **Puce** — `Chip`. Hauteur 32, rayon 12, padding 10 (12 sans icône), icône 18, `body`.
@@ -255,7 +258,9 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 | filtre non sélectionné | `surfaceControl` | `textPrimary` | — | 400 |
 
 Espace icône–texte : 6 (4 pour les flèches). Les puces de filtre et de saisie rapide sont
-cliquables (cible 48) ; les autres sont informatives.
+cliquables (cible 48) ; les autres sont informatives, sauf la **puce de suggestion de charge** du
+bloc exercice : elle applique la suggestion au toucher (`StudioChip(onClick)`, hausse « +2,5 kg »
+ou neutre « Même charge »).
 
 **Courbe** — `TrendCurve`. Trait 1,5 `textPrimary`, jointures et bouts arrondis, **ni grille ni
 remplissage**. Hauteur 172 (150 si l'écran est chargé).
@@ -314,7 +319,11 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
 (reste) · reps (reste) · case 48, espacées de 8. En-tête : `columnHeader` `textSecondary`
 (# · PRÉC. · KG · REPS).
 - n° : `emphasis` en 400 `textSecondary` (700 `textPrimary` sur la ligne en saisie) ;
-  « Préc. » : `caption` `textSecondary` (« 80 × 8 ») ; valeurs : `numberMedium`.
+  « Préc. » : `caption` `textSecondary` (« 80 × 8 »), **se touche** pour recopier la série
+  précédente (`onPreviousClick`, toute la hauteur de la ligne) ; valeurs : `numberMedium`, chaque
+  valeur se touche pour ouvrir le pavé sur ce champ (toute la hauteur de la ligne).
+- Une série **validée** peut aussi être en saisie (`editingField`) : case validée, champ actif en
+  `liveDim`, l'autre valeur en 700 `textPrimary`.
 
 | état | valeurs | case |
 |---|---|---|
@@ -350,14 +359,20 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire.
 
 **Pavé numérique** — `NumericKeypad`. Dans une bottom sheet : `surfaceRaised`, padding 12,
 éléments espacés de 10.
-- En-tête (optionnel) : segmenté compact (« Kg · série 3 » / « Reps ») et, à droite, bouton icône
-  44 `keyboard_hide` `textSecondary`.
+- En-tête (optionnel) : segmenté compact (« Kg · série 3 » / « Reps ») et, à droite, boutons icône
+  44 en `textSecondary` : `delete` « Supprimer la série » (optionnel, séance en cours) puis
+  `keyboard_hide` « Fermer le pavé ».
 - Grille de 4 colonnes espacées de 6, touches de 52, rayon 12 : chiffres 1–9, « , », 0 sur
   `surfaceControl` (`numberKey`) ; colonne de droite : pas − et + (`surfacePressed`, `action` en
   17 → 16, ex. « −2,5 » / « +2,5 », « −50 » / « +50 ») et effacer (`surfacePressed`, `backspace`) ;
   touche principale sur deux colonnes (`inverse` / `onInverse`, `action`, icône `check` 22
   optionnelle) qui reprend l'action de l'écran (« Valider la série », « Ajouter »).
 - Pas configurables : ±2,5 kg, ±1 rep, ±50 g…
+
+**Champ texte** — `StudioTextField` (hors maquette, ajouté avec la séance en cours) : texte libre
+au clavier du système, la note d'un exercice. Hauteur 48 au moins, rayon 12, padding 16 / 14,
+`body` `textPrimary`, plusieurs lignes ; au repos `surfaceControl`, **en saisie `liveDim` et curseur
+`liveText`** (comme tout champ en saisie) ; invite en `textSecondary`. Posé dans une bottom sheet.
 
 **Mini-barre et onglets** — `MiniSessionBar` + `StudioNavigationBar`.
 - Mini-barre (séance réduite) : hauteur 56, `surfaceRaised`, rayon 12, padding 16 / 8, éléments
@@ -438,10 +453,12 @@ Un sujet, un chiffre héros : fiche exercice, résumé de séance, poids, mensur
 Ce qui se passe maintenant : la séance (demain, un cardio guidé). **Pas d'onglets**, le jaune pour
 le temps qui passe, les actions sous le pouce.
 
-1. `LiveHeader` (réduire · titre · chrono) ; 8 ; `SetProgress`.
-2. Blocs exercice (24 entre eux) : `ExerciseBlockHeader`, en-tête de colonnes, `SetRow`, le
-   `RestBanner` juste après la dernière série validée, et la ligne « + Série » (`AddSetRow`) sous
-   la dernière série.
+1. **Fixes en haut** : `LiveHeader` (réduire · titre · chrono) ; 8 ; `SetProgress` (le chrono et
+   « Réduire » restent visibles quand la liste défile).
+2. Liste paresseuse des blocs exercice (24 entre eux, glisser-déposer par appui long sur le titre) :
+   `ExerciseBlockHeader`, en-tête de colonnes, `SetRow`, le `RestBanner` juste après la dernière
+   série validée, et la ligne « + Série » (`AddSetRow`) sous la dernière série. La liste défile
+   pour garder le champ en saisie au-dessus du pavé.
 3. En bas, fixe : la bottom sheet du pavé numérique quand une valeur est en saisie, sinon une barre
    d'actions (valider, terminer).
 
@@ -528,6 +545,18 @@ Décidé (13/11/2026) :
   `inverse` (noir / blanc) ; le rouge reste réservé à la baisse.
 - **Ajouter une série** : la ligne « + Série » (`AddSetRow`) sous la dernière série du bloc, pas
   le menu ⋮ — c'est une action fréquente en séance.
+- **Séance en cours** (SPEC § 15.7, à la migration de l'écran) :
+  - **note et retrait d'un exercice** : menu ⋮ du bloc → bottom sheet (titre = l'exercice, note
+    dans un `StudioTextField`, « Retirer de la séance » en bouton secondaire puis confirmation,
+    « Fermer ») ;
+  - **supprimer une série** : bouton `delete` de l'en-tête du pavé, puis confirmation ;
+  - **échauffement** : une `ListRow` « Échauffement · 2/5 exercices » en tête de liste, qui ouvre
+    une bottom sheet de cinq lignes à cocher ;
+  - **puce « précédent »** du bloc : la date de la séance d'où vient la colonne « Préc. » (icône
+    `history`) — les séries elles-mêmes sont déjà dans la colonne ;
+  - **ajouter un exercice** : bouton secondaire pleine largeur (icône `add`) en fin de liste ; sans
+    exercice, l'état vide porte cette action ;
+  - **barre du bas** hors saisie : « Terminer la séance » seul (`BottomActionBar`).
 
 Hors périmètre pour l'instant :
 
@@ -540,20 +569,20 @@ Hors périmètre pour l'instant :
 
 Ouvert :
 
-- **Notes et retrait d'un exercice** en séance : non dessinés ; proposition, le menu ⋮ du bloc
-  exercice — à confirmer à la migration de la séance en cours.
-- **Échauffement, recherche d'exercice, formulaires longs** (rappels de compléments) : à composer
-  avec les gabarits et composants existants au moment de leur migration.
+- **Recherche d'exercice, formulaires longs** (rappels de compléments) : à composer avec les
+  gabarits et composants existants au moment de leur migration.
 
 ## 14. Code
 
 - `ui/designsystem/theme/` : `StudioTheme` (palettes, `CompositionLocal`s, correspondance avec
   `MaterialTheme` pour que les composants Material encore utilisés prennent la palette),
   `StudioColors`, `StudioTypography` (familles Archivo et Archivo condensée), `StudioSpacing`,
-  `StudioShapes`, `StudioMotion`. Accès : `Studio.colors.live`, `Studio.typography.numberHero`,
+  `StudioShapes`, `StudioMotion`. Un écran migré est posé dans `StudioTheme(darkTheme = …)` au
+  thème choisi dans l'app (route de navigation, `ui/MuscleNoteApp.kt`). Accès : `Studio.colors.live`, `Studio.typography.numberHero`,
   `Studio.spacing.screen`, `Studio.shapes.control`, `Studio.motion.fast`.
 - `ui/designsystem/components/` : les composants du § 9 (`Foundation.kt` : icône, variation,
-  point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille).
+  point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille ;
+  `TextField.kt` pour le champ texte).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate`,
   `FicheTemplate`, `LiveTemplate`, `FormSheetTemplate`), en composables à emplacements ; ils
   reçoivent les insets du système (`ScreenInsets`).

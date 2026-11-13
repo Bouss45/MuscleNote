@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -51,6 +52,13 @@ sealed interface ListRowTrailing {
 
     /** Chevron : la ligne ouvre un autre écran. */
     data object Chevron : ListRowTrailing
+
+    /**
+     * Case à cocher (celle de la ligne de série) : toute la ligne la bascule (échauffement de la
+     * séance en cours).
+     */
+    @Immutable
+    data class Check(val checked: Boolean) : ListRowTrailing
 }
 
 /**
@@ -80,10 +88,16 @@ fun ListRow(
             .pressedBackground(pressed, Studio.colors.surfaceRaised, PressBleed, PressRadius)
             .bottomDivider(Studio.colors.separator, show = showDivider && !pressed)
             .then(
-                if (onClick != null) {
-                    Modifier.clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
-                } else {
-                    Modifier
+                when {
+                    onClick == null -> Modifier
+                    trailing is ListRowTrailing.Check -> Modifier.toggleable(
+                        value = trailing.checked,
+                        interactionSource = source,
+                        indication = null,
+                        role = Role.Checkbox,
+                        onValueChange = { onClick() },
+                    )
+                    else -> Modifier.clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
                 },
             )
             .padding(vertical = Studio.spacing.xs),
@@ -134,6 +148,7 @@ fun ListRow(
                 contentDescription = null,
                 tint = Studio.colors.textSecondary,
             )
+            is ListRowTrailing.Check -> CheckBoxVisual(trailing.checked)
             null -> Unit
         }
     }

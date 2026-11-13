@@ -15,9 +15,7 @@ import com.musclenote.android.R
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.MuscleGroup
-import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.ThemeMode
-import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.update.LatestRelease
 import com.musclenote.android.ui.components.rememberDateFormats
@@ -33,56 +31,16 @@ import com.musclenote.android.ui.settings.MyDataCard
 import com.musclenote.android.ui.settings.StatusBox
 import com.musclenote.android.ui.settings.ThemeCard
 import com.musclenote.android.ui.theme.MuscleNoteTheme
-import com.musclenote.android.ui.workout.ExerciseCard
-import com.musclenote.android.ui.workout.RestTimerBanner
 import com.musclenote.android.ui.workout.SetRow
-import com.musclenote.android.ui.workout.WarmupCard
 
 /* Composants des écrans (séance, nutrition, progrès, accueil, paramètres), avec PreviewData. */
 
 private val definitions: Map<String, ExerciseDefinition> =
     exerciseDefinitions(PreviewData.customExercises).associateBy { it.id }
 
-private fun workoutExercise(id: String): WorkoutExercise = PreviewData.currentWorkout.exercises.first { it.exerciseId == id }
-
 // ─── Séance ──────────────────────────────────────────────────────────────────────
 
-/** Exercice en cours : note, 3 séries validées sur 4. */
-@ComponentPreviews
-@Composable
-private fun ExerciseCardPreview() = ComponentPreview {
-    ExerciseCard(
-        definition = definitions.getValue("bench"),
-        workoutExercise = workoutExercise("bench"),
-        onToggleSet = {},
-        onUpdateSet = { _, _ -> },
-        onRemoveSet = {},
-        onAddSet = {},
-        onNoteChange = {},
-        onRemove = {},
-        onOpenHistory = {},
-    )
-}
-
-/** Exercice cardio (durée, distance, vitesse, inclinaison). */
-@ComponentPreviews
-@Composable
-private fun ExerciseCardCardioPreview() = ComponentPreview {
-    ExerciseCard(
-        definition = definitions.getValue("treadmill"),
-        workoutExercise = PreviewData.workouts.first { w -> w.exercises.any { it.exerciseId == "treadmill" } }
-            .exercises.first { it.exerciseId == "treadmill" },
-        onToggleSet = {},
-        onUpdateSet = { _, _ -> },
-        onRemoveSet = {},
-        onAddSet = {},
-        onNoteChange = {},
-        onRemove = {},
-        onOpenHistory = {},
-    )
-}
-
-/** Lignes de série : validée, à faire, cardio. */
+/** Lignes de série de l'éditeur de séance terminée (§ 2.6) : validée, à faire, cardio. */
 @ComponentPreviews
 @Composable
 private fun SetRowPreview() = ComponentPreview {
@@ -98,28 +56,6 @@ private fun SetRowPreview() = ComponentPreview {
             onRemove = {},
         )
     }
-}
-
-/** Bandeau de repos aux trois couleurs : plus de la moitié, plus d'un quart, la fin. */
-@ComponentPreviews
-@Composable
-private fun RestTimerBannerPreview() = ComponentPreview {
-    val now = PreviewData.now.toEpochMilli()
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        for (remainingSeconds in listOf(120, 60, 20)) {
-            RestTimerBanner(
-                state = RestTimerState(endsAt = now + remainingSeconds * 1000L, total = 150, exerciseName = "Développé couché"),
-                time = PreviewTime,
-                onSkip = {},
-            )
-        }
-    }
-}
-
-@ComponentPreviews
-@Composable
-private fun WarmupCardPreview() = ComponentPreview {
-    WarmupCard()
 }
 
 // ─── Nutrition ───────────────────────────────────────────────────────────────────

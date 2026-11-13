@@ -12,7 +12,11 @@ import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
+import com.musclenote.android.data.workout.SetEntryField
+import com.musclenote.android.ui.designsystem.theme.StudioTheme
+import com.musclenote.android.ui.theme.MuscleNoteTheme
 import com.musclenote.android.ui.workout.EditWorkoutScreen
+import com.musclenote.android.ui.workout.EntryTarget
 import com.musclenote.android.ui.workout.ExercisePickerScreen
 import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
@@ -50,11 +54,31 @@ private fun HomeScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
     HomeScreen(onStartWorkout = {}, onOpenWorkout = {}, onEditWorkout = {})
 }
 
-/** Séance en cours depuis 42 min, repos de 2 min 30 en cours. */
+/** Séance en cours depuis 42 min, repos de 2 min 30 en cours : toute la liste, barre « Terminer ». */
 @ScreenPreviews
 @Composable
 private fun WorkoutScreenPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
-    WorkoutScreen(onBack = {}, onAddExercise = {}, onOpenHistory = {}, onFinished = {})
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
+        WorkoutScreen(onBack = {}, onAddExercise = {}, onOpenHistory = {}, onFinished = {})
+    }
+}
+
+/**
+ * Ce qu'un téléphone montre, comme l'écran « en direct » de la maquette : repos en cours, pavé
+ * ouvert sur la charge de la 4e série du développé couché.
+ */
+@PhonePreviews
+@Composable
+private fun WorkoutScreenKeypadPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
+        WorkoutScreen(
+            onBack = {},
+            onAddExercise = {},
+            onOpenHistory = {},
+            onFinished = {},
+            initialEntry = EntryTarget("bench", "cur-bench-3", SetEntryField.Weight),
+        )
+    }
 }
 
 @PhonePreviews
