@@ -6,9 +6,17 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 "MuscleNote", a personal gym workout tracker: a **native Android app** (Kotlin + Jetpack Compose) in `android-app/`, French by default with English. It is installed from the APKs of the GitHub Releases (users follow them with Obtainium); publishing on the Google Play Store is **not** planned, so store-compliance work is out of scope. The app is **offline**: no account, no workout data ever sent. It has two network accesses, both behind the `INTERNET` permission: the update check (SPEC § 3.17, D25) and sending feedback to a Discord webhook, only when the user taps « Envoyer » (SPEC § 14, D26). Two opt-in on-device writes outside the app: the daily automatic backup to a user-picked folder (SPEC § 15.2, D28) and Health Connect (SPEC § 15.3, D29).
 
-**`SPEC.md` is the single reference** for behaviour, data format, theme, strings and decisions (§ 11; implementation status in § 13; features added after the switch-over, by batch, in § 15). Identity: `applicationId`/namespace `com.musclenote.android`, label « MuscleNote », minSdk 26, compile/targetSdk 37, portrait only.
+**`SPEC.md` is the single reference** for behaviour, data format, strings and decisions (§ 11; implementation status in § 13; features added after the switch-over, by batch, in § 15). Identity: `applicationId`/namespace `com.musclenote.android`, label « MuscleNote », minSdk 26, compile/targetSdk 37, portrait only.
+
+**`DESIGN.md` is the reference for the interface**: colour tokens and their roles, Archivo type scale, spacing, radii, motion, icons, every component with its states, the 4 screen templates (hub, fiche, en direct, formulaire) and navigation — taken from the Claude Design export in `design/claude-design/`. Where it disagrees with the look described in SPEC (§ 2, § 9.1 – 9.3), DESIGN.md wins.
 
 The app replaced an earlier Expo / React Native app (`com.musclenote.app`), removed from the repo but kept at the tag **`expo-final`** (`git show expo-final:artifacts/mobile/<path>`). SPEC paths such as `constants/i18n/fr.ts` refer to that tag. Users move their data over by sharing the Expo app's JSON backup to the native app (SPEC § 5.5); the backup keys keep the legacy `@gymtracker_` prefix for that reason.
+
+## Interface rule
+
+- Every interface uses the design-system tokens and components (`ui/designsystem/`, `Studio.colors` / `Studio.typography` / `Studio.spacing` / `Studio.shapes` / `Studio.motion`): **never a hard-coded colour or size** in a screen — no `Color(0x…)`, no literal `dp` / `sp`, no `TextStyle` built on the spot.
+- A new feature = one of the 4 templates + existing components. Create a new component only when none fits, put it in `ui/designsystem/components/` with `@Preview`s in dark and light, and add it to DESIGN.md (§ 9) in the same change.
+- During the redesign (branch `redesign`), screens not migrated yet still run on the legacy `ui/theme/`; a migrated screen uses `Studio` only.
 
 ## Build, tests, releases
 
