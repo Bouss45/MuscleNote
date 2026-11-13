@@ -472,4 +472,11 @@
     <string name="health_privacy_when">Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l\'historique ».</string>
     <string name="health_privacy_nothing_else">Rien d\'autre : MuscleNote ne lit aucune donnée de Health Connect et n\'envoie rien sur internet ; tes données restent sur ton téléphone.</string>
     <string name="health_privacy_stop">Arrêter : coupe l\'interrupteur Health Connect dans Paramètres. Les données déjà écrites s\'effacent depuis les réglages de Health Connect.</string>
+    <!-- Design system « Studio épuré » (DESIGN.md) : libellés d'accessibilité des composants -->
+    <string name="ds_close">Fermer</string>
+    <string name="ds_more_options">Plus d\'options</string>
+    <string name="ds_keypad_delete">Effacer</string>
+    <string name="ds_keypad_hide">Fermer le pavé</string>
+    <string name="ds_collapse_session">Réduire la séance</string>
+    <string name="ds_exercise_details">Fiche de l\'exercice</string>
 </resources>

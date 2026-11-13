@@ -470,4 +470,11 @@
     <string name="health_privacy_when">When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”.</string>
     <string name="health_privacy_nothing_else">Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone.</string>
     <string name="health_privacy_stop">To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect\'s settings.</string>
+    <!-- « Studio épuré » design system (DESIGN.md): component accessibility labels -->
+    <string name="ds_close">Close</string>
+    <string name="ds_more_options">More options</string>
+    <string name="ds_keypad_delete">Delete</string>
+    <string name="ds_keypad_hide">Hide keypad</string>
+    <string name="ds_collapse_session">Minimise the workout</string>
+    <string name="ds_exercise_details">Exercise details</string>
 </resources>
