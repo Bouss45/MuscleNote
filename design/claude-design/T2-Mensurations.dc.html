@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Mensurations</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; background: {{c.bg}}; color: {{c.fg}}; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 40px 20px 0; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; justify-content: space-between; height: 48px; margin: 0 -12px">
+      <button type="button" aria-label="Retour" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">arrow_back</span></button>
+      <button type="button" aria-label="Plus d'options" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">more_vert</span></button>
+    </div>
+    <div style="margin-top: 4px; display: flex; flex-direction: column; gap: 4px">
+      <h1 style="margin: 0; font-size: 28px; line-height: 1.1; font-weight: 700; letter-spacing: -0.01em">Mensurations</h1>
+      <span style="font-size: 13px; color: {{c.fg2}}">9 relevés depuis mars</span>
+    </div>
+
+    <div style="margin-top: 20px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: {{c.s2}}">
+      <button type="button" style="height: 40px; border: none; border-radius: 9px; background: {{c.s3}}; color: {{c.fg}}; font: 700 14px Archivo, sans-serif">Bras</button>
+      <button type="button" style="height: 40px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">Poitrine</button>
+      <button type="button" style="height: 40px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">Taille</button>
+      <button type="button" style="height: 40px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">Cuisse</button>
+    </div>
+
+    <div style="margin-top: 28px; display: flex; flex-direction: column; gap: 6px">
+      <span style="font-size: 13px; color: {{c.fg2}}">Tour de bras · 10 nov.</span>
+      <div style="display: flex; align-items: baseline; gap: 6px"><span style="font-size: 96px; line-height: 0.85; font-weight: 700; font-stretch: 75%; letter-spacing: -0.01em">38,5</span><span style="font-size: 20px; font-weight: 600; color: {{c.fg2}}">cm</span></div>
+      <span style="font-size: 15px; font-weight: 600; color: {{c.up}}">+1,5 cm <span style="font-weight: 400; color: {{c.fg2}}">depuis le 10 mars</span></span>
+    </div>
+
+    <svg width="372" height="150" viewBox="0 0 372 150" role="img" aria-label="Tour de bras de 37,0 à 38,5 cm entre mars et novembre" style="display: block; margin-top: 20px; overflow: visible">
+      <path d="M4.0 115.8 L45.4 103.6 L86.7 85.3 L128.1 79.2 L179.8 60.8 L241.9 66.9 L272.9 48.6 L314.3 36.4 L366.0 24.2" fill="none" stroke="{{c.fg}}" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round"></path>
+      <circle cx="366" cy="24.2" r="4" fill="{{c.fg}}"></circle>
+      <text x="4" y="146" font-family="Archivo, sans-serif" font-size="12" fill="{{c.fg2}}">mars</text>
+      <text x="368" y="146" text-anchor="end" font-family="Archivo, sans-serif" font-size="12" fill="{{c.fg2}}">nov.</text>
+    </svg>
+
+    <div style="margin-top: 4px; display: flex; justify-content: space-between">
+      <button type="button" style="height: 44px; min-width: 48px; border: none; background: none; color: {{c.fg2}}; font: 600 15px Archivo, sans-serif">3M</button>
+      <button type="button" style="height: 44px; min-width: 48px; border: none; background: none; color: {{c.fg2}}; font: 600 15px Archivo, sans-serif">6M</button>
+      <button type="button" style="height: 44px; min-width: 48px; border: none; background: none; color: {{c.fg2}}; font: 600 15px Archivo, sans-serif">1A</button>
+      <button type="button" style="height: 44px; min-width: 48px; border: none; background: none; color: {{c.fg}}; font: 800 15px Archivo, sans-serif; text-decoration: underline; text-underline-offset: 6px; text-decoration-thickness: 2px">Tout</button>
+    </div>
+
+    <div style="margin-top: 28px; display: flex; flex-direction: column">
+      <div style="display: flex; justify-content: space-between; align-items: center; height: 40px; margin-bottom: 4px"><h2 style="margin: 0; font-size: 20px; font-weight: 700">Relevés</h2></div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">10 nov.</span><span style="font-size: 13px; color: {{c.fg2}}">bras droit, contracté</span></div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px"><span style="font-size: 16px; font-weight: 600">38,5 cm</span><span style="font-size: 13px; font-weight: 600; color: {{c.up}}">+0,2 cm</span></div></div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">6 oct.</span><span style="font-size: 13px; color: {{c.fg2}}">bras droit, contracté</span></div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px"><span style="font-size: 16px; font-weight: 600">38,3 cm</span><span style="font-size: 13px; font-weight: 600; color: {{c.up}}">+0,2 cm</span></div></div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">18 août</span><span style="font-size: 13px; color: {{c.fg2}}">bras droit, contracté</span></div><div style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px"><span style="font-size: 16px; font-weight: 600">37,8 cm</span><span style="font-size: 13px; font-weight: 600; color: {{c.down}}">−0,1 cm</span></div></div>
+    </div>
+  </div>
+
+  <div style="flex-shrink: 0; padding: 12px 20px 28px; background: {{c.bg}}">
+    <button type="button" style="width: 100%; height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 17px Archivo, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px"><span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">add</span>Nouvelle mesure</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Thème"},"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      sombre: { bg: '#0F1012', s1: '#1C1D21', s2: '#2A2C31', s3: '#36383E', line: '#222428', fg: '#F3F3F1', fg2: '#A2A5AB', fg3: '#6F737A', live: '#FFC93D', liveTx: '#FFC93D', onLive: '#17140A', liveDim: '#332C14', up: '#3DD68C', upDim: '#12301F', down: '#FF6B5E', downDim: '#3A1714', inv: '#F3F3F1', onInv: '#0F1012', scrim: 'rgba(0,0,0,0.6)' },
+      clair: { bg: '#FFFFFF', s1: '#F2F2F0', s2: '#E7E7E4', s3: '#D9D9D5', line: '#EBEBE8', fg: '#121315', fg2: '#5C5F65', fg3: '#85888E', live: '#FFC93D', liveTx: '#7A5900', onLive: '#17140A', liveDim: '#FFF0C2', up: '#0B7A43', upDim: '#E3F5EA', down: '#C62D22', downDim: '#FCE6E3', inv: '#121315', onInv: '#FFFFFF', scrim: 'rgba(18,19,21,0.4)' }
+    };
+    return { c: this.props.theme === 'clair' ? P.clair : P.sombre };
+  }
+}
+</script>
+</body>
+</html>

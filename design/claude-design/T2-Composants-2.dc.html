@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Composants 2 · Actions et saisie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1320px; box-sizing: border-box; padding: 56px; background: {{c.bg}}; color: {{c.fg}}; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; display: flex; flex-direction: column; gap: 28px; overflow: hidden">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Composants 2</span>
+      <h1 style="margin: 0; font-size: 40px; line-height: 1; font-weight: 800; font-stretch: 110%; letter-spacing: -0.02em">Actions et saisie</h1>
+    </div>
+    <p style="margin: 0; max-width: 520px; font-size: 15px; line-height: 1.5; color: {{c.fg2}}">Le bouton principal est en inverse (blanc sur sombre, noir sur clair) : le jaune reste réservé à ce qui se passe en direct.</p>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 56px; align-items: start">
+
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Boutons</span><span style="font-size: 12px; color: {{c.fg2}}">56 dp · rayon 12</span></div>
+        <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center; font-size: 12px; color: {{c.fg2}}"><span></span><span>Normal</span><span>Pressé</span><span>Désactivé</span></div>
+        <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center">
+          <span style="font-size: 13px; font-weight: 600">Principal</span>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 16px Archivo, sans-serif">Démarrer</button>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; opacity: 0.8; font: 700 16px Archivo, sans-serif">Démarrer</button>
+          <button type="button" disabled style="height: 56px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg3}}; font: 700 16px Archivo, sans-serif">Démarrer</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center">
+          <span style="font-size: 13px; font-weight: 600">Secondaire</span>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 700 16px Archivo, sans-serif">Ajouter</button>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.s3}}; color: {{c.fg}}; font: 700 16px Archivo, sans-serif">Ajouter</button>
+          <button type="button" disabled style="height: 56px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg3}}; font: 700 16px Archivo, sans-serif">Ajouter</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center">
+          <span style="font-size: 13px; font-weight: 600">Texte</span>
+          <button type="button" style="height: 48px; border: none; border-radius: 12px; background: none; color: {{c.fg}}; font: 700 16px Archivo, sans-serif">Annuler</button>
+          <button type="button" style="height: 48px; border: none; border-radius: 12px; background: {{c.s1}}; color: {{c.fg}}; font: 700 16px Archivo, sans-serif">Annuler</button>
+          <button type="button" disabled style="height: 48px; border: none; border-radius: 12px; background: none; color: {{c.fg3}}; font: 700 16px Archivo, sans-serif">Annuler</button>
+        </div>
+        <div style="display: grid; grid-template-columns: 80px repeat(3, minmax(0, 1fr)); gap: 8px; align-items: center">
+          <span style="font-size: 13px; font-weight: 600">Icône</span>
+          <button type="button" aria-label="Paramètres" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">settings</span></button>
+          <button type="button" aria-label="Paramètres" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: {{c.s2}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">settings</span></button>
+          <button type="button" aria-label="Paramètres" disabled style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg3}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">settings</span></button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Surface mise en avant</span><span style="font-size: 12px; color: {{c.fg2}}">une seule par écran · rayon 20</span></div>
+        <span style="font-size: 12px; color: {{c.fg2}}">En direct</span>
+        <div style="background: {{c.s1}}; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; justify-content: space-between; align-items: center"><span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.liveTx}}"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{c.live}}"></span>En cours</span><span style="font-size: 15px; font-weight: 700">Push</span></div>
+          <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 64px; line-height: 0.85; font-weight: 700; font-stretch: 75%; color: {{c.liveTx}}">17:48</span><span style="font-size: 14px; color: {{c.fg2}}">Repos <span style="color: {{c.liveTx}}; font-weight: 600">1:48</span> · développé couché, série 3</span></div>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 16px Archivo, sans-serif">Reprendre</button>
+        </div>
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 6px">Prochaine séance</span>
+        <div style="background: {{c.s1}}; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: {{c.fg2}}">Prochaine séance</span><span style="font-size: 32px; line-height: 1; font-weight: 700">Push</span><span style="font-size: 13px; color: {{c.fg2}}">Dernier Push il y a 7 jours · 5 exercices</span></div>
+          <div style="display: flex; gap: 6px"><span style="height: 32px; padding: 0 12px; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font-size: 14px; font-weight: 700; display: flex; align-items: center">Push</span><span style="height: 32px; padding: 0 12px; border-radius: 12px; background: {{c.s2}}; font-size: 14px; display: flex; align-items: center">Pull</span><span style="height: 32px; padding: 0 12px; border-radius: 12px; background: {{c.s2}}; font-size: 14px; display: flex; align-items: center">Legs</span><span style="height: 32px; padding: 0 12px; border-radius: 12px; background: {{c.s2}}; font-size: 14px; display: flex; align-items: center">Autre…</span></div>
+          <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 16px Archivo, sans-serif">Démarrer</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; padding-bottom: 4px"><span style="font-size: 16px; font-weight: 700">Ligne de série</span><span style="font-size: 12px; color: {{c.fg2}}">56 dp · case 48</span></div>
+        <div style="display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}"><span>#</span><span>Préc.</span><span>Kg</span><span>Reps</span><span></span></div>
+
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 4px">À faire — pré-remplie</span>
+        <div style="display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; align-items: center; height: 56px; border-bottom: 1px solid {{c.line}}">
+          <span style="font-size: 15px; color: {{c.fg2}}">3</span><span style="font-size: 13px; color: {{c.fg2}}">80 × 8</span>
+          <span style="font-size: 32px; font-weight: 600; font-stretch: 75%; color: {{c.fg3}}">82,5</span><span style="font-size: 32px; font-weight: 600; font-stretch: 75%; color: {{c.fg3}}">8</span>
+          <button type="button" aria-label="Valider la série 3" style="width: 48px; height: 48px; border: none; border-radius: 12px; background: none; box-shadow: inset 0 0 0 2px {{c.fg3}}"></button>
+        </div>
+
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 4px">En saisie</span>
+        <div style="display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; align-items: center; height: 56px; border-bottom: 1px solid {{c.line}}">
+          <span style="font-size: 15px; font-weight: 700">3</span><span style="font-size: 13px; color: {{c.fg2}}">80 × 8</span>
+          <span style="display: flex; align-items: center; height: 44px; margin-left: -8px; padding-left: 8px; border-radius: 12px; background: {{c.liveDim}}; font-size: 32px; font-weight: 700; font-stretch: 75%">82,5<span style="width: 2px; height: 26px; margin-left: 2px; background: {{c.liveTx}}"></span></span>
+          <span style="font-size: 32px; font-weight: 600; font-stretch: 75%; color: {{c.fg3}}">8</span>
+          <button type="button" aria-label="Valider la série 3" style="width: 48px; height: 48px; border: none; border-radius: 12px; background: none; box-shadow: inset 0 0 0 2px {{c.fg3}}"></button>
+        </div>
+
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 4px">Validée</span>
+        <div style="display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; align-items: center; height: 56px; border-bottom: 1px solid {{c.line}}">
+          <span style="font-size: 15px; color: {{c.fg2}}">1</span><span style="font-size: 13px; color: {{c.fg2}}">80 × 8</span>
+          <span style="font-size: 32px; font-weight: 700; font-stretch: 75%">82,5</span><span style="font-size: 32px; font-weight: 700; font-stretch: 75%">8</span>
+          <button type="button" aria-label="Série 1 validée" style="width: 48px; height: 48px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">check</span></button>
+        </div>
+
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 4px">Validée avec record</span>
+        <div style="display: grid; grid-template-columns: 22px 60px minmax(0, 1fr) minmax(0, 1fr) 48px; gap: 8px; align-items: center; height: 56px; border-bottom: 1px solid {{c.line}}">
+          <span style="font-size: 15px; color: {{c.fg2}}">3</span><span style="font-size: 13px; color: {{c.fg2}}">80 × 8</span>
+          <span style="font-size: 32px; font-weight: 700; font-stretch: 75%">85</span>
+          <span style="display: flex; align-items: center; gap: 6px"><span style="font-size: 32px; font-weight: 700; font-stretch: 75%">8</span><span style="font-size: 12px; font-weight: 700; color: {{c.up}}">Record</span></span>
+          <button type="button" aria-label="Série 3 validée, record" style="width: 48px; height: 48px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">check</span></button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Bandeau de repos</span><span style="font-size: 12px; color: {{c.fg2}}">entre deux séries, sans fond</span></div>
+        <span style="font-size: 12px; color: {{c.fg2}}">En cours</span>
+        <div style="display: flex; flex-direction: column; gap: 10px; padding: 12px 0 14px; border-bottom: 1px solid {{c.line}}">
+          <div style="display: flex; align-items: flex-end; justify-content: space-between">
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.liveTx}}">Repos</span><span style="font-size: 56px; line-height: 0.85; font-weight: 700; font-stretch: 75%; color: {{c.liveTx}}">1:48</span></div>
+            <span style="font-size: 14px; color: {{c.fg2}}; padding-bottom: 2px">sur 2:30</span>
+          </div>
+          <div style="height: 3px; border-radius: 2px; background: {{c.s3}}; overflow: hidden" aria-hidden="true"><div style="width: 28%; height: 3px; background: {{c.live}}"></div></div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+            <button type="button" style="height: 48px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 700 15px Archivo, sans-serif">−30 s</button>
+            <button type="button" style="height: 48px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 700 15px Archivo, sans-serif">+30 s</button>
+            <button type="button" style="height: 48px; border: none; border-radius: 12px; background: none; color: {{c.fg}}; font: 700 15px Archivo, sans-serif">Passer</button>
+          </div>
+        </div>
+        <span style="font-size: 12px; color: {{c.fg2}}; padding-top: 4px">Terminé</span>
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0 12px; border-bottom: 1px solid {{c.line}}">
+          <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 700">Repos terminé</span><span style="font-size: 13px; color: {{c.fg2}}">2:30 · à toi, série 3</span></div>
+          <button type="button" style="height: 48px; padding: 0 12px; border: none; border-radius: 12px; background: none; color: {{c.fg2}}; font: 700 15px Archivo, sans-serif">Relancer</button>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">État vide</span><span style="font-size: 12px; color: {{c.fg2}}">une phrase, une action</span></div>
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 4px 12px 0; text-align: center">
+          <span style="width: 64px; height: 64px; border-radius: 32px; background: {{c.s2}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 28px/1 'Material Symbols Rounded'; color: {{c.fg2}}">straighten</span></span>
+          <span style="font-size: 18px; font-weight: 700">Aucune mesure pour l'instant</span>
+          <span style="font-size: 14px; line-height: 1.45; color: {{c.fg2}}; max-width: 300px">Ajoute ton tour de bras ou de taille pour suivre son évolution.</span>
+          <button type="button" style="height: 48px; padding: 0 20px; margin-top: 4px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 700 15px Archivo, sans-serif">Ajouter une mesure</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 32px">
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Bottom sheet</span><span style="font-size: 12px; color: {{c.fg2}}">surface.avant · voile</span></div>
+        <div style="border-radius: 20px; overflow: hidden; background: {{c.scrim}}; padding-top: 40px">
+          <div style="background: {{c.s1}}; border-radius: 20px 20px 0 0; padding: 10px 20px 20px; display: flex; flex-direction: column; gap: 14px">
+            <span style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: {{c.s3}}"></span>
+            <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 20px; font-weight: 700">Terminer la séance ?</span><span style="font-size: 14px; line-height: 1.45; color: {{c.fg2}}">16 séries en 1 h 14. Tu pourras corriger le résumé ensuite.</span></div>
+            <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 16px Archivo, sans-serif">Terminer</button>
+            <button type="button" style="height: 48px; border: none; border-radius: 12px; background: none; color: {{c.fg}}; font: 700 16px Archivo, sans-serif">Continuer la séance</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Pavé numérique</span><span style="font-size: 12px; color: {{c.fg2}}">dans une bottom sheet</span></div>
+        <div style="background: {{c.s1}}; border-radius: 20px; padding: 12px; display: flex; flex-direction: column; gap: 10px">
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <div style="display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: {{c.s2}}">
+              <button type="button" style="height: 36px; padding: 0 14px; border: none; border-radius: 9px; background: {{c.s3}}; color: {{c.fg}}; font: 700 14px Archivo, sans-serif">Kg · série 3</button>
+              <button type="button" style="height: 36px; padding: 0 14px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">Reps</button>
+            </div>
+            <button type="button" aria-label="Fermer le pavé" style="width: 44px; height: 44px; border: none; border-radius: 22px; background: none; color: {{c.fg2}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">keyboard_hide</span></button>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">1</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">2</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">3</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s3}}; color: {{c.fg}}; font: 700 17px Archivo, sans-serif">−2,5</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">4</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">5</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">6</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s3}}; color: {{c.fg}}; font: 700 17px Archivo, sans-serif">+2,5</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">7</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">8</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">9</button>
+            <button type="button" aria-label="Effacer" style="height: 52px; border: none; border-radius: 12px; background: {{c.s3}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">backspace</span></button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">,</button>
+            <button type="button" style="height: 52px; border: none; border-radius: 12px; background: {{c.s2}}; color: {{c.fg}}; font: 600 26px Archivo, sans-serif; font-stretch: 75%">0</button>
+            <button type="button" style="grid-column: span 2; height: 52px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 16px Archivo, sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px"><span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">check</span>Valider la série</button>
+          </div>
+        </div>
+        <span style="font-size: 12px; line-height: 1.5; color: {{c.fg2}}">Touches de pas configurables : ±2,5 kg, ±1 rep, ±50 g… La touche principale reprend l'action de l'écran.</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 12px">
+        <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 16px; font-weight: 700">Mini-barre + onglets</span><span style="font-size: 12px; color: {{c.fg2}}">séance réduite</span></div>
+        <div style="display: flex; flex-direction: column">
+          <div style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 8px 0 16px; border-radius: 12px; background: {{c.s1}}">
+            <span style="width: 8px; height: 8px; border-radius: 4px; background: {{c.live}}"></span>
+            <span style="flex-grow: 1; font-size: 15px; font-weight: 700">Push <span style="font-weight: 500; color: {{c.fg2}}">· repos</span> <span style="color: {{c.liveTx}}">1:48</span></span>
+            <button type="button" style="height: 44px; padding: 0 12px; border: none; border-radius: 12px; background: none; color: {{c.fg}}; font: 700 15px Archivo, sans-serif">Reprendre</button>
+          </div>
+          <nav style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 10px 0 4px; margin-top: 8px; border-top: 1px solid {{c.line}}">
+            <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg}}; font: 700 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'; font-variation-settings: 'FILL' 1">home</span>Accueil</button>
+            <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">calendar_month</span>Journal</button>
+            <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">monitoring</span>Progrès</button>
+            <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">restaurant</span>Nutrition</button>
+          </nav>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Thème"},"$preview":{"width":1400,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      sombre: { bg: '#0F1012', s1: '#1C1D21', s2: '#2A2C31', s3: '#36383E', line: '#222428', fg: '#F3F3F1', fg2: '#A2A5AB', fg3: '#6F737A', live: '#FFC93D', liveTx: '#FFC93D', onLive: '#17140A', liveDim: '#332C14', up: '#3DD68C', upDim: '#12301F', down: '#FF6B5E', downDim: '#3A1714', inv: '#F3F3F1', onInv: '#0F1012', scrim: 'rgba(0,0,0,0.6)' },
+      clair: { bg: '#FFFFFF', s1: '#F2F2F0', s2: '#E7E7E4', s3: '#D9D9D5', line: '#EBEBE8', fg: '#121315', fg2: '#5C5F65', fg3: '#85888E', live: '#FFC93D', liveTx: '#7A5900', onLive: '#17140A', liveDim: '#FFF0C2', up: '#0B7A43', upDim: '#E3F5EA', down: '#C62D22', downDim: '#FCE6E3', inv: '#121315', onInv: '#FFFFFF', scrim: 'rgba(18,19,21,0.4)' }
+    };
+    return { c: this.props.theme === 'clair' ? P.clair : P.sombre };
+  }
+}
+</script>
+</body>
+</html>
