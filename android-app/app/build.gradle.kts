@@ -53,6 +53,16 @@ android {
             )
             signingConfig = signingConfigs.findByName("release")
         }
+        // Variante « MuscleNote Preview » : s'installe à côté de l'app normale (identifiant
+        // `com.musclenote.android.preview`, données séparées) pour suivre la refonte sur un vrai
+        // téléphone. Construite et signée en local avec la clé de debug, jamais publiée.
+        create("preview") {
+            initWith(getByName("debug"))
+            applicationIdSuffix = ".preview"
+            versionNameSuffix = "-preview"
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("debug")
+        }
     }
 
     compileOptions {
