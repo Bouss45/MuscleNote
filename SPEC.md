@@ -238,6 +238,11 @@ Deux étapes dans le même écran ; bouton en haut à gauche : ✕ (fermer) à l
 
 ### 2.4 Séance en cours
 
+> 🔄 D32 — **disposition remplacée par le § 15.7** (gabarit « en direct » de DESIGN.md, colonne
+> « Préc. », suggestion de charge, pavé numérique intégré, repos dans la liste, confirmations en
+> bottom sheet). Restent valables ci-dessous : l'échauffement (non enregistré), le glisser-déposer,
+> la fin ou l'abandon de la séance (D15) ; les règles du § 3 ne changent pas.
+
 Si aucune séance n'est en cours : « Aucune séance active » + lien « Retour » (→ accueil).
 
 **En-tête** : ← (retour à l'accueil, la séance reste en cours), libellé « Séance en cours »,
@@ -277,6 +282,10 @@ bornées, ex. `75:03`) calculé depuis `date`, rafraîchi chaque seconde. Si la 
 
 ### 2.5 Carte d'exercice (séance en cours)
 
+> 🔄 D32 — en séance, la carte devient un **bloc exercice** (§ 15.7.1) : note et retrait passent
+> par le menu ⋮, « + Ajouter une série » par la ligne « + Série ». Les règles d'une nouvelle série
+> ci-dessous restent valables.
+
 - **En-tête** (toucher = replier/déplier) : nom affiché (§ 6), badge du groupe, badge
   `validées/total` (vert `success` quand tout est validé, sinon `muted`). Trois icônes :
   - **note** (`edit_note`, `primary` si une note existe) ;
@@ -296,6 +305,10 @@ bornées, ex. `75:03`) calculé depuis `date`, rafraîchi chaque seconde. Si la 
 
 Utilisée en séance et dans `edit-workout`, **avec une case de validation dans les deux cas**
 (🔄 D15). Le minuteur de repos n'existe qu'en séance.
+
+> 🔄 D32 — **en séance**, la ligne de série et le clavier du système sont remplacés par la ligne
+> du § 15.7.1 et le pavé numérique du § 15.7.4 (mêmes longueurs maximales, enregistrement à
+> chaque touche). L'éditeur de séance terminée (§ 2.9) garde la ligne ci-dessous.
 
 - Numéro de série (1, 2, 3…).
 - **Force** : `[reps] reps × [poids] kg`. Reps : clavier numérique, 3 caractères max, entier
@@ -1330,6 +1343,8 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
   de 30 s, l'alarme est reprogrammée ; `total` suit (sans descendre sous le temps restant), pour
   que la barre du bandeau garde son sens. « −30 s » avec moins de 30 s restantes arrête le repos
   comme « Passer » (sans alerte).
+- 🔄 D32 — le bandeau ci-dessous est remplacé par le **bandeau de repos dans la liste** de la
+  séance (§ 15.7.1) : jaune, avec « −30 s », « +30 s » et « Passer ».
 - **Bandeau** (pied de l'écran de séance) : icône horloge, « Repos », compte à rebours
   `m:ss` (17 sp gras, recalculé chaque seconde depuis `endsAt`), barre de progression
   (restant / total), bouton « ⏭ Passer ». Couleur selon la part restante : > 50 % →
@@ -1679,6 +1694,9 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 - Supprimer une série ou une pesée : immédiat. Retirer un exercice de la séance en cours,
   supprimer une séance, un exercice perso ou un complément : confirmation en ligne.
   Quitter l'éditeur avec des modifications : dialogue (§ 2.9).
+  🔄 D32 — en séance, supprimer une série, retirer un exercice, terminer ou abandonner la séance
+  demandent une confirmation en bottom sheet (§ 15.7.1) ; l'éditeur garde la suppression immédiate
+  d'une série (il travaille sur une copie).
 - Le dernier poids de l'accueil vient de la dernière séance, pas des pesées manuelles.
 - Le pré-remplissage et le temps en salle utilisent la même clé de séance (§ 3.1).
 
@@ -1705,7 +1723,7 @@ traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajout
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
 (§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
-(§ 15.5).
+(§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1740,6 +1758,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D29 | Health Connect | écrire les séances et le poids | option masquée sans Health Connect ; `ExerciseSessionRecord` musculation et `WeightRecord` (séances et pesées), `clientRecordId` stables pour mettre à jour et supprimer, « Envoyer l'historique » ; activité de politique de confidentialité ; aucune lecture (§ 1, 2.12, 15.3) |
 | D30 | Health Connect : poids en double, séances absentes, compteur (retour d'un utilisateur, v1.0.5) | un poids par jour, durée estimée, ne compter que le confirmé | un `WeightRecord` par jour local avec la règle de Progrès (§ 3.10 : la pesée remplace le poids de séance), anciens enregistrements supprimés ; séance de moins de 10 min ou sans durée envoyée avec l'estimation du temps en salle (§ 3.7, sinon 10 min), sans jamais finir après sa fin dans l'app ; envoi par type, seuls les enregistrements confirmés par Health Connect sont comptés et retenus ; état de la carte (écrit, dernier envoi, dernière erreur datée) (§ 15.3) |
 | D31 | Notification de séance avec actions | une notification « Séance en cours » qui remplace celle du repos | séance, chronomètre, exercice et prochaine série ; « Valider la série » hors repos, « −30 s », « +30 s », « Passer » pendant le repos ; Live Update sur Android 16+ (`POST_PROMOTED_NOTIFICATIONS`, sans demande), sinon notification en cours ; montres : l'alerte de fin de repos, relayée par Android, vibre et propose « Valider la série » (une notification en cours n'est pas relayée) ; pas d'app Wear OS, notée comme piste ; pas de service de premier plan (§ 1, 7.1, 7.2, 15.5) |
+| D32 | Refonte « Studio épuré », étape 2 : séance en cours | gabarit « en direct » ; colonne « Préc. », suggestion de charge, pavé numérique intégré, « + Série » toujours visible, repos jaune | « Préc. » = série de même rang de la dernière séance de l'exercice, recopiée au toucher ; +2,5 kg (+1 rep au poids du corps) si toutes les séries ont tenu les reps de la première, sinon même charge, jamais appliquée d'office ; pavé avec virgule, effacer, pas −/+, « Suivant » puis « Valider la série » ; confirmations en bottom sheet ; aucun changement du format JSON (§ 2.4 – 2.6, 7.2, 10.8, 15.7) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1906,6 +1925,9 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   « Valider la série »), `WorkoutRepositoryTest` (validation depuis la notification). À vérifier
   **sur l'appareil** : la promotion en Live Update (Android 16+, règles du fabricant), le relais
   de l'alerte et de son action sur une montre, les actions écran verrouillé.
+- Refonte « Studio épuré » (DESIGN.md), branche `redesign` : design system dans
+  `ui/designsystem/` (étape 1) ; **séance en cours** (🔄 D32, § 15.7, étape 2) : spécifiée,
+  implémentation en cours.
 
 ---
 
@@ -2062,7 +2084,9 @@ les cartes, interrupteurs, boutons et encarts existants de Paramètres (§ 2.12,
 **Correctif de Health Connect** après la v1.0.5 (🔄 D30) : un poids par jour, durée des séances
 courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3). **Notification de
 séance** avec actions (🔄 D31, § 15.5) : elle remplace la notification de repos, sans écran ni
-réglage nouveau.
+réglage nouveau. **Refonte « Studio épuré »** (DESIGN.md), écran par écran : la séance en cours
+(🔄 D32, § 15.7) passe au gabarit « en direct », avec la colonne « Préc. », la suggestion de charge
+et un pavé numérique intégré, sans donnée nouvelle.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2429,3 +2453,150 @@ cours : elle revient au changement suivant de la séance ou du repos.
   « +30 s » et « Passer » pendant le repos. Elle demanderait un module Wear, la synchronisation de
   la séance entre téléphone et montre (Data Layer) et une publication à part : hors du périmètre
   actuel (§ 15.5).
+
+### 15.7 Refonte « Studio épuré » : séance en cours (🔄 D32)
+
+Deuxième étape de la refonte décrite dans `DESIGN.md` : l'écran de séance en cours passe au
+gabarit **« en direct »** (DESIGN.md § 10.3), fait uniquement des jetons et composants du design
+system. Il **remplace** la disposition des § 2.4 – 2.6 et le bandeau de repos du § 7.2 ; l'éditeur
+de séance terminée (§ 2.9) garde ses lignes et le clavier du système. Les règles du § 3, la
+notification de séance (§ 15.5) et le **format des données ne changent pas** (§ 4, § 5) : aucune
+migration.
+
+#### 15.7.1 Écran
+
+- **En-tête, fixe** : « Réduire » (⌄ : retour à l'Accueil, la séance reste en cours) ; nom affiché
+  (§ 3.1) et « 78,4 kg · 2 / 16 séries » (poids omis s'il vaut 0) ; chronomètre `m:ss` en jaune
+  (minutes non bornées). Dessous, la progression en segments, un par série (masquée sans série).
+- **Échauffement** (§ 2.4, toujours local à l'écran, non enregistré) : une ligne « Échauffement »
+  avec « 2/5 exercices » ; la toucher ouvre une bottom sheet avec les 5 exercices à cocher.
+- **Un bloc par exercice** (ordre de la séance, exercices inconnus masqués — § 10.5), 24 dp entre
+  deux blocs, sans carte :
+  - titre — **appui long** pour réordonner (glisser-déposer, 🔄 D14) —, bouton « fiche »
+    (→ historique de l'exercice, § 2.8), bouton ⋮ (bottom sheet : note de l'exercice, enregistrée
+    à chaque frappe, et « Retirer de la séance » avec confirmation). La note s'affiche sous le titre ;
+  - puces : **dernière fois** (date de la séance de référence, § 15.7.2) et **suggestion**
+    (§ 15.7.3) ;
+  - colonnes **# · Préc. · Kg · Reps** (cardio : **# · Préc. · Min · Km**) ;
+  - **lignes de série** de 56 dp : valeurs d'une série à faire en gris (`textTertiary`), d'une
+    série validée en `textPrimary` ; case de 48 dp (validée : inverse avec ✓). Toucher une valeur
+    ouvre le pavé (§ 15.7.4) ; toucher la case bascule la validation (§ 2.6) ;
+  - le **repos** (§ 7.2), en jaune, juste après la **dernière série validée** dans l'ordre de la
+    séance (tout en haut s'il n'y en a pas) : « REPOS », temps restant, « sur 2:30 », barre du temps
+    écoulé, « −30 s », « +30 s », « Passer » (mêmes effets que les actions de la notification,
+    § 15.5). Il disparaît à la fin du repos, comme avant ;
+  - la ligne **« + Série »**, toujours visible sous la dernière série du bloc : ajoute une série
+    (règles du § 2.5).
+- Fin de liste : « Ajouter un exercice » (→ sélecteur, § 2.7). Sans exercice : état vide
+  « Ajoute des exercices pour commencer » avec la même action.
+- **En bas, fixe** : le pavé numérique quand une valeur est en saisie (§ 15.7.4), sinon
+  « Terminer la séance », qui ouvre une confirmation en bottom sheet : « Terminer la séance ? »,
+  ou, sans série validée, « Abandonner la séance ? » (elle ne sera pas enregistrée, 🔄 D15). Le
+  bouton de confirmation reste en inverse, jamais rouge (DESIGN.md § 13).
+- **Supprimer une série** : bouton « Supprimer la série » de l'en-tête du pavé, puis confirmation
+  en bottom sheet (🔄 jusqu'ici immédiate, § 10.8).
+- **Valider une série** (case, pavé ou notification) : comme avant, non validée → validée lance le
+  repos avec le nom de l'exercice (§ 2.6, § 7.2) ; la notification de séance et ses actions
+  (§ 15.5) sont inchangées.
+
+#### 15.7.2 Colonne « Préc. »
+
+- **Séance de référence** d'un exercice : la séance **terminée** la plus récente où il a **au moins
+  une série validée**, quelle que soit sa clé de séance (la séance en cours n'en fait pas partie).
+- La ligne de rang n (n-ième série de l'exercice dans la séance en cours) montre la **n-ième série
+  validée** de l'exercice dans la séance de référence (les séries non validées y sont sautées) :
+  - force : « 80 × 8 » (charge × reps, charge à la locale : `82,5`) ; « 12 reps » à 0 kg ;
+  - cardio : « 30 · 5,2 » (min · km) ; « 30 min » sans distance ;
+  - aucune série de ce rang, ou pas de séance de référence : « — ».
+- **Toucher** la valeur la recopie dans la ligne : reps et charge (cardio : durée, distance,
+  vitesse et inclinaison). La validation de la ligne ne change pas ; « — » ne fait rien.
+- Puce **dernière fois** (icône historique) : date de la séance de référence (« jeu. 5 nov. ») ;
+  absente sans séance de référence.
+
+#### 15.7.3 Suggestion de charge
+
+Pour un exercice de force qui a une séance de référence (§ 15.7.2) ; jamais en cardio.
+
+- **Reps tenues** : dans la séance de référence, **toutes** les séries de l'exercice sont validées
+  (une série prévue mais non validée = objectif manqué) et **chacune a au moins autant de reps que
+  la première**. L'app n'enregistre pas d'objectif de reps : celui de la première série en tient
+  lieu (des séries à reps décroissantes, 12 / 10 / 8, donnent donc « même charge »).
+- **Poids du corps** : toutes les séries validées de la séance de référence sont à 0 kg.
+- **Proposition** : reps tenues → **+2,5 kg** (poids du corps : **+1 rep**) ; sinon **même
+  charge** (poids du corps : **mêmes reps**).
+- **Affichage** dans le bloc : puce verte « ↑ +2,5 kg » / « ↑ +1 rep » ; « Même charge » /
+  « Mêmes reps » en puce neutre (le vert ne marque qu'une hausse, DESIGN.md § 1).
+- **Jamais appliquée d'office.** Toucher la puce l'applique aux séries **non validées** de
+  l'exercice qui ont une série « Préc. » de même rang : charge = charge de cette série + 2,5 (ou
+  + 0), reps inchangées ; au poids du corps, reps = reps de cette série + 1 (ou + 0), charge
+  inchangée. Les séries validées ne bougent pas ; toucher deux fois donne le même résultat.
+
+#### 15.7.4 Pavé numérique
+
+Remplace le clavier du système pour les séries de la séance en cours.
+
+- **Ouverture** : toucher une valeur d'une ligne. Le champ en saisie est **en jaune** (fond
+  `liveDim`, curseur `liveText`) et la liste défile pour qu'il reste visible au-dessus du pavé.
+  Fermeture : bouton « Fermer le pavé », retour système, ou après la dernière série (ci-dessous).
+- **En-tête** : contrôle segmenté des champs de la série, le premier rappelant le rang
+  (« Kg · série 3 » / « Reps » ; cardio « Min · série 2 » / « Km » / « Km/h » / « % ») —
+  toucher un segment change de champ ; « Supprimer la série » ; « Fermer le pavé ». Vitesse et
+  inclinaison, absentes des colonnes, s'affichent pendant leur saisie dans un champ héros au-dessus
+  des touches.
+- **Touches** : 1 – 9, 0, séparateur décimal de la langue (« , » en français, « . » en anglais),
+  effacer, pas « − » et « + », touche principale sur deux colonnes.
+- **Saisie** (règles pures, testées en JVM) :
+  - un champ qui vient d'être ouvert (toucher, « Suivant », segment, pas) est **neuf** : la
+    première touche chiffre ou séparateur **remplace** sa valeur, « effacer » le **vide** ;
+    ensuite, ajout et effacement caractère par caractère ;
+  - séparateur : sans effet sur les reps ou s'il y en a déjà un ; sur un champ vide, il donne
+    « 0, » ; **2 décimales** au plus ;
+  - pas de zéro inutile en tête (« 0 » puis « 7 » → « 7 ») ;
+  - longueur maximale, comme au § 2.6 : reps 3, charge 6, durée 4, distance 5, vitesse 4,
+    inclinaison 4 caractères ; une touche qui la dépasserait est sans effet ;
+  - chaque touche s'applique **tout de suite** à la série (🔄 D20 conservé), lue par
+    `parseDecimal` / `parseInteger` (§ 10.1) ; un champ vide vaut 0 ;
+  - **pas** : ±2,5 kg, ±1 rep, ±1 min, ±0,5 km, ±0,5 km/h, ±1 % ; jamais sous 0 ; résultat
+    arrondi au centième (demi vers +∞, § 3.5) ; sans effet s'il dépasserait la longueur maximale ;
+  - affichage des valeurs (lignes et pavé) : 2 décimales au plus, sans zéro final ni séparateur de
+    milliers (`82,5`, `80`, `81,25`) ; une valeur 0 s'affiche `0`.
+- **Touche principale** : « **Suivant** » passe au champ suivant de la série (Kg → Reps ; Min → Km
+  → Km/h → %) ; sur le dernier, « **✓ Valider la série** » valide la série (le repos démarre) puis
+  ouvre la **série non validée suivante du même exercice** (premier champ, neuf), ou ferme le pavé
+  s'il n'y en a plus. Sur une série déjà validée, la touche du dernier champ est « OK » et ferme le
+  pavé.
+
+#### 15.7.5 Textes (FR et EN)
+
+| clé | FR | EN |
+|---|---|---|
+| `workout.subtitle` | {{weight}} kg · {{done}} / {{total}} séries | {{weight}} kg · {{done}} / {{total}} sets |
+| `workout.subtitleNoWeight` | {{done}} / {{total}} séries | {{done}} / {{total}} sets |
+| `workout.col.index` / `previous` | # / Préc. | # / Prev. |
+| `workout.col.kg` / `reps` | Kg / Reps | Kg / Reps |
+| `workout.col.min` / `km` | Min / Km | Min / Km |
+| `workout.previous.strength` | {{weight}} × {{reps}} | {{weight}} × {{reps}} |
+| `workout.previous.reps` | {{reps}} reps | {{reps}} reps |
+| `workout.previous.cardio` | {{min}} · {{km}} | {{min}} · {{km}} |
+| `workout.previous.minutes` | {{min}} min | {{min}} min |
+| `workout.previous.copy` | Recopier la série précédente {{value}} | Copy previous set {{value}} |
+| `workout.lastTime` | Dernière fois le {{date}} | Last time on {{date}} |
+| `workout.suggest.plusKg` | +{{value}} kg | +{{value}} kg |
+| `workout.suggest.plusRep` | +1 rep | +1 rep |
+| `workout.suggest.sameWeight` | Même charge | Same weight |
+| `workout.suggest.sameReps` | Mêmes reps | Same reps |
+| `workout.suggest.apply` | Appliquer la suggestion : {{value}} | Apply suggestion: {{value}} |
+| `workout.addSetRow` | Série | Set |
+| `workout.set.check` / `uncheck` | Valider la série {{n}} / Série {{n}} validée | Complete set {{n}} / Set {{n}} completed |
+| `workout.rest.total` | sur {{total}} | of {{total}} |
+| `workout.keypad.first` | {{field}} · série {{n}} | {{field}} · set {{n}} |
+| `workout.keypad.speed` / `incline` | Km/h / % | Km/h / % |
+| `workout.keypad.next` | Suivant | Next |
+| `workout.keypad.ok` | OK | OK |
+| `workout.deleteSet` | Supprimer la série | Delete set |
+| `workout.deleteSet.title` | Supprimer la série {{n}} ? | Delete set {{n}}? |
+| `workout.deleteSet.message` | Elle sera retirée de cette séance. | It will be removed from this session. |
+| `workout.exercise.removeMessage` | Ses séries de cette séance seront perdues. | Its sets in this session will be lost. |
+| `workout.finish.message` | {{sets}} validées en {{duration}}. Tu pourras corriger la séance ensuite. | {{sets}} completed in {{duration}}. You can edit the session afterwards. |
+| `workout.abandon.title` | Abandonner la séance ? | Abandon the session? |
+| `workout.continue` | Continuer la séance | Keep going |
