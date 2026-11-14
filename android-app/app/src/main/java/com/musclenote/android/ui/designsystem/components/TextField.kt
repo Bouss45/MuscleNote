@@ -29,7 +29,8 @@ private val FieldPaddingV = 14.dp
  * exercice ; champs Jour / Mois / Année de « Modifier la date » avec [keyboardOptions] numérique et
  * [singleLine]). Rayon 12, padding 16 / 14, `body`, plusieurs lignes par défaut ; au repos sur
  * `surfaceControl`, en saisie sur `liveDim` avec le curseur `liveText` (le jaune marque la saisie) ;
- * invite en texte secondaire.
+ * invite en texte secondaire. [minLines] / [maxLines] : message d'un avis (4 à 8 lignes) ; [enabled]
+ * faux pendant un envoi (texte en `textTertiary`).
  */
 @Composable
 fun StudioTextField(
@@ -38,7 +39,9 @@ fun StudioTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     maxLines: Int = 5,
+    minLines: Int = 1,
     singleLine: Boolean = false,
+    enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
     keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
@@ -52,12 +55,14 @@ fun StudioTextField(
             .fillMaxWidth()
             .heightIn(min = FieldMinHeight)
             .background(if (focused) colors.liveDim else colors.surfaceControl, Studio.shapes.control),
-        textStyle = Studio.typography.body.copy(color = colors.textPrimary),
+        textStyle = Studio.typography.body.copy(color = if (enabled) colors.textPrimary else colors.textTertiary),
         cursorBrush = SolidColor(colors.liveText),
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = singleLine,
         maxLines = if (singleLine) 1 else maxLines,
+        minLines = if (singleLine) 1 else minLines,
+        enabled = enabled,
         interactionSource = source,
         decorationBox = { inner ->
             Box(Modifier.padding(horizontal = FieldPaddingH, vertical = FieldPaddingV)) {

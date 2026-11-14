@@ -2025,8 +2025,28 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   les onglets et cartes de Progrès, les couleurs du top 3. À vérifier **sur l'appareil** : glisser sur la
   courbe (sans faire défiler la fiche), défilement du chiffre au changement de période, TalkBack sur la
   courbe et les périodes, sélecteur de date de la pesée, suppression d'une pesée.
-- Refonte, **étape 5a** (🔄 D35, § 15.10) : Nutrition et Paramètres, thème sombre par défaut —
-  spécifiée, en cours.
+- Refonte, **étape 5a** (🔄 D35, § 15.10) sur `redesign` : Nutrition `ui/nutrition/NutritionScreen.kt`
+  (gabarit hub, surface « Aujourd'hui », compléments) et ses sheets `ui/nutrition/NutritionSheets.kt`
+  (calories et eau au pavé, objectifs, nouveau complément, complément, choix de l'heure) ; Paramètres
+  `ui/settings/SettingsScreen.kt` (liste groupée, hub de second niveau) et ses formulaires
+  (`PreferenceSheets.kt`, `AutoBackupSettings.kt`, `HealthConnectSettings.kt`, `UpdateRows.kt`,
+  `CrashReportSettings.kt`, `FeedbackSheet.kt`), tous posés dans `StudioTheme` par la navigation ;
+  thème sombre par défaut (`Preferences.DEFAULT`, lecture d'une sauvegarde, migration v1). Règles
+  pures `data/nutrition/NutritionRules.kt` (état des calories, objectif d'eau, compléments pris,
+  résumé des rappels, « Total du jour » de l'eau, validation des saisies) et saisie au pavé partagée
+  avec la séance (`EntryFormat`, `NutritionEntry`, `SetEntryRules`). Design system : case séparée de
+  `ListRow`, surface `DailySurface`, piste `ProgressTrack`, `minLines` / `enabled` de
+  `StudioTextField`, icône `pill`. Tests `NutritionEntryTest` (entiers, litres, longueurs, pas,
+  validation, nouveau total, objectifs), `NutritionRulesTest` (état des calories, total d'eau, objectif
+  d'eau, compléments pris, résumé des rappels), `NutritionRepositoryTest` (total d'eau du jour),
+  `BackupV2Test` / `BackupV1MigrationTest` (thème sombre par défaut, « system » gardé) et
+  `RepositoryLoadTest` (sans préférences : sombre ; choix enregistré gardé). Retirés : les cartes de
+  Nutrition (`DailyTrackingCards.kt`, `SupplementCard.kt`, `SupplementForm.kt`, `ReminderInputs.kt`)
+  et de Paramètres (`AppSwitch`, `StatusBox`, `CardIcon`, `CardButton`, `MyDataCard`…). À vérifier
+  **sur l'appareil** : saisies au pavé et passage à l'objectif (retour), case « pris aujourd'hui »,
+  sheet d'un complément et choix de l'heure, permission des rappels, changement de langue et de thème
+  depuis leur sheet (recréation de l'activité), sélecteur de dossier, autorisation Health Connect,
+  envoi d'un avis au clavier dans la sheet, import d'un fichier partagé vers l'app.
 
 ---
 
@@ -3219,7 +3239,7 @@ Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
      ratio non plafonné du § 2.11 (🔄 D15), toujours en mots :
      - ratio < 0,9 : « encore 950 kcal » (gris) suivi de « sur 2 800 » ; à 0 kcal, « objectif
        2 800 kcal » seul ;
-     - 0,9 ≤ ratio ≤ 1,05 : « dans l'objectif » (**vert**) suivi de « sur 2 800 » ;
+     - 0,9 ≤ ratio ≤ 1,05 : « dans l'objectif » (**vert**) suivi de « · 2 800 kcal » ;
      - ratio > 1,05 : « +320 kcal » (**rouge**) suivi de « au-dessus de 2 800 » ;
    - **piste de progression** (3 dp, `surfacePressed`, remplie en `textPrimary`) : kcal / objectif,
      plafonnée à 100 % ;
@@ -3228,7 +3248,7 @@ Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
      y a au moins un complément, « 1/3 » avec « compléments pris » ;
    - deux **boutons secondaires** moyens, largeurs égales, icône `add` : « Calories » et « Eau » →
      formulaires du § 15.10.2.
-3. **Section « Compléments »**, compteur « 1/3 pris » à droite (sans complément : pas de compteur) :
+3. **Section « Compléments »** (sans compteur : les compléments pris sont sur la surface) :
    - **une ligne par complément**, dans l'ordre de création : titre = nom ; sous-titre = « 5 g par
      prise » (omis si le dosage est vide, 🔄 D15) puis le résumé des rappels (« Pas de rappel »,
      « Rappels activés », « Rappel à 08:00 », « 3 rappels », § 2.11), séparés par « · » ; à droite
@@ -3419,7 +3439,8 @@ Composants existants, sauf ces ajouts (décrits dans DESIGN.md § 9 avec leurs a
 - **Piste de progression** `ProgressTrack` : la piste de `LiveTrack` remplie en `textPrimary`.
 - **Icône** `pill` (Material Symbols Rounded), état vide des compléments.
 - **Contrôle segmenté** posé dans une sheet (langue, thème) et **ligne à cocher sur une sheet**
-  (filet `surfaceControl`).
+  (`ListRow` sans filet, les `InfoRow` qui suivent portant le filet `surfaceControl`).
+- **`StudioTextField`** : `minLines` (message d'un avis, 4 à 8 lignes) et `enabled` (envoi en cours).
 
 #### 15.10.7 Textes (FR et EN)
 
@@ -3433,15 +3454,14 @@ Connect, des mises à jour, du rapport de plantage et de l'avis).
 | clé | FR | EN |
 |---|---|---|
 | `nutrition_today` | Aujourd'hui | Today |
-| `nutrition_calories_left` | encore {{n}} kcal | {{n}} kcal to go |
+| `nutrition_calories_left` | encore {{n}} kcal | {{n}} kcal left |
 | `nutrition_calories_on_target` | dans l'objectif | on target |
 | `nutrition_calories_over` | +{{n}} kcal | +{{n}} kcal |
-| `nutrition_goal_of` / `_goal_over` / `_goal_only` | sur {{objectif}} / au-dessus de {{objectif}} / objectif {{objectif}} kcal | of {{goal}} / over {{goal}} / goal {{goal}} kcal |
+| `nutrition_goal_of` / `_goal_dot` / `_goal_over` / `_goal_only` | sur {{objectif}} / · {{objectif}} kcal / au-dessus de {{objectif}} / objectif {{objectif}} kcal | of {{goal}} / · {{goal}} kcal / over {{goal}} / goal {{goal}} kcal |
 | `nutrition_water_of` / `_water_reached` | eau · sur {{objectif}} / eau · objectif atteint | water · of {{goal}} / water · goal reached |
 | `nutrition_supplements_taken_label` | compléments pris | supplements taken |
 | `nutrition_ml_value` | {{valeur}} ml | {{value}} ml |
 | `nutrition_supplements` | Compléments | Supplements |
-| `nutrition_taken_count` | {{pris}}/{{n}} pris | {{taken}}/{{n}} taken |
 | `nutrition_taken_toggle` (accessibilité) | Pris aujourd'hui | Taken today |
 | `nutrition_supplement_options` (accessibilité) | Rappels et options | Reminders and options |
 | `nutrition_empty_action` | Ajouter un complément | Add a supplement |
@@ -3458,6 +3478,7 @@ Connect, des mises à jour, du rapport de plantage et de l'avis).
 | `common_close` / `common_ok` | Fermer / OK | Close / OK |
 | `settings_section_preferences` / `_data` / `_about` | Préférences / Données / À propos | Preferences / Data / About |
 | `settings_language_help` | Langue du système : celle du téléphone. | System language: your phone's. |
+| `settings_language_system_short` (segment) | Système | System |
 | `settings_theme_help` | Sombre par défaut. Système suit le réglage du téléphone. | Dark by default. System follows your phone's setting. |
 | `settings_notifications_off_title` / `_subtitle` | Notifications désactivées / Minuteur et rappels silencieux | Notifications off / Rest timer and reminders are silent |
 | `settings_on_f` / `settings_off_f` | Activée / Désactivée | On / Off |
@@ -3475,8 +3496,13 @@ Connect, des mises à jour, du rapport de plantage et de l'avis).
 | `feedback_row_title` / `_row_subtitle` | Envoyer un avis / Une idée, un bug ? | Send feedback / An idea, a bug? |
 | `feedback_sending` | Envoi… | Sending… |
 
-Les clés devenues inutiles (`nutrition_section_today`, `nutrition_cal_add` / `_cal_set` /
+`settings_section_preferences` devient « Préférences » / « Preferences » (titre de section, plus en
+capitales). Les clés devenues inutiles (`nutrition_section_today`, `nutrition_cal_add` / `_cal_set` /
 `_cal_placeholder`, `nutrition_water_placeholder`, `nutrition_cal_goal_placeholder`,
 `nutrition_water_goal_placeholder`, `nutrition_supplement`, `nutrition_supplements_section`,
-`nutrition_taken_yes` / `_taken_no`, `settings_section_backup` / `_app` / `_health` / `_feedback`,
-`settings_auto_backup_folder` / `_change` / `_last`…) sont retirées.
+`nutrition_taken_yes` / `_taken_no`, `chart_goal`, `settings_section_backup` / `_app` / `_health` /
+`_feedback`, `settings_my_data`, `settings_language_desc`, `settings_theme_desc`,
+`settings_notifications_denied` / `_open`, `settings_export_desc`, `settings_export_csv_desc`,
+`settings_import_desc`, `settings_auto_backup_folder` / `_change` / `_last`, `settings_update_managed`
+/ `_never` / `_up_to_date` / `_available` / `_check`, `update_download`, `health_last`,
+`health_written`) sont retirées.

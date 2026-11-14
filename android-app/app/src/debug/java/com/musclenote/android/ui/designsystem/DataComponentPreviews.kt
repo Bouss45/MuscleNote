@@ -243,12 +243,20 @@ private fun ListRowCurvePreview() = StudioComponentPreview {
     }
 }
 
-/** Hors maquette : ligne à cocher (échauffement de la séance en cours, § 15.7.1). */
+/** Hors maquette : ligne à cocher (échauffement, § 15.7.1) et case séparée (complément, § 15.10.1). */
 @StudioComponentPreviews
 @Composable
 private fun ListRowCheckPreview() = StudioComponentPreview {
     ListRow("Cardio léger", subtitle = "5-10 min vélo ou rameur", trailing = ListRowTrailing.Check(true), onClick = {})
     ListRow("Rotation des épaules", subtitle = "15 reps chaque côté", trailing = ListRowTrailing.Check(false), onClick = {}, showDivider = false)
+    StateCaption("Case séparée : la case bascule, la ligne ouvre (complément)")
+    ListRow(
+        "Créatine",
+        subtitle = "5 g par prise · Rappel à 08:00",
+        trailing = ListRowTrailing.Check(true, onToggle = {}, toggleLabel = "Pris aujourd'hui"),
+        onClick = {},
+        showDivider = false,
+    )
     StateCaption("Puces de suggestion à toucher : hausse, même charge")
     StudioChip("+2,5 kg", tone = ChipTone.Up, onClick = {})
     StudioChip("Même charge", onClick = {})

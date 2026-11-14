@@ -8,6 +8,7 @@ import com.musclenote.android.R
 import com.musclenote.android.ui.designsystem.components.BottomActionBar
 import com.musclenote.android.ui.designsystem.components.ChipTone
 import com.musclenote.android.ui.designsystem.components.CurvePoint
+import com.musclenote.android.ui.designsystem.components.DailySurface
 import com.musclenote.android.ui.designsystem.components.DateTitleBar
 import com.musclenote.android.ui.designsystem.components.ExerciseBlockHeader
 import com.musclenote.android.ui.designsystem.components.FicheTitle
@@ -15,9 +16,12 @@ import com.musclenote.android.ui.designsystem.components.FicheTopBar
 import com.musclenote.android.ui.designsystem.components.FormHeroField
 import com.musclenote.android.ui.designsystem.components.InfoRow
 import com.musclenote.android.ui.designsystem.components.LiveHeader
+import com.musclenote.android.ui.designsystem.components.LiveTrack
 import com.musclenote.android.ui.designsystem.components.MetricSurface
+import com.musclenote.android.ui.designsystem.components.ProgressTrack
 import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
 import com.musclenote.android.ui.designsystem.components.SetProgress
+import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
 import com.musclenote.android.ui.designsystem.components.Trend
@@ -63,6 +67,9 @@ private fun TitleBarsPreview() = StudioComponentPreview {
 private fun ProgressPiecesPreview() = StudioComponentPreview {
     StateCaption("Progression des séries")
     SetProgress(done = 2, total = 16)
+    StateCaption("Piste de progression (calories du jour) ; piste de repos")
+    ProgressTrack(0.66f)
+    LiveTrack(0.4f)
     StateCaption("Barres des semaines")
     WeekBars(
         listOf(WeekBar(3, true), WeekBar(3, true), WeekBar(2, false), WeekBar(3, true), WeekBar(4, true), WeekBar(3, true), WeekBar(3, true), WeekBar(2, false)),
@@ -148,4 +155,24 @@ private fun FormPiecesPreview() = StudioComponentPreview {
 private fun BottomActionBarPreview() = StudioComponentPreview {
     BottomActionBar("Enregistrer la séance", {})
     BottomActionBar("Nouvelle mesure", {}, icon = R.drawable.ds_ic_add)
+}
+
+/** Hors maquette : surface « Aujourd'hui » du hub Nutrition (SPEC § 15.10.1), dans l'objectif. */
+@StudioComponentPreviews
+@Composable
+private fun DailySurfacePreview() = StudioComponentPreview {
+    DailySurface(
+        label = "Aujourd'hui",
+        value = "2 700",
+        unit = "kcal",
+        progress = 0.96f,
+        stats = listOf(Stat("1,5 L", "eau · sur 2,5 L"), Stat("2/3", "compléments pris")),
+        firstAction = "Calories",
+        onFirstAction = {},
+        secondAction = "Eau",
+        onSecondAction = {},
+        status = "dans l'objectif",
+        statusTrend = Trend.Up,
+        statusContext = "· 2 800 kcal",
+    )
 }

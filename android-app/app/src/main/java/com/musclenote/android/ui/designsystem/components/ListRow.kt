@@ -22,6 +22,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
@@ -67,11 +69,17 @@ sealed interface ListRowTrailing {
     data object Chevron : ListRowTrailing
 
     /**
-     * Case à cocher (celle de la ligne de série) : toute la ligne la bascule (échauffement de la
-     * séance en cours).
+     * Case à cocher (celle de la ligne de série). Sans [onToggle], toute la ligne la bascule
+     * (échauffement de la séance en cours, lignes à cocher d'une sheet). Avec [onToggle], la case
+     * seule (cible 48) la bascule, lue [toggleLabel] par TalkBack, et le reste de la ligne garde son
+     * `onClick` (complément : la case = « pris aujourd'hui », la ligne ouvre ses rappels).
      */
     @Immutable
-    data class Check(val checked: Boolean) : ListRowTrailing
+    data class Check(
+        val checked: Boolean,
+        val onToggle: (() -> Unit)? = null,
+        val toggleLabel: String? = null,
+    ) : ListRowTrailing
 }
 
 /**
@@ -107,7 +115,7 @@ fun ListRow(
             .then(
                 when {
                     onClick == null -> Modifier
-                    trailing is ListRowTrailing.Check -> Modifier.toggleable(
+                    trailing is ListRowTrailing.Check && trailing.onToggle == null -> Modifier.toggleable(
                         value = trailing.checked,
                         interactionSource = source,
                         indication = null,
@@ -176,7 +184,26 @@ fun ListRow(
                 contentDescription = null,
                 tint = Studio.colors.textSecondary,
             )
-            is ListRowTrailing.Check -> CheckBoxVisual(trailing.checked)
+            is ListRowTrailing.Check -> {
+                val onToggle = trailing.onToggle
+                if (onToggle == null) {
+                    CheckBoxVisual(trailing.checked)
+                } else {
+                    val label = trailing.toggleLabel
+                    CheckBoxVisual(
+                        trailing.checked,
+                        Modifier
+                            .toggleable(
+                                value = trailing.checked,
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                role = Role.Checkbox,
+                                onValueChange = { onToggle() },
+                            )
+                            .then(if (label != null) Modifier.semantics { contentDescription = label } else Modifier),
+                    )
+                }
+            }
             null -> Unit
         }
     }

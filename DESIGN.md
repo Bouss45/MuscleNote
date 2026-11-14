@@ -51,8 +51,8 @@ Code : `ui/designsystem/` (§ 14).
 
 ## 2. Couleurs
 
-`Studio.colors`, deux palettes ; le choix Système / Clair / Sombre de Paramètres (SPEC § 2.12)
-reste. Pas de couleurs dynamiques (Material You).
+`Studio.colors`, deux palettes ; le choix Sombre (par défaut), Clair, Système de Paramètres (SPEC
+§ 15.10.4). Pas de couleurs dynamiques (Material You).
 
 | jeton (Kotlin) | maquette | sombre | clair | rôle |
 |---|---|---|---|---|
@@ -205,7 +205,8 @@ Jeu de la maquette : `home`, `calendar_month`, `monitoring`, `restaurant` (+ ple
 `settings`, `arrow_back`, `close`, `more_vert`, `keyboard_arrow_down`, `chevron_right`, `add`,
 `check`, `backspace`, `keyboard_hide`, `history`, `arrow_upward`, `arrow_downward`,
 `emoji_events`, `edit_note`, `straighten`, `photo_camera` ; ajoutées avec la séance en cours :
-`delete` (supprimer la série, en-tête du pavé), `fitness_center` (état vide de la séance).
+`delete` (supprimer la série, en-tête du pavé), `fitness_center` (état vide de la séance) ; avec
+Nutrition : `pill` (état vide des compléments).
 
 ## 9. Composants
 
@@ -246,7 +247,10 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   mini-courbe 56 × 24 puis 12 : un exercice de Progrès) ; variation seule (`emphasis`, colorée, ou
   « identique » en `textSecondary`) ; chevron 24 `textSecondary` ; **case à cocher** (`ListRowTrailing.Check`, la
   case 48 de la ligne de série) — toute la ligne la bascule (rôle case à cocher) : échauffement de
-  la séance en cours.
+  la séance en cours, lignes à cocher d'une sheet (rappels, sauvegarde quotidienne, Health Connect ;
+  sans filet, le filet d'une sheet étant celui des `InfoRow`). Avec sa **propre action**
+  (`onToggle` + libellé TalkBack), la case seule (cible 48) bascule et le reste de la ligne garde
+  son toucher : complément de Nutrition (case = « pris aujourd'hui », ligne → ses rappels).
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
 - **Appui long** optionnel (`onLongClick` + libellé d'accessibilité) : les actions secondaires
   d'une ligne, dans une bottom sheet (séance du Journal et « Dernière séance » de l'Accueil :
@@ -332,6 +336,11 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
   (`titleScreen`) ; légende (« Dernière fois il y a 7 jours · 5 exercices ») ; puces de filtre
   (types, « Autre… »), sur plusieurs lignes si les noms sont longs, aucune rangée sans type ;
   bouton principal « Démarrer ».
+- **Aujourd'hui** (`DailySurface`, hub Nutrition) : légende « Aujourd'hui » ; chiffre héros (kcal du
+  jour) + unité ; état par rapport à l'objectif en variation (« encore 950 kcal » gris, « dans
+  l'objectif » `up`, « +320 kcal » `down`) suivi de son contexte ; piste de progression
+  (`ProgressTrack`) ; rangée de stats (eau, compléments pris) ; deux boutons secondaires moyens de
+  largeurs égales, icône `add` (« Calories », « Eau »).
 - **Mesure** (`MetricSurface`, hub Progrès) : légende + bouton icône `add` ; chiffre héros + unité ;
   variation ; courbe compacte ; légende optionnelle sous la courbe, à gauche et à droite (`caption`
   `textSecondary` : « 42 jours » · « 68 – 78,4 kg »). Sans valeur : une phrase (`paragraph`
@@ -394,8 +403,9 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire.
 
 **Champ texte** — `StudioTextField` (hors maquette, ajouté avec la séance en cours) : texte libre
 au clavier du système, la note d'un exercice. Hauteur 48 au moins, rayon 12, padding 16 / 14,
-`body` `textPrimary`, plusieurs lignes ; au repos `surfaceControl`, **en saisie `liveDim` et curseur
-`liveText`** (comme tout champ en saisie) ; invite en `textSecondary`. Posé dans une bottom sheet. Variante **numérique sur une ligne**
+`body` `textPrimary`, plusieurs lignes (`minLines` / `maxLines` : 4 à 8 pour un avis) ; au repos
+`surfaceControl`, **en saisie `liveDim` et curseur `liveText`** (comme tout champ en saisie) ; invite
+en `textSecondary` ; désactivé (envoi en cours) : texte en `textTertiary`. Posé dans une bottom sheet. Variante **numérique sur une ligne**
 (`singleLine`, clavier numérique) : champs Jour / Mois / Année / Heure / Min de « Modifier la date »,
 chacun sous son libellé (`caption` `textSecondary`).
 
@@ -421,6 +431,9 @@ font partie du design system au même titre.
   `titleScreen` + 4 + `caption` `textSecondary`) ; `LiveHeader` (48 : `keyboard_arrow_down`
   « Réduire » ; nom `titleItem` + 2 + `caption` « 78,4 kg · 2 / 16 séries » ; chrono
   `numberMedium` `liveText`).
+- **Piste de progression** — `ProgressTrack` : la piste de repos (3, rayon 2, `surfacePressed`)
+  remplie en `textPrimary` ; décorative, le texte voisin dit l'état (calories du jour sur l'objectif,
+  surface « Aujourd'hui »). La piste de repos (`LiveTrack`) est la même, remplie en `live`.
 - **Progression des séries** — `SetProgress` : un segment par série prévue, hauteur 3, rayon 2,
   espacés de 3 ; faites `textPrimary`, à faire `surfacePressed`.
 - **Barres des semaines** — `WeekBars` : 8 barres espacées de 6, hauteur 28 pour le maximum,
@@ -535,8 +548,8 @@ n'a pas encore, cf. § 13) :
 | Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → éditeur (en attendant la fiche résumé), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
 | Journal | **Depuis le début** : totaux · **une section par semaine** : séances → éditeur (en attendant la fiche résumé), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub ; résumés (*Nouveau*) → fiche |
 | Progrès | **Poids de corps** (surface) : pesée → formulaire · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
-| Nutrition | **Aujourd'hui** : calories, eau → formulaire ; protéines (*Nouveau*) → formulaire · **Compléments** : rappels → formulaire ; stock (*Nouveau*) → formulaire · **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
-| Paramètres | **Préférences** : langue, thème, repos → formulaire · **Données** : sauvegarde auto, import / export, Health Connect · **À propos** : envoyer un avis |
+| Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
+| Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
 
 Correspondance avec les écrans actuels (SPEC § 2), pour la migration :
 
@@ -630,6 +643,26 @@ Décidé (14/11/2026, SPEC § 15.9) :
   `ic_launcher_monochrome.xml`, `ic_notification.xml` ; `app/src/preview/res/drawable/` pour la
   preview.
 
+Décidé (14/11/2026, SPEC § 15.10) :
+
+- **Nutrition** : une seule surface, « Aujourd'hui » (`DailySurface`) : les calories du jour en
+  chiffre héros et l'état en mots, vert dans l'objectif, rouge au-dessus (la couleur suit l'objectif),
+  l'eau et les compléments pris en stats, « Calories » et « Eau » au pavé numérique (formulaire :
+  « Ajouter » / « Total du jour », « Nouveau total », « Objectif quotidien » qui fait passer la sheet
+  à l'objectif). Compléments en `ListRow` à case séparée ; leur sheet : ligne à cocher « Rappels »,
+  une `InfoRow` par rappel, « Ajouter un rappel » (bouton texte), suppression confirmée.
+- **Formulaire long** (nouveau complément) : une sheet défilante au clavier du système, champs
+  `StudioTextField` sous leur libellé (`caption`), unités en puces de filtre, rappels comme
+  ci-dessus, bouton principal « Enregistrer ».
+- **Choix de l'heure** : le `TimePicker` de Material 3 en dialogue `surfaceRaised` rayon 20, heure ou
+  minute en saisie sur `liveDim`, boutons texte (« Supprimer » discret à gauche, « Annuler », « OK »).
+- **Paramètres** : hub de second niveau (`FicheTopBar` puis `titleScreen`), « Mes données » en
+  rangée de stats, lignes `ListRow` avec la valeur à droite ; un réglage à options s'ouvre en sheet
+  (contrôle segmenté pour la langue et le thème, puces pour le minuteur) et se ferme au choix ; les
+  réglages composés (sauvegarde automatique, Health Connect, rapport de plantage, avis) en sheet.
+- **Messages de succès et d'erreur** : une phrase en `textPrimary` 600, sans couleur (pas d'encart
+  coloré) ; le rouge reste à la baisse.
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
@@ -639,8 +672,8 @@ Hors périmètre pour l'instant :
 
 Ouvert :
 
-- **Recherche d'exercice, formulaires longs** (rappels de compléments) : à composer avec les
-  gabarits et composants existants au moment de leur migration.
+- **Recherche d'exercice** : à composer avec les gabarits et composants existants au moment de sa
+  migration.
 
 ## 14. Code
 

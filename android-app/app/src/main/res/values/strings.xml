@@ -38,33 +38,24 @@
     <string name="settings_title">Paramètres</string>
 
     <!-- Paramètres : préférences (§ 2.12) -->
-    <string name="settings_section_preferences">PRÉFÉRENCES</string>
+    <string name="settings_section_preferences">Préférences</string>
     <string name="settings_rest_timer_title">Minuteur de repos</string>
     <string name="settings_rest_timer_desc">Durée par défaut du repos entre les séries</string>
     <string name="settings_rest_timer_seconds">%1$d s</string>
     <string name="settings_rest_timer_minutes">%1$d min</string>
     <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
-    <string name="settings_notifications_denied">Notifications désactivées — minuteur et rappels silencieux</string>
-    <string name="settings_notifications_open">Ouvrir les réglages</string>
-    <string name="settings_my_data">Mes données</string>
     <string name="settings_stat_sessions">séances</string>
     <string name="settings_stat_custom_exercises">exercices perso</string>
     <string name="settings_language_title">Langue</string>
-    <string name="settings_language_desc">Choisis la langue de l\'application</string>
     <string name="settings_language_system">Langue du système</string>
     <string name="settings_theme_title">Thème</string>
-    <string name="settings_theme_desc">Apparence de l\'application</string>
     <string name="settings_theme_system">Système</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
-    <string name="settings_section_backup">SAUVEGARDE</string>
-    <string name="settings_section_app">APPLICATION</string>
     <string name="settings_export_title">Exporter mes données</string>
-    <string name="settings_export_desc">Télécharge un fichier JSON avec toutes tes séances, exercices et poids de corps</string>
     <string name="settings_import_title">Importer des données</string>
-    <string name="settings_import_desc">Restaure tes données depuis un fichier exporté — utile lors d\'un changement de téléphone</string>
     <string name="settings_import_confirm_title">Écraser les données actuelles ?</string>
     <string name="settings_import_confirm_desc">Tes %1$d séances actuelles seront remplacées par celles du fichier importé.</string>
     <string name="settings_export_success_share">Fichier partagé avec succès !</string>
@@ -77,7 +68,6 @@
     <string name="settings_import_invalid_key">contenu invalide pour %1$s</string>
     <string name="settings_share_json">Exporter mes données MuscleNote</string>
     <string name="settings_export_csv_title">Exporter en CSV</string>
-    <string name="settings_export_csv_desc">Génère des fichiers CSV (séances, séries, poids, nutrition) lisibles dans Excel ou Sheets</string>
     <string name="settings_export_success_csv">Fichiers CSV exportés !</string>
     <string name="settings_export_no_data">Aucune donnée à exporter.</string>
     <string name="settings_share_csv">Exporter en CSV</string>
@@ -87,15 +77,9 @@
     <string name="settings_crash_desc">Dernier plantage le %1$s</string>
     <string name="settings_crash_share">Partager</string>
     <string name="settings_update_title">Mises à jour</string>
-    <string name="settings_update_managed">Version %1$s · mises à jour gérées par Obtainium</string>
-    <string name="settings_update_never">Version %1$s · pas encore de vérification</string>
-    <string name="settings_update_up_to_date">Version %1$s · à jour (vérification du %2$s)</string>
-    <string name="settings_update_available">Version %1$s · la %2$s est disponible</string>
     <string name="settings_update_failed">Vérification impossible : pas de connexion ?</string>
-    <string name="settings_update_check">Vérifier</string>
 
     <!-- Envoi d'un avis (§ 14) -->
-    <string name="settings_section_feedback">TON AVIS</string>
     <string name="feedback_title">Ton avis</string>
     <string name="feedback_desc">Une idée, un bug ? Envoie-le directement au développeur.</string>
     <string name="feedback_type_idea">Idée</string>
@@ -184,7 +168,6 @@
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
     <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote.</string>
     <string name="home_update_title">Mise à jour disponible</string>
-    <string name="update_download">Télécharger</string>
     <!-- Unité seule, le nombre est affiché à côté en grand. -->
     <string name="home_edit_date">Modifier la date</string>
     <string name="home_date_day">Jour</string>
@@ -300,7 +283,6 @@
     <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
 
     <!-- Graphiques (§ 2.13) -->
-    <string name="chart_goal">Objectif</string>
 
     <!-- Historique d'un exercice (§ 2.8) -->
     <string name="exercise_history_not_found">Exercice introuvable</string>
@@ -359,15 +341,6 @@
     <string name="nutrition_notif_body_dosage">N\'oublie pas ta dose (%1$s %2$s) !</string>
 
     <!-- Nutrition (§ 2.11) -->
-    <string name="nutrition_section_today">SUIVI DU JOUR</string>
-    <string name="nutrition_cal_add">+ Ajouter</string>
-    <string name="nutrition_cal_set">= Définir</string>
-    <string name="nutrition_cal_placeholder">kcal…</string>
-    <string name="nutrition_water_placeholder">ml…</string>
-    <string name="nutrition_cal_goal_placeholder">Objectif kcal</string>
-    <string name="nutrition_water_goal_placeholder">Ex : 2.0 (en litres)</string>
-    <string name="nutrition_supplement">Complément</string>
-    <string name="nutrition_supplements_section">COMPLÉMENTS</string>
     <string name="nutrition_new_supplement">Nouveau complément</string>
     <string name="nutrition_name">Nom</string>
     <string name="nutrition_name_placeholder">Ex : Créatine, Whey, Oméga-3...</string>
@@ -383,10 +356,40 @@
     <string name="nutrition_reminder_at">Rappel à %1$s</string>
     <string name="nutrition_reminders_count">%1$d rappels</string>
     <string name="nutrition_no_reminder">Pas de rappel</string>
-    <string name="nutrition_taken_yes">✓ Pris aujourd\'hui</string>
-    <string name="nutrition_taken_no">Non pris aujourd\'hui</string>
     <string name="nutrition_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="nutrition_info_mobile">Les rappels sont des notifications locales. L\'app doit avoir la permission d\'envoyer des notifications.</string>
+
+    <!-- Nutrition, refonte « Studio épuré » (SPEC § 15.10.7) -->
+    <string name="nutrition_today">Aujourd\'hui</string>
+    <string name="nutrition_calories_left">encore %1$s kcal</string>
+    <string name="nutrition_calories_on_target">dans l\'objectif</string>
+    <string name="nutrition_calories_over">+%1$s kcal</string>
+    <string name="nutrition_goal_of">sur %1$s</string>
+    <string name="nutrition_goal_dot">· %1$s kcal</string>
+    <string name="nutrition_goal_over">au-dessus de %1$s</string>
+    <string name="nutrition_goal_only">objectif %1$s kcal</string>
+    <string name="nutrition_water_of">eau · sur %1$s</string>
+    <string name="nutrition_water_reached">eau · objectif atteint</string>
+    <string name="nutrition_supplements_taken_label">compléments pris</string>
+    <string name="nutrition_ml_value">%1$s ml</string>
+    <string name="nutrition_supplements">Compléments</string>
+    <string name="nutrition_taken_toggle">Pris aujourd\'hui</string>
+    <string name="nutrition_supplement_options">Rappels et options</string>
+    <string name="nutrition_empty_action">Ajouter un complément</string>
+    <string name="nutrition_entry_help">Aujourd\'hui : %1$s sur %2$s.</string>
+    <string name="nutrition_mode_add">Ajouter</string>
+    <string name="nutrition_mode_total">Total du jour</string>
+    <string name="nutrition_new_total">Nouveau total</string>
+    <string name="nutrition_entry_invalid">Saisis une quantité</string>
+    <string name="nutrition_calorie_goal_title">Objectif de calories</string>
+    <string name="nutrition_water_goal_title">Objectif d\'eau</string>
+    <string name="nutrition_goal_help">À partir d\'aujourd\'hui ; les jours passés gardent le leur.</string>
+    <string name="nutrition_goal_invalid">Saisis un objectif supérieur à 0</string>
+    <string name="nutrition_reminder">Rappel</string>
+    <string name="nutrition_delete_supplement">Supprimer le complément</string>
+    <string name="nutrition_delete_message">Le complément et ses rappels seront retirés.</string>
+    <string name="common_close">Fermer</string>
+    <string name="common_ok">OK</string>
 
     <!-- En-têtes de l'export CSV (§ 8) -->
     <string name="excel_col_date">Date</string>
@@ -411,26 +414,62 @@
     <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) -->
     <string name="settings_auto_backup_title">Sauvegarde automatique</string>
     <string name="settings_auto_backup_desc">Chaque jour, une sauvegarde JSON dans le dossier de ton choix. Les 14 plus récentes sont gardées.</string>
-    <string name="settings_auto_backup_folder">Dossier : %1$s</string>
-    <string name="settings_auto_backup_change">Changer</string>
-    <string name="settings_auto_backup_last">Dernière sauvegarde : %1$s</string>
     <string name="settings_auto_backup_never">Aucune sauvegarde pour l\'instant</string>
     <string name="settings_auto_backup_folder_lost">Le dossier de sauvegarde n\'est plus accessible (supprimé, renommé ou autorisation retirée). Choisis-le à nouveau.</string>
     <string name="settings_auto_backup_choose_folder">Choisir un dossier</string>
     <string name="settings_auto_backup_failed">Échec de la sauvegarde du %1$s : %2$s</string>
     <string name="settings_auto_backup_now">Sauvegarder maintenant</string>
 
+    <!-- Paramètres, refonte « Studio épuré » (SPEC § 15.10.7) -->
+    <string name="settings_section_data">Données</string>
+    <string name="settings_section_about">À propos</string>
+    <string name="settings_language_help">Langue du système : celle du téléphone.</string>
+    <string name="settings_language_system_short">Système</string>
+    <string name="settings_theme_help">Sombre par défaut. Système suit le réglage du téléphone.</string>
+    <string name="settings_notifications_off_title">Notifications désactivées</string>
+    <string name="settings_notifications_off_subtitle">Minuteur et rappels silencieux</string>
+    <string name="settings_on_f">Activée</string>
+    <string name="settings_off_f">Désactivée</string>
+    <string name="settings_on_m">Activé</string>
+    <string name="settings_off_m">Désactivé</string>
+    <string name="settings_auto_backup_off_subtitle">Chaque jour, dans le dossier de ton choix</string>
+    <string name="settings_auto_backup_last_short">Dernière le %1$s</string>
+    <string name="settings_auto_backup_failed_short">Échec le %1$s</string>
+    <string name="settings_auto_backup_folder_lost_short">Dossier inaccessible</string>
+    <string name="settings_auto_backup_toggle">Sauvegarde quotidienne</string>
+    <string name="settings_auto_backup_folder_label">Dossier</string>
+    <string name="settings_auto_backup_last_label">Dernière sauvegarde</string>
+    <string name="settings_auto_backup_none">aucune</string>
+    <string name="settings_auto_backup_running">Sauvegarde…</string>
+    <string name="settings_export_short">Fichier JSON de toutes tes données</string>
+    <string name="settings_export_csv_short">Tableaux pour Excel ou Sheets</string>
+    <string name="settings_import_short">Depuis un fichier exporté</string>
+    <string name="settings_in_progress">En cours…</string>
+    <string name="health_subtitle_off">Séances et poids vers tes apps de santé</string>
+    <string name="health_subtitle_last">Dernier envoi le %1$s</string>
+    <string name="health_subtitle_missing">Autorisation manquante</string>
+    <string name="health_toggle">Envoyer à Health Connect</string>
+    <string name="health_last_label">Dernier envoi</string>
+    <string name="health_written_label">Écrits</string>
+    <string name="health_sending">Envoi…</string>
+    <string name="settings_update_subtitle_managed">Gérées par Obtainium</string>
+    <string name="settings_update_subtitle_never">Pas encore vérifié</string>
+    <string name="settings_update_subtitle_up_to_date">À jour · vérifié le %1$s</string>
+    <string name="settings_update_subtitle_available">La %1$s est disponible</string>
+    <string name="settings_update_subtitle_checking">Vérification…</string>
+    <string name="settings_update_download">Télécharger la %1$s</string>
+    <string name="feedback_row_title">Envoyer un avis</string>
+    <string name="feedback_row_subtitle">Une idée, un bug ?</string>
+    <string name="feedback_sending">Envoi…</string>
+
     <!-- Health Connect (§ 15.3, 🔄 D29) -->
-    <string name="settings_section_health">SANTÉ</string>
     <string name="health_title">Health Connect</string>
     <string name="health_desc">Envoie tes séances de musculation et ton poids à Health Connect, pour les retrouver dans tes autres apps de santé.</string>
     <string name="health_denied">Autorisation refusée : rien n\'est envoyé.</string>
     <string name="health_missing_sessions">Séances non autorisées : elles ne sont pas envoyées.</string>
     <string name="health_missing_weight">Poids non autorisé : il n\'est pas envoyé.</string>
     <string name="health_allow">Autoriser</string>
-    <string name="health_last">Dernier envoi : %1$s</string>
     <string name="health_never">Rien d\'envoyé pour l\'instant</string>
-    <string name="health_written">Écrit dans Health Connect : %1$s, %2$s</string>
     <string name="health_unavailable">Envoi impossible (%1$s).</string>
     <string name="health_type_failed_sessions">Séances : échec (%1$s).</string>
     <string name="health_type_failed_weight">Poids : échec (%1$s).</string>

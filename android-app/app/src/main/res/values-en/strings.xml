@@ -37,33 +37,24 @@
     <string name="settings_title">Settings</string>
 
     <!-- Settings: preferences (§ 2.12) -->
-    <string name="settings_section_preferences">PREFERENCES</string>
+    <string name="settings_section_preferences">Preferences</string>
     <string name="settings_rest_timer_title">Rest timer</string>
     <string name="settings_rest_timer_desc">Default rest duration between sets</string>
     <string name="settings_rest_timer_seconds">%1$d s</string>
     <string name="settings_rest_timer_minutes">%1$d min</string>
     <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
-    <string name="settings_notifications_denied">Notifications are off — timer and reminders are silent</string>
-    <string name="settings_notifications_open">Open settings</string>
-    <string name="settings_my_data">My data</string>
     <string name="settings_stat_sessions">workouts</string>
     <string name="settings_stat_custom_exercises">custom exercises</string>
     <string name="settings_language_title">Language</string>
-    <string name="settings_language_desc">Choose the app language</string>
     <string name="settings_language_system">System language</string>
     <string name="settings_theme_title">Theme</string>
-    <string name="settings_theme_desc">App appearance</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
-    <string name="settings_section_backup">BACKUP</string>
-    <string name="settings_section_app">APP</string>
     <string name="settings_export_title">Export my data</string>
-    <string name="settings_export_desc">Download a JSON file with all your workouts, exercises, and body weights</string>
     <string name="settings_import_title">Import data</string>
-    <string name="settings_import_desc">Restore your data from an exported file — helpful when switching phones</string>
     <string name="settings_import_confirm_title">Overwrite current data?</string>
     <string name="settings_import_confirm_desc">Your %1$d current workouts will be replaced by those in the imported file.</string>
     <string name="settings_export_success_share">File shared successfully!</string>
@@ -76,7 +67,6 @@
     <string name="settings_import_invalid_key">invalid content for %1$s</string>
     <string name="settings_share_json">Export my MuscleNote data</string>
     <string name="settings_export_csv_title">Export as CSV</string>
-    <string name="settings_export_csv_desc">Creates CSV files (sessions, sets, weight, nutrition) for Excel or Sheets</string>
     <string name="settings_export_success_csv">CSV files exported!</string>
     <string name="settings_export_no_data">No data to export.</string>
     <string name="settings_share_csv">Export as CSV</string>
@@ -86,15 +76,9 @@
     <string name="settings_crash_desc">Last crash on %1$s</string>
     <string name="settings_crash_share">Share</string>
     <string name="settings_update_title">Updates</string>
-    <string name="settings_update_managed">Version %1$s · updates managed by Obtainium</string>
-    <string name="settings_update_never">Version %1$s · not checked yet</string>
-    <string name="settings_update_up_to_date">Version %1$s · up to date (checked on %2$s)</string>
-    <string name="settings_update_available">Version %1$s · %2$s is available</string>
     <string name="settings_update_failed">Couldn\'t check: no connection?</string>
-    <string name="settings_update_check">Check now</string>
 
     <!-- Envoi d'un avis (§ 14) -->
-    <string name="settings_section_feedback">YOUR FEEDBACK</string>
     <string name="feedback_title">Your feedback</string>
     <string name="feedback_desc">An idea, a bug? Send it straight to the developer.</string>
     <string name="feedback_type_idea">Idea</string>
@@ -183,7 +167,6 @@
     <string name="home_migrate_title">Coming from the old MuscleNote?</string>
     <string name="home_migrate_text">Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote.</string>
     <string name="home_update_title">Update available</string>
-    <string name="update_download">Download</string>
     <string name="home_edit_date">Edit date</string>
     <string name="home_date_day">Day</string>
     <string name="home_date_month">Month</string>
@@ -298,7 +281,6 @@
     <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
 
     <!-- Charts (§ 2.13) -->
-    <string name="chart_goal">Goal</string>
 
     <!-- Exercise history (§ 2.8) -->
     <string name="exercise_history_not_found">Exercise not found</string>
@@ -357,15 +339,6 @@
     <string name="nutrition_notif_body_dosage">Don\'t forget your dose (%1$s %2$s)!</string>
 
     <!-- Nutrition (§ 2.11) -->
-    <string name="nutrition_section_today">TODAY\'S TRACKING</string>
-    <string name="nutrition_cal_add">+ Add</string>
-    <string name="nutrition_cal_set">= Set</string>
-    <string name="nutrition_cal_placeholder">kcal…</string>
-    <string name="nutrition_water_placeholder">ml…</string>
-    <string name="nutrition_cal_goal_placeholder">kcal goal</string>
-    <string name="nutrition_water_goal_placeholder">E.g. 2.0 (liters)</string>
-    <string name="nutrition_supplement">Supplement</string>
-    <string name="nutrition_supplements_section">SUPPLEMENTS</string>
     <string name="nutrition_new_supplement">New supplement</string>
     <string name="nutrition_name">Name</string>
     <string name="nutrition_name_placeholder">E.g. Creatine, Whey, Omega-3...</string>
@@ -381,10 +354,40 @@
     <string name="nutrition_reminder_at">Reminder at %1$s</string>
     <string name="nutrition_reminders_count">%1$d reminders</string>
     <string name="nutrition_no_reminder">No reminder</string>
-    <string name="nutrition_taken_yes">✓ Taken today</string>
-    <string name="nutrition_taken_no">Not taken today</string>
     <string name="nutrition_delete_confirm">Delete “%1$s”?</string>
     <string name="nutrition_info_mobile">Reminders are local notifications. The app needs permission to send notifications.</string>
+
+    <!-- Nutrition, "Studio épuré" redesign (SPEC § 15.10.7) -->
+    <string name="nutrition_today">Today</string>
+    <string name="nutrition_calories_left">%1$s kcal left</string>
+    <string name="nutrition_calories_on_target">on target</string>
+    <string name="nutrition_calories_over">+%1$s kcal</string>
+    <string name="nutrition_goal_of">of %1$s</string>
+    <string name="nutrition_goal_dot">· %1$s kcal</string>
+    <string name="nutrition_goal_over">over %1$s</string>
+    <string name="nutrition_goal_only">goal %1$s kcal</string>
+    <string name="nutrition_water_of">water · of %1$s</string>
+    <string name="nutrition_water_reached">water · goal reached</string>
+    <string name="nutrition_supplements_taken_label">supplements taken</string>
+    <string name="nutrition_ml_value">%1$s ml</string>
+    <string name="nutrition_supplements">Supplements</string>
+    <string name="nutrition_taken_toggle">Taken today</string>
+    <string name="nutrition_supplement_options">Reminders and options</string>
+    <string name="nutrition_empty_action">Add a supplement</string>
+    <string name="nutrition_entry_help">Today: %1$s of %2$s.</string>
+    <string name="nutrition_mode_add">Add</string>
+    <string name="nutrition_mode_total">Day total</string>
+    <string name="nutrition_new_total">New total</string>
+    <string name="nutrition_entry_invalid">Enter an amount</string>
+    <string name="nutrition_calorie_goal_title">Calorie goal</string>
+    <string name="nutrition_water_goal_title">Water goal</string>
+    <string name="nutrition_goal_help">From today on; past days keep theirs.</string>
+    <string name="nutrition_goal_invalid">Enter a goal above 0</string>
+    <string name="nutrition_reminder">Reminder</string>
+    <string name="nutrition_delete_supplement">Delete supplement</string>
+    <string name="nutrition_delete_message">The supplement and its reminders will be removed.</string>
+    <string name="common_close">Close</string>
+    <string name="common_ok">OK</string>
 
     <!-- CSV export headers (§ 8) -->
     <string name="excel_col_date">Date</string>
@@ -409,26 +412,62 @@
     <!-- Automatic backup (§ 15.2) -->
     <string name="settings_auto_backup_title">Automatic backup</string>
     <string name="settings_auto_backup_desc">Every day, a JSON backup in the folder of your choice. The 14 most recent are kept.</string>
-    <string name="settings_auto_backup_folder">Folder: %1$s</string>
-    <string name="settings_auto_backup_change">Change</string>
-    <string name="settings_auto_backup_last">Last backup: %1$s</string>
     <string name="settings_auto_backup_never">No backup yet</string>
     <string name="settings_auto_backup_folder_lost">The backup folder can\'t be reached anymore (deleted, renamed or access removed). Choose it again.</string>
     <string name="settings_auto_backup_choose_folder">Choose a folder</string>
     <string name="settings_auto_backup_failed">Backup of %1$s failed: %2$s</string>
     <string name="settings_auto_backup_now">Back up now</string>
 
+    <!-- Settings, "Studio épuré" redesign (SPEC § 15.10.7) -->
+    <string name="settings_section_data">Data</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_language_help">System language: your phone\'s.</string>
+    <string name="settings_language_system_short">System</string>
+    <string name="settings_theme_help">Dark by default. System follows your phone\'s setting.</string>
+    <string name="settings_notifications_off_title">Notifications off</string>
+    <string name="settings_notifications_off_subtitle">Rest timer and reminders are silent</string>
+    <string name="settings_on_f">On</string>
+    <string name="settings_off_f">Off</string>
+    <string name="settings_on_m">On</string>
+    <string name="settings_off_m">Off</string>
+    <string name="settings_auto_backup_off_subtitle">Every day, in the folder you choose</string>
+    <string name="settings_auto_backup_last_short">Last on %1$s</string>
+    <string name="settings_auto_backup_failed_short">Failed on %1$s</string>
+    <string name="settings_auto_backup_folder_lost_short">Folder unavailable</string>
+    <string name="settings_auto_backup_toggle">Daily backup</string>
+    <string name="settings_auto_backup_folder_label">Folder</string>
+    <string name="settings_auto_backup_last_label">Last backup</string>
+    <string name="settings_auto_backup_none">none</string>
+    <string name="settings_auto_backup_running">Backing up…</string>
+    <string name="settings_export_short">JSON file with all your data</string>
+    <string name="settings_export_csv_short">Tables for Excel or Sheets</string>
+    <string name="settings_import_short">From an exported file</string>
+    <string name="settings_in_progress">In progress…</string>
+    <string name="health_subtitle_off">Workouts and weight to your health apps</string>
+    <string name="health_subtitle_last">Last sent %1$s</string>
+    <string name="health_subtitle_missing">Permission missing</string>
+    <string name="health_toggle">Send to Health Connect</string>
+    <string name="health_last_label">Last sent</string>
+    <string name="health_written_label">Written</string>
+    <string name="health_sending">Sending…</string>
+    <string name="settings_update_subtitle_managed">Managed by Obtainium</string>
+    <string name="settings_update_subtitle_never">Not checked yet</string>
+    <string name="settings_update_subtitle_up_to_date">Up to date · checked %1$s</string>
+    <string name="settings_update_subtitle_available">%1$s is available</string>
+    <string name="settings_update_subtitle_checking">Checking…</string>
+    <string name="settings_update_download">Download %1$s</string>
+    <string name="feedback_row_title">Send feedback</string>
+    <string name="feedback_row_subtitle">An idea, a bug?</string>
+    <string name="feedback_sending">Sending…</string>
+
     <!-- Health Connect (§ 15.3) -->
-    <string name="settings_section_health">HEALTH</string>
     <string name="health_title">Health Connect</string>
     <string name="health_desc">Sends your strength sessions and body weight to Health Connect, so your other health apps can use them.</string>
     <string name="health_denied">Permission denied: nothing is sent.</string>
     <string name="health_missing_sessions">Sessions not allowed: they aren\'t sent.</string>
     <string name="health_missing_weight">Weight not allowed: it isn\'t sent.</string>
     <string name="health_allow">Allow</string>
-    <string name="health_last">Last sent: %1$s</string>
     <string name="health_never">Nothing sent yet</string>
-    <string name="health_written">Written to Health Connect: %1$s, %2$s</string>
     <string name="health_unavailable">Couldn\'t send (%1$s).</string>
     <string name="health_type_failed_sessions">Sessions: failed (%1$s).</string>
     <string name="health_type_failed_weight">Weight: failed (%1$s).</string>

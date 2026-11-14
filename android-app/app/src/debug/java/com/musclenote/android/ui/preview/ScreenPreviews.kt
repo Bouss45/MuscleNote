@@ -10,9 +10,7 @@ import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.journal.JournalScreen
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import androidx.compose.ui.unit.dp
-import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.settings.BackupViewModel
-import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.ui.designsystem.theme.StudioTheme
 import com.musclenote.android.ui.theme.MuscleNoteTheme
@@ -30,7 +28,7 @@ import kotlinx.coroutines.flow.emptyFlow
 
 /** Modèle de vue de la sauvegarde, sur le conteneur de l'aperçu (Paramètres, application). */
 @Composable
-private fun rememberBackupViewModel(container: AppContainer): BackupViewModel {
+internal fun rememberBackupViewModel(container: AppContainer): BackupViewModel {
     val application = LocalContext.current.applicationContext as Application
     return remember(container) { BackupViewModel(application, container) }
 }
@@ -139,14 +137,4 @@ private fun EditWorkoutScreenPreview() = ScreenPreview {
     EditWorkoutScreen(workoutId = PreviewData.workouts.first { it.name == "Push" }.id, onClose = {})
 }
 
-@ScreenPreviews
-@Composable
-private fun NutritionScreenPreview() = ScreenPreview {
-    NutritionScreen()
-}
 
-@TallScreenPreviews
-@Composable
-private fun SettingsScreenPreview() = ScreenPreview { container ->
-    SettingsScreen(rememberBackupViewModel(container))
-}

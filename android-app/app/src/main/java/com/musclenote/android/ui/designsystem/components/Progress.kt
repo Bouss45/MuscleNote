@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -47,6 +48,20 @@ fun SetProgress(done: Int, total: Int, modifier: Modifier = Modifier) {
 /** Piste de repos : 3 de haut, `surfacePressed`, remplie en `live` selon [progress] (0 à 1). */
 @Composable
 fun LiveTrack(progress: Float, modifier: Modifier = Modifier) {
+    Track(progress, Studio.colors.live, modifier)
+}
+
+/**
+ * Piste de progression — `ProgressTrack` (DESIGN.md § 9.3) : celle de [LiveTrack], remplie en
+ * `textPrimary` (calories du jour sur l'objectif). Décorative : le texte voisin dit l'état.
+ */
+@Composable
+fun ProgressTrack(progress: Float, modifier: Modifier = Modifier) {
+    Track(progress, Studio.colors.textPrimary, modifier)
+}
+
+@Composable
+private fun Track(progress: Float, fill: Color, modifier: Modifier) {
     Box(
         modifier
             .fillMaxWidth()
@@ -58,7 +73,7 @@ fun LiveTrack(progress: Float, modifier: Modifier = Modifier) {
             Modifier
                 .fillMaxWidth(progress.coerceIn(0f, 1f))
                 .fillMaxHeight()
-                .background(Studio.colors.live, TrackShape),
+                .background(fill, TrackShape),
         )
     }
 }

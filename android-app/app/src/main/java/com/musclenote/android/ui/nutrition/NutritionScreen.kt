@@ -3,58 +3,60 @@ package com.musclenote.android.ui.nutrition
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.model.DailyTracker
+import com.musclenote.android.data.model.Supplement
+import com.musclenote.android.data.model.TakenRecord
+import com.musclenote.android.data.nutrition.CalorieTone
+import com.musclenote.android.data.nutrition.EntryMode
 import com.musclenote.android.data.nutrition.NutritionRules
+import com.musclenote.android.data.nutrition.ReminderSummary
 import com.musclenote.android.data.util.dayKey
 import com.musclenote.android.notifications.AppNotifications
 import com.musclenote.android.ui.LocalAppContainer
-import com.musclenote.android.ui.components.ScreenHeader
+import com.musclenote.android.ui.components.formatInteger
+import com.musclenote.android.ui.components.formatOneDecimal
 import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.components.rememberToday
-import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.designsystem.components.ButtonVariant
+import com.musclenote.android.ui.designsystem.components.DailySurface
+import com.musclenote.android.ui.designsystem.components.EmptyState
+import com.musclenote.android.ui.designsystem.components.ListRow
+import com.musclenote.android.ui.designsystem.components.ListRowTrailing
+import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
+import com.musclenote.android.ui.designsystem.components.SectionHeader
+import com.musclenote.android.ui.designsystem.components.Stat
+import com.musclenote.android.ui.designsystem.components.StudioButton
+import com.musclenote.android.ui.designsystem.components.Trend
+import com.musclenote.android.ui.designsystem.templates.HubTemplate
+import com.musclenote.android.ui.designsystem.templates.ScreenInsets
+import com.musclenote.android.ui.designsystem.templates.tabScreenInsets
+import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.progress.DailyKind
+import com.musclenote.android.ui.workout.ConfirmSheet
 
 /**
- * Onglet Nutrition (SPEC § 2.11) : suivi du jour (calories et eau, objectifs datés) et compléments
- * (formulaire, « pris aujourd'hui », rappels). Le jour affiché est le jour courant de l'app
- * (§ 3.12) : il change à minuit et au retour au premier plan.
+ * Onglet Nutrition (SPEC § 15.10.1, 🔄 D35), gabarit hub : surface « Aujourd'hui » (calories du jour,
+ * état par rapport à l'objectif, eau, compléments pris, saisies Calories et Eau au pavé), puis
+ * « Compléments » (case « pris aujourd'hui », toucher → sheet des rappels). Le jour affiché est le
+ * jour courant de l'app (§ 3.12) : il change à minuit et au retour au premier plan.
  */
 @Composable
-fun NutritionScreen(modifier: Modifier = Modifier) {
+fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScreenInsets()) {
     val container = LocalAppContainer.current
     val nutrition = container.nutrition
     val tracker by nutrition.tracker.collectAsStateWithLifecycle()
@@ -64,12 +66,10 @@ fun NutritionScreen(modifier: Modifier = Modifier) {
     val haptics = rememberHaptics()
     val context = LocalContext.current
 
-    var showForm by rememberSaveable { mutableStateOf(false) }
-    var expandedId by rememberSaveable { mutableStateOf<String?>(null) }
+    var entry by rememberSaveable { mutableStateOf<DailyKind?>(null) }
+    var creating by rememberSaveable { mutableStateOf(false) }
+    var openId by rememberSaveable { mutableStateOf<String?>(null) }
     var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
-    // Rappel d'une carte en cours de modification : complément, rappel.
-    var pickingSupplementId by rememberSaveable { mutableStateOf<String?>(null) }
-    var pickingReminderId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // § 7.1 : demandée à la création avec rappels, à l'activation et à l'ajout d'un rappel ; un
     // refus n'empêche rien (les rappels ne sonneront simplement pas).
@@ -78,221 +78,267 @@ fun NutritionScreen(modifier: Modifier = Modifier) {
         if (AppNotifications.needsPermissionRequest(context)) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
     }
 
-    Column(modifier.fillMaxSize()) {
-        ScreenHeader(
-            title = stringResource(R.string.nutrition_title),
-            action = {
-                HeaderButton(
-                    formOpen = showForm,
-                    onClick = {
-                        haptics.light()
-                        showForm = !showForm
-                        deletingId = null
-                        expandedId = null
-                    },
-                )
+    val day = DailyDay.of(tracker, todayKey)
+    HubTemplate(
+        modifier = modifier,
+        titleBar = { ScreenTitleBar(stringResource(R.string.nutrition_title)) },
+        highlight = {
+            TodaySurface(
+                day = day,
+                takenCount = NutritionRules.takenCount(supplements, taken, todayKey),
+                supplementCount = supplements.size,
+                onCalories = { entry = DailyKind.Calories },
+                onWater = { entry = DailyKind.Water },
+            )
+        },
+        insets = insets,
+    ) {
+        SupplementsSection(
+            supplements = supplements,
+            taken = taken,
+            todayKey = todayKey,
+            onToggleTaken = { id ->
+                haptics.medium()
+                container.launchMutation { nutrition.toggleTaken(id) }
             },
+            onOpen = { openId = it },
+            onCreate = { creating = true },
         )
-        Column(
-            Modifier
-                .fillMaxSize()
-                .imePadding()
-                .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            SectionLabel(stringResource(R.string.nutrition_section_today))
-            CaloriesCard(
-                kcal = tracker.caloriesLog[todayKey] ?: 0,
-                goal = DailyTracker.goalFor(tracker.calorieGoalHistory, todayKey) ?: tracker.calorieGoal,
-                onAdd = { amount -> container.launchMutation { nutrition.addCalories(amount) } },
-                onSet = { value -> container.launchMutation { nutrition.setCaloriesToday(value) } },
-                onReset = { container.launchMutation { nutrition.setCaloriesToday(0) } },
-                onGoalChange = { kcal -> container.launchMutation { nutrition.setCalorieGoal(kcal) } },
-            )
-            WaterCard(
-                ml = tracker.waterLog[todayKey] ?: 0,
-                goalMl = DailyTracker.goalFor(tracker.waterGoalHistory, todayKey) ?: tracker.waterGoal,
-                onAdd = { ml -> container.launchMutation { nutrition.addWater(ml) } },
-                onReset = { container.launchMutation { nutrition.setWaterToday(0) } },
-                onGoalChange = { ml -> container.launchMutation { nutrition.setWaterGoal(ml) } },
-            )
+    }
 
-            SectionLabel(
-                stringResource(R.string.nutrition_supplements_section) + if (supplements.isNotEmpty()) " (${supplements.size})" else "",
-                Modifier.padding(top = 4.dp),
-            )
-
-            if (showForm) {
-                SupplementForm(
-                    onSave = { name, dosage, unit, remindersEnabled, times ->
-                        if (remindersEnabled) requestNotificationPermission()
-                        container.launchMutation { nutrition.addSupplement(name, dosage, unit, remindersEnabled, times) }
-                        showForm = false
-                    },
-                )
-            } else if (supplements.isEmpty()) {
-                EmptySupplements()
-            }
-
-            for (supplement in supplements) {
-                key(supplement.id) {
-                    val id = supplement.id
-                    SupplementCard(
-                        supplement = supplement,
-                        taken = NutritionRules.isTaken(taken, id, todayKey),
-                        expanded = expandedId == id,
-                        deleting = deletingId == id,
-                        onToggleTaken = {
-                            haptics.medium()
-                            container.launchMutation { nutrition.toggleTaken(id) }
-                        },
-                        onToggleExpanded = { expandedId = if (expandedId == id) null else id },
-                        onDeleteRequest = {
-                            expandedId = null
-                            deletingId = if (deletingId == id) null else id
-                        },
-                        onDeleteCancel = { deletingId = null },
-                        onDeleteConfirm = {
-                            haptics.warning()
-                            deletingId = null
-                            container.launchMutation { nutrition.deleteSupplement(id) }
-                        },
-                        onRemindersEnabled = { enabled ->
-                            haptics.light()
-                            if (enabled) requestNotificationPermission()
-                            container.launchMutation { nutrition.setRemindersEnabled(id, enabled) }
-                        },
-                        onPickReminder = { reminder ->
-                            pickingSupplementId = id
-                            pickingReminderId = reminder.id
-                        },
-                        onRemoveReminder = { reminder ->
-                            haptics.light()
-                            container.launchMutation { nutrition.removeReminder(id, reminder.id) }
-                        },
-                        onAddReminder = {
-                            haptics.light()
-                            requestNotificationPermission()
-                            container.launchMutation { nutrition.addReminder(id) }
-                        },
-                    )
+    entry?.let { kind ->
+        DailyEntrySheet(
+            kind = kind,
+            current = if (kind == DailyKind.Calories) day.kcal else day.ml,
+            goal = if (kind == DailyKind.Calories) day.calorieGoal else day.waterGoal,
+            onDismiss = { entry = null },
+            onSave = { mode, value ->
+                entry = null
+                container.launchMutation {
+                    when (kind) {
+                        DailyKind.Calories -> if (mode == EntryMode.Add) nutrition.addCalories(value) else nutrition.setCaloriesToday(value)
+                        DailyKind.Water -> if (mode == EntryMode.Add) nutrition.addWater(value) else nutrition.setWaterToday(value)
+                    }
                 }
-            }
-
-            if (supplements.any { it.reminderEnabled }) InfoBox(stringResource(R.string.nutrition_info_mobile))
-        }
-    }
-
-    val picked = supplements.firstOrNull { it.id == pickingSupplementId }?.reminders?.firstOrNull { it.id == pickingReminderId }
-    if (picked != null) {
-        val supplementId = pickingSupplementId.orEmpty()
-        ReminderTimePickerDialog(
-            hour = picked.hour,
-            minute = picked.minute,
-            onDismiss = {
-                pickingSupplementId = null
-                pickingReminderId = null
             },
-            onConfirm = { hour, minute ->
-                pickingSupplementId = null
-                pickingReminderId = null
-                container.launchMutation { nutrition.updateReminder(supplementId, picked.id, hour, minute) }
+            onSaveGoal = { goal ->
+                container.launchMutation {
+                    if (kind == DailyKind.Calories) nutrition.setCalorieGoal(goal) else nutrition.setWaterGoal(goal)
+                }
             },
         )
     }
-}
 
-/** « + Complément », ou « ✕ Annuler » quand le formulaire est ouvert. */
-@Composable
-private fun HeaderButton(formOpen: Boolean, onClick: () -> Unit) {
-    val colors = MuscleNoteTheme.colors
-    Row(
-        Modifier
-            .clip(RoundedCornerShape(20.dp))
-            .background(colors.primary)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-    ) {
-        Icon(
-            painterResource(if (formOpen) R.drawable.ic_close else R.drawable.ic_add),
-            contentDescription = null,
-            tint = colors.primaryForeground,
-            modifier = Modifier.size(18.dp),
-        )
-        Text(
-            stringResource(if (formOpen) R.string.common_cancel else R.string.nutrition_supplement),
-            color = colors.primaryForeground,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.SemiBold,
+    if (creating) {
+        NewSupplementSheet(
+            onDismiss = { creating = false },
+            onSave = { name, dosage, unit, remindersEnabled, times ->
+                creating = false
+                if (remindersEnabled) requestNotificationPermission()
+                container.launchMutation { nutrition.addSupplement(name, dosage, unit, remindersEnabled, times) }
+            },
         )
     }
-}
 
-/** 💊 « Aucun complément » + aide (formulaire fermé). */
-@Composable
-private fun EmptySupplements() {
-    val colors = MuscleNoteTheme.colors
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(vertical = 20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        val shape = RoundedCornerShape(20.dp)
-        Box(
-            Modifier
-                .size(60.dp)
-                .clip(shape)
-                .background(colors.card)
-                .border(1.dp, colors.border, shape),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text("💊", fontSize = 28.sp)
-        }
-        Text(stringResource(R.string.nutrition_empty_title), color = colors.foreground, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-        Text(
-            stringResource(R.string.nutrition_empty_text),
-            color = colors.mutedForeground,
-            fontSize = 13.sp,
-            lineHeight = 20.sp,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 16.dp),
+    supplements.firstOrNull { it.id == openId }?.let { supplement ->
+        val id = supplement.id
+        SupplementSheet(
+            supplement = supplement,
+            onDismiss = { openId = null },
+            onRemindersEnabled = { enabled ->
+                haptics.light()
+                if (enabled) requestNotificationPermission()
+                container.launchMutation { nutrition.setRemindersEnabled(id, enabled) }
+            },
+            onAddReminder = {
+                haptics.light()
+                requestNotificationPermission()
+                container.launchMutation { nutrition.addReminder(id) }
+            },
+            onUpdateReminder = { reminderId, hour, minute ->
+                container.launchMutation { nutrition.updateReminder(id, reminderId, hour, minute) }
+            },
+            onRemoveReminder = { reminderId ->
+                haptics.light()
+                container.launchMutation { nutrition.removeReminder(id, reminderId) }
+            },
+            onDelete = {
+                openId = null
+                deletingId = id
+            },
+        )
+    }
+
+    supplements.firstOrNull { it.id == deletingId }?.let { supplement ->
+        ConfirmSheet(
+            title = stringResource(R.string.nutrition_delete_confirm, supplement.name),
+            message = stringResource(R.string.nutrition_delete_message),
+            confirmLabel = stringResource(R.string.common_delete),
+            dismissLabel = stringResource(R.string.common_cancel),
+            onConfirm = {
+                haptics.warning()
+                deletingId = null
+                container.launchMutation { nutrition.deleteSupplement(supplement.id) }
+            },
+            onDismiss = { deletingId = null },
         )
     }
 }
 
-/** Encart d'information (rappels = notifications locales). */
-@Composable
-private fun InfoBox(text: String) {
-    val colors = MuscleNoteTheme.colors
-    val shape = RoundedCornerShape(12.dp)
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.card)
-            .border(1.dp, colors.border, shape)
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(painterResource(R.drawable.ic_info), contentDescription = null, tint = colors.mutedForeground, modifier = Modifier.size(15.dp))
-        Text(text, color = colors.mutedForeground, fontSize = 12.sp, lineHeight = 18.sp, modifier = Modifier.weight(1f))
+/** Calories et eau du jour [key], avec les objectifs en vigueur ce jour-là (§ 3.12). */
+internal data class DailyDay(val kcal: Int, val calorieGoal: Int, val ml: Int, val waterGoal: Int) {
+    companion object {
+        fun of(tracker: DailyTracker, key: String) = DailyDay(
+            kcal = tracker.caloriesLog[key] ?: 0,
+            calorieGoal = DailyTracker.goalFor(tracker.calorieGoalHistory, key) ?: tracker.calorieGoal,
+            ml = tracker.waterLog[key] ?: 0,
+            waterGoal = DailyTracker.goalFor(tracker.waterGoalHistory, key) ?: tracker.waterGoal,
+        )
     }
 }
 
-/** Libellé de section en capitales (« SUIVI DU JOUR », « COMPLÉMENTS »). */
+/** Eau affichée : « 750 ml », dès 1 000 ml « 1,5 L » (au dixième, § 2.11). */
 @Composable
-internal fun SectionLabel(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text,
-        color = MuscleNoteTheme.colors.mutedForeground,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 0.8.sp,
-        modifier = modifier.padding(bottom = 2.dp),
+internal fun waterText(ml: Int): String =
+    if (ml < 1000) stringResource(R.string.nutrition_ml_value, formatInteger(ml.toDouble()))
+    else stringResource(R.string.common_liters_value, formatOneDecimal(ml / 1000.0))
+
+/** Objectif d'eau : « 2,0 L ». */
+@Composable
+internal fun waterGoalText(ml: Int): String = stringResource(R.string.common_liters_value, formatOneDecimal(ml / 1000.0))
+
+/**
+ * Surface « Aujourd'hui » (§ 15.10.1, point 2) : kcal du jour en chiffre héros et l'état en mots —
+ * « encore 950 kcal » (gris), « dans l'objectif » (vert), « +320 kcal » (rouge) — selon le ratio
+ * non plafonné de D15 ; piste ; eau et compléments pris ; Calories et Eau.
+ */
+@Composable
+internal fun TodaySurface(
+    day: DailyDay,
+    takenCount: Int,
+    supplementCount: Int,
+    onCalories: () -> Unit,
+    onWater: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val status = NutritionRules.calorieStatus(day.kcal, day.calorieGoal)
+    val goal = formatInteger(day.calorieGoal.toDouble())
+    val (text, trend, context) = when (status.tone) {
+        CalorieTone.Below ->
+            if (day.kcal == 0) Triple(stringResource(R.string.nutrition_goal_only, goal), Trend.Neutral, null)
+            else Triple(
+                stringResource(R.string.nutrition_calories_left, formatInteger(status.remaining.toDouble())),
+                Trend.Neutral,
+                stringResource(R.string.nutrition_goal_of, goal),
+            )
+        CalorieTone.OnTarget -> Triple(stringResource(R.string.nutrition_calories_on_target), Trend.Up, stringResource(R.string.nutrition_goal_dot, goal))
+        CalorieTone.Over -> Triple(
+            stringResource(R.string.nutrition_calories_over, formatInteger(status.excess.toDouble())),
+            Trend.Down,
+            stringResource(R.string.nutrition_goal_over, goal),
+        )
+    }
+    val water = Stat(
+        waterText(day.ml),
+        if (NutritionRules.waterReached(day.ml, day.waterGoal)) stringResource(R.string.nutrition_water_reached)
+        else stringResource(R.string.nutrition_water_of, waterGoalText(day.waterGoal)),
+    )
+    val stats = buildList {
+        add(water)
+        if (supplementCount > 0) add(Stat("$takenCount/$supplementCount", stringResource(R.string.nutrition_supplements_taken_label)))
+    }
+    DailySurface(
+        label = stringResource(R.string.nutrition_today),
+        value = formatInteger(day.kcal.toDouble()),
+        unit = "kcal",
+        progress = status.progress,
+        stats = stats,
+        firstAction = stringResource(R.string.progress_tab_calories),
+        onFirstAction = onCalories,
+        secondAction = stringResource(R.string.progress_tab_water),
+        onSecondAction = onWater,
+        modifier = modifier,
+        status = text,
+        statusTrend = trend,
+        statusContext = context,
     )
 }
+
+/**
+ * Section « Compléments » (§ 15.10.1, point 3) : une ligne par complément (dosage et rappels en
+ * sous-titre, case « pris aujourd'hui » à droite, toucher → sheet), « Nouveau complément » ; état vide
+ * sans complément ; rappel que les rappels sont des notifications locales.
+ */
+@Composable
+internal fun SupplementsSection(
+    supplements: List<Supplement>,
+    taken: TakenRecord,
+    todayKey: String,
+    onToggleTaken: (String) -> Unit,
+    onOpen: (String) -> Unit,
+    onCreate: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth()) {
+        // Le compte des compléments pris est déjà sur la surface « Aujourd'hui ».
+        SectionHeader(stringResource(R.string.nutrition_supplements))
+        Spacer(Modifier.height(Studio.spacing.xxs))
+        if (supplements.isEmpty()) {
+            EmptyState(
+                icon = R.drawable.ds_ic_pill,
+                title = stringResource(R.string.nutrition_empty_title),
+                message = stringResource(R.string.nutrition_empty_text),
+                actionLabel = stringResource(R.string.nutrition_empty_action),
+                onAction = onCreate,
+            )
+            return@Column
+        }
+        val toggleLabel = stringResource(R.string.nutrition_taken_toggle)
+        val openLabel = stringResource(R.string.nutrition_supplement_options)
+        supplements.forEachIndexed { index, supplement ->
+            ListRow(
+                title = supplement.name,
+                subtitle = supplementSubtitle(supplement),
+                trailing = ListRowTrailing.Check(
+                    checked = NutritionRules.isTaken(taken, supplement.id, todayKey),
+                    onToggle = { onToggleTaken(supplement.id) },
+                    toggleLabel = toggleLabel,
+                ),
+                showDivider = index < supplements.lastIndex,
+                onClick = { onOpen(supplement.id) },
+                onClickLabel = openLabel,
+            )
+        }
+        Spacer(Modifier.height(Studio.spacing.m))
+        StudioButton(
+            stringResource(R.string.nutrition_new_supplement),
+            onCreate,
+            Modifier.fillMaxWidth(),
+            variant = ButtonVariant.Secondary,
+            icon = R.drawable.ds_ic_add,
+        )
+        if (supplements.any { it.reminderEnabled }) {
+            Spacer(Modifier.height(Studio.spacing.s))
+            Text(stringResource(R.string.nutrition_info_mobile), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+        }
+    }
+}
+
+/** « 5 g par prise · Rappel à 08:00 » ; dosage omis s'il est vide (🔄 D15). */
+@Composable
+private fun supplementSubtitle(supplement: Supplement): String {
+    val dosage = supplement.dosage.takeIf { it.isNotBlank() }?.let { stringResource(R.string.nutrition_per_intake, it, supplement.unit) }
+    return listOfNotNull(dosage, reminderSummaryText(supplement)).joinToString(" · ")
+}
+
+/** Résumé des rappels (§ 2.11) : « Pas de rappel », « Rappels activés », « Rappel à 08:00 », « 3 rappels ». */
+@Composable
+internal fun reminderSummaryText(supplement: Supplement): String = when (val summary = NutritionRules.reminderSummary(supplement)) {
+    ReminderSummary.Off -> stringResource(R.string.nutrition_no_reminder)
+    ReminderSummary.On -> stringResource(R.string.nutrition_reminders_on)
+    is ReminderSummary.At -> stringResource(R.string.nutrition_reminder_at, formatReminderTime(summary.hour, summary.minute))
+    is ReminderSummary.Count -> stringResource(R.string.nutrition_reminders_count, summary.count)
+}
+
+/** `HH:mm`, affichage d'un rappel (§ 2.11). */
+fun formatReminderTime(hour: Int, minute: Int): String =
+    "${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}"

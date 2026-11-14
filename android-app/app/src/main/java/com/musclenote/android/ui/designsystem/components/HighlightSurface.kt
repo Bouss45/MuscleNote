@@ -187,3 +187,51 @@ fun MetricSurface(
         }
     }
 }
+
+
+/**
+ * Surface « Aujourd'hui » — `DailySurface` (hub Nutrition, SPEC § 15.10.1) : légende, chiffre héros
+ * et unité (kcal du jour), état par rapport à l'objectif ([status], coloré par [statusTrend], suivi
+ * de [statusContext]), piste de progression, rangée de stats (eau, compléments pris), puis deux
+ * boutons secondaires moyens de largeurs égales (icône `add`).
+ */
+@Composable
+fun DailySurface(
+    label: String,
+    value: String,
+    unit: String,
+    progress: Float,
+    stats: List<Stat>,
+    firstAction: String,
+    onFirstAction: () -> Unit,
+    secondAction: String,
+    onSecondAction: () -> Unit,
+    modifier: Modifier = Modifier,
+    status: String? = null,
+    statusTrend: Trend = Trend.Neutral,
+    statusContext: String? = null,
+) {
+    HighlightSurface(modifier) {
+        HeroNumber(value, label = label, unit = unit, delta = status, trend = statusTrend, deltaContext = statusContext)
+        ProgressTrack(progress)
+        if (stats.isNotEmpty()) StatRow(stats)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
+            StudioButton(
+                firstAction,
+                onFirstAction,
+                Modifier.weight(1f),
+                variant = ButtonVariant.Secondary,
+                size = ButtonSize.Medium,
+                icon = R.drawable.ds_ic_add,
+            )
+            StudioButton(
+                secondAction,
+                onSecondAction,
+                Modifier.weight(1f),
+                variant = ButtonVariant.Secondary,
+                size = ButtonSize.Medium,
+                icon = R.drawable.ds_ic_add,
+            )
+        }
+    }
+}

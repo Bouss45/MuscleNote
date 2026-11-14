@@ -160,8 +160,15 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     )
                 }
             }
-            composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
-            composable(Routes.SETTINGS) { SettingsScreen(backupViewModel) }
+            composable(TopLevelDestination.Nutrition.route) {
+                StudioTheme(darkTheme = darkTheme) { NutritionScreen() }
+            }
+            composable(Routes.SETTINGS) {
+                // Hub de second niveau de l'Accueil (§ 15.10.3) : ← y ramène.
+                StudioTheme(darkTheme = darkTheme) {
+                    SettingsScreen(backupViewModel, onBack = { navController.popBackStack() })
+                }
+            }
 
             composable(
                 Routes.START_WORKOUT,

@@ -8,74 +8,86 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.backup.BackupReadResult
-import com.musclenote.android.data.timer.RestTimerRules
 import com.musclenote.android.notifications.AppNotifications
 import com.musclenote.android.ui.LocalAppContainer
-import com.musclenote.android.ui.components.ScreenHeader
+import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.rememberHaptics
-import com.musclenote.android.ui.theme.FixedColors
-import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.designsystem.components.FicheTitle
+import com.musclenote.android.ui.designsystem.components.FicheTopBar
+import com.musclenote.android.ui.designsystem.components.ListRow
+import com.musclenote.android.ui.designsystem.components.ListRowTrailing
+import com.musclenote.android.ui.designsystem.components.SectionHeader
+import com.musclenote.android.ui.designsystem.components.Stat
+import com.musclenote.android.ui.designsystem.components.StatRow
+import com.musclenote.android.ui.designsystem.templates.HubTemplate
+import com.musclenote.android.ui.designsystem.templates.ScreenInsets
+import com.musclenote.android.ui.designsystem.templates.tabScreenInsets
+import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.workout.ConfirmSheet
 
 /** Types proposés au sélecteur de fichiers pour l'import (§ 2.12). */
 private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 
+/** Formulaire ouvert au-dessus de Paramètres (§ 15.10.3). */
+enum class SettingsSheet { Language, Theme, RestTimer, AutoBackup, Health, CrashReport, Feedback }
+
 /**
- * Onglet Paramètres (SPEC § 2.12) : « Mes données » ; « PRÉFÉRENCES » (langue, thème, minuteur de
- * repos, avertissement « Notifications désactivées ») ; « SAUVEGARDE » (export JSON v2, import avec
- * confirmation § 5.4, sauvegarde automatique § 15.2) ; encart de statut ; encart d'info ; « SANTÉ »
- * (Health Connect § 15.3, si disponible) ; « APPLICATION » (mises à jour § 3.17,
- * rapport de plantage s'il y en a un § 10.9) ; « TON AVIS » (§ 14), seulement si l'URL du webhook
- * a été fournie au build.
+ * Paramètres (SPEC § 15.10.3, 🔄 D35) : hub de second niveau, ouvert par l'engrenage de l'Accueil.
+ * Mes données ; « Préférences » (langue, thème, minuteur de repos, notifications coupées) ;
+ * « Données » (sauvegarde automatique § 15.2, export JSON v2 et CSV, import avec confirmation § 5.4,
+ * Health Connect § 15.3 s'il est disponible) ; « À propos » (mises à jour § 3.17, rapport de plantage
+ * § 10.9, avis § 14 si l'URL du webhook a été fournie au build). Chaque réglage s'ouvre en formulaire
+ * (bottom sheet) ou lance son action.
  */
 @Composable
-fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    backupViewModel: BackupViewModel,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    insets: ScreenInsets = tabScreenInsets(),
+    initialSheet: SettingsSheet? = null,
+) {
     val state by backupViewModel.state.collectAsStateWithLifecycle()
     val container = LocalAppContainer.current
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
     val customExercises by container.workouts.customExercises.collectAsStateWithLifecycle()
     val preferences by container.preferences.preferences.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
-    val colors = MuscleNoteTheme.colors
+    val context = LocalContext.current
+
+    var sheet by rememberSaveable { mutableStateOf(initialSheet) }
+    val crashReport = rememberLatestCrashReport()
+    val healthAvailable = rememberHealthAvailable()
+    var notificationsEnabled by remember { mutableStateOf(AppNotifications.areEnabled(context)) }
+    // Revérifié à chaque retour sur l'écran (réglages du système, § 2.12).
+    LifecycleResumeEffect(context) {
+        notificationsEnabled = AppNotifications.areEnabled(context)
+        onPauseOrDispose { }
+    }
 
     val jsonChooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_json))
     val csvChooserTitle by rememberUpdatedState(stringResource(R.string.settings_share_csv))
@@ -100,97 +112,206 @@ fun SettingsScreen(backupViewModel: BackupViewModel, modifier: Modifier = Modifi
         }
     }
 
-    Column(modifier.fillMaxSize()) {
-        ScreenHeader(title = stringResource(R.string.settings_title))
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+    HubTemplate(
+        modifier = modifier,
+        titleBar = {
+            Column(Modifier.fillMaxWidth()) {
+                FicheTopBar(onNavigate = onBack)
+                Spacer(Modifier.height(Studio.spacing.xxs))
+                FicheTitle(stringResource(R.string.settings_title), titleStyle = Studio.typography.titleScreen)
+            }
+        },
+        insets = insets,
+    ) {
+        // Mes données : 24 sous le titre, comme la rangée de stats d'une fiche (DESIGN.md § 10.2).
+        StatRow(
+            modifier = Modifier.padding(top = Studio.spacing.s),
+            stats = listOf(
+                Stat(formatInteger(workouts.size.toDouble()), stringResource(R.string.settings_stat_sessions)),
+                Stat(formatInteger(customExercises.count { !it.archived }.toDouble()), stringResource(R.string.settings_stat_custom_exercises)),
+            ),
+        )
+
+        SettingsSection(
+            stringResource(R.string.settings_section_preferences),
+            buildList {
+                add(SettingsRow("language", stringResource(R.string.settings_language_title), value = languageLabel(currentAppLanguage())) { sheet = SettingsSheet.Language })
+                add(SettingsRow("theme", stringResource(R.string.settings_theme_title), value = themeLabel(preferences.theme)) { sheet = SettingsSheet.Theme })
+                add(SettingsRow("rest", stringResource(R.string.settings_rest_timer_title), value = restDurationLabel(preferences.restSeconds)) { sheet = SettingsSheet.RestTimer })
+                if (!notificationsEnabled) {
+                    add(
+                        SettingsRow(
+                            "notifications",
+                            stringResource(R.string.settings_notifications_off_title),
+                            subtitle = stringResource(R.string.settings_notifications_off_subtitle),
+                            chevron = true,
+                        ) { openNotificationSettings(context) },
+                    )
+                }
+            },
+        )
+
+        val busy = state.operation != null
+        val inProgress = stringResource(R.string.settings_in_progress)
+        SettingsSection(
+            stringResource(R.string.settings_section_data),
+            buildList {
+                add(autoBackupRow { sheet = SettingsSheet.AutoBackup })
+                add(
+                    SettingsRow(
+                        "export",
+                        stringResource(R.string.settings_export_title),
+                        subtitle = if (state.operation == BackupOperation.Export) inProgress else stringResource(R.string.settings_export_short),
+                        onClick = backupViewModel::export.takeUnless { busy },
+                    ),
+                )
+                add(
+                    SettingsRow(
+                        "csv",
+                        stringResource(R.string.settings_export_csv_title),
+                        subtitle = if (state.operation == BackupOperation.CsvExport) inProgress else stringResource(R.string.settings_export_csv_short),
+                        onClick = backupViewModel::exportCsv.takeUnless { busy },
+                    ),
+                )
+                add(
+                    SettingsRow(
+                        "import",
+                        stringResource(R.string.settings_import_title),
+                        subtitle = if (state.operation == BackupOperation.Import) inProgress else stringResource(R.string.settings_import_short),
+                        onClick = if (busy) null else ({
+                            backupViewModel.onImportRequested()
+                            try {
+                                pickLauncher.launch(IMPORT_MIME_TYPES)
+                            } catch (e: ActivityNotFoundException) {
+                                backupViewModel.onFileReadUnavailable(e.localizedMessage ?: e.javaClass.simpleName)
+                            }
+                        }),
+                    ),
+                )
+                if (healthAvailable) add(healthConnectRow { sheet = SettingsSheet.Health })
+            },
         ) {
-            MyDataCard(sessions = workouts.size, customExercises = customExercises.count { !it.archived })
+            state.status?.let { status ->
+                Spacer(Modifier.height(Studio.spacing.s))
+                StatusText(status.message())
+            }
+            Spacer(Modifier.height(Studio.spacing.s))
+            Text(stringResource(R.string.settings_info), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+        }
 
-            SectionTitle(stringResource(R.string.settings_section_preferences))
-            LanguageCard()
-            ThemeCard(
-                selected = preferences.theme,
-                onSelect = { theme ->
-                    haptics.light()
-                    container.launchMutation { container.preferences.setTheme(theme) }
-                },
-            )
-            RestTimerCard(
-                selected = preferences.restSeconds,
-                onSelect = { seconds ->
-                    haptics.light()
-                    container.launchMutation { container.preferences.setRestSeconds(seconds) }
-                },
-            )
-            NotificationsDisabledCard()
+        SettingsSection(
+            stringResource(R.string.settings_section_about),
+            buildList {
+                addAll(updateRows())
+                crashReport.value?.let { report ->
+                    add(
+                        SettingsRow(
+                            "crash",
+                            stringResource(R.string.settings_crash_title),
+                            subtitle = stringResource(R.string.settings_crash_desc, crashDate(report)),
+                        ) { sheet = SettingsSheet.CrashReport },
+                    )
+                }
+                if (container.feedback.enabled) {
+                    add(
+                        SettingsRow(
+                            "feedback",
+                            stringResource(R.string.feedback_row_title),
+                            subtitle = stringResource(R.string.feedback_row_subtitle),
+                        ) { sheet = SettingsSheet.Feedback },
+                    )
+                }
+            },
+        )
+    }
 
-            SectionTitle(stringResource(R.string.settings_section_backup))
+    val dismiss = { sheet = null }
+    when (sheet) {
+        SettingsSheet.Language -> LanguageSheet(onDismiss = dismiss)
+        SettingsSheet.Theme -> ThemeSheet(
+            selected = preferences.theme,
+            onSelect = { theme ->
+                haptics.light()
+                sheet = null
+                container.launchMutation { container.preferences.setTheme(theme) }
+            },
+            onDismiss = dismiss,
+        )
+        SettingsSheet.RestTimer -> RestTimerSheet(
+            selected = preferences.restSeconds,
+            onSelect = { seconds ->
+                haptics.light()
+                sheet = null
+                container.launchMutation { container.preferences.setRestSeconds(seconds) }
+            },
+            onDismiss = dismiss,
+        )
+        SettingsSheet.AutoBackup -> AutoBackupSheet(onDismiss = dismiss)
+        SettingsSheet.Health -> if (healthAvailable) HealthConnectSheet(onDismiss = dismiss)
+        SettingsSheet.CrashReport -> crashReport.value?.let { report ->
+            CrashReportSheet(report, onDeleted = { crashReport.value = null; sheet = null }, onDismiss = dismiss)
+        }
+        SettingsSheet.Feedback -> if (container.feedback.enabled) FeedbackSheet(onDismiss = dismiss)
+        null -> Unit
+    }
 
-            val busy = state.operation != null
-            ActionCard(
-                icon = R.drawable.ic_upload,
-                tint = colors.primary,
-                title = stringResource(R.string.settings_export_title),
-                description = stringResource(R.string.settings_export_desc),
-                loading = state.operation == BackupOperation.Export,
-                enabled = !busy,
-                onClick = backupViewModel::export,
-            )
-            ActionCard(
-                icon = R.drawable.ic_table_view,
-                tint = FixedColors.csvExport,
-                title = stringResource(R.string.settings_export_csv_title),
-                description = stringResource(R.string.settings_export_csv_desc),
-                loading = state.operation == BackupOperation.CsvExport,
-                enabled = !busy,
-                onClick = backupViewModel::exportCsv,
-            )
-            ActionCard(
-                icon = R.drawable.ic_download,
-                tint = FixedColors.dataImport,
-                title = stringResource(R.string.settings_import_title),
-                description = stringResource(R.string.settings_import_desc),
-                loading = state.operation == BackupOperation.Import,
-                enabled = !busy,
-                onClick = {
-                    backupViewModel.onImportRequested()
-                    try {
-                        pickLauncher.launch(IMPORT_MIME_TYPES)
-                    } catch (e: ActivityNotFoundException) {
-                        backupViewModel.onFileReadUnavailable(e.localizedMessage ?: e.javaClass.simpleName)
-                    }
-                },
-            )
-            AutoBackupCard()
+    if (state.pendingImport != null) {
+        ConfirmSheet(
+            title = stringResource(R.string.settings_import_confirm_title),
+            message = stringResource(R.string.settings_import_confirm_desc, workouts.size),
+            confirmLabel = stringResource(R.string.common_confirm),
+            dismissLabel = stringResource(R.string.common_cancel),
+            onConfirm = backupViewModel::confirmImport,
+            onDismiss = backupViewModel::cancelImport,
+        )
+    }
+}
 
-            if (state.pendingImport != null) {
-                ImportConfirmation(
-                    workoutCount = workouts.size,
-                    onCancel = backupViewModel::cancelImport,
-                    onConfirm = backupViewModel::confirmImport,
+/**
+ * Une ligne de Paramètres : titre, sous-titre (état), valeur à droite ou chevron ; [onClick] nul =
+ * ligne inactive (opération en cours, mises à jour gérées par Obtainium).
+ */
+internal data class SettingsRow(
+    val key: String,
+    val title: String,
+    val subtitle: String? = null,
+    val value: String? = null,
+    val chevron: Boolean = false,
+    val onClick: (() -> Unit)? = null,
+)
+
+/** Une section de la liste groupée : en-tête, lignes (pas de filet sous la dernière), [footer]. */
+@Composable
+internal fun SettingsSection(title: String, rows: List<SettingsRow>, footer: @Composable ColumnScope.() -> Unit = {}) {
+    Column(Modifier.fillMaxWidth()) {
+        SectionHeader(title)
+        Spacer(Modifier.height(Studio.spacing.xxs))
+        rows.forEachIndexed { index, row ->
+            key(row.key) {
+                ListRow(
+                    title = row.title,
+                    subtitle = row.subtitle,
+                    trailing = when {
+                        row.value != null -> ListRowTrailing.Value(row.value)
+                        row.chevron -> ListRowTrailing.Chevron
+                        else -> null
+                    },
+                    showDivider = index < rows.lastIndex,
+                    onClick = row.onClick,
                 )
             }
-            state.status?.let { StatusMessage(it) }
-            SettingsInfoBox()
-
-            // Health Connect (§ 15.3) : section masquée si Health Connect n'est pas disponible.
-            HealthConnectSection()
-
-            SectionTitle(stringResource(R.string.settings_section_app))
-            UpdateCard()
-            CrashReportCard()
-
-            if (container.feedback.enabled) {
-                SectionTitle(stringResource(R.string.settings_section_feedback))
-                FeedbackCard()
-            }
         }
+        footer()
     }
+}
+
+/**
+ * Message de succès ou d'erreur (sauvegarde, Health Connect, avis) : phrase en `textPrimary` 600,
+ * sans couleur (DESIGN.md § 1 : vert = progression, rouge = baisse).
+ */
+@Composable
+internal fun StatusText(message: String, modifier: Modifier = Modifier) {
+    Text(message, modifier, style = Studio.typography.body.copy(fontWeight = FontWeight.SemiBold), color = Studio.colors.textPrimary)
 }
 
 /** Fichiers CSV partagés ensemble (`ACTION_SEND_MULTIPLE`, `text/csv`, § 8). */
@@ -214,144 +335,6 @@ private fun shareIntent(uri: Uri, title: String): Intent {
     return Intent.createChooser(send, title)
 }
 
-@Composable
-internal fun SectionTitle(text: String) {
-    Text(
-        text = text,
-        color = MuscleNoteTheme.colors.mutedForeground,
-        fontSize = 11.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 1.sp,
-        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-    )
-}
-
-/** Icône ronde (carré arrondi 44 dp, fond couleur à 13 %) des cartes de Paramètres. */
-@Composable
-internal fun CardIcon(@DrawableRes icon: Int, tint: Color) {
-    Box(
-        modifier = Modifier
-            .size(44.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .background(tint.copy(alpha = 0.13f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-    }
-}
-
-/**
- * Minuteur de repos (§ 2.12) : préréglages de 1 à 5 min ; la durée choisie vaut pour les repos
- * démarrés ensuite (§ 7.2).
- */
-@Composable
-private fun RestTimerCard(selected: Int, onSelect: (Int) -> Unit) {
-    val colors = MuscleNoteTheme.colors
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.card)
-            .border(1.dp, colors.border, shape)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            CardIcon(R.drawable.ic_schedule, colors.primary)
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(stringResource(R.string.settings_rest_timer_title), color = colors.foreground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-                Text(stringResource(R.string.settings_rest_timer_desc), color = colors.mutedForeground, fontSize = 12.sp, lineHeight = 18.sp)
-            }
-        }
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            for (seconds in RestTimerRules.PRESETS) {
-                val active = seconds == selected
-                val chipShape = RoundedCornerShape(12.dp)
-                Box(
-                    Modifier
-                        .clip(chipShape)
-                        .background(if (active) colors.primary else colors.muted)
-                        .border(1.dp, if (active) colors.primary else colors.border, chipShape)
-                        .clickable { onSelect(seconds) }
-                        .padding(horizontal = 14.dp, vertical = 9.dp),
-                ) {
-                    Text(
-                        restDurationLabel(seconds),
-                        color = if (active) colors.primaryForeground else colors.foreground,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-            }
-        }
-    }
-}
-
-/** `45 s`, `1 min`, `1 min 30` (§ 2.12). */
-@Composable
-private fun restDurationLabel(seconds: Int): String {
-    val minutes = seconds / 60
-    val rest = seconds % 60
-    return when {
-        minutes == 0 -> stringResource(R.string.settings_rest_timer_seconds, rest)
-        rest == 0 -> stringResource(R.string.settings_rest_timer_minutes, minutes)
-        else -> stringResource(R.string.settings_rest_timer_minutes_seconds, minutes, rest)
-    }
-}
-
-/**
- * « Notifications désactivées — minuteur et rappels silencieux » + « Ouvrir les réglages »
- * (🔄 D6), seulement si la permission est refusée ou les notifications de l'app coupées ; revérifié
- * à chaque retour sur l'écran.
- */
-@Composable
-private fun NotificationsDisabledCard() {
-    val context = LocalContext.current
-    var enabled by remember { mutableStateOf(AppNotifications.areEnabled(context)) }
-    LifecycleResumeEffect(context) {
-        enabled = AppNotifications.areEnabled(context)
-        onPauseOrDispose { }
-    }
-    if (enabled) return
-
-    val colors = MuscleNoteTheme.colors
-    val shape = RoundedCornerShape(16.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.destructive.copy(alpha = 0.08f))
-            .border(1.dp, colors.destructive.copy(alpha = 0.27f), shape)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
-            CardIcon(R.drawable.ic_notifications_off, colors.destructive)
-            Text(
-                stringResource(R.string.settings_notifications_denied),
-                color = colors.foreground,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Medium,
-                lineHeight = 19.sp,
-                modifier = Modifier.weight(1f),
-            )
-        }
-        val buttonShape = RoundedCornerShape(10.dp)
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .clip(buttonShape)
-                .border(1.dp, colors.destructive.copy(alpha = 0.5f), buttonShape)
-                .clickable { openNotificationSettings(context) }
-                .padding(vertical = 10.dp),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(stringResource(R.string.settings_notifications_open), color = colors.destructive, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-        }
-    }
-}
-
 /** Réglages de notification de l'app ; à défaut, sa fiche dans les réglages système. */
 private fun openNotificationSettings(context: Context) {
     val notificationSettings = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
@@ -360,156 +343,6 @@ private fun openNotificationSettings(context: Context) {
         context.startActivity(notificationSettings)
     } catch (e: ActivityNotFoundException) {
         context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null)))
-    }
-}
-
-/** Carte-action : icône ronde, titre, description, chevron (§ 2.12, point 3). */
-@Composable
-private fun ActionCard(
-    @DrawableRes icon: Int,
-    tint: Color,
-    title: String,
-    description: String,
-    loading: Boolean,
-    enabled: Boolean,
-    onClick: () -> Unit,
-) {
-    val colors = MuscleNoteTheme.colors
-    val shape = RoundedCornerShape(16.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(colors.card)
-            .border(1.dp, colors.border, shape)
-            .clickable(enabled = enabled, onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(tint.copy(alpha = 0.13f)),
-            contentAlignment = Alignment.Center,
-        ) {
-            if (loading) {
-                CircularProgressIndicator(color = tint, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
-            } else {
-                Icon(painterResource(icon), contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-            }
-        }
-        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Text(title, color = colors.foreground, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
-            Text(description, color = colors.mutedForeground, fontSize = 12.sp, lineHeight = 18.sp)
-        }
-        Icon(
-            painterResource(R.drawable.ic_chevron_right),
-            contentDescription = null,
-            tint = colors.mutedForeground,
-            modifier = Modifier.size(18.dp),
-        )
-    }
-}
-
-/** « Écraser les données actuelles ? » [Annuler] [✓ Confirmer] (§ 5.4, point 2). */
-@Composable
-private fun ImportConfirmation(workoutCount: Int, onCancel: () -> Unit, onConfirm: () -> Unit) {
-    val colors = MuscleNoteTheme.colors
-    val accent = FixedColors.dataImport
-    val shape = RoundedCornerShape(14.dp)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(accent.copy(alpha = 0.08f))
-            .border(1.dp, accent.copy(alpha = 0.27f), shape)
-            .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(painterResource(R.drawable.ic_error), contentDescription = null, tint = accent, modifier = Modifier.size(18.dp))
-        Column {
-            Text(
-                stringResource(R.string.settings_import_confirm_title),
-                color = colors.foreground,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(bottom = 2.dp),
-            )
-            Text(
-                stringResource(R.string.settings_import_confirm_desc, workoutCount),
-                color = colors.mutedForeground,
-                fontSize = 12.sp,
-                lineHeight = 18.sp,
-            )
-        }
-        Row(Modifier.padding(top = 4.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            val buttonShape = RoundedCornerShape(8.dp)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(buttonShape)
-                    .border(1.dp, colors.border, buttonShape)
-                    .clickable(onClick = onCancel)
-                    .padding(vertical = 9.dp),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(stringResource(R.string.common_cancel), color = colors.foreground, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Row(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(buttonShape)
-                    .background(accent)
-                    .clickable(onClick = onConfirm)
-                    .padding(vertical = 9.dp),
-                horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(painterResource(R.drawable.ic_check), contentDescription = null, tint = Color.White, modifier = Modifier.size(14.dp))
-                Text(stringResource(R.string.common_confirm), color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            }
-        }
-    }
-}
-
-/** Encart de succès ou d'erreur sous les actions (§ 2.12, point 4). */
-@Composable
-private fun StatusMessage(status: BackupStatus) {
-    val success = status is BackupStatus.ExportShared || status is BackupStatus.CsvExported || status is BackupStatus.ImportSucceeded
-    StatusBox(success = success, message = status.message())
-}
-
-/** Encart de succès (`primary`) ou d'erreur (`destructive`) : sauvegarde (§ 2.12), avis (§ 14.4). */
-@Composable
-internal fun StatusBox(success: Boolean, message: String) {
-    val colors = MuscleNoteTheme.colors
-    val tint = if (success) colors.primary else colors.destructive
-    val shape = RoundedCornerShape(12.dp)
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(shape)
-            .background(tint.copy(alpha = 0.08f))
-            .border(1.dp, tint.copy(alpha = 0.27f), shape)
-            .padding(14.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Icon(
-            painterResource(if (success) R.drawable.ic_check_circle else R.drawable.ic_error),
-            contentDescription = null,
-            tint = tint,
-            modifier = Modifier.size(16.dp),
-        )
-        Text(
-            text = message,
-            color = tint,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            lineHeight = 20.sp,
-            modifier = Modifier.weight(1f),
-        )
     }
 }
 
