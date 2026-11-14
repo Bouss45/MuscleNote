@@ -188,9 +188,9 @@ class BackupV1MigrationTest {
     }
 
     @Test
-    fun `les préférences perdent la langue et prennent le thème système`() {
+    fun `les préférences perdent la langue et prennent le thème sombre de l'app Expo`() {
         assertEquals(150, data.preferences!!.restSeconds)
-        assertEquals(ThemeMode.System, data.preferences!!.theme)
+        assertEquals(ThemeMode.Dark, data.preferences!!.theme)
         assertFalse(BackupWriter.write(data, java.time.Instant.EPOCH).contains("language"))
     }
 

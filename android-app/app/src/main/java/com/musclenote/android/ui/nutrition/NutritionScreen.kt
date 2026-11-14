@@ -114,7 +114,7 @@ fun NutritionScreen(modifier: Modifier = Modifier) {
                 ml = tracker.waterLog[todayKey] ?: 0,
                 goalMl = DailyTracker.goalFor(tracker.waterGoalHistory, todayKey) ?: tracker.waterGoal,
                 onAdd = { ml -> container.launchMutation { nutrition.addWater(ml) } },
-                onReset = { container.launchMutation { nutrition.resetWaterToday() } },
+                onReset = { container.launchMutation { nutrition.setWaterToday(0) } },
                 onGoalChange = { ml -> container.launchMutation { nutrition.setWaterGoal(ml) } },
             )
 

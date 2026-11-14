@@ -10,10 +10,21 @@ import kotlin.math.roundToInt
 import kotlin.math.roundToLong
 
 /**
+ * Format d'une valeur saisie au pavé numérique : longueur maximale, décimales permises et pas des
+ * touches − / +. Les champs d'une série ([SetEntryField]) et les quantités de Nutrition
+ * (`NutritionEntry`, SPEC § 15.10.5) partagent les règles de [SetEntryRules].
+ */
+interface EntryFormat {
+    val maxLength: Int
+    val decimals: Boolean
+    val step: Double
+}
+
+/**
  * Champ d'une série saisi au pavé numérique (SPEC § 15.7.4) : longueur maximale (§ 2.6),
  * décimales permises, pas des touches − / +, et lecture / écriture dans la série.
  */
-enum class SetEntryField(val maxLength: Int, val decimals: Boolean, val step: Double) {
+enum class SetEntryField(override val maxLength: Int, override val decimals: Boolean, override val step: Double) : EntryFormat {
     Weight(6, true, 2.5),
     Reps(3, false, 1.0),
     Duration(4, true, 1.0),
@@ -72,7 +83,7 @@ object SetEntryRules {
      * double, décimale au-delà de [MAX_DECIMALS], texte plus long que la longueur maximale du champ,
      * toute autre touche. Pas de zéro inutile en tête ; un séparateur sur un champ vide donne « 0, ».
      */
-    fun type(text: String, fresh: Boolean, key: Char, field: SetEntryField, locale: Locale): String? {
+    fun type(text: String, fresh: Boolean, key: Char, field: EntryFormat, locale: Locale): String? {
         val separator = decimalSeparator(locale)
         val base = if (fresh) "" else text
         val next = when {
@@ -99,13 +110,13 @@ object SetEntryRules {
      * [direction] = +1 ou −1, jamais sous 0, arrondie au centième (demi vers +∞, § 3.5) ; `null`
      * (sans effet) si le résultat affiché dépasserait la longueur maximale du champ.
      */
-    fun step(value: Double, direction: Int, field: SetEntryField, locale: Locale, step: Double = field.step): Double? {
+    fun step(value: Double, direction: Int, field: EntryFormat, locale: Locale, step: Double = field.step): Double? {
         val next = ((value + direction * step).coerceAtLeast(0.0) * 100).roundToLong() / 100.0
         return next.takeIf { format(it, field, locale).length <= field.maxLength }
     }
 
     /** Valeur affichée (lignes et pavé) : 2 décimales au plus, sans zéro final ni milliers. */
-    fun format(value: Double, field: SetEntryField, locale: Locale): String =
+    fun format(value: Double, field: EntryFormat, locale: Locale): String =
         formatDecimal(value, locale, if (field.decimals) MAX_DECIMALS else 0)
 
     /** Texte saisi lu dans la série (🔄 D20 : à chaque touche) ; un champ vide vaut 0. */

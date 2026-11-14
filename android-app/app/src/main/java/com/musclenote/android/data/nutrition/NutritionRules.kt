@@ -4,6 +4,11 @@ import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.TakenRecord
+import com.musclenote.android.data.util.parseDecimal
+import com.musclenote.android.data.workout.EntryFormat
+import com.musclenote.android.data.workout.SetEntryRules
+import java.util.Locale
+import kotlin.math.roundToInt
 
 /** Couleur de la carte Calories selon le ratio kcal / objectif (§ 2.11). */
 enum class CalorieTone {
@@ -15,6 +20,42 @@ enum class CalorieTone {
 
     /** Sinon : `primary`. */
     Below,
+}
+
+/**
+ * État des calories du jour (SPEC § 15.10.1) : ton de [NutritionRules.calorieTone], kcal qui
+ * restent (ton [CalorieTone.Below]) ou dépassement (ton [CalorieTone.Over]), 0 sinon ; [progress]
+ * = remplissage de la piste, plafonné à 1.
+ */
+data class CalorieStatus(val tone: CalorieTone, val remaining: Int, val excess: Int, val progress: Float)
+
+/** Mode d'un formulaire Calories ou Eau (§ 15.10.2) : ajouter au jour, ou fixer son total. */
+enum class EntryMode { Add, Total }
+
+/**
+ * Quantités de Nutrition saisies au pavé numérique (§ 15.10.5) : kcal et ml entiers, objectif d'eau
+ * en litres (2 décimales).
+ */
+enum class NutritionEntry(override val maxLength: Int, override val decimals: Boolean, override val step: Double) : EntryFormat {
+    Calories(5, false, 50.0),
+    Water(5, false, 250.0),
+    CalorieGoal(5, false, 100.0),
+    WaterGoal(5, true, 0.25),
+}
+
+/** Résumé des rappels d'un complément (§ 2.11) : sous-titre de sa ligne. */
+sealed interface ReminderSummary {
+    /** Rappels désactivés : « Pas de rappel ». */
+    data object Off : ReminderSummary
+
+    /** Activés, aucun rappel : « Rappels activés ». */
+    data object On : ReminderSummary
+
+    /** Un seul rappel : « Rappel à 08:00 ». */
+    data class At(val hour: Int, val minute: Int) : ReminderSummary
+
+    /** Plusieurs : « 3 rappels ». */
+    data class Count(val count: Int) : ReminderSummary
 }
 
 /**
@@ -38,9 +79,13 @@ object NutritionRules {
     fun setCalories(tracker: DailyTracker, day: String, value: Int): DailyTracker =
         tracker.copy(caloriesLog = tracker.caloriesLog.withDay(day, value))
 
-    /** `log[day] = max(0, ancien + delta)` en ml ; ⟲ = `addWater(−valeur du jour)`. */
+    /** `log[day] = max(0, ancien + delta)` en ml. */
     fun addWater(tracker: DailyTracker, day: String, deltaMl: Int): DailyTracker =
         tracker.copy(waterLog = tracker.waterLog.withDay(day, (tracker.waterLog[day] ?: 0) + deltaMl))
+
+    /** « Total du jour » de l'eau (🔄 D35) : `log[day] = max(0, ml)` ; 0 = l'ancienne remise à zéro. */
+    fun setWater(tracker: DailyTracker, day: String, ml: Int): DailyTracker =
+        tracker.copy(waterLog = tracker.waterLog.withDay(day, ml))
 
     /**
      * Objectif de calories à partir du jour [today] (🔄 D15) : `history[today] = kcal` (remplace une
@@ -67,6 +112,21 @@ object NutritionRules {
         }
     }
 
+    /** État des calories du jour par rapport à [goal] (surface « Aujourd'hui », § 15.10.1). */
+    fun calorieStatus(kcal: Int, goal: Int): CalorieStatus {
+        val tone = calorieTone(kcal, goal)
+        val progress = if (goal > 0) (kcal.toFloat() / goal).coerceIn(0f, 1f) else 0f
+        return CalorieStatus(
+            tone = tone,
+            remaining = if (tone == CalorieTone.Below && goal > 0) (goal - kcal).coerceAtLeast(0) else 0,
+            excess = if (tone == CalorieTone.Over) kcal - goal else 0,
+            progress = progress,
+        )
+    }
+
+    /** Objectif d'eau du jour atteint (§ 2.11). */
+    fun waterReached(ml: Int, goalMl: Int): Boolean = ml >= goalMl
+
     private fun Map<String, Int>.withDay(day: String, value: Int): Map<String, Int> = this + (day to value.coerceAtLeast(0))
 
     // ─── « Pris aujourd'hui » ───────────────────────────────────────────────────────────
@@ -83,6 +143,44 @@ object NutritionRules {
      */
     fun cleanTaken(taken: TakenRecord, supplementIds: Set<String>, today: String): TakenRecord =
         taken.filter { (id, day) -> id in supplementIds && day == today }
+
+    /** Compléments existants pris aujourd'hui (« 1/3 pris », § 15.10.1). */
+    fun takenCount(supplements: List<Supplement>, taken: TakenRecord, today: String): Int =
+        supplements.count { isTaken(taken, it.id, today) }
+
+    // ─── Saisie au pavé (§ 15.10.5) ───────────────────────────────────────────────────
+
+    /**
+     * Valeur d'un formulaire Calories ou Eau, `null` si elle est refusée : « Ajouter » > 0, « Total
+     * du jour » champ non vide (0 remet le jour à zéro).
+     */
+    fun entryValue(mode: EntryMode, text: String): Int? {
+        if (text.isEmpty()) return null
+        val value = text.toIntOrNull() ?: return null
+        return when (mode) {
+            EntryMode.Add -> value.takeIf { it > 0 }
+            EntryMode.Total -> value.takeIf { it >= 0 }
+        }
+    }
+
+    /** Total du jour après la saisie (« Nouveau total ») ; borné à 0 comme les journaux. */
+    fun newTotal(current: Int, mode: EntryMode, value: Int): Int = when (mode) {
+        EntryMode.Add -> (current + value).coerceAtLeast(0)
+        EntryMode.Total -> value.coerceAtLeast(0)
+    }
+
+    /** Objectif de calories saisi, `null` s'il n'est pas > 0. */
+    fun calorieGoalValue(text: String): Int? = text.toIntOrNull()?.takeIf { it > 0 }
+
+    /** Objectif d'eau saisi en litres → ml (`round(v × 1000)`), `null` s'il n'est pas > 0. */
+    fun waterGoalValue(text: String): Int? {
+        if (text.isEmpty()) return null
+        return (parseDecimal(text) * 1000).roundToInt().takeIf { it > 0 }
+    }
+
+    /** Objectif d'eau prérempli en litres (« 2 », « 2,5 », « 2,25 »). */
+    fun waterGoalText(goalMl: Int, locale: Locale): String =
+        SetEntryRules.format(goalMl / 1000.0, NutritionEntry.WaterGoal, locale)
 
     // ─── Compléments et rappels ─────────────────────────────────────────────────────────
 
@@ -109,6 +207,17 @@ object NutritionRules {
     /** Heure d'un rappel ajouté : celle du dernier + 2 h (modulo 24), même minute ; 08:00 sinon. */
     fun nextReminderTime(last: Pair<Int, Int>?): Pair<Int, Int> =
         if (last == null) DEFAULT_REMINDER_HOUR to 0 else (last.first + 2) % 24 to last.second
+
+    /** Résumé des rappels d'un complément (§ 2.11). */
+    fun reminderSummary(supplement: Supplement): ReminderSummary {
+        val reminders = supplement.reminders
+        return when {
+            !supplement.reminderEnabled -> ReminderSummary.Off
+            reminders.isEmpty() -> ReminderSummary.On
+            reminders.size == 1 -> ReminderSummary.At(reminders[0].hour, reminders[0].minute)
+            else -> ReminderSummary.Count(reminders.size)
+        }
+    }
 
     fun addReminder(supplement: Supplement, newId: () -> String): Supplement {
         val (hour, minute) = nextReminderTime(supplement.reminders.lastOrNull()?.let { it.hour to it.minute })
