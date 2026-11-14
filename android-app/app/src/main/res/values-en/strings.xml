@@ -181,37 +181,10 @@
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
 
     <!-- Home (§ 2.2) -->
-    <string name="home_new_session">New workout</string>
-    <string name="home_active_subtitle">%1$s · %2$s kg bodyweight</string>
     <string name="home_migrate_title">Coming from the old MuscleNote?</string>
     <string name="home_migrate_text">Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote.</string>
     <string name="home_update_title">Update available</string>
-    <string name="home_update_text">MuscleNote %1$s is available (installed version: %2$s).</string>
     <string name="update_download">Download</string>
-    <string name="home_streak_current">Current streak</string>
-    <plurals name="home_streak_week_unit">
-        <item quantity="one">week</item>
-        <item quantity="other">weeks</item>
-    </plurals>
-    <string name="home_streak_best">Best</string>
-    <string name="home_streak_best_value">%1$d wks</string>
-    <string name="home_streak_last8weeks">Last 8 weeks · this week on the right</string>
-    <string name="home_streak_legend_validated">Validated (3+)</string>
-    <string name="home_streak_legend_partial">Partial (1-2)</string>
-    <string name="home_streak_legend_none">None</string>
-    <string name="home_streak_hint_start">Complete 3 workouts this week to start a streak</string>
-    <string name="home_streak_hint_alive">Min 3 workouts/week · 1 skip allowed</string>
-    <string name="home_streak_hint_over">Streak ended — start again this week!</string>
-    <string name="home_stat_sessions">Workouts</string>
-    <string name="home_stat_total_volume">Total volume</string>
-    <string name="home_stat_last_weight">Last weight</string>
-    <string name="home_gym_time">Total gym time · avg %1$s/session</string>
-    <string name="home_recent_sessions">Recent sessions</string>
-    <string name="home_delete_confirm">Delete this workout?</string>
-    <string name="home_volume_short">%1$s kg vol</string>
-    <string name="home_minutes">%1$d min</string>
-    <string name="home_empty_title">Ready to train?</string>
-    <string name="home_empty_text">Start your first workout to begin tracking progress</string>
     <string name="home_edit_date">Edit date</string>
     <string name="home_date_day">Day</string>
     <string name="home_date_month">Month</string>
@@ -526,4 +499,68 @@
     <string name="ds_keypad_hide">Hide keypad</string>
     <string name="ds_collapse_session">Minimise the workout</string>
     <string name="ds_exercise_details">Exercise details</string>
+
+    <!-- Navigation, Home and Journal (SPEC § 15.8) -->
+    <string name="tabs_journal">Journal</string>
+    <string name="common_see_all">See all</string>
+    <string name="mini_bar_rest">rest</string>
+    <string name="home_resume">Resume</string>
+    <string name="home_live_label">In progress</string>
+    <string name="home_rest_detail">%1$s, set %2$d</string>
+    <string name="home_next_caption">Next workout</string>
+    <string name="home_next_new">New workout</string>
+    <string name="home_next_new_detail">Pick your workout in the next step</string>
+    <string name="home_next_last_today">Last time today</string>
+    <string name="home_next_last_yesterday">Last time yesterday</string>
+    <plurals name="home_next_last_days">
+        <item quantity="one">Last time %1$d day ago</item>
+        <item quantity="other">Last time %1$d days ago</item>
+    </plurals>
+    <string name="home_next_detail">%1$s · %2$s</string>
+    <string name="home_next_other">Other…</string>
+    <string name="home_start">Start</string>
+    <string name="home_update_row">MuscleNote %1$s</string>
+    <string name="home_update_installed">Installed version: %1$s</string>
+    <string name="home_update_later">Later</string>
+    <string name="home_migrate_section">From the old app</string>
+    <string name="home_hide">Hide</string>
+    <string name="home_last_session">Last workout</string>
+    <string name="home_this_week">This week</string>
+    <string name="home_week_sessions_value">%1$d/%2$d</string>
+    <string name="home_week_sessions_label">workouts</string>
+    <string name="home_streak_label">current streak</string>
+    <string name="home_record_label">best</string>
+    <string name="home_week_bars_caption">Last 8 weeks · 3 workouts = week done</string>
+    <string name="home_week_bars_description">Last 8 weeks: %1$s, then %2$d this week</string>
+    <string name="journal_title">Journal</string>
+    <string name="journal_all_time">All time</string>
+    <string name="journal_stat_sessions">workouts</string>
+    <string name="journal_stat_volume">volume</string>
+    <string name="journal_stat_gym_time">at the gym</string>
+    <string name="journal_stat_average">per workout</string>
+    <string name="journal_tonnes">%1$s t</string>
+    <string name="journal_week_current">This week</string>
+    <string name="journal_week_previous">Last week</string>
+    <string name="journal_week_of">Week of %1$s</string>
+    <string name="journal_unknown_date">Unknown date</string>
+    <string name="journal_empty_title">No workouts yet</string>
+    <string name="journal_empty_message">Your finished workouts will show up here, week by week.</string>
+    <string name="journal_empty_start">Start a workout</string>
+    <string name="journal_empty_resume">Resume the workout</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$02d min</string>
+    <string name="session_subtitle">%1$s · %2$s</string>
+    <string name="session_volume_kg">%1$s kg</string>
+    <string name="session_long_press">Workout options</string>
+    <string name="session_actions_edit">Edit workout</string>
+    <string name="session_actions_delete">Delete workout</string>
+    <string name="session_delete_title">Delete this workout?</string>
+    <string name="session_delete_message">%1$s on %2$s will be removed from your history.</string>
+    <string name="common_kg_value">%1$s kg</string>
+    <plurals name="home_weeks_value">
+        <item quantity="one">%1$d wk</item>
+        <item quantity="other">%1$d wks</item>
+    </plurals>
+    <string name="duration_compact">%1$dh %2$02dm</string>
 </resources>

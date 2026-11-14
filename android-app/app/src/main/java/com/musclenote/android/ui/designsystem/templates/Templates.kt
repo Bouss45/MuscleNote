@@ -49,6 +49,13 @@ fun systemScreenInsets(): ScreenInsets = ScreenInsets(
     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
 )
 
+/**
+ * Insets d'un écran d'onglet posé au-dessus de la barre d'onglets de l'app (SPEC § 15.8.1) : la
+ * barre absorbe l'inset du bas, l'écran ne garde que celui du haut.
+ */
+@Composable
+fun tabScreenInsets(): ScreenInsets = ScreenInsets(top = systemScreenInsets().top, bottom = 0.dp)
+
 /** Écart entre la mini-barre et la barre d'onglets. */
 private val MiniBarGap = 8.dp
 
@@ -86,6 +93,94 @@ fun HubTemplate(
         }
         if (miniBar != null) {
             Column(Modifier.padding(horizontal = Studio.spacing.screen)) {
+                miniBar()
+                Spacer(Modifier.height(MiniBarGap))
+            }
+        }
+        navigation?.invoke(insets.bottom)
+    }
+}
+
+/**
+ * Sections d'un [HubLazyTemplate] : chaque [section] ajoute 40 avant elle (sauf la première), son
+ * en-tête puis ses lignes, chacune en élément paresseux.
+ */
+class HubSections internal constructor(private val list: LazyListScope, private val sectionGap: Dp) {
+    private var first = true
+
+    /** Une section : en-tête ([header], suivi de 4), puis [rows] (`items`, `item`). */
+    fun section(key: Any, header: @Composable () -> Unit, rows: LazyListScope.() -> Unit) {
+        gap(key)
+        list.item(key = hubKey(key, "header"), contentType = "hub-header") {
+            header()
+            Spacer(Modifier.height(SectionHeaderGap))
+        }
+        list.rows()
+    }
+
+    /** Un bloc sans en-tête (rangée de stats, état vide), espacé comme une section. */
+    fun block(key: Any, content: @Composable () -> Unit) {
+        gap(key)
+        list.item(key = hubKey(key, "block"), contentType = "hub-block") { content() }
+    }
+
+    private fun gap(key: Any) {
+        if (!first) list.item(key = hubKey(key, "gap"), contentType = "hub-gap") { Spacer(Modifier.height(sectionGap)) }
+        first = false
+    }
+}
+
+/**
+ * Clé d'un élément posé par le gabarit (en-tête, écart), distincte des clés des lignes. Une chaîne :
+ * une clé de liste paresseuse doit pouvoir être rangée dans un `Bundle`.
+ */
+private fun hubKey(section: Any, part: String): String = "hub:$section:$part"
+
+/** Écart entre un en-tête de section et sa première ligne. */
+private val SectionHeaderGap = 4.dp
+
+/**
+ * Gabarit **hub** en liste paresseuse (DESIGN.md § 10.1) : même disposition que [HubTemplate],
+ * pour un hub dont les lignes peuvent se compter par centaines (Journal). Les sections viennent de
+ * [HubSections.section] ; [listState] garde le défilement.
+ */
+@Composable
+fun HubLazyTemplate(
+    titleBar: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    highlight: (@Composable () -> Unit)? = null,
+    miniBar: (@Composable () -> Unit)? = null,
+    navigation: (@Composable (bottomInset: Dp) -> Unit)? = null,
+    insets: ScreenInsets = systemScreenInsets(),
+    listState: LazyListState = rememberLazyListState(),
+    sections: HubSections.() -> Unit,
+) {
+    val spacing = Studio.spacing
+    Column(modifier.fillMaxSize().background(Studio.colors.background)) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = spacing.screen,
+                end = spacing.screen,
+                top = insets.top,
+                bottom = if (navigation == null) insets.bottom + spacing.section else spacing.section,
+            ),
+        ) {
+            item(key = "hub-title", contentType = "hub-title") {
+                titleBar()
+                Spacer(Modifier.height(spacing.s))
+            }
+            if (highlight != null) {
+                item(key = "hub-highlight", contentType = "hub-highlight") {
+                    highlight()
+                    Spacer(Modifier.height(spacing.section))
+                }
+            }
+            HubSections(this, spacing.section).sections()
+        }
+        if (miniBar != null) {
+            Column(Modifier.padding(horizontal = spacing.screen)) {
                 miniBar()
                 Spacer(Modifier.height(MiniBarGap))
             }

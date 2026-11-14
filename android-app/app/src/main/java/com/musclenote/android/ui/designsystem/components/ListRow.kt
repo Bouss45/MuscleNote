@@ -3,6 +3,7 @@ package com.musclenote.android.ui.designsystem.components
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -64,7 +65,8 @@ sealed interface ListRowTrailing {
 /**
  * Ligne de liste — `ListRow` (DESIGN.md § 9.1) : 64 de haut (72 avec des mini-puces), filet en
  * bas ; pastille d'icône optionnelle, titre et sous-titre ou mini-puces, fin au choix. Pressée :
- * fond `surfaceRaised` qui déborde de 12.
+ * fond `surfaceRaised` qui déborde de 12. [onLongClick] (optionnel, libellé d'accessibilité
+ * [onLongClickLabel]) : appui long, pour les actions secondaires d'une ligne (séance du Journal).
  */
 @Composable
 fun ListRow(
@@ -77,6 +79,8 @@ fun ListRow(
     showDivider: Boolean = true,
     onClick: (() -> Unit)? = null,
     interactionSource: MutableInteractionSource? = null,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed = source.pressed()
@@ -96,6 +100,14 @@ fun ListRow(
                         indication = null,
                         role = Role.Checkbox,
                         onValueChange = { onClick() },
+                    )
+                    onLongClick != null -> Modifier.combinedClickable(
+                        interactionSource = source,
+                        indication = null,
+                        role = Role.Button,
+                        onLongClickLabel = onLongClickLabel,
+                        onLongClick = onLongClick,
+                        onClick = onClick,
                     )
                     else -> Modifier.clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
                 },

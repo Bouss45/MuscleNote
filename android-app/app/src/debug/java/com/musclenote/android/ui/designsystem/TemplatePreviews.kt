@@ -56,6 +56,7 @@ import com.musclenote.android.ui.designsystem.components.WeekBar
 import com.musclenote.android.ui.designsystem.components.WeekBars
 import com.musclenote.android.ui.designsystem.templates.FicheTemplate
 import com.musclenote.android.ui.designsystem.templates.FormSheetTemplate
+import com.musclenote.android.ui.designsystem.templates.HubLazyTemplate
 import com.musclenote.android.ui.designsystem.templates.HubTemplate
 import com.musclenote.android.ui.designsystem.templates.LiveTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
@@ -155,6 +156,42 @@ private fun HubTemplateProgresPreview() = StudioPreviewTheme {
         Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.xxs)) {
             SectionHeader("Exercices", linkLabel = "Tout voir", onLinkClick = {})
             ListRow("Tirage horizontal", subtitle = "11 séances", trailing = ListRowTrailing.Value("72 kg", "−5,0 kg", Trend.Down), showDivider = false)
+        }
+    }
+}
+
+/** Hub en liste paresseuse (Journal) : totaux, puis une section par semaine. */
+@StudioScreenPreviews
+@Composable
+private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
+    val weeks = listOf(
+        "Cette semaine" to listOf(Triple("Pull", "mer. 11 nov. · 1 h 12", "6 840 kg"), Triple("Legs", "lun. 9 nov. · 1 h 31", "11 420 kg")),
+        "Semaine dernière" to listOf(
+            Triple("Push", "jeu. 5 nov. · 1 h 18", "7 960 kg"),
+            Triple("Pull", "mar. 3 nov. · 1 h 05", "6 610 kg"),
+            Triple("Legs", "lun. 2 nov. · 1 h 27", "11 180 kg"),
+        ),
+        "Semaine du 26 oct." to listOf(Triple("Push", "ven. 30 oct. · 1 h 15", "7 820 kg"), Triple("Cardio", "mer. 28 oct. · 40 min", "3 séries")),
+    )
+    HubLazyTemplate(
+        titleBar = { ScreenTitleBar("Journal") },
+        navigation = { StudioNavigationBar(SampleNavItems, 1, {}, bottomInset = it) },
+        insets = MockupInsets,
+    ) {
+        block("totals") {
+            Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.s)) {
+                SectionHeader("Depuis le début")
+                StatRow(listOf(Stat("48", "séances"), Stat("312 t", "volume"), Stat("52 h", "en salle"), Stat("1 h 05", "par séance")))
+            }
+        }
+        weeks.forEach { (title, rows) ->
+            section(title, header = { SectionHeader(title, trailingText = "${rows.size} séances") }) {
+                rows.forEachIndexed { index, (name, subtitle, value) ->
+                    item(key = "$title-$index") {
+                        ListRow(name, subtitle = subtitle, trailing = ListRowTrailing.Value(value), showDivider = index < rows.lastIndex, onClick = {})
+                    }
+                }
+            }
         }
     }
 }

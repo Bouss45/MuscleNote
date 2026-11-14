@@ -8,6 +8,9 @@ import com.musclenote.android.data.AppContainer
 import com.musclenote.android.ui.MuscleNoteApp
 import com.musclenote.android.ui.history.ExerciseHistoryScreen
 import com.musclenote.android.ui.home.HomeScreen
+import com.musclenote.android.ui.journal.JournalScreen
+import com.musclenote.android.ui.designsystem.templates.ScreenInsets
+import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
@@ -41,18 +44,57 @@ private fun AppPreview() = ScreenPreview { container ->
     MuscleNoteApp(rememberBackupViewModel(container), emptyFlow())
 }
 
-@ScreenPreviews
+/** Accueil au gabarit hub (§ 15.8.2) : prochaine séance suggérée, dernière séance, cette semaine. */
+@PhonePreviews
 @Composable
 private fun HomeScreenPreview() = ScreenPreview {
-    HomeScreen(onStartWorkout = {}, onOpenWorkout = {}, onEditWorkout = {})
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
 }
 
-/** Première ouverture : aucune séance, carte de transfert depuis l'ancienne app. */
+/** Accueil pendant une séance : surface « En cours » avec le chrono et le repos. */
+@PhonePreviews
+@Composable
+private fun HomeScreenLivePreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
+}
+
+/** Première ouverture : aucune séance, « Nouvelle séance » et transfert depuis l'ancienne app. */
 @PhonePreviews
 @Composable
 private fun HomeScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    HomeScreen(onStartWorkout = {}, onOpenWorkout = {}, onEditWorkout = {})
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
 }
+
+@Composable
+private fun PreviewHomeScreen() = HomeScreen(
+    onOpenSettings = {},
+    onStartWorkout = { _, _ -> },
+    onOpenWorkout = {},
+    onEditWorkout = {},
+    onOpenJournal = {},
+    insets = PreviewTabInsets,
+)
+
+/** Journal (§ 15.8.4) : totaux, puis six semaines de séances, toute la liste. */
+@ScreenPreviews
+@Composable
+private fun JournalScreenPreview() = ScreenPreview {
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
+        JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
+    }
+}
+
+/** Journal sans séance terminée : état vide. */
+@PhonePreviews
+@Composable
+private fun JournalScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
+    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
+        JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
+    }
+}
+
+/** Écran d'onglet sans la barre d'onglets : l'inset de la barre d'état de la maquette seul. */
+private val PreviewTabInsets = ScreenInsets(top = 40.dp, bottom = 0.dp)
 
 /** Séance en cours depuis 42 min, repos de 2 min 30 en cours : toute la liste, barre « Terminer ». */
 @ScreenPreviews

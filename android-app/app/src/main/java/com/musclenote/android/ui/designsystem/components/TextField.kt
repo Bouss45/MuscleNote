@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,8 +25,9 @@ private val FieldPaddingH = 16.dp
 private val FieldPaddingV = 14.dp
 
 /**
- * Champ texte — `StudioTextField` (DESIGN.md § 9.2) : texte libre au clavier du système (note
- * d'un exercice). Rayon 12, padding 16 / 14, `body`, plusieurs lignes ; au repos sur
+ * Champ texte — `StudioTextField` (DESIGN.md § 9.2) : texte au clavier du système (note d'un
+ * exercice ; champs Jour / Mois / Année de « Modifier la date » avec [keyboardOptions] numérique et
+ * [singleLine]). Rayon 12, padding 16 / 14, `body`, plusieurs lignes par défaut ; au repos sur
  * `surfaceControl`, en saisie sur `liveDim` avec le curseur `liveText` (le jaune marque la saisie) ;
  * invite en texte secondaire.
  */
@@ -36,6 +38,9 @@ fun StudioTextField(
     placeholder: String,
     modifier: Modifier = Modifier,
     maxLines: Int = 5,
+    singleLine: Boolean = false,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
     val source = remember { MutableInteractionSource() }
     val focused by source.collectIsFocusedAsState()
@@ -49,8 +54,10 @@ fun StudioTextField(
             .background(if (focused) colors.liveDim else colors.surfaceControl, Studio.shapes.control),
         textStyle = Studio.typography.body.copy(color = colors.textPrimary),
         cursorBrush = SolidColor(colors.liveText),
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-        maxLines = maxLines,
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = singleLine,
+        maxLines = if (singleLine) 1 else maxLines,
         interactionSource = source,
         decorationBox = { inner ->
             Box(Modifier.padding(horizontal = FieldPaddingH, vertical = FieldPaddingV)) {

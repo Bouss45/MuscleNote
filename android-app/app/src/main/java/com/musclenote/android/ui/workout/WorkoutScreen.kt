@@ -13,7 +13,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -52,10 +51,8 @@ import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.templates.LiveTemplate
 import com.musclenote.android.ui.designsystem.theme.Studio
-import kotlinx.coroutines.delay
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
-import java.util.Locale
 
 /**
  * Séance en cours (SPEC § 15.7, 🔄 D32) au gabarit « en direct » : en-tête fixe (réduire, nom,
@@ -484,35 +481,3 @@ private fun NoActiveWorkout(onBack: () -> Unit) {
     }
 }
 
-/** Heure courante en ms, rafraîchie à chaque seconde pleine. */
-@Composable
-private fun rememberSecondTicker(time: TimeSource): Long {
-    val now by produceState(time.now().toEpochMilli()) {
-        while (true) {
-            value = time.now().toEpochMilli()
-            delay(1_000 - value % 1_000)
-        }
-    }
-    return now
-}
-
-/** Le repos est en cours : vrai jusqu'à `endsAt`, sans relire l'heure chaque seconde. */
-@Composable
-private fun rememberRestRunning(rest: RestTimerState?, time: TimeSource): Boolean {
-    val running by produceState(rest != null && time.now().toEpochMilli() < rest.endsAt, rest) {
-        if (rest == null) {
-            value = false
-            return@produceState
-        }
-        val remaining = rest.endsAt - time.now().toEpochMilli()
-        value = remaining > 0
-        if (remaining > 0) {
-            delay(remaining)
-            value = false
-        }
-    }
-    return running
-}
-
-/** Durée `m:ss`, minutes non bornées (« 75:03 »). */
-private fun clock(seconds: Long): String = String.format(Locale.ROOT, "%d:%02d", seconds / 60, seconds % 60)

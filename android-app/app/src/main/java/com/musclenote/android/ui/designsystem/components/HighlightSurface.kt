@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +22,7 @@ import com.musclenote.android.R
 import com.musclenote.android.ui.designsystem.theme.Studio
 
 private val SurfaceGap = 14.dp
+private val ChipGap = 6.dp
 
 /**
  * Surface mise en avant — `HighlightSurface` (DESIGN.md § 9.2) : une seule par écran,
@@ -96,7 +98,8 @@ fun LiveSessionCard(
 }
 
 /**
- * Surface « Prochaine séance » — `NextSessionCard` : type suggéré, puces des types, « Démarrer ».
+ * Surface « Prochaine séance » — `NextSessionCard` : type suggéré, puces des types (sur plusieurs
+ * lignes s'il le faut ; aucune rangée sans type), « Démarrer ». [selectedType] : -1 si aucune.
  */
 @Composable
 fun NextSessionCard(
@@ -116,9 +119,11 @@ fun NextSessionCard(
             Text(title, style = Studio.typography.titleScreen.copy(lineHeight = Studio.typography.numberMedium.lineHeight), maxLines = 1)
             Text(detail, style = Studio.typography.caption, color = Studio.colors.textSecondary)
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            types.forEachIndexed { index, type ->
-                FilterChip(type, selected = index == selectedType, onClick = { onSelectType(index) })
+        if (types.isNotEmpty()) {
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(ChipGap), verticalArrangement = Arrangement.spacedBy(ChipGap)) {
+                types.forEachIndexed { index, type ->
+                    FilterChip(type, selected = index == selectedType, onClick = { onSelectType(index) })
+                }
             }
         }
         StudioButton(actionLabel, onAction, Modifier.fillMaxWidth())

@@ -75,20 +75,29 @@ private const val WEIGHT_MAX_LENGTH = 6
 /**
  * Démarrer une séance (SPEC § 2.3) : étape 1, préréglage ou nom personnalisé ; étape 2, poids de
  * corps. « Commencer » démarre la séance (§ 3.1) puis [onStarted] remplace cet écran par la
- * séance en cours.
+ * séance en cours. Avec [initialPreset] ou [initialName] (type choisi sur l'Accueil, § 15.8.2),
+ * l'écran s'ouvre directement à l'étape 2, ce type déjà choisi à l'étape 1.
  */
 @Composable
-fun StartWorkoutScreen(onClose: () -> Unit, onStarted: () -> Unit) {
+fun StartWorkoutScreen(
+    onClose: () -> Unit,
+    onStarted: () -> Unit,
+    initialPreset: PresetId? = null,
+    initialName: String? = null,
+) {
     val container = LocalAppContainer.current
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val scope = rememberCoroutineScope()
     val locale = appLocale()
 
-    var step by rememberSaveable { mutableStateOf(StartStep.Name) }
-    var preset by rememberSaveable { mutableStateOf<PresetId?>(null) }
-    var customSelected by rememberSaveable { mutableStateOf(false) }
-    var customName by rememberSaveable { mutableStateOf("") }
+    val initialCustom = initialName?.trim()?.takeIf { initialPreset == null && it.isNotEmpty() }
+    var step by rememberSaveable {
+        mutableStateOf(if (initialPreset != null || initialCustom != null) StartStep.Weight else StartStep.Name)
+    }
+    var preset by rememberSaveable { mutableStateOf(initialPreset) }
+    var customSelected by rememberSaveable { mutableStateOf(initialCustom != null) }
+    var customName by rememberSaveable { mutableStateOf(initialCustom.orEmpty()) }
     // Prérempli avec le poids de la séance terminée la plus récente (0 = inconnu → vide).
     var weightText by rememberSaveable {
         mutableStateOf(workouts.firstOrNull()?.bodyWeight?.takeIf { it > 0 }?.let { formatDecimal(it, locale) }.orEmpty())

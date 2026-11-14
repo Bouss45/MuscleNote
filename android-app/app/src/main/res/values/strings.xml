@@ -182,38 +182,11 @@
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
 
     <!-- Accueil (§ 2.2) -->
-    <string name="home_new_session">Nouvelle séance</string>
-    <string name="home_active_subtitle">%1$s · %2$s kg corps</string>
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
     <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote.</string>
     <string name="home_update_title">Mise à jour disponible</string>
-    <string name="home_update_text">MuscleNote %1$s est disponible (version installée : %2$s).</string>
     <string name="update_download">Télécharger</string>
-    <string name="home_streak_current">Série en cours</string>
     <!-- Unité seule, le nombre est affiché à côté en grand. -->
-    <plurals name="home_streak_week_unit" tools:ignore="ImpliedQuantity">
-        <item quantity="one">semaine</item>
-        <item quantity="other">semaines</item>
-    </plurals>
-    <string name="home_streak_best">Meilleure</string>
-    <string name="home_streak_best_value">%1$d sem.</string>
-    <string name="home_streak_last8weeks">8 dernières semaines · cette semaine à droite</string>
-    <string name="home_streak_legend_validated">Validée (3+)</string>
-    <string name="home_streak_legend_partial">Partielle (1-2)</string>
-    <string name="home_streak_legend_none">Aucune</string>
-    <string name="home_streak_hint_start">Fais 3 séances cette semaine pour démarrer une série</string>
-    <string name="home_streak_hint_alive">Minimum 3 séances/semaine · 1 pause autorisée</string>
-    <string name="home_streak_hint_over">Série terminée — recommence cette semaine !</string>
-    <string name="home_stat_sessions">Séances</string>
-    <string name="home_stat_total_volume">Volume total</string>
-    <string name="home_stat_last_weight">Dernier poids</string>
-    <string name="home_gym_time">Temps total en salle · moy. %1$s/séance</string>
-    <string name="home_recent_sessions">Séances récentes</string>
-    <string name="home_delete_confirm">Supprimer cette séance ?</string>
-    <string name="home_volume_short">%1$s kg vol.</string>
-    <string name="home_minutes">%1$d min</string>
-    <string name="home_empty_title">Prêt à s\'entrainer ?</string>
-    <string name="home_empty_text">Lance ta première séance pour commencer à suivre tes progrès</string>
     <string name="home_edit_date">Modifier la date</string>
     <string name="home_date_day">Jour</string>
     <string name="home_date_month">Mois</string>
@@ -528,4 +501,68 @@
     <string name="ds_keypad_hide">Fermer le pavé</string>
     <string name="ds_collapse_session">Réduire la séance</string>
     <string name="ds_exercise_details">Fiche de l\'exercice</string>
+
+    <!-- Navigation, Accueil et Journal (SPEC § 15.8) -->
+    <string name="tabs_journal">Journal</string>
+    <string name="common_see_all">Tout voir</string>
+    <string name="mini_bar_rest">repos</string>
+    <string name="home_resume">Reprendre</string>
+    <string name="home_live_label">En cours</string>
+    <string name="home_rest_detail">%1$s, série %2$d</string>
+    <string name="home_next_caption">Prochaine séance</string>
+    <string name="home_next_new">Nouvelle séance</string>
+    <string name="home_next_new_detail">Choisis ta séance à l\'étape suivante</string>
+    <string name="home_next_last_today">Dernière fois aujourd\'hui</string>
+    <string name="home_next_last_yesterday">Dernière fois hier</string>
+    <plurals name="home_next_last_days">
+        <item quantity="one">Dernière fois il y a %1$d jour</item>
+        <item quantity="other">Dernière fois il y a %1$d jours</item>
+    </plurals>
+    <string name="home_next_detail">%1$s · %2$s</string>
+    <string name="home_next_other">Autre…</string>
+    <string name="home_start">Démarrer</string>
+    <string name="home_update_row">MuscleNote %1$s</string>
+    <string name="home_update_installed">Version installée : %1$s</string>
+    <string name="home_update_later">Plus tard</string>
+    <string name="home_migrate_section">Depuis l\'ancienne app</string>
+    <string name="home_hide">Masquer</string>
+    <string name="home_last_session">Dernière séance</string>
+    <string name="home_this_week">Cette semaine</string>
+    <string name="home_week_sessions_value">%1$d/%2$d</string>
+    <string name="home_week_sessions_label">séances</string>
+    <string name="home_streak_label">série en cours</string>
+    <string name="home_record_label">record</string>
+    <string name="home_week_bars_caption">8 dernières semaines · 3 séances = semaine validée</string>
+    <string name="home_week_bars_description">8 dernières semaines : %1$s, puis %2$d cette semaine</string>
+    <string name="journal_title">Journal</string>
+    <string name="journal_all_time">Depuis le début</string>
+    <string name="journal_stat_sessions">séances</string>
+    <string name="journal_stat_volume">volume</string>
+    <string name="journal_stat_gym_time">en salle</string>
+    <string name="journal_stat_average">par séance</string>
+    <string name="journal_tonnes">%1$s t</string>
+    <string name="journal_week_current">Cette semaine</string>
+    <string name="journal_week_previous">Semaine dernière</string>
+    <string name="journal_week_of">Semaine du %1$s</string>
+    <string name="journal_unknown_date">Date inconnue</string>
+    <string name="journal_empty_title">Aucune séance</string>
+    <string name="journal_empty_message">Tes séances terminées s\'afficheront ici, semaine par semaine.</string>
+    <string name="journal_empty_start">Démarrer une séance</string>
+    <string name="journal_empty_resume">Reprendre la séance</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$02d</string>
+    <string name="session_subtitle">%1$s · %2$s</string>
+    <string name="session_volume_kg">%1$s kg</string>
+    <string name="session_long_press">Options de la séance</string>
+    <string name="session_actions_edit">Modifier la séance</string>
+    <string name="session_actions_delete">Supprimer la séance</string>
+    <string name="session_delete_title">Supprimer la séance ?</string>
+    <string name="session_delete_message">%1$s du %2$s sera retirée de ton historique.</string>
+    <string name="common_kg_value">%1$s kg</string>
+    <plurals name="home_weeks_value">
+        <item quantity="one">%1$d sem.</item>
+        <item quantity="other">%1$d sem.</item>
+    </plurals>
+    <string name="duration_compact">%1$d h %2$02d</string>
 </resources>

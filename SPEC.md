@@ -1956,8 +1956,21 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   `ExerciseCard`, `RestTimerBanner` et `WarmupCard` sont retirés. À vérifier **sur l'appareil** :
   saisie au pavé, défilement vers le champ en saisie, recopie de « Préc. », suggestion, repos et
   notification de séance.
-- Refonte, **étape 3** (🔄 D33, § 15.8) : navigation à quatre onglets, Accueil, Journal et logo —
-  spécifiée, en cours d'implémentation sur `redesign`.
+- Refonte, **étape 3** (🔄 D33, § 15.8) sur `redesign` : navigation `ui/MuscleNoteApp.kt` (onglets
+  `TopLevelDestination`, Paramètres `Routes.SETTINGS` poussé au-dessus de l'Accueil, mini-barre,
+  `openWorkout()` qui revient à la séance si elle est dans la pile, fondus, retour prédictif
+  `enableOnBackInvokedCallback`) ; Accueil `ui/home/HomeScreen.kt` et Journal
+  `ui/journal/JournalScreen.kt` au design system, lignes et actions de séance partagées
+  `ui/journal/SessionRows.kt` (« Modifier la date » en formulaire), horloges `ui/workout/LiveClock.kt` ;
+  « Démarrer une séance » accepte un type (`Routes.startWorkout`) ; règles pures
+  `data/home/HomeRules.kt` et `data/journal/JournalRules.kt`. Design system : appui long de
+  `ListRow`, puces sur plusieurs lignes de `NextSessionCard`, mini-barre hors repos, champ numérique
+  de `StudioTextField`, gabarit `HubLazyTemplate`. Tests `HomeRulesTest` (surface, types réguliers,
+  fenêtre de 42 jours, ordre, égalités, jours locaux, semaine en cours) et `JournalRulesTest`
+  (semaine du lundi au jour local, semaine à cheval sur deux années, dates illisibles, libellés,
+  durée, volume, totaux). Retirés : `UpdateBanner`, `WorkoutDateDialog`, image `home-bg`. À
+  vérifier **sur l'appareil** : retour prédictif, notification touchée depuis chaque onglet,
+  appui long, « Modifier la date », logo.
 
 ---
 
@@ -2680,8 +2693,9 @@ Racine (Navigation Compose, aucun en-tête système)
   affiché. Elle n'est **jamais deux fois** dans la pile. Sans séance en cours (notification restée
   affichée), l'écran « Aucune séance active » s'affiche comme avant.
 - **Quitter la séance** : « Réduire » et le retour système reviennent à l'écran d'où on l'a ouverte
-  (un onglet, Paramètres) ; juste après « Commencer », c'est l'Accueil (l'écran « Démarrer » a été
-  remplacé, § 2.3). Terminer ou abandonner la séance revient à l'Accueil.
+  (un onglet, Paramètres) ; juste après « Commencer », c'est l'écran d'où « Démarrer une séance »
+  a été ouvert (l'Accueil, ou le Journal vide), puisque « Démarrer » a été remplacé (§ 2.3).
+  Terminer ou abandonner la séance revient à l'Accueil.
 - **Autres entrées externes** : rappel de complément → onglet Nutrition ; fichier JSON partagé ou
   ouvert → Accueil puis Paramètres (confirmation d'import, § 5.4). Les actions des notifications
   (« Valider la série », « −30 s », « +30 s », « Passer », § 15.5) n'ouvrent pas l'app et ne changent
@@ -2830,17 +2844,19 @@ transfert, « {n} sem. », pluriels séances / séries / exercices).
 
 | clé | FR | EN |
 |---|---|---|
-| `tabs_journal` | Journal | Journal |
+| `tabs_journal` / `journal_title` | Journal | Journal |
 | `common_see_all` | Tout voir | See all |
+| `common_kg_value` | {{valeur}} kg | {{value}} kg |
 | `mini_bar_rest` | repos | rest |
-| `mini_bar_resume` / `home_resume` | Reprendre | Resume |
+| `home_resume` | Reprendre | Resume |
 | `home_live_label` | En cours | In progress |
-| `home_rest_line` | Repos {{temps}} · {{exercice}}, série {{n}} | Rest {{time}} · {{exercise}}, set {{n}} |
-| `home_next_caption` | Prochaine séance | Next session |
-| `home_next_new` | Nouvelle séance | New session |
-| `home_next_new_detail` | Choisis ta séance à l'étape suivante | Pick your session in the next step |
+| `home_rest_detail` | {{exercice}}, série {{n}} | {{exercise}}, set {{n}} |
+| `home_next_caption` | Prochaine séance | Next workout |
+| `home_next_new` | Nouvelle séance | New workout |
+| `home_next_new_detail` | Choisis ta séance à l'étape suivante | Pick your workout in the next step |
 | `home_next_last_today` / `_yesterday` | Dernière fois aujourd'hui / hier | Last time today / yesterday |
 | `home_next_last_days` (pluriel) | Dernière fois il y a {{n}} jours | Last time {{n}} days ago |
+| `home_next_detail` | {{dernière fois}} · {{exercices}} | {{last time}} · {{exercises}} |
 | `home_next_other` | Autre… | Other… |
 | `home_start` | Démarrer | Start |
 | `home_update_row` | MuscleNote {{version}} | MuscleNote {{version}} |
@@ -2848,25 +2864,30 @@ transfert, « {n} sem. », pluriels séances / séries / exercices).
 | `home_update_later` | Plus tard | Later |
 | `home_migrate_section` | Depuis l'ancienne app | From the old app |
 | `home_hide` | Masquer | Hide |
-| `home_last_session` | Dernière séance | Last session |
+| `home_last_session` | Dernière séance | Last workout |
 | `home_this_week` | Cette semaine | This week |
-| `home_week_sessions` (valeur / légende) | {{n}}/3 / séances | {{n}}/3 / sessions |
+| `home_week_sessions_value` / `_label` | {{n}}/{{3}} / séances | {{n}}/{{3}} / workouts |
+| `home_weeks_value` (pluriel) | {{n}} sem. | {{n}} wk / {{n}} wks |
 | `home_streak_label` / `home_record_label` | série en cours / record | current streak / best |
-| `home_week_bars_caption` | 8 dernières semaines · 3 séances = semaine validée | Last 8 weeks · 3 sessions = week done |
+| `home_week_bars_caption` | 8 dernières semaines · 3 séances = semaine validée | Last 8 weeks · 3 workouts = week done |
 | `home_week_bars_description` | 8 dernières semaines : {{liste}}, puis {{n}} cette semaine | Last 8 weeks: {{list}}, then {{n}} this week |
-| `journal_title` | Journal | Journal |
 | `journal_all_time` | Depuis le début | All time |
-| `journal_stat_sessions` / `_volume` / `_gym_time` / `_average` | séances / volume / en salle / par séance | sessions / volume / at the gym / per session |
+| `journal_stat_sessions` / `_volume` / `_gym_time` / `_average` | séances / volume / en salle / par séance | workouts / volume / at the gym / per workout |
+| `journal_tonnes` | {{valeur}} t | {{value}} t |
 | `journal_week_current` / `_previous` | Cette semaine / Semaine dernière | This week / Last week |
 | `journal_week_of` | Semaine du {{date}} | Week of {{date}} |
 | `journal_unknown_date` | Date inconnue | Unknown date |
+| `journal_empty_title` | Aucune séance | No workouts yet |
+| `journal_empty_message` | Tes séances terminées s'afficheront ici, semaine par semaine. | Your finished workouts will show up here, week by week. |
+| `journal_empty_start` / `_resume` | Démarrer une séance / Reprendre la séance | Start a workout / Resume the workout |
 | `duration_minutes` / `_hours` / `_hours_minutes` | {{m}} min / {{h}} h / {{h}} h {{mm}} | {{m}} min / {{h}} h / {{h}} h {{mm}} min |
+| `duration_compact` (rangée de stats) | {{h}} h {{mm}} | {{h}}h {{mm}}m |
+| `session_subtitle` | {{date}} · {{durée ou heure}} | {{date}} · {{duration or time}} |
 | `session_volume_kg` | {{volume}} kg | {{volume}} kg |
-| `session_actions_edit` | Modifier la séance | Edit session |
-| `session_actions_delete` | Supprimer la séance | Delete session |
-| `session_delete_title` | Supprimer la séance ? | Delete this session? |
-| `session_delete_message` | {{séance}} du {{date}} sera retirée de ton historique. | {{session}} on {{date}} will be removed from your history. |
-| `session_long_press` | Options de la séance | Session options |
-| `journal_empty_title` | Aucune séance | No sessions yet |
-| `journal_empty_message` | Tes séances terminées s'afficheront ici, semaine par semaine. | Your finished sessions will show up here, week by week. |
-| `journal_empty_start` / `_resume` | Démarrer une séance / Reprendre la séance | Start a session / Resume the session |
+| `session_long_press` (accessibilité) | Options de la séance | Workout options |
+| `session_actions_edit` / `_delete` | Modifier la séance / Supprimer la séance | Edit workout / Delete workout |
+| `session_delete_title` | Supprimer la séance ? | Delete this workout? |
+| `session_delete_message` | {{séance}} du {{date}} sera retirée de ton historique. | {{workout}} on {{date}} will be removed from your history. |
+
+Les clés de l'ancien Accueil devenues inutiles (`home_new_session`, `home_streak_*`, `home_stat_*`,
+`home_gym_time`, `home_recent_sessions`, `home_empty_*`…) sont retirées.

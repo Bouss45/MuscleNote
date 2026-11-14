@@ -280,3 +280,55 @@ private fun TextFieldPreview() = StudioComponentPreview {
     StateCaption("Rempli")
     StudioTextField("Prise un peu plus serrée, coudes à 45°", {}, placeholder = "Ajouter une note…")
 }
+
+/** Prochaine séance sans type suggéré (pas de puce), et avec des noms perso qui passent à la ligne. */
+@StudioComponentPreviews
+@Composable
+private fun NextSessionCardVariantsPreview() = StudioComponentPreview {
+    StateCaption("Sans suggestion")
+    NextSessionCard(
+        caption = "Prochaine séance",
+        title = "Nouvelle séance",
+        detail = "Choisis ta séance à l'étape suivante",
+        types = emptyList(),
+        selectedType = -1,
+        onSelectType = {},
+        actionLabel = "Démarrer",
+        onAction = {},
+    )
+    StateCaption("Noms perso longs")
+    NextSessionCard(
+        caption = "Prochaine séance",
+        title = "Épaules / Mollets",
+        detail = "Dernière fois hier · 7 exercices",
+        types = listOf("Épaules / Mollets", "Dos / Biceps lourd", "Pecs / Triceps", "Autre…"),
+        selectedType = 0,
+        onSelectType = {},
+        actionLabel = "Démarrer",
+        onAction = {},
+    )
+}
+
+/** Mini-barre pendant un repos, puis hors repos (le chrono de la séance). */
+@StudioComponentPreviews
+@Composable
+private fun MiniSessionBarStatesPreview() = StudioComponentPreview {
+    StateCaption("Repos en cours")
+    MiniSessionBar("Push", "repos", "1:48", "Reprendre", {})
+    StateCaption("Hors repos")
+    MiniSessionBar("Push", null, "17:48", "Reprendre", {})
+}
+
+/** Champ numérique sur une ligne (« Modifier la date »). */
+@StudioComponentPreviews
+@Composable
+private fun TextFieldNumericPreview() = StudioComponentPreview {
+    StateCaption("Numérique, une ligne")
+    StudioTextField(
+        "12",
+        {},
+        placeholder = "JJ",
+        singleLine = true,
+        keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(keyboardType = androidx.compose.ui.text.input.KeyboardType.Number),
+    )
+}

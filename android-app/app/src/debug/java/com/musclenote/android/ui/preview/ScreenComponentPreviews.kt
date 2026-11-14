@@ -17,9 +17,7 @@ import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WorkoutSet
-import com.musclenote.android.data.update.LatestRelease
 import com.musclenote.android.ui.components.rememberDateFormats
-import com.musclenote.android.ui.home.UpdateBanner
 import com.musclenote.android.ui.nutrition.CaloriesCard
 import com.musclenote.android.ui.nutrition.SupplementCard
 import com.musclenote.android.ui.nutrition.WaterCard
@@ -145,19 +143,7 @@ private fun ProgressBodyWeightTabPreview() = ScreenPreview {
     }
 }
 
-// ─── Accueil et Paramètres ───────────────────────────────────────────────────────
-
-/** Annonce d'une mise à jour (app installée sans Obtainium). */
-@ComponentPreviews
-@Composable
-private fun UpdateBannerPreview() = ComponentPreview {
-    UpdateBanner(
-        release = LatestRelease("1.0.6", "https://github.com/Bouss45/MuscleNote/releases/tag/v1.0.6", null),
-        installedVersion = "1.0.5",
-        onDownload = {},
-        onDismiss = {},
-    )
-}
+// ─── Paramètres ───────────────────────────────────────────────────────
 
 /** Cartes de Paramètres et encarts de résultat. */
 @ComponentPreviews

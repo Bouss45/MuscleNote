@@ -244,6 +244,9 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   case 48 de la ligne de série) — toute la ligne la bascule (rôle case à cocher) : échauffement de
   la séance en cours.
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
+- **Appui long** optionnel (`onLongClick` + libellé d'accessibilité) : les actions secondaires
+  d'une ligne, dans une bottom sheet (séance du Journal et « Dernière séance » de l'Accueil :
+  modifier, changer la date, supprimer). Le toucher garde l'action principale.
 
 **Puce** — `Chip`. Hauteur 32, rayon 12, padding 10 (12 sans icône), icône 18, `body`.
 
@@ -310,8 +313,9 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
   progression des séries + légende (« 2 / 16 séries » · poids de corps) ; bouton principal
   « Reprendre ».
 - **Prochaine séance** (`NextSessionCard`) : légende « Prochaine séance » ; type suggéré
-  (`titleScreen`) ; légende (« Dernier Push il y a 7 jours · 5 exercices ») ; puces de filtre
-  (types, « Autre… ») ; bouton principal « Démarrer ».
+  (`titleScreen`) ; légende (« Dernière fois il y a 7 jours · 5 exercices ») ; puces de filtre
+  (types, « Autre… »), sur plusieurs lignes si les noms sont longs, aucune rangée sans type ;
+  bouton principal « Démarrer ».
 - **Mesure** (hub Progrès) : légende + bouton icône `add` ; chiffre héros + unité ; variation ;
   courbe compacte.
 
@@ -372,14 +376,16 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire.
 **Champ texte** — `StudioTextField` (hors maquette, ajouté avec la séance en cours) : texte libre
 au clavier du système, la note d'un exercice. Hauteur 48 au moins, rayon 12, padding 16 / 14,
 `body` `textPrimary`, plusieurs lignes ; au repos `surfaceControl`, **en saisie `liveDim` et curseur
-`liveText`** (comme tout champ en saisie) ; invite en `textSecondary`. Posé dans une bottom sheet.
+`liveText`** (comme tout champ en saisie) ; invite en `textSecondary`. Posé dans une bottom sheet. Variante **numérique sur une ligne**
+(`singleLine`, clavier numérique) : champs Jour / Mois / Année / Heure / Min de « Modifier la date »,
+chacun sous son libellé (`caption` `textSecondary`).
 
 **Mini-barre et onglets** — `MiniSessionBar` + `StudioNavigationBar`.
 - Mini-barre (séance réduite) : hauteur 56, `surfaceRaised`, rayon 12, padding 16 / 8, éléments
   espacés de 12 : point `live` 8 ; « **Push** · repos **1:48** » (`actionSmall`, « · repos » en
-  500 `textSecondary`, temps en `liveText`) ; bouton texte petit « Reprendre ». Hors repos, le
-  temps est le chrono de la séance. Posée 8 au-dessus de la barre d'onglets, dans les marges
-  d'écran.
+  500 `textSecondary`, temps en `liveText`) ; bouton texte petit « Reprendre ». Hors repos :
+  « **Push** · 17:48 », le chrono de la séance. Posée 8 au-dessus de la barre d'onglets, dans les
+  marges d'écran, sur tous les hubs sauf l'Accueil (sa surface « En cours » la remplace).
 - Barre d'onglets : filet `separator` en haut, 4 colonnes égales, padding 10 en haut, inset de
   navigation en bas ; icône 24 + 4 + libellé `small`. Sélectionné : icône pleine, `textPrimary`,
   700 ; sinon icône contour, `textSecondary`, 500. **Pas d'indicateur** (pastille Material).
@@ -430,10 +436,17 @@ Une liste de sections : Accueil, Journal, Progrès, Nutrition, Paramètres, Mes 
 2. `s` (12) puis **une surface mise en avant au plus** (optionnelle ; peut porter le chiffre héros).
 3. Sections (`SectionHeader` + `ListRow`, ou rangée de stats, puces de filtre…), séparées de
    `section` (40). Ordre : par fréquence d'usage, de haut en bas.
-4. En bas : mini-barre si une séance est réduite, puis la barre d'onglets (le hub de premier
-   niveau sélectionné ; une page de second niveau garde l'onglet de son hub).
+4. En bas : mini-barre si une séance est réduite (pas sur l'Accueil), puis la barre d'onglets (le
+   hub de premier niveau sélectionné ; une page de second niveau, comme Paramètres, garde l'onglet
+   de son hub).
 
-Chaque ligne ouvre un autre gabarit. Tout défile sous la barre d'onglets, fixe.
+Chaque ligne ouvre un autre gabarit. Tout défile sous la barre d'onglets, fixe. Dans l'app, la
+mini-barre et la barre d'onglets sont posées une fois pour tous les hubs par la navigation ; l'écran
+ne reçoit que l'inset du haut (`tabScreenInsets()`).
+
+Variante **paresseuse** (`HubLazyTemplate`) : même disposition, pour un hub dont les lignes se
+comptent par centaines (Journal) ; chaque section (`section` : en-tête, 4, lignes) ou bloc sans
+en-tête (`block` : rangée de stats, état vide) est précédé de 40, sauf le premier.
 
 ### 10.2 Fiche
 
@@ -495,8 +508,8 @@ n'a pas encore, cf. § 13) :
 
 | hub | sections → gabarit ouvert |
 |---|---|
-| Accueil | **Séance** : reprendre / démarrer → en direct · **Cette semaine** : série sur 8 semaines → Journal · **Récentes** : 3 dernières séances → fiche (résumé) |
-| Journal | **Calendrier** : mois (*Nouveau*) → hub · **Séances** : toutes, par type → fiche ; résumés (*Nouveau* : le résumé de fin de séance) → fiche |
+| Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → éditeur (en attendant la fiche résumé), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
+| Journal | **Depuis le début** : totaux · **une section par semaine** : séances → éditeur (en attendant la fiche résumé), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub ; résumés (*Nouveau*) → fiche |
 | Progrès | **Records** : Mes records (*Nouveau*) → hub · **Exercices** : top, historique, 1RM → fiche · **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** : calories, eau → formulaire ; protéines (*Nouveau*) → formulaire · **Compléments** : rappels → formulaire ; stock (*Nouveau*) → formulaire · **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Préférences** : langue, thème, repos → formulaire · **Données** : sauvegarde auto, import / export, Health Connect · **À propos** : envoyer un avis |
@@ -558,6 +571,18 @@ Décidé (13/11/2026) :
     exercice, l'état vide porte cette action ;
   - **barre du bas** hors saisie : « Terminer la séance » seul (`BottomActionBar`).
 
+Décidé (14/11/2026, SPEC § 15.8) :
+
+- **Navigation** : quatre onglets ; Paramètres poussé au-dessus de l'Accueil, barre d'onglets
+  gardée (Accueil sélectionné) ; mini-barre sur tous les hubs sauf l'Accueil ; transitions en fondu
+  (`standard`), suivies par le geste de retour prédictif.
+- **Accueil** : une seule surface (« En cours » ou « Prochaine séance »), puis « Dernière séance »
+  et « Cette semaine » ; l'annonce de mise à jour et le transfert depuis l'ancienne app deviennent
+  des sections (ligne + bouton texte discret « Plus tard » / « Masquer »).
+- **Journal** : totaux, puis une section par semaine (titre « Cette semaine », « Semaine
+  dernière », « Semaine du 26 oct. », compteur à droite) ; appui long sur une séance → sheet
+  d'actions ; « Modifier la date » en formulaire (bottom sheet, champs numériques).
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
@@ -583,9 +608,10 @@ Ouvert :
 - `ui/designsystem/components/` : les composants du § 9 (`Foundation.kt` : icône, variation,
   point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille ;
   `TextField.kt` pour le champ texte).
-- `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate`,
-  `FicheTemplate`, `LiveTemplate`, `FormSheetTemplate`), en composables à emplacements ; ils
-  reçoivent les insets du système (`ScreenInsets`).
+- `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
+  variante paresseuse `HubLazyTemplate`, `FicheTemplate`, `LiveTemplate`, `FormSheetTemplate`), en
+  composables à emplacements ; ils reçoivent les insets du système (`ScreenInsets` ;
+  `tabScreenInsets()` pour un onglet, dont la barre absorbe l'inset du bas).
 - Icônes `res/drawable/ds_ic_*.xml` ; police `res/font/archivo.ttf` (+ licence
   `assets/licenses/archivo-OFL.txt`) ; libellés d'accessibilité `ds_*` dans `strings.xml`.
 - Aperçus : chaque composant et gabarit a ses `@Preview` en sombre et en clair, dans le source set

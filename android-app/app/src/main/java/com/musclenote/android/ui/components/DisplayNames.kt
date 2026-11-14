@@ -59,13 +59,17 @@ fun formatOneDecimal(value: Double): String = NumberFormat.getNumberInstance(app
 }.format(value)
 
 /** Formats de date de l'app, dans la locale et le fuseau courants (§ 9.4). */
-class DateFormats(locale: Locale, private val zone: ZoneId) {
+class DateFormats(private val locale: Locale, private val zone: ZoneId) {
     private val weekdayDayMonthFormatter =
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMM"), locale)
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm", locale)
     private val dayMonthFormatter = DateTimeFormatter.ofPattern("dd/MM", locale)
     private val dayMonthYearFormatter =
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMMyyyy"), locale)
+    private val dayShortMonthFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale)
+    private val fullDateFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), locale)
 
     /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
     fun weekdayDayMonth(instant: Instant): String = weekdayDayMonthFormatter.format(instant.atZone(zone))
@@ -81,6 +85,16 @@ class DateFormats(locale: Locale, private val zone: ZoneId) {
 
     /** Jour, mois abrégé, année : « 11 nov. 2026 », « Nov 11, 2026 ». */
     fun dayMonthYear(instant: Instant): String = dayMonthYearFormatter.format(instant.atZone(zone))
+
+    /** Jour et mois abrégé d'un jour local : « 26 oct. », « Oct 26 » (semaines du Journal). */
+    fun dayShortMonth(day: LocalDate): String = dayShortMonthFormatter.format(day)
+
+    /** Jour, mois abrégé et année d'un jour local : « 29 déc. 2025 », « Dec 29, 2025 ». */
+    fun dayMonthYear(day: LocalDate): String = dayMonthYearFormatter.format(day)
+
+    /** Date complète, majuscule en tête : « Samedi 14 novembre », « Saturday, November 14 » (Accueil). */
+    fun fullDate(day: LocalDate): String =
+        fullDateFormatter.format(day).replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
 }
 
 @Composable

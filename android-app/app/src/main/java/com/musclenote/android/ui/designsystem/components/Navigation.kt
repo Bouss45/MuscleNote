@@ -103,12 +103,13 @@ private val MiniBarGap = 12.dp
 
 /**
  * Mini-barre de séance — `MiniSessionBar` (DESIGN.md § 9.2) : la séance réduite, au-dessus des
- * onglets. Point en direct, « Push · repos 1:48 » (le temps en `liveText`), « Reprendre ».
+ * onglets. Point en direct, « Push · repos 1:48 » (le temps en `liveText`), « Reprendre ». Hors
+ * repos, [status] est `null` et [time] est le chrono de la séance : « Push · 17:48 ».
  */
 @Composable
 fun MiniSessionBar(
     sessionName: String,
-    status: String,
+    status: String?,
     time: String,
     actionLabel: String,
     onResume: () -> Unit,
@@ -128,7 +129,7 @@ fun MiniSessionBar(
         Text(
             annotated(
                 sessionName to SpanStyle(color = Studio.colors.textPrimary),
-                " · $status " to SpanStyle(color = Studio.colors.textSecondary, fontWeight = FontWeight.Medium),
+                (if (status == null) " · " else " · $status ") to SpanStyle(color = Studio.colors.textSecondary, fontWeight = FontWeight.Medium),
                 time to SpanStyle(color = Studio.colors.liveText),
             ),
             modifier = Modifier.weight(1f),
