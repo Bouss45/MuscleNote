@@ -583,14 +583,20 @@ Décidé (14/11/2026, SPEC § 15.8) :
   dernière », « Semaine du 26 oct. », compteur à droite) ; appui long sur une séance → sheet
   d'actions ; « Modifier la date » en formulaire (bottom sheet, champs numériques).
 
+- **Logo** : variante **« Deux disques »** (`T2-Logo.dc.html`), haltère `#FFC93D` sur graphite
+  `#17181B`. Icône adaptative (fond graphite, avant-plan vectoriel, couche monochrome pour les
+  icônes à thème), icône de l'écran de démarrage sur un disque graphite, petite icône des
+  notifications en silhouette blanche (accent graphite). La variante preview ajoute un bandeau jaune
+  au bas de l'icône. Ressources : `res/drawable/ic_launcher_foreground.xml`,
+  `ic_launcher_monochrome.xml`, `ic_notification.xml` ; `app/src/preview/res/drawable/` pour la
+  preview.
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
   Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part.
-- **Logo** : trois variantes d'haltère (« Deux disques », « Pyramide », « Compacte »), jaune sur
-  graphite, non tranchées.
 
 Ouvert :
 

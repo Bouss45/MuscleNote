@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Couche monochrome de l'icône adaptative (icônes à thème, Android 13+) : le même haltère,
+  d'une seule couleur, que le système teinte. variante « Deux disques » de design/claude-design/T2-Logo.dc.html (SPEC § 15.8.5).
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group>
+        <path
+            android:fillColor="#FF000000"
+            android:pathData="M25,51H83A3,3 0 0 1 86,54V54A3,3 0 0 1 83,57H25A3,3 0 0 1 22,54V54A3,3 0 0 1 25,51ZM29.5,41H29.5A3.5,3.5 0 0 1 33,44.5V63.5A3.5,3.5 0 0 1 29.5,67H29.5A3.5,3.5 0 0 1 26,63.5V44.5A3.5,3.5 0 0 1 29.5,41ZM38.5,35H38.5A3.5,3.5 0 0 1 42,38.5V69.5A3.5,3.5 0 0 1 38.5,73H38.5A3.5,3.5 0 0 1 35,69.5V38.5A3.5,3.5 0 0 1 38.5,35ZM69.5,35H69.5A3.5,3.5 0 0 1 73,38.5V69.5A3.5,3.5 0 0 1 69.5,73H69.5A3.5,3.5 0 0 1 66,69.5V38.5A3.5,3.5 0 0 1 69.5,35ZM78.5,41H78.5A3.5,3.5 0 0 1 82,44.5V63.5A3.5,3.5 0 0 1 78.5,67H78.5A3.5,3.5 0 0 1 75,63.5V44.5A3.5,3.5 0 0 1 78.5,41Z" />
+    </group>
+</vector>

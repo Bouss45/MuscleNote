@@ -13,14 +13,14 @@ import androidx.core.content.ContextCompat
 import com.musclenote.android.R
 
 /**
- * Publication des notifications de l'app (SPEC § 7.1) : petite icône blanche, accent `#9B1C1C`,
+ * Publication des notifications de l'app (SPEC § 7.1) : petite icône blanche (l'haltère du logo), accent graphite,
  * et aucune exception si l'utilisateur a refusé les notifications.
  */
 object AppNotifications {
     private const val TAG = "AppNotifications"
 
-    /** Couleur d'accent des notifications (`primary`, identique dans les deux thèmes). */
-    const val ACCENT_COLOR = 0xFF9B1C1C.toInt()
+    /** Couleur d'accent des notifications : le graphite du logo (§ 15.8.5), identique dans les deux thèmes. */
+    const val ACCENT_COLOR = 0xFF17181B.toInt()
 
     // Identifiants des notifications de l'app.
 

@@ -1968,7 +1968,10 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   de `StudioTextField`, gabarit `HubLazyTemplate`. Tests `HomeRulesTest` (surface, types réguliers,
   fenêtre de 42 jours, ordre, égalités, jours locaux, semaine en cours) et `JournalRulesTest`
   (semaine du lundi au jour local, semaine à cheval sur deux années, dates illisibles, libellés,
-  durée, volume, totaux). Retirés : `UpdateBanner`, `WorkoutDateDialog`, image `home-bg`. À
+  durée, volume, totaux). Logo : `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`,
+  `ic_notification.xml`, splash dans `values-v31/themes.xml`, bandeau de la preview dans
+  `app/src/preview/res/drawable/`. Retirés : `UpdateBanner`, `WorkoutDateDialog`, image `home-bg`,
+  anciennes images de l'icône. À
   vérifier **sur l'appareil** : retour prédictif, notification touchée depuis chaque onglet,
   appui long, « Modifier la date », logo.
 
