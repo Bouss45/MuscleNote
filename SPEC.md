@@ -365,6 +365,12 @@ Agit sur la **séance en cours**. Reste ouvert après chaque ajout (ajouts multi
 
 ### 2.8 Historique d'un exercice
 
+> 🔄 D34 — **remplacé par la fiche exercice du § 15.9.1** (gabarit fiche : la dernière séance de la
+> période en chiffre héros, courbe touchable, périodes 1M – Tout, record personnel et 1RM estimé en
+> rangée de stats, liste des séances avec meilleure série, 1RM, volume et record de la période).
+> Restent valables ci-dessous : la sélection des séances et des séries, le record et le 1RM ; la
+> métrique gagne les reps au poids du corps (§ 15.9.3).
+
 Paramètre `exerciseId`. Introuvable → « Exercice introuvable » + Retour.
 
 - En-tête : ←, nom affiché, badge du groupe.
@@ -413,6 +419,11 @@ Travaille sur une **copie locale** ; rien n'est enregistré avant [✓ Enregistr
 - Enregistrer = `patchWorkout(id, { exercises, bodyWeight, name, preset })` puis retour.
 
 ### 2.10 Progrès
+
+> 🔄 D34 — **disposition remplacée par le § 15.9.2** (gabarit hub) : surface « Poids de corps »,
+> sections « Exercices » (puces des groupes, stats, une ligne par exercice avec mini-courbe → fiche
+> exercice), « Calories et eau », « Pesées ». Le titre devient « Progrès ». Restent valables
+> ci-dessous : les valeurs affichées et leurs calculs (§ 3.10), et les règles de la pesée.
 
 Titre « Progression ». Rangée horizontale défilante d'onglets (puces), dans cet ordre :
 
@@ -576,6 +587,10 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
    formulaire d'envoi d'un avis, décrit au § 14.1.
 
 ### 2.13 Graphique linéaire
+
+> 🔄 D34 — **remplacé par la courbe `TrendCurve` du design system** (DESIGN.md § 9.1) : trait fin,
+> ni grille ni remplissage, point final, dates du premier et du dernier point, toucher (§ 15.9) ;
+> variantes compacte et mini, ligne d'objectif. `ui/components/LineChart.kt` est retiré.
 
 Composant maison dessiné au **`Canvas` Compose** (🔄 D13), utilisé partout.
 - Largeur = largeur du parent ; hauteur paramétrable (130 / 180 / 200 dp).
@@ -745,6 +760,10 @@ l'accueil (`Xt`), en tonnes au dixième dans Progrès.
   - « Vol. max » = max, sur les séances, de `Σ reps×poids` des exercices du groupe, affiché
     `round(v / 100) / 10` + `t` ; cardio : max de `Σ distance` → `x.x km` ;
   - tendance = dernier point − premier point (si ≥ 2 points), 1 décimale.
+  - 🔄 D34 (§ 15.9.3) : métrique au poids du corps = reps max par séance (charge ajoutée dès qu'il
+    y a du lest) ; « Charge max » = max des records en kg de **tous** les exercices du groupe ; plus
+    de top 3 : les exercices sont triés par date de dernière séance ; la tendance reste dernier −
+    premier point.
 
 ### 3.11 Pesées manuelles
 
@@ -1738,7 +1757,7 @@ aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
 (§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
 (§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
-l'Accueil, le Journal et le logo (§ 15.8).
+l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1775,6 +1794,7 @@ l'Accueil, le Journal et le logo (§ 15.8).
 | D31 | Notification de séance avec actions | une notification « Séance en cours » qui remplace celle du repos | séance, chronomètre, exercice et prochaine série ; « Valider la série » hors repos, « −30 s », « +30 s », « Passer » pendant le repos ; Live Update sur Android 16+ (`POST_PROMOTED_NOTIFICATIONS`, sans demande), sinon notification en cours ; montres : l'alerte de fin de repos, relayée par Android, vibre et propose « Valider la série » (une notification en cours n'est pas relayée) ; pas d'app Wear OS, notée comme piste ; pas de service de premier plan (§ 1, 7.1, 7.2, 15.5) |
 | D32 | Refonte « Studio épuré », étape 2 : séance en cours | gabarit « en direct » ; colonne « Préc. », suggestion de charge, pavé numérique intégré, « + Série » toujours visible, repos jaune | « Préc. » = série de même rang de la dernière séance de l'exercice, recopiée au toucher ; +2,5 kg (+1 rep au poids du corps) si toutes les séries ont tenu les reps de la première, sinon même charge, jamais appliquée d'office ; pavé avec virgule, effacer, pas −/+, « Suivant » puis « Valider la série » ; confirmations en bottom sheet ; aucun changement du format JSON (§ 2.4 – 2.6, 7.2, 10.8, 15.7) |
 | D33 | Refonte « Studio épuré », étape 3 : navigation, Accueil, Journal, logo | 4 onglets (Accueil, Journal, Progrès, Nutrition), Paramètres par l'engrenage, mini-barre partout ; Accueil à une seule surface (reprendre ou démarrer), dernière séance, séances de la semaine ; Journal groupé par semaine ; logo de la maquette, marque jaune pour la preview | Paramètres hors barre (l'onglet Accueil y reste sélectionné) ; mini-barre sur Journal, Progrès, Nutrition et Paramètres (sur l'Accueil, la surface la remplace) ; la séance n'est jamais deux fois dans la pile, « Réduire » revient à l'écran d'origine ; retour prédictif avec transitions en fondu ; Accueil : surface « En cours » ou « Prochaine séance » avec type suggéré (types réguliers des 42 derniers jours, le moins récent d'abord) qui ouvre « Démarrer » à l'étape du poids, puis « Dernière séance » et « Cette semaine » (séances de la semaine, série, 8 semaines) ; Journal : totaux, une section par semaine ISO (du lundi, à cheval sur deux années comprise), ligne date · durée · volume, toucher → éditeur, appui long → date ou suppression ; icône adaptative avec couche monochrome, splash, petite icône de notification ; aucun changement du format JSON (§ 2.1, 2.2, 7.1, 9.1, 15.8) |
+| D34 | Refonte « Studio épuré », étape 4 : fiche exercice et Progrès | fiche exercice au gabarit fiche (chiffre héros = dernière séance de la période, variation depuis le début de la période, courbe fine touchable, périodes 1M – Tout, historique date · meilleure série · volume) ; Progrès au gabarit hub en gardant tout son contenu, exercices avec mini-courbe et variation → fiche ; rien de l'existant retiré (record personnel, 1RM estimé, 1RM par séance), seule la nouvelle fonctionnalité Records est hors périmètre ; reps au poids du corps ; pesée au pavé numérique ; aucun changement du format JSON | héros = métrique de la dernière séance de la période, variation = dernière − premier point (au toucher : point − premier point), verte / rouge / grise, défilement 250 ms au changement de période ; record de la période marqué dans la liste ; courbe `TrendCurve` en Canvas (toucher → point le plus proche, réduction au-delà de 120 points en gardant creux et pics, description TalkBack période · départ · arrivée · variation), Tout par défaut ; record personnel et 1RM estimé en rangée de stats ; séances : toutes, « 1RM ~ », toucher → éditeur ; métrique au poids du corps = reps max, charge ajoutée dès qu'il y a du lest ; Progrès : surface Poids de corps (évolution en gris faute d'objectif), Exercices (puces des groupes utilisés, stats, lignes par date de dernière séance avec mini-courbe, dernière valeur et variation, charge max sur tous les exercices en kg), Calories et eau (stats, courbe avec objectif, récapitulatif), Pesées (suppression confirmée) ; « Nouvelle pesée » au gabarit formulaire avec pavé numérique et sélecteur de date (§ 2.8, 2.10, 2.13, 3.10, 15.9) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1974,6 +1994,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   anciennes images de l'icône. À
   vérifier **sur l'appareil** : retour prédictif, notification touchée depuis chaque onglet,
   appui long, « Modifier la date », logo.
+- Refonte, **étape 4** (🔄 D34, § 15.9) : fiche exercice et Progrès — spécifiée, en cours
+  d'implémentation sur `redesign`.
 
 ---
 
@@ -2133,7 +2155,8 @@ séance** avec actions (🔄 D31, § 15.5) : elle remplace la notification de re
 réglage nouveau. **Refonte « Studio épuré »** (DESIGN.md), écran par écran : la séance en cours
 (🔄 D32, § 15.7) passe au gabarit « en direct », avec la colonne « Préc. », la suggestion de charge
 et un pavé numérique intégré, sans donnée nouvelle ; puis la navigation, l'Accueil, le Journal et
-le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus.
+le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus ; puis la fiche exercice et Progrès (🔄 D34,
+§ 15.9), toujours sans donnée nouvelle.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2894,3 +2917,246 @@ transfert, « {n} sem. », pluriels séances / séries / exercices).
 
 Les clés de l'ancien Accueil devenues inutiles (`home_new_session`, `home_streak_*`, `home_stat_*`,
 `home_gym_time`, `home_recent_sessions`, `home_empty_*`…) sont retirées.
+
+### 15.9 Refonte « Studio épuré » : fiche exercice et Progrès (🔄 D34)
+
+Quatrième étape de la refonte décrite dans `DESIGN.md` : l'historique d'un exercice (§ 2.8) devient
+la **fiche exercice** (gabarit fiche, DESIGN.md § 10.2) et l'onglet **Progrès** (§ 2.10) passe au
+gabarit hub (§ 10.1), avec tout ce qu'ils affichent aujourd'hui, refait avec les composants. La
+courbe est le composant `TrendCurve` du design system (Canvas Compose, aucune bibliothèque), qui
+remplace le graphique linéaire du § 2.13. **Hors périmètre** : la nouvelle fonctionnalité Records
+(page Mes records, records battus) ; le record personnel et le 1RM estimé existants restent.
+Nutrition, Paramètres, « Démarrer une séance », le sélecteur d'exercices et l'éditeur de séance
+gardent leurs écrans actuels. Les règles du § 3 (sauf le § 3.10, § 15.9.3) et le **format des
+données ne changent pas** (§ 4, § 5) : aucune migration.
+
+#### 15.9.1 Fiche exercice
+
+Remplace le § 2.8, même route (`exercise-history/{exerciseId}`), ouverte depuis le bouton « fiche » du
+bloc exercice de la séance en cours (§ 15.7.1) et depuis Progrès. Gabarit **fiche**, en liste
+paresseuse (la liste des séances peut compter des centaines de lignes). Comme avant : séances
+**terminées** où l'exercice a **au moins une série validée**, seules les séries validées comptent
+(🔄 D15), la séance en cours n'en fait pas partie, exercices archivés compris (§ 3.9). La
+**métrique** d'une séance (charge max, reps max au poids du corps, durée en cardio) et son unité
+(« kg », « reps », « min ») suivent le § 15.9.3.
+
+1. **Barre** : ← (retour). Exercice introuvable → « Exercice introuvable » et Retour, comme avant.
+2. **Titre** : nom affiché ; dessous « Pecs · 19 séances depuis févr. 2026 » (groupe, nombre de
+   séances, mois de la première).
+3. **Chiffre héros** (pas de contrôle segmenté : une seule métrique) :
+   - **au repos** : légende « Dernière séance · jeu. 5 nov. » ; valeur = métrique de la **dernière
+     séance de la période** (2 décimales au plus, `82,5`) et son unité ; **variation** = dernière
+     séance − **premier point de la période**, au dixième, toujours signée (« +7,5 kg », « −2,5 kg »,
+     « +3 reps ») ou « identique » si nulle, suivie de « depuis le 14 août » (date du premier point).
+     **Vert** si hausse, **rouge** si baisse, **gris** si égale (DESIGN.md § 1). Une seule séance dans
+     la période : pas de variation ;
+   - **au toucher de la courbe** : légende = date du point (« jeu. 22 oct. ») ; valeur = métrique de
+     cette séance ; variation = point − premier point de la période (même contexte). Lâcher revient
+     au repos ;
+   - **période sans séance** : valeur « — », légende « Aucune séance sur cette période », ni unité
+     ni variation ;
+   - le chiffre **défile en 250 ms** (`numberChange`, DESIGN.md § 7) quand la période change ; au
+     toucher, il suit le doigt sans défiler.
+4. **Courbe** (`TrendCurve`, 172 dp) : la métrique de chaque séance de la période, de la plus ancienne
+   à gauche à la plus récente, l'abscisse proportionnelle à la date ; réduite au-delà de 120 points
+   (§ 15.9.3) ; dates du premier et du dernier point sous l'axe (« 14 août », « 5 nov. » ; l'année
+   quand elle n'est pas l'année en cours : « 12 févr. 2025 »). Un seul point : le point seul, à droite.
+   Période vide : « Choisis une période plus longue. » au centre.
+   - **Glisser le doigt** sur la courbe sélectionne le point le plus proche (§ 15.9.3) : trait
+     jusqu'au point, la suite en gris, guide vertical, date du point sous l'axe, et le héros affiche
+     sa valeur et sa variation (DESIGN.md § 9.1). La courbe garde le geste : elle ne fait pas
+     défiler la fiche.
+   - **TalkBack** lit la période, la valeur de départ, celle d'arrivée et la variation : « Charge max
+     par séance, 3 mois : de 92,5 kg le 14 août à 100 kg le 5 nov., +7,5 kg » ; « … : une séance,
+     95 kg le 5 nov. » ; « … : aucune séance ».
+5. **Sélecteur de période** : 1M · 3M · 6M · 1A · Tout, **Tout** par défaut (maquette), lus « 1 mois »,
+   « 3 mois », « 6 mois », « 1 an », « Tout l'historique » par TalkBack. Le choix est gardé à la
+   rotation, pas d'une ouverture à l'autre. Période = séances dont le **jour local** est postérieur
+   ou égal à aujourd'hui moins 1, 3, 6 ou 12 mois calendaires (le 14 nov., « 1M » part du 14 oct.) ;
+   « Tout » = toutes.
+6. **Rangée de stats** (sur tout l'historique, comme les cartes de record du § 2.8) : « 100 kg »
+   record personnel (meilleure métrique : charge max, « 15 reps » au poids du corps ; en cardio
+   « 60 min » séance la plus longue) et « 112 kg » 1RM estimé (meilleur 1RM Epley des séries
+   validées, § 3.5, seulement s'il est > 0 ; jamais en cardio).
+7. **Section « Séances »**, compteur à droite : **toutes** les séances de l'exercice (pas seulement
+   celles de la période), la plus récente en haut (🔄 D15) :
+   - titre : date « jeu. 5 nov. » (avec l'année si ce n'est pas l'année en cours) ;
+   - sous-titre : « Meilleure série 80 × 8 · 1RM ~101 kg » — la série validée la plus lourde, à
+     égalité celle qui a le plus de reps puis la première ; « 12 reps » à 0 kg ; « 1RM ~ » = meilleur
+     1RM de la séance, omis s'il vaut 0 ; cardio : la série la plus longue, à égalité la plus longue
+     distance (« 30 min · 5,2 km », « 30 min » sans distance), sans 1RM ;
+   - à droite : le **volume** (§ 3.8) « 1 920 kg » ; volume nul (poids du corps) → « 3 séries » ;
+     cardio → la durée totale « 45 min » ; dessous, **« Record »** en vert sur la séance qui détient
+     le **record de la période** choisie (meilleure métrique de la période, la plus ancienne à
+     égalité) : la marque se déplace avec la période ;
+   - toucher → éditeur de la séance (§ 2.9).
+8. **Aucune séance** : sous le titre, état vide « Aucune séance » / « Valide une série de cet exercice
+   pour suivre sa progression. », action « Retour ».
+
+Le poids de corps et les puces de chaque série d'une séance (§ 2.8) restent dans l'éditeur, ouvert
+en touchant la ligne ; « Max X kg » est la charge de la meilleure série ; le message « Fais encore
+des séances… » est remplacé par le point seul.
+
+#### 15.9.2 Progrès
+
+Remplace la disposition du § 2.10 (onglets en puces colorées, cartes). Gabarit **hub** en liste
+paresseuse, de haut en bas :
+
+1. **Barre** : « Progrès » (le nom de l'onglet ; « Progression » est retiré).
+2. **Surface « Poids de corps »** (surface « Mesure », la seule de l'écran) :
+   - légende « Poids de corps · 12 nov. » (date du dernier point, « aujourd'hui », « hier ») et le
+     bouton + « Ajouter une pesée » → formulaire « Nouvelle pesée » (ci-dessous) ;
+   - chiffre héros = **Actuel** (dernier point, § 3.10) et « kg » ; variation = **Évolution**
+     (dernier − premier, au dixième) « +10,4 kg depuis le 12 févr. », **en gris** : sans objectif de
+     poids déclaré, ni une hausse ni une baisse n'est un progrès (DESIGN.md § 1 ; 🔄 l'app colorait la
+     hausse en rouge et la baisse en vert) ; pas de variation avec un seul point ;
+   - courbe compacte (48 dp) de tous les points, réduite au-delà de 120 ; dessous, « 42 jours » à
+     gauche et **Min–Max** « 68 – 78,4 kg » à droite ;
+   - sans aucun point (ni pesée ni poids de séance) : légende « Poids de corps », bouton +, et la
+     phrase « Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance. »
+3. **Section « Exercices »** :
+   - **puces de filtre**, défilantes, une par **groupe musculaire ayant au moins une séance** (ordre
+     du § 6.2 ; 🔄 les groupes sans séance ne sont plus affichés, ils l'étaient à 50 %) ; par défaut
+     le groupe qui a le plus de séances (égalité : ordre du § 6.2) ; le choix est gardé d'une visite
+     à l'autre de l'onglet ;
+   - **rangée de stats** du groupe (§ 3.10) : « 12 » séances, « 102,5 kg » charge max (cardio
+     « 45 min » durée max ; « — » si aucun exercice du groupe n'a de charge), « 4,2 t » vol. max
+     (cardio « 12,4 km » distance max) ;
+   - **une ligne par exercice** du groupe utilisé au moins une fois, **la dernière séance la plus
+     récente en haut** (égalité : le plus de séances, puis l'ordre du catalogue et des perso) :
+     « Exercices les plus utilisés » et « Tous les exercices » ne font plus qu'une liste, sans rang ni
+     couleur (DESIGN.md § 1). Titre : nom ; sous-titre : « 19 séances · record 100 kg » ; à droite :
+     la **mini-courbe** de la métrique sur tout l'historique (réduite à 24 points ; absente avec une
+     seule séance), puis la métrique de la **dernière séance** « 80 kg » (« 12 reps », « 45 min ») et
+     dessous la **variation** dernière − première séance (« +17,5 kg », « −5 kg », « identique » ;
+     verte, rouge, grise ; absente avec une seule séance) : la règle de la fiche en période « Tout ».
+     Toucher → **fiche exercice** ;
+   - aucune séance terminée : état vide « Aucune séance encore » / « Lance ta première séance pour
+     voir tes progrès ici », action « Démarrer une séance » (ou « Reprendre la séance » si une séance
+     est en cours).
+4. **Section « Calories et eau »** (le contenu des anciens onglets Calories et Eau, § 2.10 et § 3.10) :
+   - puces de filtre « Calories » / « Eau » (Calories par défaut, choix gardé) ;
+   - rangée de stats : « 1 850 » aujourd'hui, « 2 120 » moy. 7 jours (« — » sans jour saisi dans la
+     fenêtre), « 12 » jours objectif (objectif du jour concerné) ; l'eau en litres au dixième ;
+   - **courbe** (150 dp) des jours saisis s'il y en a au moins 2, réduite au-delà de 120 points,
+     dates du premier et du dernier jour, et une **ligne d'objectif** pointillée au niveau de
+     l'objectif actuel, marquée « Objectif » ; elle ne se touche pas (pas de chiffre héros dans un
+     hub) ; TalkBack : « Calories, 42 jours : de 2 100 kcal le 3 oct. à 1 850 kcal le 14 nov.,
+     −250 kcal » ;
+   - lignes **Objectif quotidien** (actuel), **Meilleure journée**, **Jours suivis** ;
+   - aucun jour saisi : état vide « Aucune donnée » et l'indication actuelle (« Commence à saisir tes
+     calories dans l'onglet Nutrition… »), action « Aller à Nutrition » (→ onglet Nutrition).
+5. **Section « Pesées »** (l'ancien « Journal de poids »), compteur à droite : les pesées manuelles,
+   la plus récente en haut — date « 12 nov. 2026 », poids « 78,4 kg » à droite. **Toucher** une pesée
+   ouvre la confirmation en bottom sheet « Supprimer la pesée ? » / « La pesée du 12 nov. 2026
+   (78,4 kg) sera retirée. » / [Supprimer] (principal, en inverse) / [Annuler] (🔄 la poubelle
+   supprimait sans confirmation, DESIGN.md § 13). Sans pesée : la phrase actuelle (« Aucune pesée
+   manuelle enregistrée… »).
+
+**Nouvelle pesée** : formulaire en bottom sheet au **gabarit formulaire** (DESIGN.md § 10.4), avec le
+pavé numérique :
+- titre « Nouvelle pesée » ; phrase d'aide « Dernier poids : 78,4 kg, le 12 nov. » (dernier point du
+  poids de corps), sinon « Ton poids, en kg. » ;
+- **champ héros** « 78,4 kg », prérempli avec le dernier poids (vide sans poids) et **neuf** : la
+  première touche le remplace ;
+- **puces de saisie rapide** « Aujourd'hui » / « Hier » (celle qui correspond à la date choisie est
+  sélectionnée ; aujourd'hui au départ) ;
+- **ligne d'information** « Date » « sam. 14 nov. » avec chevron : ouvre le sélecteur de date du
+  système (Material 3, aux couleurs du thème), pour une autre date ;
+- **pavé numérique** sans en-tête : règles de saisie du § 15.7.4 pour une charge (6 caractères,
+  2 décimales, séparateur de la langue), pas **−0,1** / **+0,1**, touche principale « ✓ Ajouter ».
+- « Ajouter » : `0 < poids ≤ 500` (§ 3.11) → enregistrée à **midi local** du jour choisi, elle
+  remplace la pesée du même jour, la sheet se ferme ; sinon la phrase d'aide devient « Vérifie le
+  poids et la date » avec une vibration d'erreur, et la sheet reste ouverte. Retour ou voile :
+  fermée sans rien enregistrer.
+
+#### 15.9.3 Règles (pures, testées en JVM)
+
+- **Métrique d'une séance** d'un exercice (🔄 D34, remplace celle du § 3.10) :
+  - **cardio** : durée totale (min) ;
+  - **force, avec lest** — au moins une série validée de l'historique de l'exercice a une charge
+    > 0 : **charge max** des séries validées de la séance (kg, la charge saisie, donc le lest ajouté
+    pour un exercice au poids du corps ; une séance sans lest compte 0 kg) ;
+  - **poids du corps** — toutes les séries validées de l'historique sont à 0 kg : **reps max** d'une
+    série de la séance (« reps »).
+- **Série d'une période** : les points (séances, ou jours) de la période (§ 15.9.1, point 5), dans
+  l'ordre chronologique ; vide si aucun.
+- **Résumé d'une série** : aucun point → rien (héros « — ») ; sinon **dernier** point (valeur au
+  repos), **départ** (premier point) et **variation** = dernier − départ, au dixième (demi vers +∞,
+  § 3.5) ; un seul point → pas de variation ; **record** = point de valeur max (le plus ancien à
+  égalité). Variation d'un point touché = point − départ. Sens : > 0 hausse, < 0 baisse, 0 (au
+  dixième) égale — jamais « +0,0 » ni « −0,0 ».
+- **Point le plus proche du doigt** : chaque point est placé à une abscisse proportionnelle à sa date
+  entre les marges de la courbe ; le point choisi est celui dont l'abscisse est la plus proche de
+  celle du doigt (à égalité, le plus ancien) ; doigt avant le premier point → le premier, après le
+  dernier → le dernier ; courbe vide → aucun.
+- **Réduction** au-delà de `max` points (120 pour une courbe de fiche ou de hub, 24 pour une
+  mini-courbe) : on garde le premier et le dernier point ; l'intervalle de dates est coupé en
+  `(max − 2) / 2` tranches égales, et chaque tranche non vide garde son point le plus bas et son
+  point le plus haut (le plus ancien à égalité ; un seul s'ils sont confondus), dans l'ordre
+  chronologique. Résultat : au plus `max` points, toujours le record, la forme de la courbe
+  conservée (creux compris). Le résumé et le chiffre héros se calculent sur la série complète ; le
+  toucher choisit parmi les points dessinés.
+- **Progrès, groupes** (§ 3.10 modifié) : « Charge max » = max des records **en kg** de tous les
+  exercices du groupe (🔄 : du top 3, qui disparaît ; les exercices au poids du corps, comptés en
+  reps, n'y entrent pas) ; « Durée max » en cardio = max des records ; exercices triés par date de
+  dernière séance décroissante (égalité : nombre de séances décroissant, puis ordre du catalogue et
+  des perso). Séances et vol. max ne changent pas.
+- **Saisie de la pesée** : celle du § 15.7.4 (champ neuf, séparateur, 2 décimales, 6 caractères,
+  pas arrondi au centième, jamais sous 0), avec un pas de 0,1 kg.
+
+#### 15.9.4 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Exercice introuvable », « Retour »,
+« Nouvelle pesée », « Ajouter une pesée », « Vérifie le poids et la date », « Aucune pesée manuelle enregistrée… », « Aucune séance
+encore », « Lance ta première séance… », « Aucune donnée » et ses indications, « Objectif
+quotidien », « Meilleure journée », « Jours suivis », « Calories », « Eau », « Date », les noms de
+groupes, les pluriels séances / séries / jours, `common_kg_value`, `session_volume_kg`,
+`journal_tonnes`, `workout_previous_strength` / `_reps`).
+
+| clé | FR | EN |
+|---|---|---|
+| `exercise_fiche_subtitle` | {{groupe}} · {{séances}} depuis {{mois}} | {{group}} · {{sessions}} since {{month}} |
+| `exercise_fiche_last_session` | Dernière séance · {{date}} | Last session · {{date}} |
+| `exercise_fiche_sessions` | Séances | Sessions |
+| `exercise_fiche_period_empty` | Aucune séance sur cette période | No sessions in this period |
+| `exercise_fiche_period_empty_hint` | Choisis une période plus longue. | Pick a longer period. |
+| `exercise_fiche_stat_record` / `_stat_longest` / `_stat_one_rm` | record personnel / séance la plus longue / 1RM estimé | personal best / longest session / estimated 1RM |
+| `exercise_fiche_best_set` | Meilleure série {{série}} | Best set {{set}} |
+| `exercise_fiche_one_rm` | 1RM ~{{valeur}} kg | 1RM ~{{value}} kg |
+| `exercise_fiche_cardio_set` / `_minutes` | {{min}} min · {{km}} km / {{min}} min | {{min}} min · {{km}} km / {{min}} min |
+| `exercise_fiche_record` | Record | Record |
+| `exercise_fiche_empty_title` / `_message` | Aucune séance / Valide une série de cet exercice pour suivre sa progression. | No sessions yet / Complete a set of this exercise to track its progress. |
+| `delta_since` | depuis le {{date}} | since {{date}} |
+| `delta_same` | identique | unchanged |
+| `period_1m` … `period_all` | 1M / 3M / 6M / 1A / Tout | 1M / 3M / 6M / 1Y / All |
+| `period_1m_description` … `_all_description` | 1 mois / 3 mois / 6 mois / 1 an / Tout l'historique | 1 month / 3 months / 6 months / 1 year / All time |
+| `curve_metric_load` / `_reps` / `_duration` | Charge max par séance / Reps max par séance / Durée par séance | Top weight per session / Top reps per session / Duration per session |
+| `curve_description_range` | {{courbe}}, {{période}} : de {{départ}} le {{date}} à {{arrivée}} le {{date}}, {{variation}} | {{curve}}, {{period}}: from {{start}} on {{date}} to {{end}} on {{date}}, {{change}} |
+| `curve_description_single` / `_empty` | {{courbe}}, {{période}} : une séance, {{valeur}} le {{date}} / {{courbe}}, {{période}} : aucune séance | {{curve}}, {{period}}: one session, {{value}} on {{date}} / {{curve}}, {{period}}: no sessions |
+| `curve_goal` | Objectif | Goal |
+| `common_min_value` / `_reps_value` / `_km_value` / `_liters_value` / `_kcal_value` | {{valeur}} min / reps / km / L / kcal | {{value}} min / reps / km / L / kcal |
+| `progress_weight_title` | Poids de corps | Body weight |
+| `progress_weight_caption` | Poids de corps · {{date}} | Body weight · {{date}} |
+| `common_today_lower` / `common_yesterday_lower` | aujourd'hui / hier | today / yesterday |
+| `progress_weight_range` | {{min}} – {{max}} kg | {{min}} – {{max}} kg |
+| `progress_weight_none` | Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance. | No weight yet. Add a weigh-in, or enter your weight when you start a workout. |
+| `progress_exercises` | Exercices | Exercises |
+| `progress_exercise_subtitle` | {{séances}} · record {{valeur}} | {{sessions}} · best {{value}} |
+| `progress_group_sessions` / `_max_load` / `_max_duration` / `_max_volume` / `_max_distance` | séances / charge max / durée max / vol. max / distance max | workouts / top weight / longest / top volume / longest distance |
+| `progress_nutrition` | Calories et eau | Calories and water |
+| `progress_daily_today` / `_today_liters` / `_avg7` / `_goal_days` | aujourd'hui / aujourd'hui, L / moy. 7 jours / jours objectif | today / today, L / 7-day avg. / goal days |
+| `progress_daily_open_nutrition` | Aller à Nutrition | Go to Nutrition |
+| `progress_weigh_ins` | Pesées | Weigh-ins |
+| `progress_weigh_in_delete` (accessibilité) | Supprimer la pesée | Delete weigh-in |
+| `progress_weigh_in_delete_title` | Supprimer la pesée ? | Delete this weigh-in? |
+| `progress_weigh_in_delete_message` | La pesée du {{date}} ({{poids}} kg) sera retirée. | The {{date}} weigh-in ({{weight}} kg) will be removed. |
+| `weigh_in_help_last` / `_help_none` | Dernier poids : {{poids}} kg, le {{date}} / Ton poids, en kg. | Last weight: {{weight}} kg, on {{date}} / Your weight, in kg. |
+| `weigh_in_today` / `_yesterday` | Aujourd'hui / Hier | Today / Yesterday |
+| `weigh_in_add` | Ajouter | Add |
+
+Les clés devenues inutiles (`progress_title`, `progress_tab_weight`, `progress_weight_current` /
+`_change` / `_min_max` / `_chart_title`, `progress_stat_*`, `progress_cal_chart_*`,
+`progress_water_chart_*`, `progress_recap_title`, `progress_muscle_*`, `body_weight_log_title`,
+`body_weight_weight_label` / `_placeholder`, `exercise_history_*` sauf `exercise_history_not_found`…)
+sont retirées.
