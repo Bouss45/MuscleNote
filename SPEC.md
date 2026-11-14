@@ -477,6 +477,12 @@ d'objectif actuel en L), sous-titre « N jours · Objectif X L/jour » ; récapi
 
 ### 2.11 Nutrition
 
+> 🔄 D35 — **disposition remplacée par le § 15.10.1** (gabarit hub) : surface « Aujourd'hui »
+> (calories en grand, état par rapport à l'objectif, eau et compléments pris), saisies au pavé
+> numérique en formulaires (§ 15.10.2), compléments en lignes avec la case « pris aujourd'hui » et
+> une sheet par complément pour ses rappels. Les règles ci-dessous restent, sauf le ⟲, remplacé par
+> « Total du jour ».
+
 En-tête : titre « Nutrition » + bouton `primary` « + Complément » (devient « ✕ Annuler »
 quand le formulaire est ouvert).
 
@@ -536,6 +542,10 @@ Vide (formulaire fermé) : 💊 « Aucun complément » + texte d'aide.
 Si ≥ 1 complément a ses rappels activés : encart info `nutrition.infoMobile`.
 
 ### 2.12 Paramètres
+
+> 🔄 D35 — **disposition remplacée par le § 15.10.3** : liste groupée (Préférences, Données, À
+> propos), chaque réglage ouvert en formulaire ; mêmes réglages et mêmes règles. Thème : Sombre
+> (par défaut), Clair, Système (§ 15.10.4).
 
 En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
 
@@ -805,7 +815,8 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
 ### 3.14 Préférences
 
 - `restSeconds` : entier > 0, sinon 180.
-- `theme` (🔄 D10) : `"system"` (défaut) | `"light"` | `"dark"`.
+- `theme` (🔄 D10) : `"system"` | `"light"` | `"dark"` ; défaut `"dark"` (🔄 D35, § 15.10.4 ; c'était
+  `"system"`).
 - **Langue** (🔄 D9) : n'est plus une préférence de l'app ; elle est gérée par AppCompat
   (langue du système par défaut, surcharge possible FR/EN). Un changement de langue recrée
   l'activité, renomme les canaux de notification ; les textes des notifications sont
@@ -941,7 +952,8 @@ saisis/affichés, pas la présence des champs.
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
-**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark" }`.
+**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark" }` (défaut 180 et
+`"dark"`, 🔄 D35).
 
 **`RestTimerState`** (non sauvegardé) : `{ endsAt: instant ms, total: s, exerciseName }`.
 
@@ -1166,10 +1178,10 @@ ou racine non-objet → « Format invalide ».
   `waterGoalHistory = { "0000-01-01": waterGoal }`.
 - **Pris aujourd'hui** : seules les entrées dont la valeur est aujourd'hui sont gardées.
 - **Préférences** : `language` ignoré (la langue suit le système, D9) ; `restSeconds`
-  validé (> 0 sinon 180) ; `theme = "system"`.
+  validé (> 0 sinon 180) ; `theme = "dark"` (🔄 D35 : l'app Expo n'avait que le thème sombre).
 
-**Normalisation v2** (après migration) : `preset` inconnu → retiré ; `theme` invalide →
-`"system"` ; si `calorieGoal` diffère de `goalFor(aujourd'hui)` (fichier v2 modifié par
+**Normalisation v2** (après migration) : `preset` inconnu → retiré ; `theme` invalide ou absent →
+`"dark"` (🔄 D35) ; si `calorieGoal` diffère de `goalFor(aujourd'hui)` (fichier v2 modifié par
 l'app Expo), on ajoute `history[aujourd'hui] = calorieGoal` (idem eau) ; historique
 d'objectif absent ou vide → `{ "0000-01-01": objectif courant }` ; entrées `taken` de
 compléments inconnus retirées.
@@ -1757,7 +1769,8 @@ aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
 (§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
 (§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
-l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9).
+l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
+Nutrition et Paramètres (§ 15.10).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1795,6 +1808,7 @@ l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progr�
 | D32 | Refonte « Studio épuré », étape 2 : séance en cours | gabarit « en direct » ; colonne « Préc. », suggestion de charge, pavé numérique intégré, « + Série » toujours visible, repos jaune | « Préc. » = série de même rang de la dernière séance de l'exercice, recopiée au toucher ; +2,5 kg (+1 rep au poids du corps) si toutes les séries ont tenu les reps de la première, sinon même charge, jamais appliquée d'office ; pavé avec virgule, effacer, pas −/+, « Suivant » puis « Valider la série » ; confirmations en bottom sheet ; aucun changement du format JSON (§ 2.4 – 2.6, 7.2, 10.8, 15.7) |
 | D33 | Refonte « Studio épuré », étape 3 : navigation, Accueil, Journal, logo | 4 onglets (Accueil, Journal, Progrès, Nutrition), Paramètres par l'engrenage, mini-barre partout ; Accueil à une seule surface (reprendre ou démarrer), dernière séance, séances de la semaine ; Journal groupé par semaine ; logo de la maquette, marque jaune pour la preview | Paramètres hors barre (l'onglet Accueil y reste sélectionné) ; mini-barre sur Journal, Progrès, Nutrition et Paramètres (sur l'Accueil, la surface la remplace) ; la séance n'est jamais deux fois dans la pile, « Réduire » revient à l'écran d'origine ; retour prédictif avec transitions en fondu ; Accueil : surface « En cours » ou « Prochaine séance » avec type suggéré (types réguliers des 42 derniers jours, le moins récent d'abord) qui ouvre « Démarrer » à l'étape du poids, puis « Dernière séance » et « Cette semaine » (séances de la semaine, série, 8 semaines) ; Journal : totaux, une section par semaine ISO (du lundi, à cheval sur deux années comprise), ligne date · durée · volume, toucher → éditeur, appui long → date ou suppression ; icône adaptative avec couche monochrome, splash, petite icône de notification ; aucun changement du format JSON (§ 2.1, 2.2, 7.1, 9.1, 15.8) |
 | D34 | Refonte « Studio épuré », étape 4 : fiche exercice et Progrès | fiche exercice au gabarit fiche (chiffre héros = dernière séance de la période, variation depuis le début de la période, courbe fine touchable, périodes 1M – Tout, historique date · meilleure série · volume) ; Progrès au gabarit hub en gardant tout son contenu, exercices avec mini-courbe et variation → fiche ; rien de l'existant retiré (record personnel, 1RM estimé, 1RM par séance), seule la nouvelle fonctionnalité Records est hors périmètre ; reps au poids du corps ; pesée au pavé numérique ; aucun changement du format JSON | héros = métrique de la dernière séance de la période, variation = dernière − premier point (au toucher : point − premier point), verte / rouge / grise, défilement 250 ms au changement de période ; record de la période marqué dans la liste ; courbe `TrendCurve` en Canvas (toucher → point le plus proche, réduction au-delà de 120 points en gardant creux et pics, description TalkBack période · départ · arrivée · variation), Tout par défaut ; record personnel et 1RM estimé en rangée de stats ; séances : toutes, « 1RM ~ », toucher → éditeur ; métrique au poids du corps = reps max, charge ajoutée dès qu'il y a du lest ; Progrès : surface Poids de corps (évolution en gris faute d'objectif), Exercices (puces des groupes utilisés, stats, lignes par date de dernière séance avec mini-courbe, dernière valeur et variation, charge max sur tous les exercices en kg), Calories et eau (stats, courbe avec objectif, récapitulatif), Pesées (suppression confirmée) ; « Nouvelle pesée » au gabarit formulaire avec pavé numérique et sélecteur de date (§ 2.8, 2.10, 2.13, 3.10, 15.9) |
+| D35 | Refonte « Studio épuré », étape 5a : Nutrition et Paramètres | Nutrition au gabarit hub avec toutes ses fonctions, rappels compris, une seule surface : ce qui compte aujourd'hui ; quantités au pavé numérique ; pas d'objectif de protéines ; Paramètres en liste groupée, mêmes réglages, chaque réglage en formulaire ; thème Sombre (par défaut), Clair, Système ; export, sauvegarde, Health Connect et avis inchangés ; aucun changement du format JSON sauf le thème | Nutrition : surface « Aujourd'hui » (kcal du jour en chiffre héros, « encore … » gris, « dans l'objectif » vert, « +… kcal » rouge selon le ratio de D15, piste, eau et compléments pris, boutons Calories et Eau), compléments en lignes (case « pris aujourd'hui » séparée, toucher → sheet du complément : rappels, suppression confirmée), « Nouveau complément » en sheet au clavier (nom, dosage texte libre, unités, rappels) ; formulaires Calories et Eau au pavé : « Ajouter » ou « Total du jour » (remplace ⟲ ; nouvelle règle `setWater`), « Nouveau total », objectif quotidien à partir d'aujourd'hui ; heure au `TimePicker` avec « Supprimer » ; Paramètres : Mes données, Préférences (langue, thème, minuteur, notifications), Données (sauvegarde automatique, exports, import, Health Connect), À propos (mises à jour, rapport de plantage, avis), messages sans couleur ; thème par défaut `"dark"` (absent, invalide, import v1), choix déjà enregistré gardé ; tendances de calories et d'eau toujours dans Progrès, protéines et stock hors périmètre (§ 2.11, 2.12, 3.14, 4.1, 5.3, 15.10) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2011,6 +2025,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   les onglets et cartes de Progrès, les couleurs du top 3. À vérifier **sur l'appareil** : glisser sur la
   courbe (sans faire défiler la fiche), défilement du chiffre au changement de période, TalkBack sur la
   courbe et les périodes, sélecteur de date de la pesée, suppression d'une pesée.
+- Refonte, **étape 5a** (🔄 D35, § 15.10) : Nutrition et Paramètres, thème sombre par défaut —
+  spécifiée, en cours.
 
 ---
 
@@ -2171,7 +2187,8 @@ réglage nouveau. **Refonte « Studio épuré »** (DESIGN.md), écran par écra
 (🔄 D32, § 15.7) passe au gabarit « en direct », avec la colonne « Préc. », la suggestion de charge
 et un pavé numérique intégré, sans donnée nouvelle ; puis la navigation, l'Accueil, le Journal et
 le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus ; puis la fiche exercice et Progrès (🔄 D34,
-§ 15.9), toujours sans donnée nouvelle.
+§ 15.9), toujours sans donnée nouvelle ; puis Nutrition et Paramètres (🔄 D35, § 15.10), dont seul le
+thème par défaut change (sombre).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -3175,3 +3192,291 @@ Les clés devenues inutiles (`progress_title`, `progress_tab_weight`, `progress_
 `progress_water_chart_*`, `progress_recap_title`, `progress_muscle_*`, `body_weight_log_title`,
 `body_weight_weight_label` / `_placeholder`, `exercise_history_*` sauf `exercise_history_not_found`…)
 sont retirées.
+
+### 15.10 Refonte « Studio épuré » : Nutrition et Paramètres (🔄 D35)
+
+Étape 5a de la refonte décrite dans `DESIGN.md` : l'onglet **Nutrition** (§ 2.11) passe au gabarit
+hub (DESIGN.md § 10.1) avec **toutes ses fonctions actuelles**, rappels compris, et ses saisies au
+gabarit formulaire (§ 10.4) ; **Paramètres** (§ 2.12) devient une liste groupée (hub de second
+niveau) dont chaque réglage s'ouvre en formulaire, avec les mêmes réglages qu'aujourd'hui. Seul
+changement de réglage : le **thème** propose Sombre, Clair, Système, **Sombre par défaut**
+(§ 15.10.4). **Hors périmètre** : objectif de protéines et stock des compléments (fonctionnalités
+prévues après), section « Tendances » de Nutrition (les courbes de calories et d'eau restent dans
+Progrès, § 15.9.2). Export, sauvegarde automatique, Health Connect et envoi d'avis gardent leurs
+règles (§ 5, § 8, § 14, § 15.2, § 15.3) ; les notifications (§ 7) ne changent pas. Le **format des
+données ne change pas** (§ 4, § 5), sauf la valeur par défaut du thème : aucune migration.
+
+#### 15.10.1 Nutrition
+
+Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
+
+1. **Barre** : « Nutrition ».
+2. **Surface « Aujourd'hui »** (la seule de l'écran) — ce qui compte aujourd'hui : les calories en
+   grand, l'eau et les compléments en résumé, les deux saisies du jour sous le pouce.
+   - légende « Aujourd'hui » ;
+   - **chiffre héros** = kcal du jour et « kcal » (défile quand il change, DESIGN.md § 7) ;
+   - dessous, l'**état par rapport à l'objectif du jour** (`goalFor(aujourd'hui)`, § 3.12), selon le
+     ratio non plafonné du § 2.11 (🔄 D15), toujours en mots :
+     - ratio < 0,9 : « encore 950 kcal » (gris) suivi de « sur 2 800 » ; à 0 kcal, « objectif
+       2 800 kcal » seul ;
+     - 0,9 ≤ ratio ≤ 1,05 : « dans l'objectif » (**vert**) suivi de « sur 2 800 » ;
+     - ratio > 1,05 : « +320 kcal » (**rouge**) suivi de « au-dessus de 2 800 » ;
+   - **piste de progression** (3 dp, `surfacePressed`, remplie en `textPrimary`) : kcal / objectif,
+     plafonnée à 100 % ;
+   - **rangée de stats** : l'eau du jour « 750 ml » (dès 1 000 ml « 1,5 L », au dixième) avec
+     « eau · sur 2,0 L », ou « eau · objectif atteint » une fois l'objectif d'eau atteint ; et, s'il
+     y a au moins un complément, « 1/3 » avec « compléments pris » ;
+   - deux **boutons secondaires** moyens, largeurs égales, icône `add` : « Calories » et « Eau » →
+     formulaires du § 15.10.2.
+3. **Section « Compléments »**, compteur « 1/3 pris » à droite (sans complément : pas de compteur) :
+   - **une ligne par complément**, dans l'ordre de création : titre = nom ; sous-titre = « 5 g par
+     prise » (omis si le dosage est vide, 🔄 D15) puis le résumé des rappels (« Pas de rappel »,
+     « Rappels activés », « Rappel à 08:00 », « 3 rappels », § 2.11), séparés par « · » ; à droite
+     la **case « pris aujourd'hui »** (§ 3.12) : la toucher la coche ou la décoche (vibration) ;
+     toucher **le reste de la ligne** ouvre la sheet du complément (§ 15.10.2) ;
+   - sous les lignes, bouton secondaire pleine largeur « Nouveau complément » (icône `add`) →
+     formulaire du § 15.10.2 ;
+   - sans complément : état vide (pastille `pill`) « Aucun complément » / « Ajoute tes compléments
+     alimentaires et configure des rappels pour ne jamais en oublier », action « Ajouter un
+     complément » ;
+   - si au moins un complément a ses rappels activés : la phrase `nutrition.infoMobile` en légende
+     sous la section.
+4. Mini-barre de la séance en cours et barre d'onglets (§ 15.8.1), sans changement ; le toucher d'un
+   rappel ouvre toujours cet onglet.
+
+#### 15.10.2 Formulaires de Nutrition
+
+Tous en bottom sheet (gabarit formulaire, DESIGN.md § 10.4) ; retour ou voile : fermée sans rien
+enregistrer, sauf la sheet d'un complément dont chaque changement s'applique tout de suite (comme
+la carte du § 2.11). Pavé numérique : règles du § 15.10.5.
+
+**Calories** (bouton « Calories ») :
+- titre « Calories » ; phrase d'aide « Aujourd'hui : 1 850 kcal sur 2 800. » ;
+- puces « Ajouter » (choisie à l'ouverture) / « Total du jour » (= « Définir » du § 2.11) ;
+- **champ héros** en kcal : en « Ajouter », vide ; en « Total du jour », les kcal du jour
+  (champ neuf : la première touche les remplace) ;
+- lignes d'information : « Nouveau total » « 2 200 kcal » (en « Ajouter » seulement, mis à jour à
+  chaque touche) ; « Objectif quotidien » « 2 800 kcal » avec chevron → formulaire d'objectif ;
+- pavé : pas **−50** / **+50**, touche principale « ✓ Ajouter » ou « ✓ Enregistrer » ;
+- « Ajouter » : valeur > 0 → `kcal_du_jour += v` ; « Total du jour » : champ non vide → `kcal_du_jour
+  = v` (0 remet le jour à zéro, l'ancien ⟲) ; résultat borné à ≥ 0 (§ 3.12). Puis la sheet se ferme
+  (vibration de succès). Champ vide, ou 0 en « Ajouter » : la phrase d'aide devient « Saisis une
+  quantité » avec une vibration d'erreur, la sheet reste ouverte.
+
+**Eau** (bouton « Eau ») : même formulaire en **ml** — titre « Eau », aide « Aujourd'hui : 750 ml
+sur 2,0 L. », puces « Ajouter » / « Total du jour », « Nouveau total » « 1,0 L », « Objectif
+quotidien » « 2,0 L » → objectif d'eau ; pas **−250** / **+250** (un verre). « Total du jour »
+remplace l'ancien ⟲ de l'eau (0 = remise à zéro) et permet de corriger le total (🔄 nouvelle règle
+`setWater`, § 15.10.5).
+
+**Objectif de calories / d'eau** (ligne « Objectif quotidien ») : la même sheet passe à ce
+formulaire — titre « Objectif de calories » ou « Objectif d'eau », aide « À partir d'aujourd'hui ;
+les jours passés gardent le leur. » ; champ héros prérempli avec l'objectif du jour (neuf), en kcal
+ou en **litres** ; pas ±100 kcal ou ±0,25 L ; « ✓ Enregistrer » : valeur > 0 → objectif à partir
+d'aujourd'hui (§ 3.12, litres stockés en ml `round(v × 1000)`), retour au formulaire de saisie ;
+sinon « Saisis un objectif supérieur à 0 » et vibration d'erreur. Retour : le formulaire de saisie.
+
+**Nouveau complément** (le formulaire long, DESIGN.md § 13) — une sheet défilante, au clavier du
+système puisque le nom est du texte :
+- titre « Nouveau complément » ;
+- « Nom » : `StudioTextField` d'une ligne, focus automatique, majuscule en début de phrase,
+  invite « Ex : Créatine, Whey, Oméga-3... », 40 caractères ;
+- « Dosage par prise » : `StudioTextField` numérique d'une ligne (clavier décimal), **texte libre
+  gardé tel que saisi** (§ 2.11), 10 caractères ; dessous, les **unités** en puces de filtre `g`
+  (par défaut), `mg`, `ml`, `caps`, `cp`, `dose`, `ui` ;
+- ligne à cocher « Rappels » (cochée au départ) ; cochée : une ligne d'information par rappel
+  « Rappel » « 08:00 » avec chevron → choix de l'heure, et le bouton texte « Ajouter un rappel »
+  (icône `add` ; heure du dernier + 2 h, § 2.11) ; recochée sans rappel → 08:00 ;
+- bouton principal « Enregistrer », actif dès que le nom (trim) n'est pas vide : crée le complément
+  (§ 3.12, sans rappels si la case est décochée ; demande `POST_NOTIFICATIONS` si des rappels sont
+  actifs) et ferme la sheet.
+
+**Sheet d'un complément** (toucher sa ligne) :
+- titre = le nom ; phrase d'aide « 5 g par prise » (absente sans dosage) ;
+- ligne à cocher « Rappels » (`reminderEnabled`) ; l'activer demande la permission si nécessaire ;
+- une ligne d'information par rappel (« Rappel » « 08:00 », chevron → choix de l'heure) et « Ajouter
+  un rappel », comme dans le formulaire ; affichées même rappels désactivés (ils sont conservés,
+  § 4.1), comme la liste dépliée du § 2.11 ;
+- bouton secondaire « Supprimer le complément » → confirmation en bottom sheet « Supprimer
+  « Créatine » ? » / « Le complément et ses rappels seront retirés. » / [Supprimer] (principal, en
+  inverse) / [Annuler] (🔄 remplace la confirmation en ligne) ;
+- bouton texte « Fermer ».
+
+**Choix de l'heure** (🔄 D7 inchangé) : le `TimePicker` Material 3 en dialogue, aux couleurs de
+`StudioTheme`, « Heure du rappel », 24 h ou 12 h selon le système, toute minute ; boutons texte
+« Annuler » et « OK », et « Supprimer » (à gauche) s'il y a plus d'un rappel (🔄 remplace le ✕ de la
+ligne).
+
+#### 15.10.3 Paramètres
+
+Remplace la disposition du § 2.12. **Hub de second niveau** (DESIGN.md § 10.1), ouvert par
+l'engrenage de l'Accueil, barre d'onglets gardée (Accueil sélectionné, § 15.8.1). Une liste groupée
+de lignes (`ListRow`) : chacune montre la valeur ou l'état du réglage et ouvre un **formulaire** en
+bottom sheet, ou lance l'action. De haut en bas :
+
+1. **Barre** : ← (retour à l'Accueil) puis le titre « Paramètres ».
+2. **Mes données** (rangée de stats, sans surface) : « 124 » séances terminées, « 6 » exercices
+   perso **non archivés** (§ 2.12, point 1).
+3. **Section « Préférences »** :
+   - **Langue** — valeur « Langue du système », « Français » ou « English » (sans drapeaux) → sheet
+     « Langue », aide « Langue du système : celle du téléphone. », contrôle segmenté « Système ·
+     Français · English » ; le toucher applique le choix (🔄 D9, `setApplicationLocales`) et ferme
+     la sheet ;
+   - **Thème** — valeur « Sombre », « Clair » ou « Système » → sheet « Thème », aide « Sombre par
+     défaut. Système suit le réglage du téléphone. », contrôle segmenté « Sombre · Clair ·
+     Système » ; appliqué tout de suite (§ 15.10.4), sheet fermée ;
+   - **Minuteur de repos** — valeur « 3 min » → sheet « Minuteur de repos », aide « Durée par défaut
+     du repos entre les séries », puces de filtre 1 min … 5 min (§ 2.12) ; appliqué, sheet fermée ;
+   - **Notifications désactivées** (seulement si `POST_NOTIFICATIONS` est refusée ou les
+     notifications de l'app coupées, revérifié au retour sur l'écran, 🔄 D6) — sous-titre
+     « Minuteur et rappels silencieux », chevron → réglages de notification de l'app.
+4. **Section « Données »** :
+   - **Sauvegarde automatique** (🔄 D28, § 15.2) — valeur « Activée » / « Désactivée » ; sous-titre :
+     « Dernière le 14 nov. 2026, 08:12 », « Aucune sauvegarde pour l'instant », « Dossier
+     inaccessible » ou « Échec le … », désactivée « Chaque jour, dans le dossier de ton choix » →
+     sheet « Sauvegarde automatique » : aide (`settings_auto_backup_desc`) ; ligne à cocher
+     « Sauvegarde quotidienne » (cocher sans dossier ouvre le sélecteur, § 15.2) ; activée, lignes
+     d'information « Dossier » (nom, chevron → sélecteur) et « Dernière sauvegarde » ; l'échec en
+     phrase (dossier inaccessible, échec d'écriture daté) ; bouton principal « Sauvegarder
+     maintenant » (« Sauvegarde… » et désactivé pendant l'écriture) ;
+   - **Exporter mes données** — sous-titre « Fichier JSON de toutes tes données » → JSON v2 et
+     feuille de partage (§ 5.6) ;
+   - **Exporter en CSV** (🔄 D1) — « Tableaux pour Excel ou Sheets » → § 8 ;
+   - **Importer des données** — « Depuis un fichier exporté » → sélecteur de fichiers puis
+     confirmation en bottom sheet « Écraser les données actuelles ? » / « Tes N séances actuelles
+     seront remplacées… » / [Confirmer] / [Annuler] (§ 5.4) ; un fichier partagé vers l'app ouvre
+     Paramètres sur cette confirmation (§ 15.8.1) ;
+   - pendant une opération, le sous-titre de la ligne devient « En cours… » et les trois lignes
+     sont inactives ; le message de succès ou d'erreur (`settings.export.*` / `settings.import.*`)
+     s'affiche en phrase sous les lignes ; dessous, l'info `settings.info` en légende ;
+   - **Health Connect** (🔄 D29, seulement si disponible, § 15.3) — valeur « Activé » / « Désactivé » ;
+     sous-titre « Dernier envoi le … », « Autorisation manquante », ou désactivé « Séances et poids
+     vers tes apps de santé » → sheet « Health Connect » : aide (`health_desc`) ; ligne à cocher
+     « Envoyer à Health Connect » (cocher demande l'autorisation, refus → « Autorisation refusée… ») ;
+     activé : autorisations manquantes en phrase avec le bouton secondaire « Autoriser », lignes
+     d'information « Dernier envoi » et « Écrits » (« 12 séances · 30 poids »), dernière erreur
+     datée ; bouton principal « Envoyer l'historique » (« Envoi… » pendant l'envoi) et son résultat
+     en phrase. La section « SANTÉ » disparaît : la ligne rejoint « Données ».
+5. **Section « À propos »** (remplace « APPLICATION » et « TON AVIS ») :
+   - **Mises à jour** (🔄 D25, § 3.17) — valeur = version installée ; sous-titre « Gérées par
+     Obtainium » (ligne inactive), « Pas encore vérifié », « À jour · vérifié le 14 nov., 08:12 »,
+     « La 1.0.43 est disponible », « Vérification impossible : pas de connexion ? » après un échec,
+     « Vérification… » pendant la requête ; toucher → [Vérifier] ; une mise à jour disponible ajoute
+     la ligne **« Télécharger la 1.0.43 »** (chevron) → APK dans le navigateur ;
+   - **Rapport de plantage** (🔄 D17, seulement si un rapport existe, § 10.9) — « Dernier plantage le
+     … » → sheet : aide, bouton principal « Partager », bouton secondaire « Supprimer » (tous les
+     rapports), bouton texte « Fermer » ;
+   - **Envoyer un avis** (🔄 D26, seulement si l'URL du webhook a été fournie au build, § 14.5) —
+     « Une idée, un bug ? » → sheet « Ton avis » : le formulaire du § 14.1 refait avec les
+     composants — puces de filtre Idée / Bug / Autre, message en `StudioTextField` multiligne
+     (4 à 8 lignes) avec le compteur « n / 1 000 » en légende, pseudo en `StudioTextField` d'une
+     ligne, bouton principal « Envoyer » (« Envoi… » pendant l'envoi ; désactivé pendant un délai,
+     « Prochain envoi possible dans … » dessous), informations jointes en légende, résultat (§ 14.4)
+     en phrase. Brouillon, limites, délais et requête inchangés (§ 14.1 – 14.3).
+
+Les messages de succès et d'erreur ne prennent pas de couleur (DESIGN.md § 1 : vert = progression,
+rouge = baisse) : phrase en `textPrimary` 600, comme l'erreur de la pesée (§ 15.9.2).
+
+#### 15.10.4 Thème
+
+- Choix **Sombre** (par défaut), **Clair**, **Système**, dans cet ordre (🔄 D35, remplace « Système »
+  par défaut du § 3.14 et l'ordre du § 2.12) ; effet immédiat (§ 13.4).
+- Format inchangé : `preferences.theme` vaut toujours `"system"`, `"light"` ou `"dark"`.
+  **Défaut `"dark"`** : app installée sans `preferences.json`, sauvegarde importée dont le thème est
+  absent ou invalide (§ 5.3 : `theme` invalide → `"dark"`), sauvegarde v1 de l'app Expo (qui
+  n'avait que le thème sombre : migration `theme = "dark"`).
+- Un choix déjà enregistré (`"system"` compris) est **gardé** : rien ne le réécrit.
+- Le choix est transmis au système (Android 12+, § 9.1) une fois les préférences lues, comme avant ;
+  avant la lecture, l'interface part du thème sombre.
+
+#### 15.10.5 Règles (pures, testées en JVM)
+
+- **État des calories du jour** : `ratio = kcal / objectif` (0 si objectif ≤ 0), ton du § 2.11
+  (🔄 D15) ; *encore* = `objectif − kcal` (ratio < 0,9), *au-dessus* = `kcal − objectif`
+  (ratio > 1,05) ; piste = `min(1, ratio)`.
+- **Eau** : objectif atteint ssi `ml ≥ objectif` ; `setWater(jour, v)` : `waterLog[jour] = max(0, v)`
+  (🔄 nouvelle règle, pendant de `setCaloriesToday`).
+- **Compléments pris** : nombre de compléments existants dont `taken[id] == aujourd'hui`.
+- **Résumé des rappels** d'un complément : désactivés → aucun ; activés et 0 → activés ; 1 → l'heure ;
+  n → n (§ 2.11).
+- **Saisie au pavé** des quantités, sur le modèle du § 15.7.4 (champ neuf, pas de zéro en tête,
+  touche au-delà de la longueur sans effet, pas jamais sous 0) :
+  - kcal et ml : **entiers**, 5 chiffres au plus, le séparateur est sans effet ;
+  - objectif d'eau en litres : séparateur de la langue, 2 décimales et 5 caractères au plus ;
+  - pas : ±50 kcal, ±250 ml, ±100 kcal, ±0,25 L ; un champ vide vaut 0 pour le pas ;
+  - validation : « Ajouter » > 0, « Total du jour » champ non vide (≥ 0), objectif > 0.
+- **Thème** : défaut `Dark` (`Preferences.DEFAULT`), lecture d'un `theme` invalide ou absent →
+  `Dark`, migration v1 → `"dark"`.
+
+#### 15.10.6 Design system
+
+Composants existants, sauf ces ajouts (décrits dans DESIGN.md § 9 avec leurs aperçus) :
+- **`ListRow`** : case à cocher **séparée** de la ligne (`ListRowTrailing.Check` avec sa propre
+  action) — la case bascule, la ligne ouvre autre chose (complément) ; sans action propre, toute
+  la ligne bascule comme avant (échauffement, lignes à cocher des sheets).
+- **Surface « Aujourd'hui »** (`DailySurface`, variante de `HighlightSurface`) : légende, chiffre
+  héros et état, piste, rangée de stats, deux boutons.
+- **Piste de progression** `ProgressTrack` : la piste de `LiveTrack` remplie en `textPrimary`.
+- **Icône** `pill` (Material Symbols Rounded), état vide des compléments.
+- **Contrôle segmenté** posé dans une sheet (langue, thème) et **ligne à cocher sur une sheet**
+  (filet `surfaceControl`).
+
+#### 15.10.7 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Nutrition », « Calories »,
+« Eau », « Nouveau complément », « Nom », « Dosage par prise », « Rappels », « Ajouter un rappel »,
+« Heure du rappel », « Aucun complément » et son texte, « {dosage} {unité} par prise », résumés des
+rappels, « Supprimer « … » ? », `nutrition.infoMobile`, « Objectif quotidien », `common_kcal_value`,
+`common_liters_value`, et tous les textes de Paramètres, de la sauvegarde automatique, de Health
+Connect, des mises à jour, du rapport de plantage et de l'avis).
+
+| clé | FR | EN |
+|---|---|---|
+| `nutrition_today` | Aujourd'hui | Today |
+| `nutrition_calories_left` | encore {{n}} kcal | {{n}} kcal to go |
+| `nutrition_calories_on_target` | dans l'objectif | on target |
+| `nutrition_calories_over` | +{{n}} kcal | +{{n}} kcal |
+| `nutrition_goal_of` / `_goal_over` / `_goal_only` | sur {{objectif}} / au-dessus de {{objectif}} / objectif {{objectif}} kcal | of {{goal}} / over {{goal}} / goal {{goal}} kcal |
+| `nutrition_water_of` / `_water_reached` | eau · sur {{objectif}} / eau · objectif atteint | water · of {{goal}} / water · goal reached |
+| `nutrition_supplements_taken_label` | compléments pris | supplements taken |
+| `nutrition_ml_value` | {{valeur}} ml | {{value}} ml |
+| `nutrition_supplements` | Compléments | Supplements |
+| `nutrition_taken_count` | {{pris}}/{{n}} pris | {{taken}}/{{n}} taken |
+| `nutrition_taken_toggle` (accessibilité) | Pris aujourd'hui | Taken today |
+| `nutrition_supplement_options` (accessibilité) | Rappels et options | Reminders and options |
+| `nutrition_empty_action` | Ajouter un complément | Add a supplement |
+| `nutrition_entry_help` | Aujourd'hui : {{valeur}} sur {{objectif}}. | Today: {{value}} of {{goal}}. |
+| `nutrition_mode_add` / `_mode_total` | Ajouter / Total du jour | Add / Day total |
+| `nutrition_new_total` | Nouveau total | New total |
+| `nutrition_entry_invalid` | Saisis une quantité | Enter an amount |
+| `nutrition_calorie_goal_title` / `_water_goal_title` | Objectif de calories / Objectif d'eau | Calorie goal / Water goal |
+| `nutrition_goal_help` | À partir d'aujourd'hui ; les jours passés gardent le leur. | From today on; past days keep theirs. |
+| `nutrition_goal_invalid` | Saisis un objectif supérieur à 0 | Enter a goal above 0 |
+| `nutrition_reminder` | Rappel | Reminder |
+| `nutrition_delete_supplement` | Supprimer le complément | Delete supplement |
+| `nutrition_delete_message` | Le complément et ses rappels seront retirés. | The supplement and its reminders will be removed. |
+| `common_close` / `common_ok` | Fermer / OK | Close / OK |
+| `settings_section_preferences` / `_data` / `_about` | Préférences / Données / À propos | Preferences / Data / About |
+| `settings_language_help` | Langue du système : celle du téléphone. | System language: your phone's. |
+| `settings_theme_help` | Sombre par défaut. Système suit le réglage du téléphone. | Dark by default. System follows your phone's setting. |
+| `settings_notifications_off_title` / `_subtitle` | Notifications désactivées / Minuteur et rappels silencieux | Notifications off / Rest timer and reminders are silent |
+| `settings_on_f` / `settings_off_f` | Activée / Désactivée | On / Off |
+| `settings_on_m` / `settings_off_m` | Activé / Désactivé | On / Off |
+| `settings_auto_backup_off_subtitle` | Chaque jour, dans le dossier de ton choix | Every day, in the folder you choose |
+| `settings_auto_backup_last_short` / `_failed_short` / `_folder_lost_short` | Dernière le {{date}} / Échec le {{date}} / Dossier inaccessible | Last on {{date}} / Failed on {{date}} / Folder unavailable |
+| `settings_auto_backup_toggle` / `_folder_label` / `_last_label` | Sauvegarde quotidienne / Dossier / Dernière sauvegarde | Daily backup / Folder / Last backup |
+| `settings_auto_backup_running` | Sauvegarde… | Backing up… |
+| `settings_export_short` / `_export_csv_short` / `_import_short` | Fichier JSON de toutes tes données / Tableaux pour Excel ou Sheets / Depuis un fichier exporté | JSON file with all your data / Tables for Excel or Sheets / From an exported file |
+| `settings_in_progress` | En cours… | In progress… |
+| `health_subtitle_off` / `_subtitle_last` / `_subtitle_missing` | Séances et poids vers tes apps de santé / Dernier envoi le {{date}} / Autorisation manquante | Workouts and weight to your health apps / Last sent {{date}} / Permission missing |
+| `health_toggle` / `_last_label` / `_written_label` / `_sending` | Envoyer à Health Connect / Dernier envoi / Écrits / Envoi… | Send to Health Connect / Last sent / Written / Sending… |
+| `settings_update_subtitle_managed` / `_never` / `_up_to_date` / `_available` / `_checking` | Gérées par Obtainium / Pas encore vérifié / À jour · vérifié le {{date}} / La {{version}} est disponible / Vérification… | Managed by Obtainium / Not checked yet / Up to date · checked {{date}} / {{version}} is available / Checking… |
+| `settings_update_download` | Télécharger la {{version}} | Download {{version}} |
+| `feedback_row_title` / `_row_subtitle` | Envoyer un avis / Une idée, un bug ? | Send feedback / An idea, a bug? |
+| `feedback_sending` | Envoi… | Sending… |
+
+Les clés devenues inutiles (`nutrition_section_today`, `nutrition_cal_add` / `_cal_set` /
+`_cal_placeholder`, `nutrition_water_placeholder`, `nutrition_cal_goal_placeholder`,
+`nutrition_water_goal_placeholder`, `nutrition_supplement`, `nutrition_supplements_section`,
+`nutrition_taken_yes` / `_taken_no`, `settings_section_backup` / `_app` / `_health` / `_feedback`,
+`settings_auto_backup_folder` / `_change` / `_last`…) sont retirées.
