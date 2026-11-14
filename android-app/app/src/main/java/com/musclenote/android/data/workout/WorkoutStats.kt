@@ -39,6 +39,7 @@ data class ExerciseSession(val workoutId: String, val date: Instant, val bodyWei
     fun metric(isCardio: Boolean): Double = if (isCardio) totalDuration else maxWeight
 
     val maxWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
+    val maxReps: Int get() = sets.maxOfOrNull { it.reps } ?: 0
     val totalDuration: Double get() = sets.sumOf { it.duration ?: 0.0 }
     val volume: Double get() = WorkoutStats.volume(sets)
     val bestOneRepMax: Double get() = WorkoutStats.bestOneRepMax(sets)

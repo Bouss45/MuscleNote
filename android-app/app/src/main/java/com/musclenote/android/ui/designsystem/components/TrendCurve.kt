@@ -25,7 +25,6 @@ import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.designsystem.theme.Studio
-import kotlin.math.abs
 
 /** Un point de courbe : abscisse (ex. jour) et valeur, dans n'importe quelle unité. */
 @Immutable
@@ -80,13 +79,13 @@ fun TrendCurve(
                     Modifier.pointerInput(points) {
                         awaitEachGesture {
                             val down = awaitFirstDown()
-                            val xs = plotXs(points, size.width.toFloat(), StartInset.toPx(), EndInset.toPx())
-                            select.value?.invoke(nearest(xs, down.position.x))
+                            val xs = CurveGeometry.positions(points.map { it.x }, size.width.toFloat(), StartInset.toPx(), EndInset.toPx())
+                            select.value?.invoke(CurveGeometry.nearestIndex(xs, down.position.x))
                             while (true) {
                                 val event = awaitPointerEvent()
                                 val change = event.changes.firstOrNull() ?: break
                                 if (!change.pressed) break
-                                select.value?.invoke(nearest(xs, change.position.x))
+                                select.value?.invoke(CurveGeometry.nearestIndex(xs, change.position.x))
                                 change.consume()
                             }
                             select.value?.invoke(null)
@@ -174,20 +173,12 @@ private fun DrawScope.drawPolyline(offsets: List<Offset>, color: Color) {
     drawPath(path, color, style = Stroke(StrokeWidth.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round))
 }
 
-private fun plotXs(points: List<CurvePoint>, width: Float, start: Float, end: Float): List<Float> {
-    val minX = points.minOf { it.x }
-    val spanX = (points.maxOf { it.x } - minX).takeIf { it > 0f } ?: 1f
-    return points.map { start + (it.x - minX) / spanX * (width - start - end) }
-}
-
 private fun DrawScope.plotOffsets(points: List<CurvePoint>, start: Float, end: Float, top: Float, bottom: Float): List<Offset> {
-    val xs = plotXs(points, size.width, start, end)
+    val xs = CurveGeometry.positions(points.map { it.x }, size.width, start, end)
     val minY = points.minOf { it.y }
     val spanY = points.maxOf { it.y } - minY
     return points.mapIndexed { i, p ->
         val y = if (spanY > 0f) bottom - (p.y - minY) / spanY * (bottom - top) else (top + bottom) / 2
-        Offset(if (points.size == 1) size.width - end else xs[i], y)
+        Offset(xs[i], y)
     }
 }
-
-private fun nearest(xs: List<Float>, x: Float): Int = xs.indices.minBy { abs(xs[it] - x) }

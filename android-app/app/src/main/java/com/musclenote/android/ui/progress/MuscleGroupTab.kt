@@ -79,7 +79,7 @@ fun MuscleGroupTab(
         listOf(
             StatItem(progress.sessions.toString(), stringResource(R.string.progress_muscle_sessions), textColor),
             StatItem(
-                "${formatNumber(progress.maxMetric)} $unit",
+                "${formatNumber(progress.maxMetric ?: 0.0)} $unit",
                 stringResource(if (isCardio) R.string.progress_muscle_max_duration else R.string.progress_muscle_max_load),
                 textColor,
             ),
@@ -92,7 +92,7 @@ fun MuscleGroupTab(
         ),
     )
 
-    TopExercisesCard(progress.top3, isCardio, unit, dates, onOpenHistory)
+    TopExercisesCard(progress.exercises.take(3), isCardio, unit, dates, onOpenHistory)
     AllExercisesCard(progress.exercises, unit, textColor, onOpenHistory)
 }
 

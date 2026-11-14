@@ -95,12 +95,12 @@ object SetEntryRules {
     fun backspace(text: String, fresh: Boolean): String = if (fresh) "" else text.dropLast(1)
 
     /**
-     * Touche de pas : [value] ± le pas du champ ([direction] = +1 ou −1), jamais sous 0, arrondie
-     * au centième (demi vers +∞, § 3.5) ; `null` (sans effet) si le résultat affiché dépasserait la
-     * longueur maximale du champ.
+     * Touche de pas : [value] ± [step] (le pas du champ par défaut ; 0,1 kg pour une pesée, § 15.9.3),
+     * [direction] = +1 ou −1, jamais sous 0, arrondie au centième (demi vers +∞, § 3.5) ; `null`
+     * (sans effet) si le résultat affiché dépasserait la longueur maximale du champ.
      */
-    fun step(value: Double, direction: Int, field: SetEntryField, locale: Locale): Double? {
-        val next = ((value + direction * field.step).coerceAtLeast(0.0) * 100).roundToLong() / 100.0
+    fun step(value: Double, direction: Int, field: SetEntryField, locale: Locale, step: Double = field.step): Double? {
+        val next = ((value + direction * step).coerceAtLeast(0.0) * 100).roundToLong() / 100.0
         return next.takeIf { format(it, field, locale).length <= field.maxLength }
     }
 

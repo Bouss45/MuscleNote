@@ -170,43 +170,109 @@ class ProgressStatsTest {
     }
 
     @Test
-    fun `top 3 par nombre de séances, égalités dans l'ordre du catalogue puis des perso`() {
+    fun `exercices triés par date de dernière séance, égalités au nombre de séances puis au catalogue`() {
         val workouts = listOf(
             workout("2026-03-14T17:00:00.000Z", 80.0, ex("press-perso", set(10, 50.0)), ex("dips", set(10, 0.0))),
             workout("2026-03-12T17:00:00.000Z", 80.0, ex("press-perso", set(10, 45.0)), ex("fly", set(12, 14.0))),
             workout("2026-03-10T17:00:00.000Z", 80.0, ex("fly", set(12, 12.0)), ex("dips", set(8, 0.0)), ex("ancien", set(5, 30.0))),
-            workout("2026-03-08T17:00:00.000Z", 80.0, ex("bench", set(5, 90.0))),
+            workout("2026-03-08T17:00:00.000Z", 80.0, ex("bench", set(5, 90.0)), ex("incline", set(5, 60.0))),
+            workout("2026-03-06T17:00:00.000Z", 80.0, ex("incline", set(5, 55.0))),
         )
         val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone)
-        // fly, dips et press-perso : 2 séances chacun ; fly avant dips (catalogue), puis le perso.
-        assertEquals(listOf("fly", "dips", "press-perso"), progress.top3.map { it.definition.id })
-        // Tous les exercices utilisés, archivés compris, dans l'ordre d'affichage.
-        assertEquals(listOf("bench", "fly", "dips", "press-perso", "ancien"), progress.exercises.map { it.definition.id })
-        assertEquals(4, progress.sessions)
+        // dips et press-perso le 14 (2 séances chacun : le catalogue d'abord), fly le 12, l'archivé
+        // le 10, puis incline (2 séances) avant bench (1) le 8.
+        assertEquals(listOf("dips", "press-perso", "fly", "ancien", "incline", "bench"), progress.exercises.map { it.definition.id })
+        assertEquals(5, progress.sessions)
     }
 
     @Test
-    fun `points chronologiques, record, tendance et charge max du top 3`() {
+    fun `points chronologiques, dernière valeur, record, tendance et charge max`() {
         val workouts = listOf(
             workout("2026-03-14T17:00:00.000Z", 80.0, ex("bench", set(5, 92.5), set(3, 100.0, completed = false))),
             workout("2026-03-12T17:00:00.000Z", 80.0, ex("bench", set(5, 95.0))),
-            workout("2026-03-10T17:00:00.000Z", 80.0, ex("bench", set(8, 80.0), set(6, 85.0))),
+            workout("2026-03-10T17:00:00.000Z", 80.0, ex("bench", set(8, 80.0), set(6, 85.0)), ex("fly", set(12, 20.0))),
         )
-        val bench = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).top3.single()
+        val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone)
+        val bench = progress.exercises.first { it.definition.id == "bench" }
+        assertEquals(ExerciseMetric.Load, bench.metric)
         assertEquals(listOf(85.0, 95.0, 92.5), bench.points.map { it.value })
+        assertEquals(92.5, bench.points.last().value, 0.0)
         assertEquals(95.0, bench.record, 0.0)
         assertEquals(7.5, bench.trend!!, 0.0)
-        assertEquals(95.0, ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).maxMetric, 0.0)
+        // Charge max : le meilleur record de tous les exercices du groupe.
+        assertEquals(95.0, progress.maxMetric!!, 0.0)
+        assertEquals(listOf(day("2026-03-10"), day("2026-03-12"), day("2026-03-14")), bench.points.map { it.day })
     }
 
     @Test
     fun `pas de tendance avec un seul point, groupe vide sans exercice utilisé`() {
         val workouts = listOf(workout("2026-03-14T17:00:00.000Z", 80.0, ex("bench", set(5, 90.0))))
-        assertNull(ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).top3.single().trend)
+        assertNull(ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).exercises.single().trend)
         val dos = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Dos, zone)
         assertTrue(dos.isEmpty)
-        assertEquals(0.0, dos.maxMetric, 0.0)
+        assertNull(dos.maxMetric)
         assertEquals(0.0, dos.maxVolume, 0.0)
+    }
+
+    @Test
+    fun `au poids du corps, la métrique est le nombre de reps max d'une série`() {
+        val workouts = listOf(
+            workout("2026-03-14T17:00:00.000Z", 80.0, ex("dips", set(12, 0.0), set(15, 0.0), set(20, 0.0, completed = false))),
+            workout("2026-03-12T17:00:00.000Z", 80.0, ex("dips", set(10, 0.0), set(8, 0.0)), ex("fly", set(12, 14.0))),
+        )
+        val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone)
+        val dips = progress.exercises.first { it.definition.id == "dips" }
+        assertEquals(ExerciseMetric.Reps, dips.metric)
+        assertEquals(listOf(10.0, 15.0), dips.points.map { it.value })
+        assertEquals(15.0, dips.record, 0.0)
+        // Les reps n'entrent pas dans la charge max du groupe.
+        assertEquals(14.0, progress.maxMetric!!, 0.0)
+    }
+
+    @Test
+    fun `avec du lest, la métrique devient la charge ajoutée, 0 kg pour une séance sans lest`() {
+        val workouts = listOf(
+            workout("2026-03-14T17:00:00.000Z", 80.0, ex("dips", set(8, 10.0), set(10, 0.0))),
+            workout("2026-03-12T17:00:00.000Z", 80.0, ex("dips", set(12, 0.0))),
+        )
+        val dips = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).exercises.single()
+        assertEquals(ExerciseMetric.Load, dips.metric)
+        assertEquals(listOf(0.0, 10.0), dips.points.map { it.value })
+    }
+
+    @Test
+    fun `groupe dont tous les exercices sont au poids du corps, pas de charge max`() {
+        val workouts = listOf(workout("2026-03-14T17:00:00.000Z", 80.0, ex("dips", set(12, 0.0))))
+        assertNull(ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Pecs, zone).maxMetric)
+    }
+
+    @Test
+    fun `métrique d'un exercice selon son historique`() {
+        fun session(vararg sets: WorkoutSet) =
+            com.musclenote.android.data.workout.ExerciseSession("w", java.time.Instant.EPOCH, 80.0, sets.toList())
+        assertEquals(ExerciseMetric.Duration, ProgressStats.exerciseMetric(isCardio = true, history = listOf(session(cardio(20.0, 3.0)))))
+        assertEquals(ExerciseMetric.Reps, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(12, 0.0)))))
+        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(5, 2.5)))))
+        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(isCardio = false, history = emptyList()))
+    }
+
+    @Test
+    fun `meilleure série, la plus lourde, puis le plus de reps, puis la première`() {
+        val heavy = set(5, 100.0)
+        assertEquals(heavy, ProgressStats.bestSet(listOf(set(8, 90.0), heavy, set(3, 95.0)), isCardio = false))
+        val moreReps = set(8, 80.0)
+        assertEquals(moreReps, ProgressStats.bestSet(listOf(set(6, 80.0), moreReps, set(8, 80.0)), isCardio = false))
+        val bodyweight = set(15, 0.0)
+        assertEquals(bodyweight, ProgressStats.bestSet(listOf(set(12, 0.0), bodyweight), isCardio = false))
+        assertNull(ProgressStats.bestSet(emptyList(), isCardio = false))
+    }
+
+    @Test
+    fun `meilleure série en cardio, la plus longue, puis la plus longue distance`() {
+        val longest = cardio(30.0, 5.0)
+        assertEquals(longest, ProgressStats.bestSet(listOf(cardio(20.0, 6.0), longest, cardio(30.0, 4.0)), isCardio = true))
+        val farther = cardio(30.0, 5.2)
+        assertEquals(farther, ProgressStats.bestSet(listOf(cardio(30.0, 5.0), farther), isCardio = true))
     }
 
     @Test
@@ -229,7 +295,8 @@ class ProgressStatsTest {
         val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Cardio, zone)
         val treadmill = progress.exercises.first { it.definition.id == "treadmill" }
         assertEquals(listOf(25.0, 30.0), treadmill.points.map { it.value })
-        assertEquals(30.0, progress.maxMetric, 0.0)
+        assertEquals(ExerciseMetric.Duration, treadmill.metric)
+        assertEquals(30.0, progress.maxMetric!!, 0.0)
         // 3,2 + 1,5 + 3,0 le 14 ; 4,0 le 12 (la série non validée ne compte pas).
         assertEquals(7.7, progress.maxVolume, 1e-9)
     }

@@ -103,6 +103,14 @@ class SetEntryRulesTest {
     }
 
     @Test
+    fun `pas personnalisé, 0,1 kg pour une pesée`() {
+        assertEquals(78.5, SetEntryRules.step(78.4, +1, SetEntryField.Weight, fr, step = 0.1)!!, 0.0)
+        assertEquals(78.3, SetEntryRules.step(78.4, -1, SetEntryField.Weight, fr, step = 0.1)!!, 0.0)
+        assertEquals(78.55, SetEntryRules.step(78.45, +1, SetEntryField.Weight, fr, step = 0.1)!!, 0.0)
+        assertEquals(0.0, SetEntryRules.step(0.05, -1, SetEntryField.Weight, fr, step = 0.1)!!, 0.0)
+    }
+
+    @Test
     fun `un pas qui dépasserait la longueur maximale est refusé`() {
         assertNull(SetEntryRules.step(999.0, +1, SetEntryField.Reps, fr))
         assertNull(SetEntryRules.step(9999.0, +1, SetEntryField.Duration, fr))
