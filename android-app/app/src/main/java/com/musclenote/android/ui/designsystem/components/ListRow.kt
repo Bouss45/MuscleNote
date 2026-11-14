@@ -47,6 +47,18 @@ sealed interface ListRowTrailing {
         val valueTrend: Trend? = null,
     ) : ListRowTrailing
 
+    /**
+     * Mini-courbe ([MiniTrendCurve], absente sans point) puis valeur et variation optionnelle, comme
+     * [Value] : un exercice de Progrès (dernière séance, variation depuis la première).
+     */
+    @Immutable
+    data class CurveValue(
+        val points: List<CurvePoint>,
+        val value: String,
+        val delta: String? = null,
+        val trend: Trend = Trend.Neutral,
+    ) : ListRowTrailing
+
     /** Variation seule, en `emphasis` (« +2 kg », « identique »). */
     @Immutable
     data class DeltaOnly(val delta: String, val trend: Trend) : ListRowTrailing
@@ -81,6 +93,7 @@ fun ListRow(
     interactionSource: MutableInteractionSource? = null,
     onLongClick: (() -> Unit)? = null,
     onLongClickLabel: String? = null,
+    onClickLabel: String? = null,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed = source.pressed()
@@ -105,11 +118,18 @@ fun ListRow(
                         interactionSource = source,
                         indication = null,
                         role = Role.Button,
+                        onClickLabel = onClickLabel,
                         onLongClickLabel = onLongClickLabel,
                         onLongClick = onLongClick,
                         onClick = onClick,
                     )
-                    else -> Modifier.clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
+                    else -> Modifier.clickable(
+                        interactionSource = source,
+                        indication = null,
+                        role = Role.Button,
+                        onClickLabel = onClickLabel,
+                        onClick = onClick,
+                    )
                 },
             )
             .padding(vertical = Studio.spacing.xs),
@@ -145,14 +165,10 @@ fun ListRow(
             }
         }
         when (trailing) {
-            is ListRowTrailing.Value -> Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(
-                    trailing.value,
-                    style = Studio.typography.bodyLineStrong,
-                    color = trailing.valueTrend?.color() ?: Studio.colors.textPrimary,
-                    maxLines = 1,
-                )
-                if (trailing.delta != null) Delta(trailing.delta, trailing.trend, size = DeltaSize.Row)
+            is ListRowTrailing.Value -> TrailingValue(trailing.value, trailing.delta, trailing.trend, trailing.valueTrend)
+            is ListRowTrailing.CurveValue -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(Studio.spacing.s)) {
+                if (trailing.points.isNotEmpty()) MiniTrendCurve(trailing.points)
+                TrailingValue(trailing.value, trailing.delta, trailing.trend, valueTrend = null)
             }
             is ListRowTrailing.DeltaOnly -> Delta(trailing.delta, trailing.trend, size = DeltaSize.Line)
             ListRowTrailing.Chevron -> StudioIcon(
@@ -163,6 +179,15 @@ fun ListRow(
             is ListRowTrailing.Check -> CheckBoxVisual(trailing.checked)
             null -> Unit
         }
+    }
+}
+
+/** Valeur de fin de ligne (`bodyLineStrong`) et, dessous, sa variation (`caption` 600). */
+@Composable
+private fun TrailingValue(value: String, delta: String?, trend: Trend, valueTrend: Trend?) {
+    Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+        Text(value, style = Studio.typography.bodyLineStrong, color = valueTrend?.color() ?: Studio.colors.textPrimary, maxLines = 1)
+        if (delta != null) Delta(delta, trend, size = DeltaSize.Row)
     }
 }
 

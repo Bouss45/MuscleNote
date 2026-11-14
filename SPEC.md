@@ -1994,8 +1994,23 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   anciennes images de l'icône. À
   vérifier **sur l'appareil** : retour prédictif, notification touchée depuis chaque onglet,
   appui long, « Modifier la date », logo.
-- Refonte, **étape 4** (🔄 D34, § 15.9) : fiche exercice et Progrès — spécifiée, en cours
-  d'implémentation sur `redesign`.
+- Refonte, **étape 4** (🔄 D34, § 15.9) sur `redesign` : fiche exercice
+  `ui/exercise/ExerciseFicheScreen.kt` (gabarit `FicheLazyTemplate`, textes communs
+  `ui/exercise/ExerciseFormats.kt`) et Progrès `ui/progress/ProgressScreen.kt` (hub paresseux), pesée
+  au pavé `ui/progress/WeighInSheet.kt` ; règles pures `data/progress/ProgressCurves.kt` (périodes,
+  résumé, variation, réduction des points) et `ProgressStats` (métrique au poids du corps, meilleure
+  série, tri des exercices, charge max en kg), géométrie de la courbe
+  `ui/designsystem/components/CurveGeometry.kt`. Design system : `TrendCurve` (texte si vide, ligne
+  d'objectif, variante mini), fin de ligne `ListRowTrailing.CurveValue` et `onClickLabel`, héros qui
+  suit le doigt sans défiler, descriptions TalkBack du sélecteur de période, légende et état vide de
+  `MetricSurface`, phrase facultative de `EmptyState`, `FicheLazyTemplate`. Tests `ProgressCurvesTest`
+  (périodes, fin de mois, période vide, un point, valeurs égales, record, réduction), `CurveGeometryTest`
+  (abscisses, point le plus proche, égalités, bords), `ProgressStatsTest` (tri, reps au poids du corps,
+  lest, charge max, meilleure série) et `SetEntryRulesTest` (pas de 0,1 kg). Retirés :
+  `ui/history/ExerciseHistoryScreen.kt`, `ui/components/LineChart.kt`, `ui/components/FormDialog.kt`,
+  les onglets et cartes de Progrès, les couleurs du top 3. À vérifier **sur l'appareil** : glisser sur la
+  courbe (sans faire défiler la fiche), défilement du chiffre au changement de période, TalkBack sur la
+  courbe et les périodes, sélecteur de date de la pesée, suppression d'une pesée.
 
 ---
 
@@ -2967,8 +2982,8 @@ paresseuse (la liste des séances peut compter des centaines de lignes). Comme a
      sa valeur et sa variation (DESIGN.md § 9.1). La courbe garde le geste : elle ne fait pas
      défiler la fiche.
    - **TalkBack** lit la période, la valeur de départ, celle d'arrivée et la variation : « Charge max
-     par séance, 3 mois : de 92,5 kg le 14 août à 100 kg le 5 nov., +7,5 kg » ; « … : une séance,
-     95 kg le 5 nov. » ; « … : aucune séance ».
+     par séance, 3 mois : de 92,5 kg le 14 août à 100 kg le 5 nov., +7,5 kg » ; « …, 1 mois : 95 kg
+     le 5 nov. » ; « … : aucune séance ».
 5. **Sélecteur de période** : 1M · 3M · 6M · 1A · Tout, **Tout** par défaut (maquette), lus « 1 mois »,
    « 3 mois », « 6 mois », « 1 an », « Tout l'historique » par TalkBack. Le choix est gardé à la
    rotation, pas d'une ouverture à l'autre. Période = séances dont le **jour local** est postérieur
@@ -3133,7 +3148,7 @@ groupes, les pluriels séances / séries / jours, `common_kg_value`, `session_vo
 | `period_1m_description` … `_all_description` | 1 mois / 3 mois / 6 mois / 1 an / Tout l'historique | 1 month / 3 months / 6 months / 1 year / All time |
 | `curve_metric_load` / `_reps` / `_duration` | Charge max par séance / Reps max par séance / Durée par séance | Top weight per session / Top reps per session / Duration per session |
 | `curve_description_range` | {{courbe}}, {{période}} : de {{départ}} le {{date}} à {{arrivée}} le {{date}}, {{variation}} | {{curve}}, {{period}}: from {{start}} on {{date}} to {{end}} on {{date}}, {{change}} |
-| `curve_description_single` / `_empty` | {{courbe}}, {{période}} : une séance, {{valeur}} le {{date}} / {{courbe}}, {{période}} : aucune séance | {{curve}}, {{period}}: one session, {{value}} on {{date}} / {{curve}}, {{period}}: no sessions |
+| `curve_description_single` / `_empty` | {{courbe}}, {{période}} : {{valeur}} le {{date}} / {{courbe}}, {{période}} : aucune séance | {{curve}}, {{period}}: {{value}} on {{date}} / {{curve}}, {{period}}: no sessions |
 | `curve_goal` | Objectif | Goal |
 | `common_min_value` / `_reps_value` / `_km_value` / `_liters_value` / `_kcal_value` | {{valeur}} min / reps / km / L / kcal | {{value}} min / reps / km / L / kcal |
 | `progress_weight_title` | Poids de corps | Body weight |

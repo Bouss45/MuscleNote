@@ -22,6 +22,9 @@ import com.musclenote.android.ui.designsystem.components.StatRow
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.TrendCurve
+import com.musclenote.android.ui.designsystem.components.MiniTrendCurve
+import com.musclenote.android.ui.designsystem.components.CurveHeightDense
+import com.musclenote.android.ui.designsystem.components.CurvePoint
 
 /*
  * Planche « Composants 1 · Données et listes » (DESIGN.md § 9.1) : un aperçu par composant, avec
@@ -167,6 +170,78 @@ private fun SegmentedControlPreview() = StudioComponentPreview { SegmentedSample
 @StudioComponentPreviews
 @Composable
 private fun SectionAssemblyPreview() = StudioComponentPreview { SectionAssemblySample() }
+
+/** Courbe en baisse : la même série, à l'envers. */
+private val SampleFalling = SampleCurve.map { it.copy(y = -it.y) }
+
+/** Hors maquette (SPEC § 15.9) : courbe en hausse, en baisse, période vide. */
+@StudioComponentPreviews
+@Composable
+private fun TrendCurveVariantsPreview() = StudioComponentPreview {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        StateCaption("En hausse")
+        TrendCurve(SampleCurve, "En hausse", startLabel = "12 févr.", endLabel = "5 nov.")
+        StateCaption("En baisse")
+        TrendCurve(SampleFalling, "En baisse", startLabel = "12 févr.", endLabel = "5 nov.")
+        StateCaption("Période vide")
+        TrendCurve(emptyList(), "Aucune séance", emptyText = "Choisis une période plus longue.")
+    }
+}
+
+/** Hors maquette (SPEC § 15.9) : un seul point, ligne d'objectif (section « Calories et eau »). */
+@StudioComponentPreviews
+@Composable
+private fun TrendCurveGoalPreview() = StudioComponentPreview {
+    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+        StateCaption("Un seul point")
+        TrendCurve(SampleCurve.takeLast(1), "Une séance", endLabel = "5 nov.")
+        StateCaption("Ligne d'objectif (calories, 150)")
+        TrendCurve(
+            listOf(2310f, 2580f, 2450f, 2720f, 2390f, 2640f, 1850f).mapIndexed { i, kcal -> CurvePoint(i.toFloat(), kcal) },
+            "Calories",
+            height = CurveHeightDense,
+            startLabel = "6 nov.",
+            endLabel = "12 nov.",
+            goal = 2600f,
+            goalLabel = "Objectif",
+        )
+    }
+}
+
+/** Hors maquette (SPEC § 15.9.2) : lignes d'exercice avec mini-courbe, hausse, baisse, identique, une séance. */
+@StudioComponentPreviews
+@Composable
+private fun ListRowCurvePreview() = StudioComponentPreview {
+    Column {
+        StateCaption("Mini-courbe seule")
+        MiniTrendCurve(SampleCurve)
+        ListRow(
+            "Développé couché",
+            subtitle = "19 séances · record 101,3 kg",
+            trailing = ListRowTrailing.CurveValue(SampleCurve, "101,3 kg", "+19,0 kg", Trend.Up),
+            onClick = {},
+        )
+        ListRow(
+            "Tirage horizontal",
+            subtitle = "11 séances · record 77 kg",
+            trailing = ListRowTrailing.CurveValue(SampleFalling, "72 kg", "\u22125,0 kg", Trend.Down),
+            onClick = {},
+        )
+        ListRow(
+            "Élévations latérales",
+            subtitle = "6 séances · record 10 kg",
+            trailing = ListRowTrailing.CurveValue(listOf(CurvePoint(0f, 10f), CurvePoint(1f, 10f)), "10 kg", "identique", Trend.Neutral),
+            onClick = {},
+        )
+        ListRow(
+            "Dips",
+            subtitle = "1 séance · record 12 reps",
+            trailing = ListRowTrailing.CurveValue(emptyList(), "12 reps"),
+            onClick = {},
+            showDivider = false,
+        )
+    }
+}
 
 /** Hors maquette : ligne à cocher (échauffement de la séance en cours, § 15.7.1). */
 @StudioComponentPreviews

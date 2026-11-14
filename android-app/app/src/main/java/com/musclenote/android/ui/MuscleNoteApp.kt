@@ -35,7 +35,7 @@ import com.musclenote.android.ui.designsystem.components.StudioNavigationBar
 import com.musclenote.android.ui.designsystem.templates.systemScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.designsystem.theme.StudioTheme
-import com.musclenote.android.ui.history.ExerciseHistoryScreen
+import com.musclenote.android.ui.exercise.ExerciseFicheScreen
 import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.journal.JournalScreen
 import com.musclenote.android.ui.navigation.Routes
@@ -151,9 +151,14 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                 }
             }
             composable(TopLevelDestination.Progress.route) {
-                ProgressScreen(
-                    onOpenExerciseHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
-                )
+                StudioTheme(darkTheme = darkTheme) {
+                    ProgressScreen(
+                        onOpenExercise = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
+                        onStartWorkout = { navController.openStartWorkout(null, null) },
+                        onOpenWorkout = { navController.openWorkout() },
+                        onOpenNutrition = { navController.navigateToTab(TopLevelDestination.Nutrition) },
+                    )
+                }
             }
             composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
             composable(Routes.SETTINGS) { SettingsScreen(backupViewModel) }
@@ -205,10 +210,14 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                 Routes.EXERCISE_HISTORY,
                 arguments = listOf(navArgument(Routes.ARG_EXERCISE_ID) { type = NavType.StringType }),
             ) { entry ->
-                ExerciseHistoryScreen(
-                    exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
-                    onBack = { navController.popBackStack() },
-                )
+                // Fiche exercice (§ 15.9.1), migrée au design system.
+                StudioTheme(darkTheme = darkTheme) {
+                    ExerciseFicheScreen(
+                        exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
+                        onBack = { navController.popBackStack() },
+                        onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
+                    )
+                }
             }
             composable(
                 Routes.EDIT_WORKOUT,

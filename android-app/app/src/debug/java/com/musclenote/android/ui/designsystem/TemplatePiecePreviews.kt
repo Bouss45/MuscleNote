@@ -98,6 +98,37 @@ private fun MetricSurfacePreview() = StudioComponentPreview {
     )
 }
 
+/** Hors maquette (SPEC § 15.9.2) : surface du poids de corps de Progrès, avec sa légende, puis sans poids. */
+@StudioComponentPreviews
+@Composable
+private fun MetricSurfaceFooterPreview() = StudioComponentPreview {
+    MetricSurface(
+        label = "Poids de corps · aujourd'hui",
+        value = "78,4",
+        unit = "kg",
+        points = SampleBodyWeight,
+        curveDescription = "Poids de corps, 42 jours",
+        addDescription = "Ajouter une pesée",
+        onAdd = {},
+        delta = "+10,4 kg",
+        trend = Trend.Neutral,
+        deltaContext = "depuis le 12 févr.",
+        footerStart = "42 jours",
+        footerEnd = "68 – 78,4 kg",
+    )
+    StateCaption("Sans poids")
+    MetricSurface(
+        label = "Poids de corps",
+        value = null,
+        unit = "kg",
+        points = emptyList(),
+        curveDescription = "",
+        addDescription = "Ajouter une pesée",
+        onAdd = {},
+        emptyMessage = "Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance.",
+    )
+}
+
 @StudioComponentPreviews
 @Composable
 private fun FormPiecesPreview() = StudioComponentPreview {

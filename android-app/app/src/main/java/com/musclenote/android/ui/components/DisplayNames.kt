@@ -58,6 +58,24 @@ fun formatOneDecimal(value: Double): String = NumberFormat.getNumberInstance(app
     roundingMode = RoundingMode.HALF_UP
 }.format(value)
 
+/** Signe moins typographique des variations (« −2,5 kg »). */
+const val MINUS_SIGN = "\u2212"
+
+/**
+ * Variation toujours signée (`+7,5`, `−2,5`) : une décimale exactement, ou entière si [integer]
+ * (reps). Une variation nulle n'est pas signée ici : l'écran affiche « identique ».
+ */
+@Composable
+@ReadOnlyComposable
+fun formatSignedDelta(value: Double, integer: Boolean = false): String {
+    val magnitude = if (integer) formatInteger(kotlin.math.abs(value)) else formatOneDecimal(kotlin.math.abs(value))
+    return when {
+        value > 0 -> "+$magnitude"
+        value < 0 -> "$MINUS_SIGN$magnitude"
+        else -> magnitude
+    }
+}
+
 /** Formats de date de l'app, dans la locale et le fuseau courants (§ 9.4). */
 class DateFormats(private val locale: Locale, private val zone: ZoneId) {
     private val weekdayDayMonthFormatter =
@@ -70,9 +88,40 @@ class DateFormats(private val locale: Locale, private val zone: ZoneId) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "dMMM"), locale)
     private val fullDateFormatter =
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), locale)
+    private val weekdayDayMonthYearFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMMyyyy"), locale)
+    private val monthYearFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMyyyy"), locale)
 
     /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
     fun weekdayDayMonth(instant: Instant): String = weekdayDayMonthFormatter.format(instant.atZone(zone))
+
+    /** Jour de semaine abrégé, jour, mois abrégé d'un jour local : « jeu. 5 nov. ». */
+    fun weekdayDayMonth(day: LocalDate): String = weekdayDayMonthFormatter.format(day)
+
+    /** Avec l'année : « jeu. 5 nov. 2025 », « Thu, Nov 5, 2025 ». */
+    fun weekdayDayMonthYear(instant: Instant): String = weekdayDayMonthYearFormatter.format(instant.atZone(zone))
+
+    /** Avec l'année, d'un jour local. */
+    fun weekdayDayMonthYear(day: LocalDate): String = weekdayDayMonthYearFormatter.format(day)
+
+    /** Mois abrégé et année : « févr. 2026 », « Feb 2026 » (fiche exercice). */
+    fun monthYear(instant: Instant): String = monthYearFormatter.format(instant.atZone(zone))
+
+    /**
+     * Date d'une séance : « jeu. 5 nov. », avec l'année quand elle n'est pas celle de [today]
+     * (« jeu. 5 nov. 2025 »).
+     */
+    fun sessionDate(instant: Instant, today: LocalDate): String =
+        if (instant.atZone(zone).year == today.year) weekdayDayMonth(instant) else weekdayDayMonthYear(instant)
+
+    /** Jour court : « 14 août », avec l'année quand elle n'est pas celle de [today] (« 12 févr. 2025 »). */
+    fun shortDay(day: LocalDate, today: LocalDate): String =
+        if (day.year == today.year) dayShortMonth(day) else dayMonthYear(day)
+
+    /** Jour d'une pesée ou d'un point, avec l'année si besoin : « sam. 14 nov. », « dim. 2 nov. 2025 ». */
+    fun weekdayDay(day: LocalDate, today: LocalDate): String =
+        if (day.year == today.year) weekdayDayMonth(day) else weekdayDayMonthYear(day)
 
     /** Heure `HH:mm`. */
     fun time(instant: Instant): String = timeFormatter.format(instant.atZone(zone))

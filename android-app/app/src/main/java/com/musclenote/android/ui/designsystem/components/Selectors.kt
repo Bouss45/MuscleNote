@@ -24,6 +24,11 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,6 +43,7 @@ private val UnderlineOffset = 6.dp
 /**
  * Sélecteur de période — `PeriodSelector` (DESIGN.md § 9.1) : texte seul, options réparties sur
  * la largeur (1M · 3M · 6M · 1A · Tout) ; la sélection passe en 800, `textPrimary`, soulignée.
+ * [descriptions] : ce que lit TalkBack pour chaque option (« 3 mois »), à la place du libellé court.
  */
 @Composable
 fun PeriodSelector(
@@ -45,6 +51,7 @@ fun PeriodSelector(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    descriptions: List<String>? = null,
 ) {
     Row(modifier.fillMaxWidth().selectableGroup(), horizontalArrangement = Arrangement.SpaceBetween) {
         options.forEachIndexed { index, label ->
@@ -55,7 +62,17 @@ fun PeriodSelector(
                 Modifier
                     .height(PeriodItemHeight)
                     .widthIn(min = PeriodItemMinWidth)
-                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) }),
+                    .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) })
+                    .then(
+                        descriptions?.getOrNull(index)?.let { description ->
+                            Modifier.clearAndSetSemantics {
+                                contentDescription = description
+                                this.selected = selected
+                                role = Role.Tab
+                                onClick { onSelect(index); true }
+                            }
+                        } ?: Modifier,
+                    ),
                 contentAlignment = Alignment.Center,
             ) {
                 Text(

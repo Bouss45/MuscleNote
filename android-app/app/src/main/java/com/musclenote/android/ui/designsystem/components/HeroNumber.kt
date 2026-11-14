@@ -15,7 +15,8 @@ private val HeroGap = 6.dp
 /**
  * Chiffre héros — `HeroNumber` (DESIGN.md § 9.1). Un seul par écran : légende, valeur
  * (`numberHero`) et unité, variation signée. Au toucher d'une courbe, l'écran passe la date et la
- * valeur du point.
+ * valeur du point, avec [animate] faux : la valeur suit le doigt sans défiler (elle défile sinon,
+ * au changement de période).
  */
 @Composable
 fun HeroNumber(
@@ -26,6 +27,7 @@ fun HeroNumber(
     delta: String? = null,
     trend: Trend = Trend.Neutral,
     deltaContext: String? = null,
+    animate: Boolean = true,
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(HeroGap)) {
         if (label != null) {
@@ -37,6 +39,7 @@ fun HeroNumber(
                 style = Studio.typography.numberHero,
                 color = Studio.colors.textPrimary,
                 modifier = Modifier.alignByBaseline(),
+                animate = animate,
             )
             if (unit != null) {
                 Text(

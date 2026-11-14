@@ -14,17 +14,11 @@ import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.catalog.exerciseDefinitions
-import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WorkoutSet
-import com.musclenote.android.ui.components.rememberDateFormats
 import com.musclenote.android.ui.nutrition.CaloriesCard
 import com.musclenote.android.ui.nutrition.SupplementCard
 import com.musclenote.android.ui.nutrition.WaterCard
-import com.musclenote.android.ui.progress.BodyWeightTab
-import com.musclenote.android.ui.progress.DailyKind
-import com.musclenote.android.ui.progress.DailyTab
-import com.musclenote.android.ui.progress.MuscleGroupTab
 import com.musclenote.android.ui.settings.MyDataCard
 import com.musclenote.android.ui.settings.StatusBox
 import com.musclenote.android.ui.settings.ThemeCard
@@ -77,69 +71,6 @@ private fun SupplementCardPreview() = ComponentPreview {
         SupplementCard(creatine, taken = true, expanded = false, deleting = false, {}, {}, {}, {}, {}, {}, {}, {}, {})
         SupplementCard(vitaminD, taken = false, expanded = true, deleting = false, {}, {}, {}, {}, {}, {}, {}, {}, {})
         SupplementCard(whey, taken = false, expanded = false, deleting = true, {}, {}, {}, {}, {}, {}, {}, {}, {})
-    }
-}
-
-// ─── Progrès (corps des onglets, sous les puces d'onglet) ─────────────────────────
-
-/** Corps d'un onglet de Progrès : marges et espacement de l'écran. */
-@Composable
-private fun ProgressTabBody(content: @Composable () -> Unit) {
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .background(MuscleNoteTheme.colors.background)
-            .verticalScroll(rememberScrollState())
-            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        content()
-    }
-}
-
-@ScreenPreviews
-@Composable
-private fun ProgressCaloriesTabPreview() = ScreenPreview {
-    ProgressTabBody {
-        DailyTab(DailyKind.Calories, PreviewData.tracker, PreviewData.today, rememberDateFormats(PreviewData.zone))
-    }
-}
-
-@ScreenPreviews
-@Composable
-private fun ProgressWaterTabPreview() = ScreenPreview {
-    ProgressTabBody {
-        DailyTab(DailyKind.Water, PreviewData.tracker, PreviewData.today, rememberDateFormats(PreviewData.zone))
-    }
-}
-
-@ScreenPreviews
-@Composable
-private fun ProgressMuscleGroupTabPreview() = ScreenPreview {
-    ProgressTabBody {
-        MuscleGroupTab(
-            group = MuscleGroup.Pecs,
-            workouts = PreviewData.workouts,
-            definitions = definitions.values.toList(),
-            zone = PreviewData.zone,
-            dates = rememberDateFormats(PreviewData.zone),
-            onOpenHistory = {},
-        )
-    }
-}
-
-@ScreenPreviews
-@Composable
-private fun ProgressBodyWeightTabPreview() = ScreenPreview {
-    ProgressTabBody {
-        BodyWeightTab(
-            workouts = PreviewData.workouts,
-            bodyWeights = PreviewData.bodyWeights,
-            zone = PreviewData.zone,
-            dates = rememberDateFormats(PreviewData.zone),
-            onAddWeighIn = {},
-            onRemoveWeighIn = {},
-        )
     }
 }
 

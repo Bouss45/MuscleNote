@@ -29,7 +29,7 @@ private val EmptyMessageWidth = 300.dp
 fun EmptyState(
     @DrawableRes icon: Int,
     title: String,
-    message: String,
+    message: String?,
     actionLabel: String,
     onAction: () -> Unit,
     modifier: Modifier = Modifier,
@@ -46,13 +46,15 @@ fun EmptyState(
             StudioIcon(icon, contentDescription = null, size = IconSize.Empty, tint = Studio.colors.textSecondary)
         }
         Text(title, style = Studio.typography.titleItem, textAlign = TextAlign.Center)
-        Text(
-            message,
-            modifier = Modifier.widthIn(max = EmptyMessageWidth),
-            style = Studio.typography.paragraph,
-            color = Studio.colors.textSecondary,
-            textAlign = TextAlign.Center,
-        )
+        if (message != null) {
+            Text(
+                message,
+                modifier = Modifier.widthIn(max = EmptyMessageWidth),
+                style = Studio.typography.paragraph,
+                color = Studio.colors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
         StudioButton(
             actionLabel,
             onAction,

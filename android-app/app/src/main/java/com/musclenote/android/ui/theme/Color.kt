@@ -96,8 +96,6 @@ object FixedColors {
     val dataImport = Color(0xFF3B82F6)
     val restTimerAmber = Color(0xFFF59E0B)
     val restTimerAmberOnLight = Color(0xFFB45309)
-    val progressTop3 = listOf(Color(0xFF16A34A), Color(0xFF3B82F6), Color(0xFFA855F7))
-    val progressTop3OnLight = listOf(Color(0xFF166534), Color(0xFF1D4ED8), Color(0xFF7E22CE))
     val modalScrim = Color.Black.copy(alpha = 0.6f)
 }
 

@@ -135,13 +135,15 @@ private val MetricGap = 6.dp
 private val MetricCurveGap = 10.dp
 
 /**
- * Surface « Mesure » — `MetricSurface` (hub Progrès) : légende et bouton d'ajout, chiffre héros,
- * variation, courbe compacte.
+ * Surface « Mesure » — `MetricSurface` (hub Progrès, poids de corps) : légende et bouton d'ajout,
+ * chiffre héros, variation, courbe compacte, puis une légende à gauche et à droite sous la courbe
+ * ([footerStart] « 42 jours », [footerEnd] « 68 – 78,4 kg »). Sans valeur ([value] nul), la phrase
+ * [emptyMessage] remplace le chiffre et la courbe.
  */
 @Composable
 fun MetricSurface(
     label: String,
-    value: String,
+    value: String?,
     unit: String,
     points: List<CurvePoint>,
     curveDescription: String,
@@ -151,6 +153,9 @@ fun MetricSurface(
     delta: String? = null,
     trend: Trend = Trend.Neutral,
     deltaContext: String? = null,
+    footerStart: String? = null,
+    footerEnd: String? = null,
+    emptyMessage: String? = null,
 ) {
     HighlightSurface(modifier, spacing = MetricGap) {
         Row(Modifier.fillMaxWidth().height(MetricHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
@@ -163,8 +168,22 @@ fun MetricSurface(
                 modifier = Modifier.bleed(end = 10.dp),
             )
         }
+        if (value == null) {
+            if (emptyMessage != null) {
+                Text(emptyMessage, style = Studio.typography.paragraph, color = Studio.colors.textSecondary)
+            }
+            return@HighlightSurface
+        }
         HeroNumber(value, unit = unit, delta = delta, trend = trend, deltaContext = deltaContext)
-        Spacer(Modifier.height(MetricCurveGap - MetricGap))
-        CompactTrendCurve(points, curveDescription)
+        if (points.isNotEmpty()) {
+            Spacer(Modifier.height(MetricCurveGap - MetricGap))
+            CompactTrendCurve(points, curveDescription)
+        }
+        if (footerStart != null || footerEnd != null) {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(footerStart.orEmpty(), style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+                Text(footerEnd.orEmpty(), style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+            }
+        }
     }
 }

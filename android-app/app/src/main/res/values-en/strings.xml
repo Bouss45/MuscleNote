@@ -33,7 +33,6 @@
     <string name="tabs_progress">Progress</string>
     <string name="tabs_nutrition">Nutrition</string>
     <string name="tabs_settings">Settings</string>
-    <string name="progress_title">Progress</string>
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Settings</string>
 
@@ -299,24 +298,10 @@
     <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
 
     <!-- Charts (§ 2.13) -->
-    <string name="chart_no_data">No data</string>
-    <string name="chart_one_point">Only one session — keep going to see your progress!</string>
     <string name="chart_goal">Goal</string>
 
     <!-- Exercise history (§ 2.8) -->
     <string name="exercise_history_not_found">Exercise not found</string>
-    <string name="exercise_history_pr">Personal record</string>
-    <string name="exercise_history_one_rm">Estimated 1RM</string>
-    <string name="exercise_history_longest">Longest session</string>
-    <string name="exercise_history_max_load">Max load (kg)</string>
-    <string name="exercise_history_duration_chart">Duration per session (min)</string>
-    <string name="exercise_history_need_more">Complete more sessions to track your progress!</string>
-    <string name="exercise_history_history_title">History</string>
-    <string name="exercise_history_empty">No sessions with this exercise</string>
-    <string name="exercise_history_body_weight_suffix">%1$s kg body</string>
-    <string name="exercise_history_max">Max %1$s kg</string>
-    <string name="exercise_history_volume">Volume %1$s kg</string>
-    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
     <!-- Edit a finished workout (§ 2.9) -->
     <string name="edit_workout_not_found">Workout not found</string>
@@ -351,50 +336,21 @@
     <string name="rest_timer_label">Rest</string>
 
     <!-- Progrès (§ 2.10) -->
-    <string name="progress_tab_weight">Body weight</string>
     <string name="progress_tab_calories">Calories</string>
     <string name="progress_tab_water">Water</string>
-    <string name="progress_weight_current">Current</string>
-    <string name="progress_weight_change">Change</string>
-    <string name="progress_weight_min_max">Min–Max</string>
-    <string name="progress_weight_chart_title">Body weight (kg)</string>
     <string name="progress_empty_no_session">No sessions yet</string>
     <string name="progress_empty_no_session_hint">Start your first session to see progress here</string>
-    <string name="body_weight_log_title">Weight log</string>
     <string name="body_weight_add">Add weigh-in</string>
     <string name="body_weight_new_entry">New weigh-in</string>
-    <string name="body_weight_weight_label">Weight (kg)</string>
-    <string name="body_weight_weight_placeholder">E.g. 75.5</string>
     <string name="body_weight_date_label">Date</string>
     <string name="body_weight_empty">No manual weigh-ins recorded. Add a weigh-in to track weight on rest days.</string>
     <string name="body_weight_invalid_entry">Check the weight and the date</string>
-    <string name="progress_stat_today">Today</string>
-    <string name="progress_stat_today_liters">Today\n(L)</string>
-    <string name="progress_stat_avg7">7-day avg</string>
-    <string name="progress_stat_goal_days_hit">Goal days\nhit</string>
     <string name="progress_cal_no_data">No data</string>
     <string name="progress_cal_no_data_hint">Start logging calories in the Nutrition tab to track them here</string>
-    <string name="progress_cal_chart_title">Calories (kcal)</string>
-    <string name="progress_cal_chart_sub">%1$d days · Goal %2$s kcal</string>
     <string name="progress_water_no_data_hint">Start tracking hydration in the Nutrition tab to see it here</string>
-    <string name="progress_water_chart_title">Hydration (L)</string>
-    <string name="progress_water_chart_sub">%1$d days · Goal %2$s L/day</string>
-    <string name="progress_recap_title">Summary</string>
     <string name="progress_recap_daily_goal">Daily goal</string>
     <string name="progress_recap_best_day">Best day</string>
     <string name="progress_recap_days_tracked">Days tracked</string>
-    <string name="progress_muscle_sessions">Sessions</string>
-    <string name="progress_muscle_max_load">Max load</string>
-    <string name="progress_muscle_max_volume">Max volume</string>
-    <string name="progress_muscle_max_duration">Longest</string>
-    <string name="progress_muscle_max_distance">Max distance</string>
-    <string name="progress_muscle_empty">No %1$s sessions</string>
-    <string name="progress_muscle_empty_hint">Complete %1$s exercises to see your progress</string>
-    <string name="progress_muscle_top_exercises">Top exercises</string>
-    <string name="progress_muscle_top_exercises_sub">Max load per session</string>
-    <string name="progress_muscle_top_exercises_sub_cardio">Total duration per session</string>
-    <string name="progress_muscle_need_two">Complete at least 2 sessions to view the chart</string>
-    <string name="progress_muscle_all_exercises">All exercises</string>
 
     <!-- Supplement reminders (§ 7.3) -->
     <string name="nutrition_notif_body">Don\'t forget your dose!</string>
@@ -563,4 +519,73 @@
         <item quantity="other">%1$d wks</item>
     </plurals>
     <string name="duration_compact">%1$dh %2$02dm</string>
+
+    <!-- Fiche exercice et Progrès (SPEC § 15.9) -->
+    <string name="exercise_fiche_subtitle">%1$s · %2$s since %3$s</string>
+    <string name="exercise_fiche_last_session">Last session · %1$s</string>
+    <string name="exercise_fiche_sessions">Sessions</string>
+    <string name="exercise_fiche_period_empty">No sessions in this period</string>
+    <string name="exercise_fiche_period_empty_hint">Pick a longer period.</string>
+    <string name="exercise_fiche_stat_record">personal best</string>
+    <string name="exercise_fiche_stat_longest">longest session</string>
+    <string name="exercise_fiche_stat_one_rm">estimated 1RM</string>
+    <string name="exercise_fiche_best_set">Best set %1$s</string>
+    <string name="exercise_fiche_one_rm">1RM ~%1$s kg</string>
+    <string name="exercise_fiche_cardio_set">%1$s min · %2$s km</string>
+    <string name="exercise_fiche_cardio_set_minutes">%1$s min</string>
+    <string name="exercise_fiche_record">Record</string>
+    <string name="exercise_fiche_empty_title">No sessions yet</string>
+    <string name="exercise_fiche_empty_message">Complete a set of this exercise to track its progress.</string>
+    <string name="delta_since">since %1$s</string>
+    <string name="delta_same">unchanged</string>
+    <string name="period_1m">1M</string>
+    <string name="period_3m">3M</string>
+    <string name="period_6m">6M</string>
+    <string name="period_1y">1Y</string>
+    <string name="period_all">All</string>
+    <string name="period_1m_description">1 month</string>
+    <string name="period_3m_description">3 months</string>
+    <string name="period_6m_description">6 months</string>
+    <string name="period_1y_description">1 year</string>
+    <string name="period_all_description">All time</string>
+    <string name="curve_metric_load">Top weight per session</string>
+    <string name="curve_metric_reps">Top reps per session</string>
+    <string name="curve_metric_duration">Duration per session</string>
+    <string name="curve_description_range">%1$s, %2$s: from %3$s on %4$s to %5$s on %6$s, %7$s</string>
+    <string name="curve_description_single">%1$s, %2$s: %3$s on %4$s</string>
+    <string name="curve_description_empty">%1$s, %2$s: no sessions</string>
+    <string name="curve_goal">Goal</string>
+    <string name="common_min_value">%1$s min</string>
+    <string name="common_reps_value">%1$s reps</string>
+    <string name="common_km_value">%1$s km</string>
+    <string name="common_liters_value">%1$s L</string>
+    <string name="common_kcal_value">%1$s kcal</string>
+    <string name="common_today_lower">today</string>
+    <string name="common_yesterday_lower">yesterday</string>
+    <string name="progress_weight_title">Body weight</string>
+    <string name="progress_weight_caption">Body weight · %1$s</string>
+    <string name="progress_weight_range">%1$s – %2$s kg</string>
+    <string name="progress_weight_none">No weight yet. Add a weigh-in, or enter your weight when you start a workout.</string>
+    <string name="progress_exercises">Exercises</string>
+    <string name="progress_exercise_subtitle">%1$s · best %2$s</string>
+    <string name="progress_group_sessions">workouts</string>
+    <string name="progress_group_max_load">top weight</string>
+    <string name="progress_group_max_duration">longest</string>
+    <string name="progress_group_max_volume">top volume</string>
+    <string name="progress_group_max_distance">longest distance</string>
+    <string name="progress_nutrition">Calories and water</string>
+    <string name="progress_daily_today">today</string>
+    <string name="progress_daily_today_liters">today, L</string>
+    <string name="progress_daily_avg7">7-day avg.</string>
+    <string name="progress_daily_goal_days">goal days</string>
+    <string name="progress_daily_open_nutrition">Go to Nutrition</string>
+    <string name="progress_weigh_ins">Weigh-ins</string>
+    <string name="progress_weigh_in_delete">Delete weigh-in</string>
+    <string name="progress_weigh_in_delete_title">Delete this weigh-in?</string>
+    <string name="progress_weigh_in_delete_message">The %1$s weigh-in (%2$s kg) will be removed.</string>
+    <string name="weigh_in_help_last">Last weight: %1$s kg, on %2$s</string>
+    <string name="weigh_in_help_none">Your weight, in kg.</string>
+    <string name="weigh_in_today">Today</string>
+    <string name="weigh_in_yesterday">Yesterday</string>
+    <string name="weigh_in_add">Add</string>
 </resources>

@@ -221,6 +221,9 @@ Chaque composant n'utilise que des jetons ; il reçoit ses textes déjà format�
 - États : **normal** ; **en direct** (la légende devient l'étiquette en direct : point `live` 8 +
   `label` `liveText`, ex. « EN COURS · PUSH » ; valeur en `liveText`, sans unité ni variation) ;
   **au toucher de la courbe** (légende = date du point, valeur et variation du point).
+- La valeur défile (`numberChange`) quand elle change, par ex. au changement de période ; au toucher
+  de la courbe elle suit le doigt **sans défiler** (`animate = false`). Sans valeur (période vide) :
+  « — », sans unité ni variation.
 - Variation : hausse `up`, baisse `down`, neutre `textSecondary` ; toujours signée.
 
 **En-tête de section** — `SectionHeader`. Hauteur 40, titre `titleSection`.
@@ -239,14 +242,16 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 - Centre : titre `bodyLine` + 3 + sous-titre `caption` `textSecondary` (optionnel) ; ou titre + 8
   + rangée de **mini-puces** (`caption` sur `surfaceControl`, rayon 8, padding 3 × 8, espacées de 4).
 - Fin, au choix : valeur `bodyLineStrong` ; valeur + 3 + variation (`caption` 600, `up` / `down`,
-  ou « Record » en `up`) ; variation seule (`emphasis`, colorée, ou « identique » en
-  `textSecondary`) ; chevron 24 `textSecondary` ; **case à cocher** (`ListRowTrailing.Check`, la
+  ou « Record » en `up`) ; **mini-courbe + valeur et variation** (`ListRowTrailing.CurveValue`,
+  mini-courbe 56 × 24 puis 12 : un exercice de Progrès) ; variation seule (`emphasis`, colorée, ou
+  « identique » en `textSecondary`) ; chevron 24 `textSecondary` ; **case à cocher** (`ListRowTrailing.Check`, la
   case 48 de la ligne de série) — toute la ligne la bascule (rôle case à cocher) : échauffement de
   la séance en cours.
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
 - **Appui long** optionnel (`onLongClick` + libellé d'accessibilité) : les actions secondaires
   d'une ligne, dans une bottom sheet (séance du Journal et « Dernière séance » de l'Accueil :
-  modifier, changer la date, supprimer). Le toucher garde l'action principale.
+  modifier, changer la date, supprimer). Le toucher garde l'action principale ; `onClickLabel` la
+  nomme pour TalkBack quand elle ne va pas de soi (pesée : « Supprimer la pesée »).
 
 **Puce** — `Chip`. Hauteur 32, rayon 12, padding 10 (12 sans icône), icône 18, `body`.
 
@@ -266,17 +271,28 @@ bloc exercice : elle applique la suggestion au toucher (`StudioChip(onClick)`, h
 ou neutre « Même charge »).
 
 **Courbe** — `TrendCurve`. Trait 1,5 `textPrimary`, jointures et bouts arrondis, **ni grille ni
-remplissage**. Hauteur 172 (150 si l'écran est chargé).
+remplissage**. Hauteur 172 (150 si l'écran est chargé : `CurveHeightDense`, section d'un hub).
+Dessinée au `Canvas` Compose, sans bibliothèque ; abscisse proportionnelle à la date.
 - **Au repos** : point final plein r 4 ; seules la première et la dernière date sous l'axe
-  (`small`, `textSecondary`).
-- **Au toucher** (glisser) : trait jusqu'au point en `textPrimary`, après en `textTertiary` ;
-  guide vertical 1 `textSecondary` ; point r 5 ; sa date sous l'axe (`small` 700, `textPrimary`) ;
-  le chiffre héros de l'écran affiche la valeur du point.
+  (`small`, `textSecondary`). Un seul point : le point seul, à droite.
+- **Au toucher** (glisser) : le point le plus proche du doigt (`CurveGeometry`, testé en JVM) ;
+  trait jusqu'au point en `textPrimary`, après en `textTertiary` ; guide vertical 1 `textSecondary` ;
+  point r 5 ; sa date sous l'axe (`small` 700, `textPrimary`) ; le chiffre héros de l'écran affiche
+  la valeur du point. La courbe garde le geste (l'écran ne défile pas sous le doigt).
+- **Vide** : une phrase centrée (`body`, `textSecondary`), ex. « Choisis une période plus longue. ».
+- **Ligne d'objectif** (optionnelle) : pointillés 4 / 4, 1, `textTertiary`, comprise dans l'échelle,
+  marquée à droite au-dessus (« Objectif », `small` `textSecondary`) : calories et eau de Progrès.
+- **Accessibilité** : une description lue par TalkBack — période, valeur de départ, d'arrivée,
+  variation (« Charge max par séance, 3 mois : de 92,5 kg le 14 août à 100 kg le 5 nov., +7,5 kg »).
+- Au-delà de 120 points, l'écran passe une série réduite (SPEC § 15.9.3 : creux et pics gardés).
 - Variante **compacte** (dans une surface) : hauteur 48, sans dates, point final r 3,5.
+- Variante **mini** (`MiniTrendCurve`, fin d'une ligne de liste) : 56 × 24, point final r 2,5, ni
+  dates ni toucher, décorative (la ligne dit la valeur et la variation) ; 24 points au plus.
 
 **Sélecteur de période** — `PeriodSelector`. Texte seul, options réparties sur la largeur
 (1M · 3M · 6M · 1A · Tout), chacune 44 de haut et 48 de large au moins. `emphasis` 600
 `textSecondary` ; sélection : 800, `textPrimary`, soulignée (2 d'épaisseur, 6 sous le texte).
+TalkBack lit une description par option (« 3 mois », « Tout l'historique »), pas le libellé court.
 
 **Contrôle segmenté** — `SegmentedControl`. 2 à 4 options. Conteneur `surfaceControl`, rayon 12,
 retrait 4, options espacées de 4. Option : hauteur 40, rayon 9, largeurs égales ; sélectionnée
@@ -316,8 +332,10 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
   (`titleScreen`) ; légende (« Dernière fois il y a 7 jours · 5 exercices ») ; puces de filtre
   (types, « Autre… »), sur plusieurs lignes si les noms sont longs, aucune rangée sans type ;
   bouton principal « Démarrer ».
-- **Mesure** (hub Progrès) : légende + bouton icône `add` ; chiffre héros + unité ; variation ;
-  courbe compacte.
+- **Mesure** (`MetricSurface`, hub Progrès) : légende + bouton icône `add` ; chiffre héros + unité ;
+  variation ; courbe compacte ; légende optionnelle sous la courbe, à gauche et à droite (`caption`
+  `textSecondary` : « 42 jours » · « 68 – 78,4 kg »). Sans valeur : une phrase (`paragraph`
+  `textSecondary`) à la place du chiffre et de la courbe.
 
 **Ligne de série** — `SetRow`. Hauteur 56, filet en bas. Colonnes : n° 22 · « Préc. » 60 · kg
 (reste) · reps (reste) · case 48, espacées de 8. En-tête : `columnHeader` `textSecondary`
@@ -354,7 +372,8 @@ bas, filet en bas, éléments espacés de 10.
 
 **État vide** — `EmptyState`. Centré, éléments espacés de 10 : pastille 64 `surfaceControl` +
 icône 28 `textSecondary` ; titre `titleItem` ; une phrase `body` `textSecondary` (300 de large au
-plus) ; 4 ; une action (bouton secondaire moyen, padding 20). Une phrase, une action.
+plus) ; 4 ; une action (bouton secondaire moyen, padding 20). Une phrase, une action ; la phrase
+peut manquer quand le titre suffit (« Exercice introuvable »).
 
 **Bottom sheet** — `StudioBottomSheet`. `surfaceRaised`, coins du haut 20, sur `scrim` ; padding
 10 / 20 / 20 ; poignée 36 × 4 `surfacePressed` centrée ; titre `titleSection` + 6 + texte `body`
@@ -445,7 +464,7 @@ mini-barre et la barre d'onglets sont posées une fois pour tous les hubs par la
 ne reçoit que l'inset du haut (`tabScreenInsets()`).
 
 Variante **paresseuse** (`HubLazyTemplate`) : même disposition, pour un hub dont les lignes se
-comptent par centaines (Journal) ; chaque section (`section` : en-tête, 4, lignes) ou bloc sans
+comptent par centaines (Journal, Progrès) ; chaque section (`section` : en-tête, 4, lignes) ou bloc sans
 en-tête (`block` : rangée de stats, état vide) est précédé de 40, sauf le premier.
 
 ### 10.2 Fiche
@@ -460,6 +479,11 @@ Un sujet, un chiffre héros : fiche exercice, résumé de séance, poids, mensur
 6. 24, rangée de stats (optionnelle).
 7. `section` (40), sections : lignes avec mini-puces ou variation.
 8. Action principale (optionnelle) dans une `BottomActionBar` fixe.
+
+Variante **paresseuse** (`FicheLazyTemplate`) : même disposition, le haut (barre → stats) en un
+élément puis les sections en éléments paresseux (`HubSections`), pour une fiche dont les lignes se
+comptent par centaines (fiche exercice). Sans chiffre héros (aucune donnée), les sections suivent le
+titre à `hero` (32).
 
 ### 10.3 En direct
 
@@ -510,7 +534,7 @@ n'a pas encore, cf. § 13) :
 |---|---|
 | Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → éditeur (en attendant la fiche résumé), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
 | Journal | **Depuis le début** : totaux · **une section par semaine** : séances → éditeur (en attendant la fiche résumé), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub ; résumés (*Nouveau*) → fiche |
-| Progrès | **Records** : Mes records (*Nouveau*) → hub · **Exercices** : top, historique, 1RM → fiche · **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
+| Progrès | **Poids de corps** (surface) : pesée → formulaire · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** : calories, eau → formulaire ; protéines (*Nouveau*) → formulaire · **Compléments** : rappels → formulaire ; stock (*Nouveau*) → formulaire · **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Préférences** : langue, thème, repos → formulaire · **Données** : sauvegarde auto, import / export, Health Connect · **À propos** : envoyer un avis |
 
@@ -583,6 +607,21 @@ Décidé (14/11/2026, SPEC § 15.8) :
   dernière », « Semaine du 26 oct. », compteur à droite) ; appui long sur une séance → sheet
   d'actions ; « Modifier la date » en formulaire (bottom sheet, champs numériques).
 
+Décidé (14/11/2026, SPEC § 15.9) :
+
+- **Fiche exercice** : chiffre héros = la dernière séance de la période, variation depuis le premier
+  point (verte, rouge ou grise), courbe touchable, période « Tout » par défaut ; record personnel et
+  1RM estimé en rangée de stats ; une ligne par séance (meilleure série, 1RM, volume), « Record » sur
+  la séance qui détient le record de la période. Pas de contrôle segmenté tant qu'il n'y a qu'une
+  métrique.
+- **Progrès** : la surface « Mesure » porte le poids de corps (variation en gris, sans objectif
+  déclaré) ; « Exercices » se filtre par des puces de groupe ; « Calories et eau » reste dans Progrès
+  avec une courbe à ligne d'objectif, jusqu'à la migration de Nutrition ; supprimer une pesée passe
+  par une confirmation.
+- **Date dans un formulaire** au pavé (pesée) : puces « Aujourd'hui » / « Hier » et une ligne
+  d'information « Date » qui ouvre le sélecteur de date du système (Material 3, aux couleurs de
+  `StudioTheme`).
+
 - **Logo** : variante **« Deux disques »** (`T2-Logo.dc.html`), haltère `#FFC93D` sur graphite
   `#17181B`. Icône adaptative (fond graphite, avant-plan vectoriel, couche monochrome pour les
   icônes à thème), icône de l'écran de démarrage sur un disque graphite, petite icône des
@@ -613,9 +652,11 @@ Ouvert :
   `Studio.spacing.screen`, `Studio.shapes.control`, `Studio.motion.fast`.
 - `ui/designsystem/components/` : les composants du § 9 (`Foundation.kt` : icône, variation,
   point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille ;
-  `TextField.kt` pour le champ texte).
+  `TextField.kt` pour le champ texte ; `TrendCurve.kt` pour les trois courbes et
+  `CurveGeometry.kt`, leur géométrie pure, testée en JVM).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
-  variante paresseuse `HubLazyTemplate`, `FicheTemplate`, `LiveTemplate`, `FormSheetTemplate`), en
+  variante paresseuse `HubLazyTemplate`, `FicheTemplate` et `FicheLazyTemplate`, `LiveTemplate`,
+  `FormSheetTemplate`), en
   composables à emplacements ; ils reçoivent les insets du système (`ScreenInsets` ;
   `tabScreenInsets()` pour un onglet, dont la barre absorbe l'inset du bas).
 - Icônes `res/drawable/ds_ic_*.xml` ; police `res/font/archivo.ttf` (+ licence

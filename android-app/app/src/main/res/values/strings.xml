@@ -34,7 +34,6 @@
     <string name="tabs_progress">Progrès</string>
     <string name="tabs_nutrition">Nutrition</string>
     <string name="tabs_settings">Paramètres</string>
-    <string name="progress_title">Progression</string>
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Paramètres</string>
 
@@ -301,24 +300,10 @@
     <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
 
     <!-- Graphiques (§ 2.13) -->
-    <string name="chart_no_data">Aucune donnée</string>
-    <string name="chart_one_point">Une seule séance — continue pour voir ta progression !</string>
     <string name="chart_goal">Objectif</string>
 
     <!-- Historique d'un exercice (§ 2.8) -->
     <string name="exercise_history_not_found">Exercice introuvable</string>
-    <string name="exercise_history_pr">Record personnel</string>
-    <string name="exercise_history_one_rm">1RM estimé</string>
-    <string name="exercise_history_longest">Séance la plus longue</string>
-    <string name="exercise_history_max_load">Charge maximale (kg)</string>
-    <string name="exercise_history_duration_chart">Durée par séance (min)</string>
-    <string name="exercise_history_need_more">Fais encore des séances pour voir ta progression !</string>
-    <string name="exercise_history_history_title">Historique</string>
-    <string name="exercise_history_empty">Aucune séance avec cet exercice</string>
-    <string name="exercise_history_body_weight_suffix">%1$s kg corps</string>
-    <string name="exercise_history_max">Max %1$s kg</string>
-    <string name="exercise_history_volume">Volume %1$s kg</string>
-    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
     <!-- Éditer une séance terminée (§ 2.9) -->
     <string name="edit_workout_not_found">Séance introuvable</string>
@@ -353,50 +338,21 @@
     <string name="rest_timer_label">Repos</string>
 
     <!-- Progrès (§ 2.10) -->
-    <string name="progress_tab_weight">Poids corps</string>
     <string name="progress_tab_calories">Calories</string>
     <string name="progress_tab_water">Eau</string>
-    <string name="progress_weight_current">Actuel</string>
-    <string name="progress_weight_change">Évolution</string>
-    <string name="progress_weight_min_max">Min–Max</string>
-    <string name="progress_weight_chart_title">Poids de corps (kg)</string>
     <string name="progress_empty_no_session">Aucune séance encore</string>
     <string name="progress_empty_no_session_hint">Lance ta première séance pour voir tes progrès ici</string>
-    <string name="body_weight_log_title">Journal de poids</string>
     <string name="body_weight_add">Ajouter une pesée</string>
     <string name="body_weight_new_entry">Nouvelle pesée</string>
-    <string name="body_weight_weight_label">Poids (kg)</string>
-    <string name="body_weight_weight_placeholder">Ex : 75.5</string>
     <string name="body_weight_date_label">Date</string>
     <string name="body_weight_empty">Aucune pesée manuelle enregistrée. Ajoute une pesée pour suivre ton poids même les jours sans séance.</string>
     <string name="body_weight_invalid_entry">Vérifie le poids et la date</string>
-    <string name="progress_stat_today">Aujourd\'hui</string>
-    <string name="progress_stat_today_liters">Aujourd\'hui\n(L)</string>
-    <string name="progress_stat_avg7">Moy. 7 jours</string>
-    <string name="progress_stat_goal_days_hit">Jours objectif\natteint</string>
     <string name="progress_cal_no_data">Aucune donnée</string>
     <string name="progress_cal_no_data_hint">Commence à saisir tes calories dans l\'onglet Nutrition pour voir leur évolution ici</string>
-    <string name="progress_cal_chart_title">Calories (kcal)</string>
-    <string name="progress_cal_chart_sub">%1$d jours · Objectif %2$s kcal</string>
     <string name="progress_water_no_data_hint">Commence à suivre ton hydratation dans l\'onglet Nutrition pour voir son évolution ici</string>
-    <string name="progress_water_chart_title">Hydratation (L)</string>
-    <string name="progress_water_chart_sub">%1$d jours · Objectif %2$s L/jour</string>
-    <string name="progress_recap_title">Récapitulatif</string>
     <string name="progress_recap_daily_goal">Objectif quotidien</string>
     <string name="progress_recap_best_day">Meilleure journée</string>
     <string name="progress_recap_days_tracked">Jours suivis</string>
-    <string name="progress_muscle_sessions">Séances</string>
-    <string name="progress_muscle_max_load">Charge max</string>
-    <string name="progress_muscle_max_volume">Vol. max</string>
-    <string name="progress_muscle_max_duration">Durée max</string>
-    <string name="progress_muscle_max_distance">Distance max</string>
-    <string name="progress_muscle_empty">Aucune séance %1$s</string>
-    <string name="progress_muscle_empty_hint">Fais des exercices de %1$s pour voir ta progression</string>
-    <string name="progress_muscle_top_exercises">Exercices les plus utilisés</string>
-    <string name="progress_muscle_top_exercises_sub">Charge maximale par séance</string>
-    <string name="progress_muscle_top_exercises_sub_cardio">Durée totale par séance</string>
-    <string name="progress_muscle_need_two">Fais au moins 2 séances pour voir le graphique</string>
-    <string name="progress_muscle_all_exercises">Tous les exercices</string>
 
     <!-- Rappels de compléments (§ 7.3) -->
     <string name="nutrition_notif_body">N\'oublie pas ta dose !</string>
@@ -565,4 +521,73 @@
         <item quantity="other">%1$d sem.</item>
     </plurals>
     <string name="duration_compact">%1$d h %2$02d</string>
+
+    <!-- Fiche exercice et Progrès (SPEC § 15.9) -->
+    <string name="exercise_fiche_subtitle">%1$s · %2$s depuis %3$s</string>
+    <string name="exercise_fiche_last_session">Dernière séance · %1$s</string>
+    <string name="exercise_fiche_sessions">Séances</string>
+    <string name="exercise_fiche_period_empty">Aucune séance sur cette période</string>
+    <string name="exercise_fiche_period_empty_hint">Choisis une période plus longue.</string>
+    <string name="exercise_fiche_stat_record">record personnel</string>
+    <string name="exercise_fiche_stat_longest">séance la plus longue</string>
+    <string name="exercise_fiche_stat_one_rm">1RM estimé</string>
+    <string name="exercise_fiche_best_set">Meilleure série %1$s</string>
+    <string name="exercise_fiche_one_rm">1RM ~%1$s kg</string>
+    <string name="exercise_fiche_cardio_set">%1$s min · %2$s km</string>
+    <string name="exercise_fiche_cardio_set_minutes">%1$s min</string>
+    <string name="exercise_fiche_record">Record</string>
+    <string name="exercise_fiche_empty_title">Aucune séance</string>
+    <string name="exercise_fiche_empty_message">Valide une série de cet exercice pour suivre sa progression.</string>
+    <string name="delta_since">depuis le %1$s</string>
+    <string name="delta_same">identique</string>
+    <string name="period_1m">1M</string>
+    <string name="period_3m">3M</string>
+    <string name="period_6m">6M</string>
+    <string name="period_1y">1A</string>
+    <string name="period_all">Tout</string>
+    <string name="period_1m_description">1 mois</string>
+    <string name="period_3m_description">3 mois</string>
+    <string name="period_6m_description">6 mois</string>
+    <string name="period_1y_description">1 an</string>
+    <string name="period_all_description">Tout l\'historique</string>
+    <string name="curve_metric_load">Charge max par séance</string>
+    <string name="curve_metric_reps">Reps max par séance</string>
+    <string name="curve_metric_duration">Durée par séance</string>
+    <string name="curve_description_range">%1$s, %2$s : de %3$s le %4$s à %5$s le %6$s, %7$s</string>
+    <string name="curve_description_single">%1$s, %2$s : %3$s le %4$s</string>
+    <string name="curve_description_empty">%1$s, %2$s : aucune séance</string>
+    <string name="curve_goal">Objectif</string>
+    <string name="common_min_value">%1$s min</string>
+    <string name="common_reps_value">%1$s reps</string>
+    <string name="common_km_value">%1$s km</string>
+    <string name="common_liters_value">%1$s L</string>
+    <string name="common_kcal_value">%1$s kcal</string>
+    <string name="common_today_lower">aujourd\'hui</string>
+    <string name="common_yesterday_lower">hier</string>
+    <string name="progress_weight_title">Poids de corps</string>
+    <string name="progress_weight_caption">Poids de corps · %1$s</string>
+    <string name="progress_weight_range">%1$s – %2$s kg</string>
+    <string name="progress_weight_none">Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance.</string>
+    <string name="progress_exercises">Exercices</string>
+    <string name="progress_exercise_subtitle">%1$s · record %2$s</string>
+    <string name="progress_group_sessions">séances</string>
+    <string name="progress_group_max_load">charge max</string>
+    <string name="progress_group_max_duration">durée max</string>
+    <string name="progress_group_max_volume">vol. max</string>
+    <string name="progress_group_max_distance">distance max</string>
+    <string name="progress_nutrition">Calories et eau</string>
+    <string name="progress_daily_today">aujourd\'hui</string>
+    <string name="progress_daily_today_liters">aujourd\'hui, L</string>
+    <string name="progress_daily_avg7">moy. 7 jours</string>
+    <string name="progress_daily_goal_days">jours objectif</string>
+    <string name="progress_daily_open_nutrition">Aller à Nutrition</string>
+    <string name="progress_weigh_ins">Pesées</string>
+    <string name="progress_weigh_in_delete">Supprimer la pesée</string>
+    <string name="progress_weigh_in_delete_title">Supprimer la pesée ?</string>
+    <string name="progress_weigh_in_delete_message">La pesée du %1$s (%2$s kg) sera retirée.</string>
+    <string name="weigh_in_help_last">Dernier poids : %1$s kg, le %2$s</string>
+    <string name="weigh_in_help_none">Ton poids, en kg.</string>
+    <string name="weigh_in_today">Aujourd\'hui</string>
+    <string name="weigh_in_yesterday">Hier</string>
+    <string name="weigh_in_add">Ajouter</string>
 </resources>

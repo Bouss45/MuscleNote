@@ -2,6 +2,8 @@ package com.musclenote.android.ui.designsystem.components
 
 import androidx.annotation.DrawableRes
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -149,7 +151,8 @@ fun LiveLabel(text: String, modifier: Modifier = Modifier) {
 
 /**
  * Chiffre qui défile verticalement quand il change (`Studio.motion.numberChangeMillis`), sans
- * animation en boucle. Expose sa ligne de base pour s'aligner sur une unité.
+ * animation en boucle ; [animate] faux : il change sans défiler (valeur qui suit le doigt sur une
+ * courbe). Expose sa ligne de base pour s'aligner sur une unité.
  *
  * L'interligne du style est appliqué comme en CSS : une boîte de la hauteur de l'interligne,
  * glyphes centrés, quitte à déborder (interligne 0,85 des grands chiffres). Compose, lui, ne
@@ -161,6 +164,7 @@ fun RollingText(
     style: TextStyle,
     color: Color,
     modifier: Modifier = Modifier,
+    animate: Boolean = true,
 ) {
     val density = LocalDensity.current
     val lineBox = with(density) {
@@ -180,9 +184,13 @@ fun RollingText(
             AnimatedContent(
                 targetState = text,
                 transitionSpec = {
-                    (slideInVertically(tween(millis)) { it } + fadeIn(tween(millis))) togetherWith
-                        (slideOutVertically(tween(millis)) { -it } + fadeOut(tween(millis))) using
-                        SizeTransform(clip = false)
+                    if (animate) {
+                        (slideInVertically(tween(millis)) { it } + fadeIn(tween(millis))) togetherWith
+                            (slideOutVertically(tween(millis)) { -it } + fadeOut(tween(millis))) using
+                            SizeTransform(clip = false)
+                    } else {
+                        EnterTransition.None togetherWith ExitTransition.None using SizeTransform(clip = false)
+                    }
                 },
                 label = "RollingText",
             ) { value ->

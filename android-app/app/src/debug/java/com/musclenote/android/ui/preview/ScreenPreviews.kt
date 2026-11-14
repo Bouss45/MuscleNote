@@ -6,13 +6,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.ui.MuscleNoteApp
-import com.musclenote.android.ui.history.ExerciseHistoryScreen
 import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.journal.JournalScreen
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.nutrition.NutritionScreen
-import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.data.workout.SetEntryField
@@ -94,7 +92,7 @@ private fun JournalScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
 }
 
 /** Écran d'onglet sans la barre d'onglets : l'inset de la barre d'état de la maquette seul. */
-private val PreviewTabInsets = ScreenInsets(top = 40.dp, bottom = 0.dp)
+internal val PreviewTabInsets = ScreenInsets(top = 40.dp, bottom = 0.dp)
 
 /** Séance en cours depuis 42 min, repos de 2 min 30 en cours : toute la liste, barre « Terminer ». */
 @ScreenPreviews
@@ -137,20 +135,8 @@ private fun ExercisePickerScreenPreview() = ScreenPreview(PreviewDataSet.WithCur
 
 @ScreenPreviews
 @Composable
-private fun ExerciseHistoryScreenPreview() = ScreenPreview {
-    ExerciseHistoryScreen(exerciseId = "bench", onBack = {})
-}
-
-@ScreenPreviews
-@Composable
 private fun EditWorkoutScreenPreview() = ScreenPreview {
     EditWorkoutScreen(workoutId = PreviewData.workouts.first { it.name == "Push" }.id, onClose = {})
-}
-
-@ScreenPreviews
-@Composable
-private fun ProgressScreenPreview() = ScreenPreview {
-    ProgressScreen(onOpenExerciseHistory = {})
 }
 
 @ScreenPreviews
