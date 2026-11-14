@@ -111,6 +111,10 @@
 
 ### 2.1 Arborescence
 
+> 🔄 D33 — **arborescence et barre d'onglets remplacées par le § 15.8.1** : onglets Accueil,
+> Journal, Progrès, Nutrition ; Paramètres ouvert par l'engrenage de l'Accueil ; mini-barre de la
+> séance en cours ; retour prédictif. Les écrans plein écran ci-dessous ne changent pas.
+
 ```
 Racine (Navigation Compose, aucun en-tête système)
 ├── Onglets (NavigationBar Material 3, 4 destinations)
@@ -137,6 +141,13 @@ Racine (Navigation Compose, aucun en-tête système)
 - Plus d'écran d'erreur fatale (🔄 D17) : un plantage écrit un rapport local (§ 10.9).
 
 ### 2.2 Accueil
+
+> 🔄 D33 — **disposition remplacée par le § 15.8.2** (gabarit hub : une surface « En cours » ou
+> « Prochaine séance », puis « Dernière séance » et « Cette semaine ») ; la liste de toutes les
+> séances, avec la modification de la date et la suppression, passe au **Journal** (§ 15.8.4). Plus
+> d'image de fond. Restent valables ci-dessous, sous leur nouvelle forme : les conditions de
+> l'annonce de mise à jour (D25) et de la carte de transfert (D4/D5), le calcul de la série
+> hebdomadaire (§ 3.6) et les règles de la modale « Modifier la date ».
 
 Fond : `background` + image `home-bg.png` plein écran, `ContentScale.Crop`, flou (rayon
 6 dp, `Modifier.blur`, Android 12+ ; sans flou en dessous), opacité **0,35 en thème sombre,
@@ -1307,6 +1318,7 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
   v1.0.6 est **supprimé** au démarrage ; la notification « Séance en cours » (§ 15.5) le remplace.
 - Petite icône : silhouette blanche sur transparent (vecteur dérivé de
   `assets/images/notification-icon.png`), couleur d'accent `#9B1C1C`. Pas de badge.
+  🔄 D33 : l'haltère du logo en silhouette blanche, accent graphite `#17181B` (§ 15.8.5).
 - Notification affichée app ouverte : oui (comportement Android standard des canaux HIGH),
   sauf la fin de repos au premier plan (§ 7.2).
 - Tous les `PendingIntent` sont `FLAG_IMMUTABLE`.
@@ -1485,6 +1497,8 @@ Le splash et le fond de fenêtre suivent le thème **choisi dans l'app** : sur A
 choix est transmis au système (`UiModeManager.setApplicationNightMode`, « Système » = pas de
 surcharge), ce qui recrée l'activité quand le thème effectif change ; avant Android 12, le
 splash suit le thème du système.
+🔄 D33 : fond du splash et de la fenêtre au jeton `background` de DESIGN.md (`#0F1012` en sombre,
+`#FFFFFF` en clair) et icône du logo sur le splash (§ 15.8.5).
 
 **Transparences** : l'app Expo concaténait un suffixe d'alpha (`#RRGGBB` + `AA`). En Compose,
 `Color(0xAARRGGBB)` met l'alpha **au début** : utiliser `couleur.copy(alpha = …)`. Les
@@ -1723,7 +1737,8 @@ traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajout
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
 (§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
-(§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7).
+(§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
+l'Accueil, le Journal et le logo (§ 15.8).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1759,6 +1774,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D30 | Health Connect : poids en double, séances absentes, compteur (retour d'un utilisateur, v1.0.5) | un poids par jour, durée estimée, ne compter que le confirmé | un `WeightRecord` par jour local avec la règle de Progrès (§ 3.10 : la pesée remplace le poids de séance), anciens enregistrements supprimés ; séance de moins de 10 min ou sans durée envoyée avec l'estimation du temps en salle (§ 3.7, sinon 10 min), sans jamais finir après sa fin dans l'app ; envoi par type, seuls les enregistrements confirmés par Health Connect sont comptés et retenus ; état de la carte (écrit, dernier envoi, dernière erreur datée) (§ 15.3) |
 | D31 | Notification de séance avec actions | une notification « Séance en cours » qui remplace celle du repos | séance, chronomètre, exercice et prochaine série ; « Valider la série » hors repos, « −30 s », « +30 s », « Passer » pendant le repos ; Live Update sur Android 16+ (`POST_PROMOTED_NOTIFICATIONS`, sans demande), sinon notification en cours ; montres : l'alerte de fin de repos, relayée par Android, vibre et propose « Valider la série » (une notification en cours n'est pas relayée) ; pas d'app Wear OS, notée comme piste ; pas de service de premier plan (§ 1, 7.1, 7.2, 15.5) |
 | D32 | Refonte « Studio épuré », étape 2 : séance en cours | gabarit « en direct » ; colonne « Préc. », suggestion de charge, pavé numérique intégré, « + Série » toujours visible, repos jaune | « Préc. » = série de même rang de la dernière séance de l'exercice, recopiée au toucher ; +2,5 kg (+1 rep au poids du corps) si toutes les séries ont tenu les reps de la première, sinon même charge, jamais appliquée d'office ; pavé avec virgule, effacer, pas −/+, « Suivant » puis « Valider la série » ; confirmations en bottom sheet ; aucun changement du format JSON (§ 2.4 – 2.6, 7.2, 10.8, 15.7) |
+| D33 | Refonte « Studio épuré », étape 3 : navigation, Accueil, Journal, logo | 4 onglets (Accueil, Journal, Progrès, Nutrition), Paramètres par l'engrenage, mini-barre partout ; Accueil à une seule surface (reprendre ou démarrer), dernière séance, séances de la semaine ; Journal groupé par semaine ; logo de la maquette, marque jaune pour la preview | Paramètres hors barre (l'onglet Accueil y reste sélectionné) ; mini-barre sur Journal, Progrès, Nutrition et Paramètres (sur l'Accueil, la surface la remplace) ; la séance n'est jamais deux fois dans la pile, « Réduire » revient à l'écran d'origine ; retour prédictif avec transitions en fondu ; Accueil : surface « En cours » ou « Prochaine séance » avec type suggéré (types réguliers des 42 derniers jours, le moins récent d'abord) qui ouvre « Démarrer » à l'étape du poids, puis « Dernière séance » et « Cette semaine » (séances de la semaine, série, 8 semaines) ; Journal : totaux, une section par semaine ISO (du lundi, à cheval sur deux années comprise), ligne date · durée · volume, toucher → éditeur, appui long → date ou suppression ; icône adaptative avec couche monochrome, splash, petite icône de notification ; aucun changement du format JSON (§ 2.1, 2.2, 7.1, 9.1, 15.8) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1940,6 +1956,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   `ExerciseCard`, `RestTimerBanner` et `WarmupCard` sont retirés. À vérifier **sur l'appareil** :
   saisie au pavé, défilement vers le champ en saisie, recopie de « Préc. », suggestion, repos et
   notification de séance.
+- Refonte, **étape 3** (🔄 D33, § 15.8) : navigation à quatre onglets, Accueil, Journal et logo —
+  spécifiée, en cours d'implémentation sur `redesign`.
 
 ---
 
@@ -2098,7 +2116,8 @@ courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3). **
 séance** avec actions (🔄 D31, § 15.5) : elle remplace la notification de repos, sans écran ni
 réglage nouveau. **Refonte « Studio épuré »** (DESIGN.md), écran par écran : la séance en cours
 (🔄 D32, § 15.7) passe au gabarit « en direct », avec la colonne « Préc. », la suggestion de charge
-et un pavé numérique intégré, sans donnée nouvelle.
+et un pavé numérique intégré, sans donnée nouvelle ; puis la navigation, l'Accueil, le Journal et
+le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2615,3 +2634,239 @@ note, retrait).
 | `workout_continue` | Continuer la séance | Keep going |
 | `workout_empty_title` | Aucun exercice | No exercises |
 | `workout_no_active_message` | Démarre une séance depuis l'Accueil. | Start a session from Home. |
+
+### 15.8 Refonte « Studio épuré » : navigation, Accueil, Journal et logo (🔄 D33)
+
+Troisième étape de la refonte décrite dans `DESIGN.md` : la navigation à quatre onglets, l'Accueil
+et le **Journal** (la liste des séances, qui quitte l'Accueil) passent aux gabarits et composants du
+design system, et l'app reçoit le logo de la maquette. Progrès, Nutrition et Paramètres gardent leurs
+écrans actuels, comme « Démarrer une séance », le sélecteur d'exercices, l'historique d'un exercice
+et l'éditeur de séance. Les règles du § 3, les notifications (§ 7, § 15.5) et le **format des
+données ne changent pas** (§ 4, § 5) : aucune migration.
+
+#### 15.8.1 Navigation
+
+Remplace le § 2.1 :
+
+```
+Racine (Navigation Compose, aucun en-tête système)
+├── Onglets (StudioNavigationBar, 4 destinations)
+│   ├── home        « Accueil »     icône `home`
+│   ├── journal     « Journal »     icône `calendar_month`
+│   ├── progress    « Progrès »     icône `monitoring`      écran actuel (§ 2.10)
+│   └── nutrition   « Nutrition »   icône `restaurant`      écran actuel (§ 2.11)
+├── settings                        Paramètres, écran actuel (§ 2.12), par l'engrenage de l'Accueil
+├── start-workout                   plein écran, inchangés : démarrer une séance,
+├── workout                         séance en cours,
+├── exercise-picker                 sélecteur d'exercices,
+├── exercise-history/{exerciseId}   historique d'un exercice,
+└── edit-workout/{workoutId}        éditeur de séance terminée
+```
+
+- **Barre d'onglets** (DESIGN.md § 9.2) : filet en haut, icône pleine et libellé en gras pour
+  l'onglet sélectionné, sans indicateur. Affichée sur les quatre onglets et sur **Paramètres**, page
+  de second niveau de l'Accueil : l'onglet Accueil y reste sélectionné et le toucher y ramène.
+  Masquée sur les écrans plein écran. Chaque onglet garde son état (défilement) d'une visite à
+  l'autre.
+- **Mini-barre** de la séance en cours, dès qu'une séance est en cours, 8 dp au-dessus de la barre
+  d'onglets, dans les marges de l'écran : sur **Journal, Progrès, Nutrition et Paramètres**. Point
+  jaune, nom affiché de la séance (§ 3.1), puis pendant un repos « repos **1:48** » (temps restant),
+  sinon le chrono de la séance « **17:48** » (`m:ss`, minutes non bornées) en jaune ; bouton texte
+  « Reprendre ». Toucher la barre ou « Reprendre » ouvre la séance. Sur l'Accueil, la surface « En
+  cours » (§ 15.8.2) tient ce rôle : pas de mini-barre (maquette).
+- **Ouvrir la séance** (surface de l'Accueil, mini-barre, toucher de la notification « Séance en
+  cours » ou de l'alerte « Repos terminé ») : si la séance est déjà dans la pile (sous l'historique
+  d'un exercice ou le sélecteur, par exemple), on y revient ; sinon elle s'ouvre par-dessus l'écran
+  affiché. Elle n'est **jamais deux fois** dans la pile. Sans séance en cours (notification restée
+  affichée), l'écran « Aucune séance active » s'affiche comme avant.
+- **Quitter la séance** : « Réduire » et le retour système reviennent à l'écran d'où on l'a ouverte
+  (un onglet, Paramètres) ; juste après « Commencer », c'est l'Accueil (l'écran « Démarrer » a été
+  remplacé, § 2.3). Terminer ou abandonner la séance revient à l'Accueil.
+- **Autres entrées externes** : rappel de complément → onglet Nutrition ; fichier JSON partagé ou
+  ouvert → Accueil puis Paramètres (confirmation d'import, § 5.4). Les actions des notifications
+  (« Valider la série », « −30 s », « +30 s », « Passer », § 15.5) n'ouvrent pas l'app et ne changent
+  pas.
+- **Retour, geste prédictif compris** (`android:enableOnBackInvokedCallback="true"`, Android 13+ ;
+  d'office à partir d'Android 16) :
+  - une bottom sheet ouverte, puis le pavé numérique, se ferment d'abord ;
+  - Journal, Progrès, Nutrition et Paramètres → Accueil ; écran plein écran → écran précédent
+    (étape 2 de « Démarrer » → étape 1, comme avant) ; Accueil → quitte l'app, avec l'aperçu du
+    système (retour à l'écran d'accueil du téléphone) ;
+  - transitions en **fondu** au rythme `standard` (DESIGN.md § 7) entre deux écrans : pendant le
+    geste, l'écran précédent apparaît sous le doigt ; geste annulé, rien ne change.
+
+#### 15.8.2 Accueil
+
+Remplace le § 2.2. Gabarit **hub** (DESIGN.md § 10.1), de haut en bas :
+
+1. **Barre** : date du jour, jour de la semaine en toutes lettres (« Samedi 14 novembre »,
+   « Saturday, November 14 »), et l'engrenage → Paramètres.
+2. **Une seule surface mise en avant** :
+   - **séance en cours** — « En cours » : « EN COURS » à gauche, nom affiché à droite ; chrono de la
+     séance (`m:ss`, minutes non bornées) en grand, en jaune ; pendant un repos, « Repos **1:48** ·
+     Développé couché, série 3 » (temps restant en jaune, puis la prochaine série du § 15.5 ; sans
+     prochaine série, « Repos 1:48 » seul) ; les segments des séries, « 2 / 16 séries » à gauche et
+     le poids de corps « 78,4 kg » à droite (omis s'il vaut 0) ; sans série, ni segments ni
+     compteur ; bouton principal « Reprendre » → séance.
+   - **sinon** — « Prochaine séance » : légende « Prochaine séance » ; titre = le type sélectionné
+     (au départ le type suggéré, § 15.8.3), ou « Nouvelle séance » sans suggestion ; dessous
+     « Dernière fois il y a 7 jours · 5 exercices » (« aujourd'hui », « hier » ; la dernière séance
+     de ce type), ou sans suggestion « Choisis ta séance à l'étape suivante » ; puces des **types
+     réguliers** (3 au plus, le suggéré en premier et sélectionné ; une seule sélection), puis
+     « Autre… » ; bouton principal « Démarrer ».
+     - « Démarrer » avec un type → écran « Démarrer une séance » **directement à l'étape du poids de
+       corps** (§ 2.3, étape 2), avec ce type : son préréglage, ou le nom perso de sa dernière
+       séance ; ← revient à l'étape 1, ce type déjà choisi.
+     - « Autre… », ou « Démarrer » sans type → « Démarrer une séance » à l'étape 1, comme avant.
+3. **Sections**, espacées de 40 dp, chacune seulement si elle a un contenu :
+   1. **« Mise à jour disponible »** (🔄 D25, mêmes conditions qu'au § 2.2) : une ligne « MuscleNote
+      {version} » / « Version installée : {installée} » avec chevron → téléchargement (APK dans le
+      navigateur, sinon page de la Release) ; bouton texte « Plus tard », qui masque l'annonce
+      jusqu'à la version suivante.
+   2. **« Depuis l'ancienne app »** (🔄 D4/D5, mêmes conditions : aucune séance terminée ni en cours,
+      carte non masquée) : « Tu viens de l'ancienne MuscleNote ? » et le mode d'emploi (§ 5.5) en
+      paragraphe ; bouton texte « Masquer » (préférence locale, comme avant).
+   3. **« Dernière séance »**, lien « Tout voir » → onglet Journal : la ligne de la séance terminée la
+      plus récente (même ligne et mêmes actions qu'au Journal, § 15.8.4).
+   4. **« Cette semaine »** : rangée de stats « **2/3** séances » (séances terminées de la semaine
+      en cours, sur les 3 qui la valident), « **4 sem.** série en cours » (§ 3.6 : `current` si
+      `isAlive`, sinon 0), « **9 sem.** record » (`best`) ; barres des 8 dernières semaines (cette
+      semaine à droite ; hauteur selon le nombre de séances, semaine validée en `textPrimary`, les
+      autres en `textTertiary`) et la légende « 8 dernières semaines · 3 séances = semaine
+      validée ».
+   Sans aucune séance terminée, les sections 3 et 4 n'apparaissent pas.
+
+Quittent l'Accueil : l'image de fond floutée, la ligne « Séances / Volume total / Dernier poids »
+et la carte « temps en salle » (totaux → Journal ; le dernier poids reste dans Progrès, « Actuel »,
+§ 2.10), la légende Validée / Partielle / Aucune et les phrases d'aide de la série, la liste de
+toutes les séances (→ Journal) et l'état vide « Prêt à s'entraîner ? » (la surface « Nouvelle
+séance » le remplace).
+
+#### 15.8.3 Surface de l'Accueil et type suggéré (règles pures, testées en JVM)
+
+- **Choix de la surface** : une séance en cours → « En cours » ; sinon « Prochaine séance ».
+- **Fenêtre** : les séances terminées des **42 derniers jours** (jour local de la séance ≥
+  aujourd'hui − 41 jours), groupées par **clé de séance** (§ 3.1 : préréglage, ou nom normalisé).
+- **Types réguliers** : les clés qui ont **au moins 2 séances** dans la fenêtre **et au moins la
+  moitié** des séances de la clé la plus fréquente (un « Cardio » occasionnel au milieu d'un Push /
+  Pull / Legs n'en est pas un).
+- **Ordre** : de la clé dont la dernière séance est la plus ancienne à la plus récente (à égalité :
+  la plus fréquente, puis l'ordre alphabétique de la clé). La première est le **type suggéré** —
+  dans une rotation, celui qui revient ; les puces montrent les trois premières.
+- Aucun type régulier → pas de suggestion (« Nouvelle séance », pas de puce de type).
+- Pour chaque type : nom affiché et démarrage selon sa séance la plus récente (préréglage, sinon son
+  `name`) ; « il y a N jours » = jours calendaires locaux entre cette séance et aujourd'hui ;
+  « N exercices » = ses exercices, ceux que le pré-remplissage reprendra (§ 3.1).
+
+#### 15.8.4 Journal
+
+Nouvel onglet, gabarit **hub** en liste paresseuse (l'historique peut compter des centaines de
+séances) :
+
+1. Barre de titre « Journal ».
+2. **« Depuis le début »** (s'il y a une séance terminée) : rangée de stats « **48** séances »,
+   « **312 t** volume » (§ 3.8, tonnes arrondies à l'entier), « **52 h** en salle » (total du § 3.7,
+   arrondi à l'heure ; « 45 min » en dessous d'une heure) et « **1 h 05** par séance » (moyenne du
+   § 3.7) ; ces deux dernières absentes si aucune séance n'est retenue par le § 3.7.
+3. **Une section par semaine** ayant au moins une séance terminée, de la plus récente à la plus
+   ancienne. Semaine = semaine ISO, **du lundi au dimanche**, au jour local de la séance (comme le
+   § 3.6) : une semaine à cheval sur deux années reste une seule section. Titre : « Cette semaine »,
+   « Semaine dernière », sinon « Semaine du 26 oct. » (son lundi), avec l'année quand ce lundi n'est
+   pas dans l'année en cours (« Semaine du 29 déc. 2025 »). À droite : « 3 séances ». Une séance à
+   la date illisible (§ 10.3) va dans une dernière section « Date inconnue ».
+4. **Une ligne par séance**, de la plus récente à la plus ancienne :
+   - titre : nom affiché (§ 3.1) ;
+   - sous-titre : date courte locale, puis la durée si `durationMinutes` > 0 : « mer. 11 nov. ·
+     1 h 12 » (« 45 min », « 1 h », « 1 h 05 » ; en anglais « 45 min », « 1 h », « 1 h 05 min ») ;
+   - à droite : le volume (§ 3.8, séries validées, arrondi au kg, séparateur de milliers de la
+     langue : « 6 840 kg ») ; volume nul (cardio, poids du corps) → le nombre de séries validées
+     (« 12 séries ») ;
+   - **toucher** → éditeur de la séance (§ 2.9, écran actuel) ;
+   - **appui long** → bottom sheet : titre = nom affiché, texte = « mer. 11 nov. · 18:30 » ;
+     boutons secondaires « Modifier la séance » (→ éditeur), « Modifier la date », « Supprimer la
+     séance » ; bouton texte « Fermer ». « Supprimer la séance » ouvre une confirmation en bottom
+     sheet : « Supprimer la séance ? » / « {séance} du {date} sera retirée de ton historique. » /
+     [Supprimer] (principal, en inverse, jamais rouge — DESIGN.md § 13) / [Annuler].
+5. **Sans séance terminée** : état vide « Aucune séance » / « Tes séances terminées s'afficheront
+   ici, semaine par semaine. » ; action « Démarrer une séance » (→ « Démarrer une séance », étape 1),
+   ou « Reprendre la séance » si une séance est en cours.
+
+**Modifier la date** : formulaire en bottom sheet (gabarit formulaire, DESIGN.md § 10.4) qui reprend
+la modale du § 2.2 : titre « Modifier la date », nom affiché dessous ; champs Jour / Mois / Année puis
+Heure : Min au clavier numérique du système (le champ en saisie en jaune), préremplis avec la date
+locale de la séance ; mêmes règles (heure ou minute vide → 12 h / 00 ; date impossible, § 10.3 →
+« Date ou heure invalide » et vibration d'erreur, la sheet reste ouverte) ; « Enregistrer »
+(principal) et « Annuler ». L'historique est retrié (§ 2.2).
+
+**Règles pures, testées en JVM** : regroupement par semaine (lundi, changement d'année, date
+illisible), libellé de semaine, résumé d'une séance (durée affichée seulement si > 0, volume des
+seules séries validées arrondi au kg, repli sur le nombre de séries), totaux.
+
+#### 15.8.5 Logo
+
+- **Dessin** : la variante « Deux disques » de la maquette `design/claude-design/T2-Logo.dc.html` (un grand et
+  un petit disque de chaque côté, la barre qui dépasse),
+  haltère **jaune `#FFC93D` sur graphite `#17181B`**, barres arrondies, dans le calque de 108 dp et
+  sa zone sûre de 66 dp.
+- **Icône adaptative** (`mipmap-anydpi/ic_launcher.xml`, aussi `roundIcon`) : fond = couleur
+  graphite ; avant-plan = l'haltère en vecteur ; **couche monochrome** = le même haltère, d'une seule
+  couleur, pour les icônes à thème (Android 13+). Les anciennes images de l'app Expo sont retirées.
+- **Écran de démarrage** (Android 12+) : fond au jeton `background` du thème choisi (`#0F1012` /
+  `#FFFFFF`, § 9.1) ; icône = l'avant-plan de l'icône posé sur un disque graphite
+  (`windowSplashScreenIconBackgroundColor`), pour que le jaune reste lisible sur le blanc. Avant
+  Android 12, pas d'icône (le fond seul, comme aujourd'hui) : pas de dépendance ajoutée.
+- **Petite icône des notifications** : l'haltère en silhouette blanche ; couleur d'accent graphite
+  `#17181B` (§ 7.1).
+- **Variante preview** (`com.musclenote.android.preview`, ressources du source set `preview`) : le
+  même logo avec une **marque jaune** — un bandeau jaune au bas de l'icône, sous l'haltère, dans
+  l'avant-plan et dans la couche monochrome, visible quel que soit le masque du lanceur (et donc sur
+  son écran de démarrage). La petite icône des notifications ne change pas.
+
+#### 15.8.6 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Modifier la date », Jour / Mois
+/ Année / Heure / Min, « Date ou heure invalide », « Mise à jour disponible », mode d'emploi du
+transfert, « {n} sem. », pluriels séances / séries / exercices).
+
+| clé | FR | EN |
+|---|---|---|
+| `tabs_journal` | Journal | Journal |
+| `common_see_all` | Tout voir | See all |
+| `mini_bar_rest` | repos | rest |
+| `mini_bar_resume` / `home_resume` | Reprendre | Resume |
+| `home_live_label` | En cours | In progress |
+| `home_rest_line` | Repos {{temps}} · {{exercice}}, série {{n}} | Rest {{time}} · {{exercise}}, set {{n}} |
+| `home_next_caption` | Prochaine séance | Next session |
+| `home_next_new` | Nouvelle séance | New session |
+| `home_next_new_detail` | Choisis ta séance à l'étape suivante | Pick your session in the next step |
+| `home_next_last_today` / `_yesterday` | Dernière fois aujourd'hui / hier | Last time today / yesterday |
+| `home_next_last_days` (pluriel) | Dernière fois il y a {{n}} jours | Last time {{n}} days ago |
+| `home_next_other` | Autre… | Other… |
+| `home_start` | Démarrer | Start |
+| `home_update_row` | MuscleNote {{version}} | MuscleNote {{version}} |
+| `home_update_installed` | Version installée : {{version}} | Installed version: {{version}} |
+| `home_update_later` | Plus tard | Later |
+| `home_migrate_section` | Depuis l'ancienne app | From the old app |
+| `home_hide` | Masquer | Hide |
+| `home_last_session` | Dernière séance | Last session |
+| `home_this_week` | Cette semaine | This week |
+| `home_week_sessions` (valeur / légende) | {{n}}/3 / séances | {{n}}/3 / sessions |
+| `home_streak_label` / `home_record_label` | série en cours / record | current streak / best |
+| `home_week_bars_caption` | 8 dernières semaines · 3 séances = semaine validée | Last 8 weeks · 3 sessions = week done |
+| `home_week_bars_description` | 8 dernières semaines : {{liste}}, puis {{n}} cette semaine | Last 8 weeks: {{list}}, then {{n}} this week |
+| `journal_title` | Journal | Journal |
+| `journal_all_time` | Depuis le début | All time |
+| `journal_stat_sessions` / `_volume` / `_gym_time` / `_average` | séances / volume / en salle / par séance | sessions / volume / at the gym / per session |
+| `journal_week_current` / `_previous` | Cette semaine / Semaine dernière | This week / Last week |
+| `journal_week_of` | Semaine du {{date}} | Week of {{date}} |
+| `journal_unknown_date` | Date inconnue | Unknown date |
+| `duration_minutes` / `_hours` / `_hours_minutes` | {{m}} min / {{h}} h / {{h}} h {{mm}} | {{m}} min / {{h}} h / {{h}} h {{mm}} min |
+| `session_volume_kg` | {{volume}} kg | {{volume}} kg |
+| `session_actions_edit` | Modifier la séance | Edit session |
+| `session_actions_delete` | Supprimer la séance | Delete session |
+| `session_delete_title` | Supprimer la séance ? | Delete this session? |
+| `session_delete_message` | {{séance}} du {{date}} sera retirée de ton historique. | {{session}} on {{date}} will be removed from your history. |
+| `session_long_press` | Options de la séance | Session options |
+| `journal_empty_title` | Aucune séance | No sessions yet |
+| `journal_empty_message` | Tes séances terminées s'afficheront ici, semaine par semaine. | Your finished sessions will show up here, week by week. |
+| `journal_empty_start` / `_resume` | Démarrer une séance / Reprendre la séance | Start a session / Resume the session |
