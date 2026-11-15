@@ -828,6 +828,10 @@ l'accueil (`Xt`), en tonnes au dixième dans Progrès.
   `taken[id] == aujourd'hui`.
   🔄 D15 — nettoyage : supprimer un complément supprime son entrée ; au chargement, on ne
   garde que les entrées dont le complément existe **et** dont la valeur est aujourd'hui.
+- 🔄 D41 — **historique des prises** (`Supplement.intakes`, § 15.15.4) : cocher « pris aujourd'hui »
+  enregistre aussi la prise du jour dans le complément (`{ jour: doses }`, une dose), la décocher la
+  retire ; **un seul enregistrement par complément et par jour**. « Pris aujourd'hui » se lit
+  toujours dans `taken`, inchangé ; l'historique sert à la sheet « Journée » (§ 15.15.2).
 - Le « jour courant » est un `StateFlow` recalculé à minuit (timer jusqu'au prochain minuit
   local) et à chaque retour au premier plan ; changement de fuseau
   (`ACTION_TIMEZONE_CHANGED`) → recalcul.
@@ -968,6 +972,7 @@ saisis/affichés, pas la présence des champs.
 | `unit` | string | req. | `g` `mg` `ml` `caps` `cp` `dose` `ui` |
 | `reminderEnabled` | boolean | req. | interrupteur global |
 | `reminders` | `Reminder[]` | req. | conservés même si désactivés |
+| `intakes` (🔄 D41) | objet | opt. | historique des prises : `{ "AAAA-MM-JJ": doses }`, un enregistrement par jour local, doses ≥ 1 ; omis s'il est vide (§ 15.15.4) |
 
 **`Reminder`** : `id` string req. ; `hour` 0–23 req. ; `minute` 0–59 req.
 (🔄 D7 — le champ Expo `notifId` est supprimé ; les alarmes sont identifiées par
@@ -1221,7 +1226,8 @@ ou racine non-objet → « Format invalide ».
 l'app Expo), on ajoute `history[aujourd'hui] = calorieGoal` (idem eau) ; historique
 d'objectif absent ou vide → `{ "0000-01-01": objectif courant }` ; entrées `taken` de
 compléments inconnus retirées. 🔄 D38 : `weighInReminder` des préférences lu selon le § 15.13.5
-(absent ou invalide → rappel désactivé à 07:30, tous les jours).
+(absent ou invalide → rappel désactivé à 07:30, tous les jours). 🔄 D41 : `intakes` d'un complément
+lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écartées).
 
 ### 5.4 Déroulé d'un import
 
@@ -1823,7 +1829,7 @@ l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progr�
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
 (§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
 de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
-de la maquette v2 (DESIGN.md, § 15.6).
+de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1867,6 +1873,7 @@ de la maquette v2 (DESIGN.md, § 15.6).
 | D38 | Pesée facultative et rappel de pesée | au début de séance, pesée facultative : champ vide avec la dernière pesée (valeur et ancienneté), « Passer » qui n'enregistre aucune pesée, champ masqué si une pesée existe déjà aujourd'hui ; les calculs prennent la dernière pesée connue, ou ne s'affichent pas ; section « Rappels » de Paramètres (rappels de Nutrition et rappel de pesée), raccourci depuis la courbe de poids de Progrès ; rappel de pesée désactivé par défaut, 7 h 30, jours de la semaine, rien si déjà pesé ce jour-là (Health Connect compris si l'app le lit), toucher → saisie de la pesée au pavé, reprogrammé après un redémarrage comme les rappels de Nutrition ; poids rendu facultatif sans migration destructive, anciennes données relues telles quelles | « pesé ce jour-là » = la règle du poids d'un jour de Progrès (pesée, sinon séance avec un poids, séance en cours comprise) ; Health Connect n'est pas lu (D29, aucune permission de lecture) ; aide « Dernière pesée : 78,4 kg, il y a 3 jours. », « Passer » = séance à `bodyWeight` 0, « Commencer » exige un poids ; déjà pesé → l'étape n'a plus de champ, la séance démarre sans poids ; poids d'une séance = le sien, sinon la dernière pesée connue à son jour, affiché dans l'en-tête de la séance et la surface « En cours », jamais recopié (Progrès, Health Connect, CSV, sauvegarde inchangés) ; « Rappels » entre « Préférences » et « Données » : rappel de pesée puis une ligne par complément (sa sheet de Nutrition) ; bouton `notifications` sur la surface « Poids de corps » ; réglage dans les préférences (sauvegardé), alarme exacte à la prochaine occurrence d'un jour coché (heure locale murale, changements d'heure), relecture à la sonnerie, canal `weigh-in`, toucher → Progrès et « Nouvelle pesée » ; `bodyWeight` toujours écrit et lu absent = 0, `weighInReminder` facultatif omis au défaut ; aucune version, migration ni permission nouvelle (§ 2.3, 3.14, 4.1, 5.3, 7.1, 7.3, 15.7.1, 15.8.2, 15.9.2, 15.10.3, 15.11.1, 15.13) |
 | D39 | Notification de mise à jour | une requête par jour, vers 18 h, à l'API publique des Releases GitHub (dernière Release non préversion), réseau requis, aucune donnée envoyée ; notification « Nouvelle version disponible » désactivée par défaut si Obtainium a installé l'app (source d'installation), activée sinon, modifiable dans les deux cas ; une seule fois par version, seule la dernière notifiée (versions intermédiaires sautées), la nouvelle remplace celle affichée ; titre et première ligne des notes, actions « Voir » (Obtainium s'il a installé l'app, sinon la page de la Release) et « Ignorer cette version » ; section « Rappels » de Paramètres renommée « Notifications » (rappel de pesée, compléments, nouvelle version) ; ligne « Version x · à jour / y disponible » avec « Vérifier maintenant », même notification coupée ; rien dans la variante preview | tâche WorkManager unique `update-check` à la prochaine 18 h locale, reprogrammée à chaque passage, contrainte réseau `CONNECTED` (`ACCESS_NETWORK_STATE` gardée), pas de nouvel essai avant le lendemain ; elle remplace la vérification au premier plan de D25 et ne tourne que si la notification est activée, quelle que soit la source d'installation (réglage coupé : aucune requête automatique, seul « Vérifier maintenant » contacte GitHub ; l'annonce de l'Accueil n'apparaît alors qu'après une vérification manuelle) ; tag `v1.0.n` → versionCode `1000 + n` (règle de `release.yml`) comparé au versionCode installé, autre forme de tag → nombres de la version (D25) ; réglage `notifyEnabled` et `notifiedVersion` dans `update_check.json` (propre à l'appareil, hors sauvegarde ; absent = défaut selon la source d'installation, relue à chaque démarrage) ; notifiée si plus récente que l'installée et que la dernière notifiée, et pas ignorée ; enregistrée comme notifiée seulement si elle a pu s'afficher ; canal `updates` (DEFAULT), un seul identifiant de notification ; titre « MuscleNote 1.0.43 disponible », texte = premier élément de liste des notes de version (§ 15.1) ; toucher = « Voir » ; « Ignorer cette version » = « Plus tard » de l'Accueil (même version masquée) ; notification retirée au démarrage d'une version au moins aussi récente ; « Notifications désactivées » rejoint la section « Notifications » ; « À propos » : « Version 1.0.42 · à jour », « Vérifier maintenant », « Télécharger la 1.0.43 » ou « Ouvrir Obtainium » ; `BuildConfig.UPDATE_NOTIFICATIONS` faux en preview ; aucun composant nouveau (§ 1, 3.17, 7.1, 15.8.2, 15.10.3, 15.13.3, 15.14) |
 | D40 | Listes groupées (maquette « v2 listes groupées » du 15/11/2026) | appliquer les groupes, les titres de section et les espacements de la maquette à Journal, Paramètres et Nutrition tels qu'ils sont, sans coder les fonctions qu'elle dessine en plus (calendrier du mois et objectif de séances du Journal, protéines, stock des compléments et moyenne sur 7 jours de Nutrition), notées comme maquettes disponibles ; couleurs v2 pour toute l'app | jetons v2 (en clair fond #F2F2F0 et groupes blancs, en sombre groupes #1A1B1F, ligne pressée dans un groupe, filets plus nets), barre d'onglets sur la surface des groupes sans filet ; sur les trois écrans, étiquettes en capitales et groupes tonaux (rayon 20, sans bordure), marges de 16, 8 entre étiquette et groupe, 32 entre groupes ; Accueil, Progrès, fiches, séance et résumé inchangés hors couleurs ; ni donnée, ni texte, ni comportement nouveau ; non repris : icônes, interrupteur et section « Connexions » de Paramètres, case ronde de Nutrition, filtre du Journal (DESIGN.md § 2, 9.1, 10.1, 12, 13 ; § 15.6, 15.8.4, 15.10.1, 15.10.3) |
+| D41 | Calendrier du Journal | en haut du Journal, le calendrier du mois de la maquette : semaine du lundi, flèches et glissement pour changer de mois, jour avec séance = rond plein, aujourd'hui = rond vide, résumé des séances du mois sous la grille ; toucher un jour ouvre une sheet « Journée » en listes groupées (séances → détail, pesée, compléments pris, calories et eau ; sections vides masquées ; jour sans rien = message court) ; historique des prises de compléments gardé désormais (date et nombre de doses par complément, champ facultatif, un enregistrement par complément et par jour, sans migration), affiché pour tous les jours à partir de cette version ; pas de réglage d'objectif : le Journal reprend la règle de la série de l'Accueil (validée à 3 séances), « 3/3 · validée » en vert, sinon gris, jamais rouge ; liste par semaine inchangée ; seules les données existantes ; chaque jour lu par TalkBack | composant `MonthCalendar` dans le groupe du héros du Journal (absent quand le Journal est vide), mois accessibles de la plus ancienne donnée au mois courant, 6 rangées réservées, rangées de 48 (cibles tactiles) ; jour d'une séance = jour local de son début (une séance commencée avant minuit reste sur la veille) ; `Supplement.intakes` `{ jour: doses }`, une dose par coche aujourd'hui, retirée en décochant, `taken` inchangé, ancien fichier relu avec un historique vide, une coche d'aujourd'hui antérieure à la mise à jour compte pour une dose ; poids du jour = règle de Progrès (pesée, sinon poids saisi au début d'une séance) ; sheet groupée (fond `background`, groupes `surfaceRaised`) ; compteur des semaines « n/3 » avec `WorkoutStats.VALIDATED_WEEK_SESSIONS` ; objectif réglable (Accueil et Journal ensemble) noté en piste (§ 3.6, 3.12, 4.1, 5.3, 15.6, 15.8.4, 15.15) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2187,6 +2194,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   JVM `GroupPositionTest`. Export de la maquette mis à jour (`design/claude-design/`). À vérifier
   **sur l'appareil** : thème clair (fond gris, groupes blancs, barre d'onglets), ligne pressée dans un
   groupe, défilement du Journal.
+- **Calendrier du Journal** (🔄 D41, § 15.15), branche `feat/calendrier` : spécifié, en cours
+  d'implémentation.
 
 ---
 
@@ -2361,7 +2370,10 @@ nouveau dans les préférences, sans changement de version du format. **Notifica
 d'une nouvelle version par une notification ; « Rappels » devient « Notifications » ; aucun composant
 nouveau, rien dans la sauvegarde. **Listes groupées** (🔄 D40) : la maquette « v2 listes groupées »
 appliquée à Journal, Paramètres et Nutrition (groupes, étiquettes, espacements) et ses couleurs à
-toute l'app ; un composant nouveau (`ListGroup`), aucune donnée ni fonction nouvelle.
+toute l'app ; un composant nouveau (`ListGroup`), aucune donnée ni fonction nouvelle. **Calendrier
+du Journal** (🔄 D41, § 15.15) : le mois en tête du Journal, une sheet « Journée » qui rassemble les
+données d'un jour, les semaines validées comme sur l'Accueil ; l'historique des prises de compléments
+s'ajoute au format (champ facultatif) ; un composant nouveau (`MonthCalendar`).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2735,22 +2747,26 @@ cours : elle revient au changement suivant de la séance ou du repos.
   autre app compterait alors comme « pesé ce jour-là » (§ 15.13.1) et ferait taire le rappel. Elle
   demanderait la permission `health.READ_WEIGHT` (D19, D29 : aujourd'hui aucune lecture) et de
   distinguer les poids écrits par MuscleNote : hors du périmètre actuel.
+- **Objectif de séances réglable** (🔄 D41) : choisir le nombre de séances qui valide une semaine
+  (aujourd'hui fixé à 3, § 3.6), pour l'**Accueil et le Journal ensemble** — série, record, carte
+  « Cette semaine », barres des 8 semaines et compteurs « n/3 » du Journal suivraient le même nombre.
+  Il demanderait un réglage sauvegardé et de décider si un changement d'objectif réécrit les séries
+  passées (record compris).
 
 **Maquettes disponibles** (🔄 D40) — la maquette Claude Design « v2 listes groupées » (15/11/2026,
 `design/claude-design/`) dessine des fonctions que l'app n'a pas ; elles ne sont pas codées et
 attendent leur propre sujet (décision, spécification, données) :
 
-- **Calendrier du mois** (`T2-Journal`) : en tête du Journal, le mois en grille du lundi au dimanche,
-  les jours avec une séance en pastille `inverse`, aujourd'hui cerclé, mois précédent / suivant ;
-  dessous « 6 séances en novembre » et les semaines validées.
-- **Objectif de séances par semaine** (`T2-Journal`) : « 3/3 · validée » à droite de chaque semaine
-  (en `up` une fois l'objectif atteint), à la place du simple compteur.
+- ~~Calendrier du mois~~ et ~~« 3/3 · validée »~~ (`T2-Journal`) : réalisés par 🔄 D41 (§ 15.15),
+  avec la règle fixe de 3 séances ; restent la mention « S45 et S46 validées » du résumé du mois et
+  l'objectif réglable (piste ci-dessus).
 - **Filtre du Journal par type de séance** (`T2-Journal`) : bouton `tune` dans la barre de titre.
 - **Protéines** (`T2-Nutrition`) : une ligne « Protéines · objectif 150 g » avec sa valeur et son
   bouton +, dans le groupe « Aujourd'hui » à côté de l'eau ; donnée et objectif nouveaux.
 - **Stock des compléments** (`T2-Nutrition`, `T2-Stock`) : les jours restants à droite de chaque
   complément (« 12 jours », en `down` quand il en reste peu), la saisie du stock en formulaire ;
-  lien « Gérer » sur l'étiquette « Compléments · 1 sur 3 pris ».
+  lien « Gérer » sur l'étiquette « Compléments · 1 sur 3 pris ». Plusieurs doses par jour
+  (« 2 doses · prise à 07:40 ») : l'historique des prises (🔄 D41) compte déjà les doses.
 - **Moyenne sur 7 jours** (`T2-Nutrition`) : groupe de stats « kcal par jour, eau, protéines », lien
   « Tendances » (courbes de Nutrition).
 - Les planches plus anciennes dessinent aussi **Mes records** (`T2-Records`) et les **mensurations**
@@ -3042,6 +3058,9 @@ séance » le remplace).
 
 > 🔄 D40 — **listes groupées** (DESIGN.md § 10.1) : « Depuis le début » est un groupe de stats sous
 > son étiquette, chaque semaine un groupe titré (compteur à droite) ; contenu et règles inchangés.
+>
+> 🔄 D41 — **calendrier du mois** en tête (§ 15.15.1), sheet « Journée » (§ 15.15.2) ; le compteur de
+> chaque semaine devient « 2/3 » ou « 3/3 · validée », la règle de la série de l'Accueil (§ 15.15.3).
 
 Nouvel onglet, gabarit **hub** en liste paresseuse (l'historique peut compter des centaines de
 séances) :
@@ -4372,3 +4391,158 @@ connexion ? », « Télécharger la {version} », « Notifications désactivées
 | `update_notif_body_default` | Une nouvelle version de MuscleNote est prête. | A new version of MuscleNote is ready. |
 | `update_notif_view` | Voir | View |
 | `update_notif_ignore` | Ignorer cette version | Skip this version |
+
+### 15.15 Calendrier du Journal (🔄 D41)
+
+En tête du Journal, le **mois en calendrier**, comme sur la maquette `T2-Journal` (planche « Listes
+groupées », DESIGN.md) : on voit d'un coup d'œil les jours d'entraînement, et toucher un jour ouvre
+une sheet **« Journée »** qui rassemble ce qui a été noté ce jour-là. Les semaines de la liste
+affichent « 3/3 · validée » selon la règle de la série de l'Accueil, pour que les deux écrans disent
+toujours la même chose. Le calendrier ne montre que des données existantes ; seul ajout au format :
+l'**historique des prises de compléments**, champ facultatif sans migration (§ 15.15.4). La liste par
+semaine (§ 15.8.4) reste sous le calendrier.
+
+#### 15.15.1 Calendrier du mois
+
+- **Place** : groupe du héros du Journal (gabarit hub groupé, DESIGN.md § 10.1), 8 sous la barre de
+  titre ; dessous, « Depuis le début » puis les semaines, inchangés. Sans séance terminée, le Journal
+  garde son état vide seul (pas de calendrier).
+- **En-tête** : le mois et l'année, « Novembre 2026 » (`November 2026`), puis les flèches « Mois
+  précédent » / « Mois suivant » (boutons icône, cibles 48), inactives au premier et au dernier mois.
+- **Changer de mois** : les flèches, ou un **glissement horizontal** sur la grille (mois suivant vers
+  la gauche, précédent vers la droite).
+- **Mois accessibles** : du mois de la **plus ancienne donnée** (séance terminée, pesée, calories ou
+  eau notées, prise de complément) au **mois courant** ; jamais un mois à venir. Le Journal s'ouvre
+  sur le mois courant ; le mois choisi est gardé tant que l'onglet reste ouvert.
+- **Jours de la semaine** : semaine **du lundi** au dimanche (ISO, comme le § 3.6), initiales de la
+  langue : « L M M J V S D » (`M T W T F S S`).
+- **Grille** : cases vides avant le 1er du mois (rien du mois voisin), 4 à 6 rangées selon le mois ;
+  la hauteur de 6 rangées est toujours réservée, pour que changer de mois ne fasse pas sauter la liste.
+- **Un jour** :
+  - au moins une **séance terminée** ce jour-là (jour local de son **début**, comme le § 15.8.4) →
+    **rond plein** (`inverse`), chiffre en `onInverse` 700 ;
+  - **aujourd'hui** → **rond vide** (anneau `textSecondary`), chiffre 700 ; aujourd'hui avec une
+    séance → rond plein entouré de l'anneau ;
+  - jours **à venir** → chiffre en `textSecondary`, inactifs ;
+  - autres jours → chiffre en `textPrimary`.
+  La séance en cours ne compte pas (elle n'est pas terminée).
+- **Résumé** sous la grille (filet `separator` au-dessus, légende en texte secondaire) : « 6 séances
+  en novembre », « 1 séance en novembre », « Aucune séance en novembre » — séances terminées du mois.
+- **Toucher** un jour passé ou aujourd'hui → sheet « Journée » (§ 15.15.2), même sans donnée.
+- **Accessibilité** : chaque jour est un bouton lu par TalkBack en toutes lettres, avec ses séances :
+  « jeudi 12 novembre, 2 séances », « samedi 14 novembre, aucune séance », « dimanche 15 novembre,
+  aujourd'hui, aucune séance » ; action « Voir la journée » ; jours à venir lus « à venir », inactifs.
+  Le mois est lu comme un titre ; les flèches font tout ce que fait le glissement. Texte agrandi :
+  le chiffre rétrécit pour tenir dans son rond, rien n'est coupé.
+
+#### 15.15.2 Sheet « Journée »
+
+- **Titre** : la date en toutes lettres, « Jeudi 12 novembre » (avec l'année si elle n'est pas
+  l'année en cours). Bottom sheet **en listes groupées** : fond `background`, groupes
+  `surfaceRaised`, étiquettes en capitales (DESIGN.md § 9.1). Lecture seule.
+- **Sections**, dans cet ordre, chacune **masquée si elle est vide** :
+  1. **« Séances »** — une ligne par séance terminée commencée ce jour-là (jour local), de la plus
+     ancienne à la plus récente : nom affiché (§ 3.1) ; sous-titre heure de début et durée, « 18:30 ·
+     1 h 12 » (durée omise si nulle) ; à droite le volume, comme dans le Journal (§ 15.8.4).
+     **Toucher → résumé** de la séance (§ 15.12) ; la sheet se ferme.
+  2. **« Poids »** — le poids de ce jour selon la règle de Progrès (§ 3.10, § 15.13.1) : la pesée du
+     jour, sous-titre « Pesée » ; sinon le poids saisi au début d'une séance de ce jour (la plus
+     récente avec un poids), sous-titre « Saisi au début de Push ».
+  3. **« Compléments pris »** — une ligne par complément pris ce jour-là d'après son **historique des
+     prises** (§ 15.15.4), dans l'ordre des compléments : nom ; sous-titre le dosage s'il est renseigné
+     et, à partir de deux doses, « 2 doses ». Les prises antérieures à cette version n'ont pas
+     d'historique : la section est alors masquée. Seule exception, **aujourd'hui** : un complément
+     coché « pris aujourd'hui » (`taken`, § 3.12) compte au moins pour une dose, même coché avant la
+     mise à jour. Un complément supprimé emporte son historique.
+  4. **« Calories et eau »** — « Calories » « 1 850 kcal », sous-titre « objectif 2 600 kcal » ;
+     « Eau » « 1,5 L », sous-titre « objectif 2,5 L » ; objectifs en vigueur **ce jour-là** (objectifs
+     datés, § 3.12). Une ligne seulement si sa valeur est supérieure à 0.
+- **Jour sans rien** : la phrase « Rien de noté ce jour-là. » à la place des sections.
+- En bas, bouton texte « Fermer » ; retour ou voile ferment aussi.
+
+#### 15.15.3 Semaines validées dans le Journal
+
+- **Pas de réglage** : le Journal reprend la règle de la série de l'Accueil (§ 3.6) — une semaine est
+  **validée à 3 séances** terminées (`WorkoutStats.VALIDATED_WEEK_SESSIONS`, partagé), pour que
+  l'Accueil et le Journal affichent toujours la même chose.
+- À droite de l'étiquette de chaque semaine, à la place de « 3 séances » :
+  - moins de 3 → « 2/3 », en **texte secondaire (gris)**, semaine en cours comprise ;
+  - 3 ou plus → « 3/3 · validée » (« 4/3 · validée »), en **`up` (vert)** ;
+  - **jamais rouge** : une semaine passée non validée reste grise ;
+  - la section « Date inconnue » garde son compteur « 2 séances ».
+  TalkBack : « 2 séances sur 3 », « 3 séances sur 3, semaine validée ».
+- Un objectif réglable (Accueil et Journal ensemble) est une piste (§ 15.6).
+
+#### 15.15.4 Format des données : historique des prises
+
+- **`Supplement.intakes`** (nouveau, facultatif) : objet `{ "AAAA-MM-JJ": doses }` — jour local de la
+  prise → nombre de doses (entier ≥ 1). **Un seul enregistrement par complément et par jour** : la
+  taille reste bornée (un complément pris chaque jour ajoute une quinzaine d'octets par jour, environ
+  5 ko par an). **Omis** quand il est vide.
+- **Écriture** : cocher « pris aujourd'hui » écrit `intakes[aujourd'hui] = 1` (l'app ne compte pas
+  encore plusieurs doses ; le nombre est prêt pour la piste du § 15.6) ; décocher retire
+  `intakes[aujourd'hui]`. `taken` (`supplements_taken.json`, § 3.12) est écrit comme avant et reste la
+  source de « pris aujourd'hui ».
+- **Lecture** (fichier `supplements.json` ou import, `@gymtracker_supplements` de la sauvegarde v2) :
+  absent ou pas un objet → historique vide ; entrées dont la clé n'est pas un jour valide (§ 10.3) ou
+  dont la valeur n'est pas un entier ≥ 1 → écartées. **Ancien fichier** sans `intakes` → relu tel
+  quel, historique vide. Ni nouvelle version, ni migration ; les versions précédentes ignorent le
+  champ (et le perdent si elles réécrivent le fichier).
+- Sauvegarde et export JSON v2 le portent avec le complément ; l'export CSV ne change pas.
+
+#### 15.15.5 Règles (pures, testées en JVM)
+
+- **Grille du mois** : mois commençant un lundi (aucune case vide), un dimanche (6 cases vides),
+  février de 28 jours commençant un lundi (4 rangées), février bissextile (29 jours), mois sur
+  6 rangées ; ordre des jours du lundi au dimanche.
+- **Mois accessibles** : de la plus ancienne donnée (séance, pesée, calories, eau, prise) au mois
+  courant ; sans donnée, le mois courant seul ; mois précédent / suivant aux bornes.
+- **Jours à séance et résumé du mois** : séances terminées seulement, jour local de leur début, 0, 1
+  ou n séances.
+- **Journée** : séances du jour local de début (séance commencée à 23:30 et finie après minuit → la
+  veille ; séance commencée à 00:15 heure locale, enregistrée la veille en UTC → ce jour-là), ordre ;
+  poids (pesée, sinon poids d'une séance, sinon rien) ; compléments pris d'après l'historique, jour
+  **sans prise**, coche d'aujourd'hui sans historique ; calories et eau avec l'objectif du jour ;
+  sections vides ; jour vide.
+- **Historique des prises** : cocher écrit une dose aujourd'hui, décocher la retire, recocher ne crée
+  pas de second enregistrement ; jours précédents conservés ; complément supprimé ; **ancien fichier
+  sans historique** relu tel quel ; lecture d'entrées invalides ; champ omis quand il est vide.
+- **Semaines** : 0, 2, 3 et 4 séances (« n/3 », validée à 3), semaine en cours, même règle que la série
+  de l'Accueil.
+
+#### 15.15.6 Design system
+
+- **Composant nouveau** `MonthCalendar` (DESIGN.md § 9.1) : en-tête du mois et ses flèches, initiales
+  des jours, grille de jours (rond plein, rond vide, à venir), résumé sous un filet ; glissement entre
+  les mois. Rangées de 48 (cibles tactiles ; 38 sur la maquette).
+- **Sheet groupée** : `SheetSurface` sur `background`, pour y poser des groupes `surfaceRaised`.
+- Le reste vient de l'existant : `ListGroup`, `ListRow`, `SectionHeader` groupé.
+
+#### 15.15.7 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; repris : « Fermer », « Calories », « Eau », les formats de durée, de
+volume, de poids et de litres, les noms de séance, le dosage des compléments.
+
+| clé | FR | EN |
+|---|---|---|
+| `journal_calendar_previous` / `_next` | Mois précédent / Mois suivant | Previous month / Next month |
+| `journal_calendar_month_sessions` (pluriel) | {{n}} séance en {{mois}} / {{n}} séances en {{mois}} | {{n}} workout in {{month}} / {{n}} workouts in {{month}} |
+| `journal_calendar_month_none` | Aucune séance en {{mois}} | No workouts in {{month}} |
+| `journal_calendar_day_sessions` (pluriel) | {{date}}, {{n}} séance / {{date}}, {{n}} séances | {{date}}, {{n}} workout / {{date}}, {{n}} workouts |
+| `journal_calendar_day_none` | {{date}}, aucune séance | {{date}}, no workout |
+| `journal_calendar_today` | aujourd'hui | today |
+| `journal_calendar_upcoming` | à venir | upcoming |
+| `journal_calendar_open_day` | Voir la journée | Open the day |
+| `journal_day_sessions` | Séances | Workouts |
+| `journal_day_weight` | Poids | Weight |
+| `journal_day_weigh_in` | Pesée | Weigh-in |
+| `journal_day_weight_from_session` | Saisi au début de {{séance}} | Entered when starting {{workout}} |
+| `journal_day_supplements` | Compléments pris | Supplements taken |
+| `journal_day_doses` (pluriel) | {{n}} dose / {{n}} doses | {{n}} dose / {{n}} doses |
+| `journal_day_nutrition` | Calories et eau | Calories and water |
+| `journal_day_goal` | objectif {{valeur}} | goal {{value}} |
+| `journal_day_empty` | Rien de noté ce jour-là. | Nothing logged that day. |
+| `journal_week_count` | {{n}}/{{objectif}} | {{n}}/{{goal}} |
+| `journal_week_validated` | {{n}}/{{objectif}} · validée | {{n}}/{{goal}} · done |
+| `journal_week_count_description` | {{n}} séances sur {{objectif}} | {{n}} workouts out of {{goal}} |
+| `journal_week_validated_description` | {{n}} séances sur {{objectif}}, semaine validée | {{n}} workouts out of {{goal}}, week done |
