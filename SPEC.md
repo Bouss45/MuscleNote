@@ -1938,7 +1938,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 513 tests JVM (42 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 620 tests JVM (48 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2225,7 +2225,28 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   mois dans la liste, ouverture de la sheet et passage au résumé, TalkBack sur les jours, coche d'un
   complément puis sa journée.
 - **Protéines, stock des compléments et moyenne sur 7 jours** (🔄 D42, § 15.16), branche
-  `feat/proteines-stock` : spécifié, en cours d'implémentation.
+  `feat/proteines-stock` : modèle `ProteinGoal` / `ProteinGoalMode`, `DailyTracker.proteinLog` /
+  `proteinGoal`, `Supplement.dosesPerDay` / `stock` (`SupplementStock`) / `lowStockDays` (facultatifs,
+  omis au défaut, lus par `BackupNormalizer`) ; règles pures `data/nutrition/ProteinRules.kt` (objectif
+  par kg exact, valeur fixe, dernière pesée connue, formulaire), `data/nutrition/StockRules.kt` (stock
+  restant, rachat, jours restants, stock bas, doses par jour), `NutritionRules` (protéines du jour,
+  `recordIntake(doses)`, `weekAverages`, formats du pavé) ; `NutritionRepository` (protéines, objectif,
+  stock et doses sans resynchroniser les alarmes) ; `CalendarRules.DayJournal.proteinGrams`. Écran
+  `ui/nutrition/NutritionScreen.kt` (groupe « Aujourd'hui » de la maquette, jours de stock, moyenne
+  sur 7 jours) et `NutritionSheets.kt` (`MeasureSheet` : saisie, détail, objectif ; objectif de
+  protéines ; sheet d'un complément par étapes : doses par jour, stock, « Ajouter du stock », stock
+  bas) ; sheet « Journée » (`ui/journal/DaySheet.kt`, section « Nutrition »). Design system :
+  `StudioIconButton(filled)`, `ListRowTrailing.ValueAction`, valeur avant la case de
+  `ListRowTrailing.Check`, `DailySurface` redessinée, `highlightedHelp`. Tests JVM `ProteinRulesTest`,
+  `SupplementStockTest`, `NutritionAveragesTest`, `BackupV2Test`, `CalendarRulesTest`,
+  `NutritionRepositoryTest`. Aperçus : onglet Nutrition (stocks et protéines dans `PreviewData`),
+  groupe « Aujourd'hui », saisie et objectif des protéines (avec et sans pesée), détail de l'eau et des
+  protéines, sheet d'un complément (stock suivi, stock bas, non suivi), « Ajouter du stock »,
+  « Stock », `IconButtonFilledPreview`, `ListRowCheckPreview`, `DailySurfacePreview`. À vérifier **sur
+  l'appareil** : boutons + et toucher des lignes Eau et Protéines, retour entre détail, saisie et
+  objectif, coche d'un complément à 2 doses par jour puis son stock, « Racheté » et le seuil ouvert
+  depuis lui, TalkBack sur les jours de stock et sur « 1 sur 3 pris », texte agrandi dans le groupe
+  « Aujourd'hui ».
 
 ---
 
@@ -4619,8 +4640,8 @@ Ordre du hub Nutrition (§ 15.10.1) : barre ; groupe du héros « Aujourd'hui »
 - **Objectif** (réglage `proteinGoal`), deux modes :
   - **par kg de poids** (par défaut) : facteur de **1,2 à 2,2 g par kg**, au dixième, **1,6** par
     défaut ; objectif = poids × facteur, **arrondi au gramme** (demi vers le haut : 82,5 kg × 1,8 =
-    148,5 → 149 g ; 78,4 kg × 1,6 = 125,44 → 125 g), calculé exactement au centième (poids au dixième
-    × facteur au dixième), sans erreur d'arrondi ;
+    148,5 → 149 g ; 78,4 kg × 1,6 = 125,44 → 125 g), calculé exactement (poids au centième × facteur
+    au dixième, en millièmes de gramme entiers), sans erreur d'arrondi ;
   - **valeur fixe** : grammes entiers > 0, saisis au pavé.
 - **Poids utilisé** : la **dernière pesée connue** aujourd'hui (§ 15.13.1) — la pesée manuelle, sinon
   le poids saisi au début d'une séance (séance en cours comprise), le jour le plus récent l'emportant.
@@ -4848,7 +4869,9 @@ aperçus :
   un stock bas), avec sa description TalkBack ;
 - **`DailySurface`** redessinée comme la maquette : légende et bouton + plein, chiffre héros, état,
   piste, puis des lignes (`ListRow` en disposition de groupe) après un filet en retrait ; plus de
-  rangée de stats ni de paire de boutons.
+  rangée de stats ni de paire de boutons ;
+- **`highlightedHelp`** : la phrase d'aide d'un formulaire dont la donnée clé prend sa couleur
+  (« soit **4 jours** » en `down`, DESIGN.md § 10.4), à côté de `statusHelp`.
 - Le reste : `ListRow` (valeur colorée `valueTrend`), `ListGroup` + `StatRow`, `SectionHeader` groupé
   (mention à droite), `FormSheetTemplate`, `FormHeroField`, `InfoRow`, `FilterChip`, `NumericKeypad`,
   `SheetSurface`, `StudioButton`.
@@ -4905,6 +4928,7 @@ les formats de kcal, ml et litres. Devenues inutiles et retirées : `nutrition_w
 | `nutrition_restocked` | Racheté | Restocked |
 | `nutrition_restock_title` | Ajouter du stock | Add stock |
 | `nutrition_restock_help` | {{nom}} · il reste {{doses}}, soit {{jours}}. | {{name}} · {{doses}} left, that's {{days}}. |
+| `nutrition_restock_help_doses` (sans doses par jour valables) | {{nom}} · il reste {{doses}}. | {{name}} · {{doses}} left. |
 | `nutrition_restock_unit` | doses ajoutées | doses added |
 | `nutrition_new_stock` | Nouveau stock | New stock |
 | `journal_day_nutrition` (modifiée) | Nutrition | Nutrition |
