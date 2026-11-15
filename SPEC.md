@@ -51,8 +51,11 @@
   **pas de publication Play Store**.
 - **Hors ligne** : aucun compte, aucune donnée d'entraînement envoyée. **Deux accès réseau
   seulement** :
-  - la vérification des mises à jour (🔄 D25, § 3.17), au plus une fois par jour et seulement
-    si l'app n'est pas installée par Obtainium ; aucune donnée de l'app envoyée ;
+  - la vérification des mises à jour (🔄 D25, D39, § 3.17, § 15.14) : une requête `GET` à l'API
+    publique des Releases GitHub (dernière Release, ni brouillon ni préversion), **aucune donnée
+    de l'app envoyée** ; automatiquement **une fois par jour, vers 18 h, en arrière-plan**,
+    seulement si la notification « Nouvelle version disponible » est activée (quelle que soit la
+    source d'installation), et à chaque « Vérifier maintenant » de Paramètres ;
   - l'envoi d'un avis (🔄 D26, § 14), **uniquement quand l'utilisateur appuie sur
     « Envoyer »** : le type, le message, le pseudo facultatif et les quatre informations
     techniques affichées sous le formulaire. C'est le seul envoi de données de l'app.
@@ -91,19 +94,22 @@
   | `RECEIVE_BOOT_COMPLETED` | reprogrammer les rappels après redémarrage ; WorkManager s'en sert aussi pour la sauvegarde automatique (🔄 D28) |
   | `VIBRATE` | vibration de fin de repos depuis le récepteur d'alarme |
   | `POST_PROMOTED_NOTIFICATIONS` (🔄 D31) | proposer la notification « Séance en cours » en Live Update (Android 16+, § 15.5) ; permission normale, sans demande, que l'utilisateur peut couper dans les réglages de notification de l'app |
-  | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
+  | `INTERNET` (🔄 D25, D26) | vérification des mises à jour (§ 3.17, § 15.14) et envoi d'un avis à la demande de l'utilisateur (§ 14), rien d'autre |
+  | `ACCESS_NETWORK_STATE` (🔄 D39) | ajoutée par WorkManager, gardée depuis D39 : la vérification quotidienne des mises à jour attend le réseau (contrainte `CONNECTED`, § 15.14.2) ; permission normale, sans demande, qui ne donne accès à aucun contenu |
   | `WAKE_LOCK` (🔄 D28) | ajoutée par WorkManager : exécution de la sauvegarde automatique (§ 15.2) ; permission normale, sans demande |
   | `health.WRITE_EXERCISE` (🔄 D29) | écrire les séances dans Health Connect (§ 15.3) ; accordée dans l'écran de Health Connect, quand l'utilisateur active l'option |
   | `health.WRITE_WEIGHT` (🔄 D29) | écrire le poids (un par jour : la pesée, sinon celui de la séance) dans Health Connect (§ 15.3) ; idem |
   Aucune permission de stockage (fichiers via le sélecteur système, le dossier de la sauvegarde
   automatique avec une autorisation persistante, et `FileProvider`), de localisation ni de
-  caméra ; aucune permission de **lecture** Health Connect. `ACCESS_NETWORK_STATE` et
-  `FOREGROUND_SERVICE`, déclarées par WorkManager, sont retirées du manifeste fusionné (§ 15.2).
+  caméra ; aucune permission de **lecture** Health Connect. `FOREGROUND_SERVICE`, déclarée par
+  WorkManager, est retirée du manifeste fusionné (§ 15.2) ; `ACCESS_NETWORK_STATE` l'était aussi
+  jusqu'à D39.
 - Quatre domaines fonctionnels :
   1. **Séances** (démarrer, saisir et valider les séries, terminer, éditer l'historique) ;
   2. **Progrès** (graphiques poids de corps, calories, eau, par groupe musculaire) ;
   3. **Nutrition** (calories et eau du jour, compléments + rappels) ;
-  4. **Paramètres** (langue, thème, minuteur, rappels — 🔄 D38 —, sauvegarde/restauration JSON,
+  4. **Paramètres** (langue, thème, minuteur, notifications — rappels, 🔄 D38, et nouvelle version,
+     🔄 D39 —, sauvegarde/restauration JSON,
      sauvegarde automatique, export CSV, Health Connect, mises à jour, rapport de plantage, envoi d'un
      avis).
 
@@ -867,6 +873,14 @@ marquées validées (§ 5.3), pour que leurs statistiques ne changent pas.
 
 ### 3.17 Vérification des mises à jour (🔄 D25)
 
+> 🔄 D39 — **complété par le § 15.14** (notification de mise à jour) : la vérification
+> automatique n'a plus lieu au retour au premier plan mais **une fois par jour vers 18 h, en
+> arrière-plan, réseau requis**, et **seulement si la notification « Nouvelle version
+> disponible » est activée**, quelle que soit la source d'installation (réglage coupé : aucune
+> requête automatique) ; « Vérifier maintenant » marche dans tous les cas. La comparaison
+> passe par le `versionCode` (tag `v1.0.n` → `1000 + n`). Requête, lecture de la réponse,
+> enregistrement et installation ci-dessous restent valables.
+
 - **Active seulement sans gestionnaire de mises à jour** : désactivée si l'app a été installée
   (ou sa dernière mise à jour faite) par Obtainium (`dev.imranr.obtainium`,
   `dev.imranr.obtainium.fdroid`) ou au nom du Play Store (`com.android.vending`, nom
@@ -1372,6 +1386,7 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
 | `rest-timer` | Timer de repos | Rest timer | HIGH | défaut | `[0, 250, 250, 250]` ms | public |
 | `supplements` | Rappels suppléments | Supplement reminders | HIGH | défaut | `[0, 250, 250, 250]` ms | privé |
 | `weigh-in` (🔄 D38) | Rappel de pesée | Weigh-in reminder | HIGH | défaut | `[0, 250, 250, 250]` ms | privé |
+| `updates` (🔄 D39) | Mises à jour | Updates | DEFAULT | défaut | non | public |
 
 - 🔄 D31 : le canal `rest-timer-ongoing` (« Repos en cours », 🔄 D6) des versions jusqu'à la
   v1.0.6 est **supprimé** au démarrage ; la notification « Séance en cours » (§ 15.5) le remplace.
@@ -1807,7 +1822,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
 (§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
-de pesée (§ 15.13).
+de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1829,13 +1844,13 @@ de pesée (§ 15.13).
 | D16 | `muscleGroup` inconnu à l'import | ranger dans un groupe | normalisation puis groupe `dos` par défaut (§ 5.3) |
 | D17 | Écran d'erreur fatale | rapport de crash local | § 10.9, § 2.12 |
 | D18 | Format d'export JSON | au plus scalable | `version: 2` + chaîne de migrations, v1 toujours importée, v2 lisible par l'app Expo (§ 5.1) |
-| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur ; `WAKE_LOCK` avec D28 (WorkManager, dont `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE` sont retirées) ; `health.WRITE_EXERCISE` et `health.WRITE_WEIGHT` avec D29, accordées dans Health Connect quand l'utilisateur active l'option, aucune permission de lecture ; `POST_PROMOTED_NOTIFICATIONS` avec D31 (Live Update, sans demande) |
+| D19 | Permissions | ne demander que les permissions utiles | liste fermée (§ 1) ; `INTERNET` y est entrée avec D25 (mises à jour) et sert aussi à D26 (avis), seul envoi de données, toujours déclenché par l'utilisateur ; `WAKE_LOCK` avec D28 (WorkManager, dont `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE` sont retirées) ; `ACCESS_NETWORK_STATE` rendue avec D39 (vérification quotidienne qui attend le réseau) ; `health.WRITE_EXERCISE` et `health.WRITE_WEIGHT` avec D29, accordées dans Health Connect quand l'utilisateur active l'option, aucune permission de lecture ; `POST_PROMOTED_NOTIFICATIONS` avec D31 (Live Update, sans demande) |
 | D20 | Ergonomie de saisie | au plus utile | enregistrement à chaque frappe gardé, 0 affiché vide partout, IME « Suivant » (§ 2.6) |
 | D21 | Anciennes séries non cochées | toutes marquées validées à la migration | migration v1 → v2 : `completed = true` pour toutes les séries des séances terminées ; les statistiques passées ne changent pas (§ 3.16, 5.3) |
 | D22 | Nom affiché pendant la transition | « MuscleNote » suivi d'un « 2 » | nom de transition distinct de l'app Expo, cible du partage au § 5.5 ; retiré à la bascule : `app_name` = « MuscleNote » (FR et EN) (§ 1, 9.5) |
 | D23 | Contraste des couleurs de groupe en thème clair | texte foncé en thème clair | texte et icônes en nuance foncée (contraste ≥ 4,5:1) en thème clair : groupes, ambre du minuteur, top 3 ; fonds, bordures, courbes et thème sombre inchangés (§ 6.2, 9.1) |
 | D24 | Libellé EN de `legsSplit` (« Legs » en double) | « Legs (split) » | libellé anglais « Legs (split) » ; anciennes séances « Legs » toujours rattachées à `legs` (§ 5.3, 6.3) |
-| D25 | Mises à jour d'une app installée sans Obtainium | vérification intégrée | requête quotidienne à l'API GitHub, permission `INTERNET`, annonce sur l'Accueil et carte dans Paramètres ; désactivée quand Obtainium installe l'app (§ 1, 2.2, 2.12, 3.17) |
+| D25 | Mises à jour d'une app installée sans Obtainium | vérification intégrée | requête quotidienne à l'API GitHub, permission `INTERNET`, annonce sur l'Accueil et carte dans Paramètres ; désactivée quand Obtainium installe l'app (§ 1, 2.2, 2.12, 3.17) ; complétée par D39 (vérification quotidienne vers 18 h seulement si la notification est activée, avec ou sans Obtainium) |
 | D26 | Retours des utilisateurs | envoyer un avis depuis l'app vers le serveur Discord du développeur | section « Ton avis » dans Paramètres ; webhook Discord dont l'URL vient d'un secret GitHub injecté au build (section masquée sans elle) ; envoi seulement sur appui, aucune donnée d'entraînement, aucune mention possible, un envoi par minute (§ 1, 2.12, 14) |
 | D27 | Notes de version | lister les commits depuis la Release précédente | titres des commits depuis le tag de la dernière Release, sans fusions ni commits qui ne touchent que la doc ou la CI, calculés par un module JVM testé ; titres de commit en français, écrits pour l'utilisateur ; vérification des pull requests (§ 15.1) |
 | D28 | Sauvegarde automatique | export JSON quotidien dans un dossier choisi | WorkManager toutes les 24 h, dossier du sélecteur système avec autorisation persistante, même nom que l'export manuel (remplacé le même jour), 14 fichiers gardés, « Sauvegarder maintenant », message si le dossier est inaccessible (§ 1, 2.12, 15.2) |
@@ -1849,6 +1864,7 @@ de pesée (§ 15.13).
 | D36 | Refonte « Studio épuré », étape 5b : finitions avant la fusion | plus aucune couleur, taille ou police en dur hors du design system, ancien thème et icônes inutiles retirés ; contrastes en sombre et en clair, texte à 200 % sans rien de coupé, TalkBack ; mise à jour depuis la v1.0 sans perte | « Démarrer une séance » en formulaire (bottom sheet : type puis poids au pavé), sélecteur d'exercices en bottom sheet (lignes à cocher, appui long pour un exercice perso), éditeur de séance au gabarit fiche (type et poids en lignes, séries au pavé, « Enregistrer » en bas) ; `ui/theme/`, Inter et les polices téléchargeables, couleurs de groupe, 52 icônes retirés ; aplat `live` en clair `#9E7100` ; composants qui grandissent avec le texte, chiffres qui rétrécissent, cibles de 48 dp, libellés TalkBack des séries ; notes de version sans les commits qui ne touchent que les tests ; aucun changement du format JSON (§ 2.3, 2.7, 2.9, 15.1, 15.11) |
 | D37 | Résumé de fin de séance | affiché après « Terminer la séance » (gabarit fiche) et consultable ensuite depuis le Journal ; chiffre héros = volume total, variation par rapport à la dernière séance du même programme (verte, rouge ou grise, rien la première fois) ; durée, nombre de séries, puis chaque exercice avec sa meilleure série et un repère si un record est battu (charge ou 1RM estimé, règles de records existantes) ; un seul bouton « Terminer », qui ramène à l'Accueil ; aucun changement du format JSON, tout est calculé | résumé à la place de la séance en cours dans la pile (au-dessus de l'Accueil), notification de séance retirée comme avant ; toucher une séance du Journal ou la « Dernière séance » de l'Accueil ouvre son résumé (l'éditeur reste dans l'appui long et dans ⋮) ; même programme = même clé de séance (§ 3.1), parmi les séances plus anciennes ; variation au kg ; records = record personnel (métrique de la fiche exercice : charge, reps au poids du corps, durée en cardio) et 1RM estimé, strictement supérieurs à ceux des séances plus anciennes — égalité ou première fois : pas de record ; « Records battus · n » en vert en tête de la liste (§ 3.3, 15.7.1, 15.8.1, 15.8.4, 15.12) |
 | D38 | Pesée facultative et rappel de pesée | au début de séance, pesée facultative : champ vide avec la dernière pesée (valeur et ancienneté), « Passer » qui n'enregistre aucune pesée, champ masqué si une pesée existe déjà aujourd'hui ; les calculs prennent la dernière pesée connue, ou ne s'affichent pas ; section « Rappels » de Paramètres (rappels de Nutrition et rappel de pesée), raccourci depuis la courbe de poids de Progrès ; rappel de pesée désactivé par défaut, 7 h 30, jours de la semaine, rien si déjà pesé ce jour-là (Health Connect compris si l'app le lit), toucher → saisie de la pesée au pavé, reprogrammé après un redémarrage comme les rappels de Nutrition ; poids rendu facultatif sans migration destructive, anciennes données relues telles quelles | « pesé ce jour-là » = la règle du poids d'un jour de Progrès (pesée, sinon séance avec un poids, séance en cours comprise) ; Health Connect n'est pas lu (D29, aucune permission de lecture) ; aide « Dernière pesée : 78,4 kg, il y a 3 jours. », « Passer » = séance à `bodyWeight` 0, « Commencer » exige un poids ; déjà pesé → l'étape n'a plus de champ, la séance démarre sans poids ; poids d'une séance = le sien, sinon la dernière pesée connue à son jour, affiché dans l'en-tête de la séance et la surface « En cours », jamais recopié (Progrès, Health Connect, CSV, sauvegarde inchangés) ; « Rappels » entre « Préférences » et « Données » : rappel de pesée puis une ligne par complément (sa sheet de Nutrition) ; bouton `notifications` sur la surface « Poids de corps » ; réglage dans les préférences (sauvegardé), alarme exacte à la prochaine occurrence d'un jour coché (heure locale murale, changements d'heure), relecture à la sonnerie, canal `weigh-in`, toucher → Progrès et « Nouvelle pesée » ; `bodyWeight` toujours écrit et lu absent = 0, `weighInReminder` facultatif omis au défaut ; aucune version, migration ni permission nouvelle (§ 2.3, 3.14, 4.1, 5.3, 7.1, 7.3, 15.7.1, 15.8.2, 15.9.2, 15.10.3, 15.11.1, 15.13) |
+| D39 | Notification de mise à jour | une requête par jour, vers 18 h, à l'API publique des Releases GitHub (dernière Release non préversion), réseau requis, aucune donnée envoyée ; notification « Nouvelle version disponible » désactivée par défaut si Obtainium a installé l'app (source d'installation), activée sinon, modifiable dans les deux cas ; une seule fois par version, seule la dernière notifiée (versions intermédiaires sautées), la nouvelle remplace celle affichée ; titre et première ligne des notes, actions « Voir » (Obtainium s'il a installé l'app, sinon la page de la Release) et « Ignorer cette version » ; section « Rappels » de Paramètres renommée « Notifications » (rappel de pesée, compléments, nouvelle version) ; ligne « Version x · à jour / y disponible » avec « Vérifier maintenant », même notification coupée ; rien dans la variante preview | tâche WorkManager unique `update-check` à la prochaine 18 h locale, reprogrammée à chaque passage, contrainte réseau `CONNECTED` (`ACCESS_NETWORK_STATE` gardée), pas de nouvel essai avant le lendemain ; elle remplace la vérification au premier plan de D25 et ne tourne que si la notification est activée, quelle que soit la source d'installation (réglage coupé : aucune requête automatique, seul « Vérifier maintenant » contacte GitHub ; l'annonce de l'Accueil n'apparaît alors qu'après une vérification manuelle) ; tag `v1.0.n` → versionCode `1000 + n` (règle de `release.yml`) comparé au versionCode installé, autre forme de tag → nombres de la version (D25) ; réglage `notifyEnabled` et `notifiedVersion` dans `update_check.json` (propre à l'appareil, hors sauvegarde ; absent = défaut selon la source d'installation, relue à chaque démarrage) ; notifiée si plus récente que l'installée et que la dernière notifiée, et pas ignorée ; enregistrée comme notifiée seulement si elle a pu s'afficher ; canal `updates` (DEFAULT), un seul identifiant de notification ; titre « MuscleNote 1.0.43 disponible », texte = premier élément de liste des notes de version (§ 15.1) ; toucher = « Voir » ; « Ignorer cette version » = « Plus tard » de l'Accueil (même version masquée) ; notification retirée au démarrage d'une version au moins aussi récente ; « Notifications désactivées » rejoint la section « Notifications » ; « À propos » : « Version 1.0.42 · à jour », « Vérifier maintenant », « Télécharger la 1.0.43 » ou « Ouvrir Obtainium » ; `BuildConfig.UPDATE_NOTIFICATIONS` faux en preview ; aucun composant nouveau (§ 1, 3.17, 7.1, 15.8.2, 15.10.3, 15.13.3, 15.14) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2134,6 +2150,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   `ReminderScheduleTest`, `CsvExportTest`, `HealthRecordsTest`, `BackupV2Test`, `RepositoryLoadTest`. À vérifier **sur l'appareil** : sonnerie du rappel, toucher →
   « Nouvelle pesée », silence un jour déjà pesé, reprogrammation après un redémarrage, « Passer » et
   l'étape sans champ.
+- **Notification de mise à jour** (🔄 D39, § 15.14), branche `feat/notif-maj` : spécifiée, en cours
+  d'implémentation.
 
 ---
 
@@ -2142,7 +2160,9 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
 🔄 D26. Un formulaire de Paramètres envoie une idée, un bug ou une remarque sur le serveur
 Discord du développeur, par un webhook. C'est le **seul envoi de données** de l'app, et il n'a
 lieu que lorsque l'utilisateur appuie sur « Envoyer » : pas d'envoi automatique, pas de file
-d'attente, pas de nouvel essai en arrière-plan.
+d'attente, pas de nouvel essai en arrière-plan. L'autre accès réseau de l'app, la vérification des
+mises à jour (§ 3.17, 🔄 D39 § 15.14), lit la dernière Release sur l'API publique de GitHub, une fois
+par jour en arrière-plan ou sur « Vérifier maintenant », **sans rien envoyer** de l'app.
 
 ### 14.1 Formulaire (Paramètres, ligne « Envoyer un avis »)
 
@@ -2301,7 +2321,10 @@ finitions — ancien thème retiré, accessibilité, mise à jour vérifiée (�
 fin de séance** (🔄 D37, § 15.12) : la première nouveauté après la refonte, calculée sur les séances
 existantes, sans donnée nouvelle ni composant nouveau. **Pesée facultative et rappel de pesée**
 (🔄 D38, § 15.13) : « Passer » au début de séance, section « Rappels » de Paramètres, un réglage
-nouveau dans les préférences, sans changement de version du format.
+nouveau dans les préférences, sans changement de version du format. **Notification de mise à jour**
+(🔄 D39, § 15.14) : la vérification des mises à jour passe en tâche quotidienne vers 18 h et prévient
+d'une nouvelle version par une notification ; « Rappels » devient « Notifications » ; aucun composant
+nouveau, rien dans la sauvegarde.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2410,8 +2433,9 @@ l'échec.
 **Permissions** : WorkManager ajoute au manifeste fusionné `WAKE_LOCK`, `RECEIVE_BOOT_COMPLETED`
 (déjà déclarée), `ACCESS_NETWORK_STATE` et `FOREGROUND_SERVICE`. Les deux dernières sont
 **retirées** (`tools:node="remove"`) : la tâche n'a ni contrainte réseau ni travail au premier
-plan. `WAKE_LOCK` (permission normale, accordée à l'installation) reste, WorkManager peut s'en
-servir pour exécuter la tâche.
+plan. 🔄 D39 : `ACCESS_NETWORK_STATE` est rendue pour la vérification quotidienne des mises à jour,
+qui attend le réseau (§ 15.14.2) ; `FOREGROUND_SERVICE` reste retirée. `WAKE_LOCK` (permission
+normale, accordée à l'installation) reste, WorkManager peut s'en servir pour exécuter la tâche.
 
 ### 15.3 Health Connect (🔄 D29, D30)
 
@@ -2917,7 +2941,11 @@ Remplace le § 2.2. Gabarit **hub** (DESIGN.md § 10.1), de haut en bas :
    1. **« Mise à jour disponible »** (🔄 D25, mêmes conditions qu'au § 2.2) : une ligne « MuscleNote
       {version} » / « Version installée : {installée} » avec chevron → téléchargement (APK dans le
       navigateur, sinon page de la Release) ; bouton texte « Plus tard », qui masque l'annonce
-      jusqu'à la version suivante.
+      jusqu'à la version suivante. 🔄 D39 : « Plus tard » et « Ignorer cette version » de la
+      notification masquent la même version (l'un fait aussi l'autre, § 15.14.4) ; la version
+      connue vient de la vérification quotidienne, qui ne tourne que si la notification « Nouvelle
+      version disponible » est activée, ou de « Vérifier maintenant » (§ 15.14.2) : réglage coupé,
+      l'annonce n'apparaît qu'après une vérification manuelle.
    2. **« Depuis l'ancienne app »** (🔄 D4/D5, mêmes conditions : aucune séance terminée ni en cours,
       carte non masquée) : « Tu viens de l'ancienne MuscleNote ? » et le mode d'emploi (§ 5.5) en
       paragraphe ; bouton texte « Masquer » (préférence locale, comme avant).
@@ -3454,9 +3482,11 @@ bottom sheet, ou lance l'action. De haut en bas :
      du repos entre les séries », puces de filtre 1 min … 5 min (§ 2.12) ; appliqué, sheet fermée ;
    - **Notifications désactivées** (seulement si `POST_NOTIFICATIONS` est refusée ou les
      notifications de l'app coupées, revérifié au retour sur l'écran, 🔄 D6) — sous-titre
-     « Minuteur et rappels silencieux », chevron → réglages de notification de l'app.
+     « Minuteur et rappels silencieux », chevron → réglages de notification de l'app. 🔄 D39 :
+     la ligne passe en tête de la section « Notifications » (§ 15.14.5).
 4. **Section « Rappels »** (🔄 D38, § 15.13.3) : « Rappel de pesée » → sheet du rappel, puis une ligne
-   par complément → sa sheet de Nutrition (§ 15.10.2).
+   par complément → sa sheet de Nutrition (§ 15.10.2). 🔄 D39 : renommée **« Notifications »**, elle
+   gagne la ligne « Nouvelle version disponible » (§ 15.14.5).
 5. **Section « Données »** :
    - **Sauvegarde automatique** (🔄 D28, § 15.2) — valeur « Activée » / « Désactivée » ; sous-titre :
      « Dernière le 14 nov. 2026, 08:12 », « Aucune sauvegarde pour l'instant », « Dossier
@@ -3485,7 +3515,9 @@ bottom sheet, ou lance l'action. De haut en bas :
      datée ; bouton principal « Envoyer l'historique » (« Envoi… » pendant l'envoi) et son résultat
      en phrase. La section « SANTÉ » disparaît : la ligne rejoint « Données ».
 6. **Section « À propos »** (remplace « APPLICATION » et « TON AVIS ») :
-   - **Mises à jour** (🔄 D25, § 3.17) — valeur = version installée ; sous-titre « Gérées par
+   - **Mises à jour** (🔄 D25, § 3.17 ; 🔄 D39 : **remplacée** par les lignes « Version … »,
+     « Vérifier maintenant » et « Télécharger la … » / « Ouvrir Obtainium » du § 15.14.5) — valeur =
+     version installée ; sous-titre « Gérées par
      Obtainium » (ligne inactive), « Pas encore vérifié », « À jour · vérifié le 14 nov., 08:12 »,
      « La 1.0.43 est disponible », « Vérification impossible : pas de connexion ? » après un échec,
      « Vérification… » pendant la requête ; toucher → [Vérifier] ; une mise à jour disponible ajoute
@@ -3956,7 +3988,8 @@ Remplace le préremplissage du poids (§ 2.3, § 15.11.1) ; le reste de la sheet
 - **Réglage** : activé ou non (**désactivé par défaut**), heure (**07:30** par défaut, toute minute),
   jours de la semaine (**tous** par défaut). Gardé dans les préférences (§ 15.13.5), donc sauvegardé
   et importé comme la durée du repos.
-- **Paramètres, section « Rappels »** (nouvelle, entre « Préférences » et « Données », § 15.10.3) :
+- **Paramètres, section « Rappels »** (nouvelle, entre « Préférences » et « Données », § 15.10.3 ;
+  🔄 D39 : renommée « Notifications », § 15.14.5) :
   - **Rappel de pesée** — valeur « 07:30 » ou « Désactivé » ; sous-titre : les jours (« Tous les
     jours », « lun., mer., ven. », « Aucun jour ») ou, désactivé, « Pour penser à te peser » → sheet
     « Rappel de pesée » ;
@@ -4078,3 +4111,196 @@ Clés Android (`strings.xml`) ; les libellés existants sont repris (« Poids de
 | `channel_weigh_in` | Rappel de pesée | Weigh-in reminder |
 | `weigh_in_notif_title` | ⚖️ Pesée du jour | ⚖️ Daily weigh-in |
 | `weigh_in_notif_body` | Monte sur la balance, puis note ton poids. | Step on the scale, then log your weight. |
+
+### 15.14 Notification de mise à jour (🔄 D39)
+
+La vérification des mises à jour (§ 3.17, 🔄 D25) ne se fait plus à l'ouverture de l'app mais
+**une fois par jour, vers 18 h, en arrière-plan**, et une nouvelle version s'annonce par une
+**notification** « Nouvelle version disponible », activée par défaut sauf quand Obtainium a installé
+l'app (il prévient déjà). Ce réglage commande aussi la vérification automatique : coupé, l'app ne
+contacte GitHub que sur « Vérifier maintenant ». Paramètres dit toujours où en est l'app
+(« Version 1.0.42 · à jour ») et vérifie sur demande, notification coupée ou non. La section « Rappels » de Paramètres devient
+« Notifications ». Aucune donnée de l'app n'est envoyée ; rien n'entre dans la sauvegarde.
+
+#### 15.14.1 Réglage « Nouvelle version disponible »
+
+- Activé ou non. **Par défaut : désactivé si l'app a été installée (ou sa dernière mise à jour
+  faite) par Obtainium, activé sinon.** « Installée par Obtainium » = la détection du § 3.17
+  (installateur ou initiateur `dev.imranr.obtainium`, `dev.imranr.obtainium.fdroid`, ou
+  `com.android.vending`, nom qu'Obtainium emprunte quand il installe par Shizuku), relue à chaque
+  démarrage.
+- **Modifiable dans les deux cas.** Le choix n'est enregistré que lorsque l'utilisateur touche la
+  ligne (`notifyEnabled`, § 15.14.6) ; tant qu'il n'a rien choisi, le défaut suit la source
+  d'installation (une app installée à la main puis mise à jour par Obtainium passe à « désactivé »).
+- Propre à l'appareil, **hors sauvegarde** : la source d'installation dépend du téléphone, un import
+  ne change pas le réglage.
+- Activer demande `POST_NOTIFICATIONS` si elle peut encore l'être (§ 7.1). Refusée : la vérification
+  a lieu, rien ne s'affiche, et Paramètres montre « Notifications désactivées ».
+- **Variante preview** (`com.musclenote.android.preview`, `BuildConfig.UPDATE_NOTIFICATIONS` faux) :
+  ni tâche quotidienne ni notification, ligne masquée. « Vérifier maintenant » y marche (une
+  vérification à la demande), et l'annonce de l'Accueil comme pour une app installée sans Obtainium.
+
+#### 15.14.2 Vérification quotidienne
+
+- **Quand elle existe** : **seulement si la notification est activée** (réglage effectif,
+  § 15.14.1), quelle que soit la source d'installation. Réglage coupé : **aucune requête
+  automatique** ; seul « Vérifier maintenant » contacte GitHub, et l'annonce de l'Accueil (§ 15.8.2,
+  app installée sans Obtainium) n'apparaît qu'après une vérification manuelle. Preview : jamais.
+- Elle **remplace la vérification au retour au premier plan** de D25 : ouvrir l'app ne déclenche
+  plus de requête.
+- **Tâche WorkManager unique `update-check`** : une tâche ponctuelle dont le délai mène à la
+  **prochaine 18:00 locale** (strictement après maintenant ; heure murale, comme les rappels du
+  § 7.3 : après un changement d'heure, toujours 18 h à l'horloge). À chaque passage, réussi ou non,
+  elle se reprogramme pour la 18:00 suivante. Programmée au démarrage de l'app (gardée si elle
+  existe déjà) et à chaque changement du réglage ; annulée quand rien ne la justifie plus.
+  WorkManager la garde après un redémarrage du téléphone et une mise à jour de l'app.
+- **Réseau requis** : contrainte `NetworkType.CONNECTED` (d'où `ACCESS_NETWORK_STATE`, § 1). Sans
+  réseau à 18 h, elle part dès que le réseau revient, puis se reprogramme pour la 18:00 qui suit
+  ce moment. Le système peut la décaler (économie de batterie) : « vers 18 h ».
+- **Requête** : celle du § 3.17 (`GET https://api.github.com/repos/Bouss45/MuscleNote/releases/latest`,
+  HTTPS, délai 10 s, `User-Agent: MuscleNote-Android/{version}`), aucune donnée de l'app. **Une
+  requête automatique par jour au plus** ; « Vérifier maintenant » en fait une à chaque appui.
+- **Échec** (pas de réseau, délai dépassé, réponse invalide, § 15.14.3) : rien d'enregistré ne
+  change, aucune notification, **pas de nouvel essai avant la 18:00 suivante**.
+- Une vérification à la fois (tâche ou « Vérifier maintenant ») : celle qui arrive pendant une autre
+  attend sa fin, puis fait la sienne.
+
+#### 15.14.3 Réponse et comparaison des versions
+
+- **Réponse valide** : HTTP 200, corps JSON d'au plus 1 Mo avec `tag_name` et `html_url`, `draft` et
+  `prerelease` faux (l'API ne renvoie déjà que la dernière Release ni brouillon ni préversion ; relu
+  par sécurité), tag contenant au moins un nombre. Le texte de la Release (`body`, facultatif) donne
+  la première ligne des notes ; l'APK est le premier fichier `.apk` (§ 3.17). **Tout le reste est un
+  échec** : réponse absente (pas de réseau, délai), 404 (aucune Release), 403 / 429 (limite de
+  l'API), JSON illisible, champ manquant, brouillon, préversion, tag sans nombre.
+- **Comparaison avec l'app installée** : un tag **`v1.0.n`** (exactement, `n` entier) donne le
+  `versionCode` de la Release, **`1000 + n`** (règle de `release.yml`, § 15.1) ; la Release est plus
+  récente si ce nombre dépasse le `versionCode` installé. Autre forme de tag (`v1.1.0`, `1.0.12`) :
+  comparaison des nombres de la version contre le `versionName` installé (§ 3.17), pour ne rien
+  rater si le schéma change. Build local (`versionCode` 1) : toute Release est plus récente.
+- **Entre deux Releases** (dernière notifiée, version ignorée) : nombres de la version (`1.0.13` >
+  `1.0.12`).
+- **Première ligne des notes** : le premier élément de liste (`- …` ou `* …`) du texte de la Release,
+  sans le tiret ni les espaces autour, Markdown laissé tel quel (« Pesée facultative au début de
+  séance et rappel de pesée (#10) ») ; 200 caractères au plus (points de code), « … » au-delà. Aucun
+  élément de liste (« Aucun changement dans l'app : nouvelle compilation. », texte vide ou absent)
+  → le texte par défaut `update_notif_body_default`.
+
+#### 15.14.4 Notification
+
+- **Après une vérification quotidienne réussie** (pas après « Vérifier maintenant » : la réponse
+  est alors sous les yeux de l'utilisateur), si :
+  1. le réglage effectif est activé (et ce n'est pas la preview) ;
+  2. la dernière Release est plus récente que l'app installée (§ 15.14.3) ;
+  3. ce n'est pas la version ignorée (`dismissedVersion` : « Ignorer cette version », ou « Plus
+     tard » de l'Accueil) ;
+  4. elle est plus récente que la dernière version notifiée (`notifiedVersion`), ou aucune ne l'a été.
+- **Une seule fois par version** : `notifiedVersion` reçoit la version **seulement si la
+  notification a pu s'afficher** (notifications de l'app autorisées, canal `updates` non coupé) ;
+  sinon elle est retentée à la vérification suivante.
+- **Seule la dernière version** : l'API ne donne que la dernière Release, donc les versions sorties
+  entre deux vérifications sont sautées (1.0.10 installée, 1.0.11 à 1.0.13 publiées → une seule
+  notification, la 1.0.13) ; une Release plus ancienne que la dernière notifiée (Release retirée)
+  ne l'est pas non plus.
+- **Elle remplace celle qui est affichée** : un seul identifiant de notification ; la 1.0.13 prend la
+  place de la 1.0.12 encore affichée au lieu de s'empiler, et sonne (c'est une nouvelle version).
+- **Contenu**, dans la langue de l'app au moment de l'affichage : canal `updates` (§ 7.1), petite
+  icône `ic_notification` ; titre « MuscleNote {version} disponible » ; texte = la première ligne des
+  notes (§ 15.14.3), en entier une fois dépliée ; auto-annulable ; visibilité publique (rien de
+  personnel).
+- **Toucher** = « Voir », et la notification disparaît.
+- **« Voir »** : app installée par Obtainium et Obtainium présent → **ouvre Obtainium** (le paquet
+  installateur, sinon l'autre variante ; un installateur au nom du Play Store → Obtainium s'il est
+  présent ; paquets déclarés dans `<queries>`) ; sinon → **la page de la Release** (`html_url`) dans le
+  navigateur. Destination choisie au moment de l'affichage et ouverte directement par la
+  notification (`PendingIntent` d'activité : Android 12+ interdit le relais par un récepteur). Après
+  l'action « Voir », la notification reste : elle part avec « Ignorer », un balayage ou
+  l'installation.
+- **« Ignorer cette version »** : `dismissedVersion` reçoit la version et la notification est
+  retirée ; ni notification ni annonce de l'Accueil pour elle ; la version suivante sera notifiée.
+- **Retirée** aussi au démarrage de l'app (dont le démarrage qui suit sa mise à jour,
+  `MY_PACKAGE_REPLACED`, § 7.3) dès que la version notifiée n'est plus plus récente que l'app
+  installée, et quand le réglage est désactivé.
+
+#### 15.14.5 Paramètres
+
+- **Section « Notifications »** (ex-« Rappels », même place, entre « Préférences » et « Données ») :
+  1. **Notifications désactivées** — déplacée depuis « Préférences », mêmes conditions et même
+     action (§ 15.10.3) ;
+  2. **Rappel de pesée** (§ 15.13.3) ;
+  3. une ligne par **complément** (§ 15.13.3) ;
+  4. **Nouvelle version disponible** — ligne à cocher (`ListRowTrailing.Check`, toute la ligne la
+     bascule) ; sous-titre « Chaque jour vers 18 h », ou « Obtainium te prévient déjà » si l'app est
+     installée par Obtainium ; absente de la preview.
+- **Section « À propos »** — la ligne « Mises à jour » est remplacée par :
+  1. **« Version 1.0.42 · à jour »** (dernière vérification réussie, rien de plus récent),
+     **« Version 1.0.42 · 1.0.43 disponible »**, ou « Version 1.0.42 » (jamais vérifiée) ; sous-titre
+     « Vérifiée le 14 nov., 08:12 », « Pas encore vérifiée », ou « Vérification impossible : pas de
+     connexion ? » après un échec depuis le lancement de l'app ; ligne d'information, sans action ;
+  2. **« Vérifier maintenant »** — vérifie tout de suite, Obtainium ou non, notification coupée ou
+     non ; sous-titre « Vérification… » et ligne inactive pendant la requête ; ne notifie pas ;
+  3. si une version plus récente est connue, même ignorée (Paramètres dit toujours où en est l'app) :
+     **« Télécharger la 1.0.43 »** (chevron → l'APK dans le navigateur, sinon la page de la Release,
+     comme avant) pour une app installée sans Obtainium, **« Ouvrir Obtainium »** (chevron → la
+     destination de « Voir ») sinon.
+- « Gérées par Obtainium » disparaît : la vérification à la demande vaut aussi avec Obtainium.
+
+#### 15.14.6 Format des données
+
+`update_check.json` (§ 4.2 ; propre à l'appareil, hors sauvegarde) gagne deux champs facultatifs :
+`notifyEnabled` (booléen ; absent = le défaut du § 15.14.1) et `notifiedVersion` (chaîne ; absente =
+aucune version notifiée). Les champs existants (`checkedAt`, `latestVersion`, `pageUrl`, `apkUrl`,
+`dismissedVersion`) ne changent pas. Un ancien fichier se relit tel quel : ni migration ni version de
+format.
+
+#### 15.14.7 Règles (pures, testées en JVM)
+
+- **Versions** : tag `v1.0.n` → `versionCode` `1000 + n` ; plus récente, identique ou plus ancienne
+  que le `versionCode` installé ; autre forme de tag → nombres de la version ; tag sans nombre jamais
+  plus récent.
+- **Réponse** : valide (avec ou sans notes, sans APK) ; invalide (JSON cassé, sans `tag_name`,
+  brouillon, préversion, tag sans nombre) ; absente (la source échoue) → échec, rien d'enregistré,
+  aucune notification.
+- **Notifier ou non** : réglage coupé, preview, pas plus récente, version ignorée, déjà notifiée
+  (une seule notification par version), Release plus ancienne que la dernière notifiée (version
+  intermédiaire sautée), plus récente que la notifiée (elle la remplace), affichage impossible (non
+  enregistrée, retentée), « Vérifier maintenant » (jamais).
+- **Réglage par défaut** selon la source d'installation (Obtainium, Obtainium F-Droid, nom du Play
+  Store, installateur inconnu, autre installateur) ; un choix enregistré l'emporte.
+- **Tâche programmée** seulement si le réglage effectif est activé (Obtainium ou non, choix
+  enregistré ou défaut), jamais dans la preview ; annulée quand il est coupé.
+- **Prochaine vérification** : avant, après et à 18:00 pile ; passage à l'heure d'été et d'hiver.
+- **Première ligne des notes** : premier élément `-` ou `*`, aucun élément, texte absent, troncature.
+- **Retrait** : notification retirée au démarrage quand la version notifiée est installée.
+
+#### 15.14.8 Design system
+
+Aucun composant nouveau : des `ListRow` dans des sections existantes ; la ligne à cocher
+(`ListRowTrailing.Check`, déjà dans les sheets) entre dans la liste de Paramètres.
+
+#### 15.14.9 Textes (FR et EN)
+
+Clés Android (`strings.xml`). Repris : « Vérification… », « Vérification impossible : pas de
+connexion ? », « Télécharger la {version} », « Notifications désactivées ». Retirés :
+`settings_update_title`, `settings_update_subtitle_managed`, `settings_update_subtitle_never`,
+`settings_update_subtitle_up_to_date`, `settings_update_subtitle_available` ;
+`settings_section_reminders` devient `settings_section_notifications`.
+
+| clé | FR | EN |
+|---|---|---|
+| `settings_section_notifications` | Notifications | Notifications |
+| `update_notify_title` | Nouvelle version disponible | New version available |
+| `update_notify_subtitle` | Chaque jour vers 18 h | Every day around 6 pm |
+| `update_notify_subtitle_obtainium` | Obtainium te prévient déjà | Obtainium already lets you know |
+| `settings_version` | Version {{version}} | Version {{version}} |
+| `settings_version_up_to_date` | Version {{version}} · à jour | Version {{version}} · up to date |
+| `settings_version_available` | Version {{version}} · {{latest}} disponible | Version {{version}} · {{latest}} available |
+| `settings_version_checked` | Vérifiée le {{date}} | Checked {{date}} |
+| `settings_version_never` | Pas encore vérifiée | Not checked yet |
+| `settings_update_check_now` | Vérifier maintenant | Check now |
+| `settings_update_open_obtainium` | Ouvrir Obtainium | Open Obtainium |
+| `channel_updates` | Mises à jour | Updates |
+| `update_notif_title` | MuscleNote {{version}} disponible | MuscleNote {{version}} available |
+| `update_notif_body_default` | Une nouvelle version de MuscleNote est prête. | A new version of MuscleNote is ready. |
+| `update_notif_view` | Voir | View |
+| `update_notif_ignore` | Ignorer cette version | Skip this version |
