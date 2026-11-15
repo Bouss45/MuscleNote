@@ -77,6 +77,7 @@ fun HomeScreen(
     onOpenSettings: () -> Unit,
     onStartWorkout: (preset: PresetId?, name: String?) -> Unit,
     onOpenWorkout: () -> Unit,
+    onOpenSession: (workoutId: String) -> Unit,
     onEditWorkout: (workoutId: String) -> Unit,
     onOpenJournal: () -> Unit,
     modifier: Modifier = Modifier,
@@ -155,7 +156,7 @@ fun HomeScreen(
                 workout = last,
                 zone = zone,
                 dates = dates,
-                onOpen = { onEditWorkout(last.id) },
+                onOpen = { onOpenSession(last.id) },
                 onLongPress = { actions.actionsFor = last.id },
                 onSeeAll = onOpenJournal,
             )
@@ -278,7 +279,7 @@ private fun MigrateSection(onHide: () -> Unit) {
     }
 }
 
-/** « Dernière séance » : sa ligne (toucher → éditeur, appui long → actions) ; « Tout voir » → Journal. */
+/** « Dernière séance » : sa ligne (toucher → résumé, appui long → actions) ; « Tout voir » → Journal. */
 @Composable
 private fun LastSessionSection(
     workout: Workout,

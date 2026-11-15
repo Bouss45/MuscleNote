@@ -46,6 +46,7 @@ import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
+import com.musclenote.android.ui.summary.WorkoutSummaryScreen
 import com.musclenote.android.ui.workout.EditWorkoutScreen
 import com.musclenote.android.ui.workout.StartWorkoutSheet
 import com.musclenote.android.ui.workout.WorkoutScreen
@@ -59,7 +60,7 @@ enum class ExternalDestination { Workout, Nutrition }
  * Racine de l'interface (SPEC § 15.8.1) : quatre onglets (Accueil, Journal, Progrès, Nutrition) et
  * Paramètres, ouvert par l'engrenage de l'Accueil, avec la barre d'onglets du design system et,
  * pendant une séance, la mini-barre (sauf sur l'Accueil, dont la surface « En cours » tient lieu).
- * Les écrans plein écran (séance, fiche exercice, éditeur) n'ont ni l'une ni l'autre. « Démarrer une
+ * Les écrans plein écran (séance, résumé, fiche exercice, éditeur) n'ont ni l'une ni l'autre. « Démarrer une
  * séance » est une bottom sheet posée sur l'écran qui l'ouvre (§ 15.11.1). Transitions en fondu,
  * suivies par le geste de retour prédictif. Chaque écran dessine son propre en-tête sous la barre
  * d'état (edge-to-edge). Le thème (`StudioTheme`) est posé par `MainActivity`.
@@ -142,12 +143,14 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     onOpenSettings = { navController.openSettings() },
                     onStartWorkout = ::openStart,
                     onOpenWorkout = { navController.openWorkout() },
+                    onOpenSession = { navController.openSummary(it) },
                     onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
                     onOpenJournal = { navController.navigateToTab(TopLevelDestination.Journal) },
                 )
             }
             composable(TopLevelDestination.Journal.route) {
                 JournalScreen(
+                    onOpenSession = { navController.openSummary(it) },
                     onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
                     onStartWorkout = { openStart(null, null) },
                     onOpenWorkout = { navController.openWorkout() },
@@ -172,7 +175,27 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     // « Réduire » : retour à l'écran d'où la séance a été ouverte (§ 15.8.1).
                     onBack = { if (!navController.popBackStack()) navController.navigateToTab(TopLevelDestination.Home) },
                     onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
-                    onFinished = { navController.backToHome() },
+                    // Terminée : son résumé à la place de la séance (§ 15.12) ; abandonnée : l'Accueil.
+                    onFinished = { workoutId -> if (workoutId != null) navController.openFinishedSummary(workoutId) else navController.backToHome() },
+                )
+            }
+            composable(
+                Routes.WORKOUT_SUMMARY,
+                arguments = listOf(
+                    navArgument(Routes.ARG_WORKOUT_ID) { type = NavType.StringType },
+                    navArgument(Routes.ARG_FINISHED) {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                ),
+            ) { entry ->
+                // Résumé de séance (§ 15.12) : « Terminer » ramène à l'Accueil, ← à l'écran d'origine.
+                WorkoutSummaryScreen(
+                    workoutId = entry.arguments?.getString(Routes.ARG_WORKOUT_ID).orEmpty(),
+                    finished = entry.arguments?.getBoolean(Routes.ARG_FINISHED) == true,
+                    onDone = { navController.backToHome() },
+                    onBack = { navController.popBackStack() },
+                    onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
                 )
             }
             composable(
@@ -270,7 +293,23 @@ private fun NavHostController.openSettings() {
     navigate(Routes.SETTINGS) { launchSingleTop = true }
 }
 
-/** Retour à l'Accueil depuis un écran plein écran (la séance terminée, par exemple). */
+/** Résumé d'une séance terminée (§ 15.12), depuis le Journal ou la « Dernière séance » de l'Accueil. */
+private fun NavHostController.openSummary(workoutId: String) {
+    navigate(Routes.workoutSummary(workoutId)) { launchSingleTop = true }
+}
+
+/**
+ * Fin de séance (§ 15.12.1) : le résumé prend la place de la séance en cours, juste au-dessus de
+ * l'Accueil ; « Terminer » et le retour y reviennent.
+ */
+private fun NavHostController.openFinishedSummary(workoutId: String) {
+    navigate(Routes.workoutSummary(workoutId, finished = true)) {
+        popUpTo(TopLevelDestination.Home.route)
+        launchSingleTop = true
+    }
+}
+
+/** Retour à l'Accueil depuis un écran plein écran (le résumé d'une séance terminée, par exemple). */
 private fun NavHostController.backToHome() {
     if (!popBackStack(TopLevelDestination.Home.route, inclusive = false)) navigateToTab(TopLevelDestination.Home)
 }

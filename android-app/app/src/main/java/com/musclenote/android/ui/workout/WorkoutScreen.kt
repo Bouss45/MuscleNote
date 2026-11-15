@@ -61,8 +61,9 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * le pavé numérique pendant une saisie, sinon « Terminer la séance ». « Ajouter un exercice » ouvre
  * le sélecteur en bottom sheet (§ 15.11.2).
  *
- * [onBack] revient à l'Accueil (la séance reste en cours) ; [onFinished] aussi, une fois la séance
- * terminée ou abandonnée. [onOpenHistory] ouvre l'historique d'un exercice (§ 2.8).
+ * [onBack] revient à l'Accueil (la séance reste en cours). [onFinished] reçoit l'id de la séance
+ * terminée (son résumé s'ouvre, § 15.12), ou `null` après un abandon (retour à l'Accueil).
+ * [onOpenHistory] ouvre l'historique d'un exercice (§ 2.8).
  * [initialEntry] ouvre le pavé sur un champ dès l'affichage (aperçus).
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,7 +71,7 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 fun WorkoutScreen(
     onBack: () -> Unit,
     onOpenHistory: (exerciseId: String) -> Unit,
-    onFinished: () -> Unit,
+    onFinished: (finishedWorkoutId: String?) -> Unit,
     initialEntry: EntryTarget? = null,
 ) {
     val container = LocalAppContainer.current
@@ -435,9 +436,10 @@ fun WorkoutScreen(
             onConfirm = {
                 if (hasCompleted) haptics.success() else haptics.warning()
                 finishOpen = false
-                onFinished()
+                // La séance terminée garde son id (§ 3.3) : son résumé s'ouvre (§ 15.12).
+                onFinished(workout.id.takeIf { hasCompleted })
                 // Termine (ou abandonne, sans série validée) après avoir quitté l'écran (§ 3.3) ; le
-                // repos en cours s'arrête aussi (§ 7.2).
+                // repos en cours s'arrête aussi (§ 7.2) et la notification de séance est retirée.
                 container.launchMutation { container.endWorkout() }
             },
             onDismiss = { finishOpen = false },
