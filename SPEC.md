@@ -103,8 +103,9 @@
   1. **Séances** (démarrer, saisir et valider les séries, terminer, éditer l'historique) ;
   2. **Progrès** (graphiques poids de corps, calories, eau, par groupe musculaire) ;
   3. **Nutrition** (calories et eau du jour, compléments + rappels) ;
-  4. **Paramètres** (langue, thème, minuteur, sauvegarde/restauration JSON, sauvegarde
-     automatique, export CSV, Health Connect, mises à jour, rapport de plantage, envoi d'un avis).
+  4. **Paramètres** (langue, thème, minuteur, rappels — 🔄 D38 —, sauvegarde/restauration JSON,
+     sauvegarde automatique, export CSV, Health Connect, mises à jour, rapport de plantage, envoi d'un
+     avis).
 
 ---
 
@@ -224,7 +225,8 @@ enregistrer.
 > 🔄 D36 — **remplacé par le formulaire en bottom sheet du § 15.11.1** (étapes « Type de séance »
 > puis « Poids de corps » au pavé numérique, posé sur l'écran qui l'ouvre). Les règles ci-dessous
 > (préréglages, nom de 30 caractères, poids prérempli, raccourcis, permission puis `startWorkout`)
-> restent valables.
+> restent valables. 🔄 D38 — **le poids devient facultatif** (§ 15.13.2) : champ vide avec la dernière
+> pesée en aide, « Passer », pas de champ si le poids du jour est déjà connu ; plus de préremplissage.
 
 Deux étapes dans le même écran ; bouton en haut à gauche : ✕ (fermer) à l'étape 1,
 ← (retour à l'étape 1) à l'étape 2. Le retour système suit la même logique.
@@ -842,6 +844,8 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
   des textes affichés : la première locale de la liste (langues du système, ou choix FR / EN
   de l'app) dont la langue a des textes, région comprise (`en-GB`, `fr-CA`) ; aucune →
   français, comme les textes (§ 9.4).
+- `weighInReminder` (🔄 D38) : rappel de pesée (activé, heure, jours), désactivé par défaut,
+  07:30, tous les jours (§ 15.13.3, § 15.13.5).
 - Préférences locales non sauvegardées : carte de transfert masquée (§ 2.2) ; copie de la
   langue choisie dans l'app, relue par les notifications construites hors activité avant
   Android 13 (§ 9.4).
@@ -934,7 +938,7 @@ saisis/affichés, pas la présence des champs.
 | `name` | string | req. | | nom perso, ou libellé du préréglage au démarrage ; peut être `""` |
 | `preset` | `PresetId` | *opt.* | | 🔄 D3 — identifiant de préréglage (§ 6.3) ; prioritaire sur `name` pour l'affichage et la clé |
 | `date` | string | req. | instant ISO 8601 UTC (ex. `2026-11-10T17:05:12.345Z`) | début de séance |
-| `bodyWeight` | décimal | req. | kg | 0 = inconnu |
+| `bodyWeight` | décimal | req. | kg | 0 = inconnu ; 🔄 D38 : 0 = non saisi (pesée passée, ou jour déjà pesé), toujours écrit, lu absent comme 0 (§ 15.13.5) |
 | `exercises` | `WorkoutExercise[]` | req. | | ordre de la séance |
 | `durationMinutes` | entier | *opt.* | minutes | absent si en cours ou auto-finalisée |
 
@@ -969,8 +973,9 @@ saisis/affichés, pas la présence des champs.
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
-**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark" }` (défaut 180 et
-`"dark"`, 🔄 D35).
+**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark", weighInReminder? }`
+(défaut 180 et `"dark"`, 🔄 D35) ; 🔄 D38 — `weighInReminder` : `{ enabled, hour, minute, days }`,
+omis au défaut (désactivé, 07:30, tous les jours ; § 15.13.5).
 
 **`RestTimerState`** (non sauvegardé) : `{ endsAt: instant ms, total: s, exerciseName }`.
 
@@ -1201,7 +1206,8 @@ ou racine non-objet → « Format invalide ».
 `"dark"` (🔄 D35) ; si `calorieGoal` diffère de `goalFor(aujourd'hui)` (fichier v2 modifié par
 l'app Expo), on ajoute `history[aujourd'hui] = calorieGoal` (idem eau) ; historique
 d'objectif absent ou vide → `{ "0000-01-01": objectif courant }` ; entrées `taken` de
-compléments inconnus retirées.
+compléments inconnus retirées. 🔄 D38 : `weighInReminder` des préférences lu selon le § 15.13.5
+(absent ou invalide → rappel désactivé à 07:30, tous les jours).
 
 ### 5.4 Déroulé d'un import
 
@@ -1365,6 +1371,7 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
 | `workout-ongoing` (🔄 D31) | Séance en cours | Workout in progress | LOW | non | non | public |
 | `rest-timer` | Timer de repos | Rest timer | HIGH | défaut | `[0, 250, 250, 250]` ms | public |
 | `supplements` | Rappels suppléments | Supplement reminders | HIGH | défaut | `[0, 250, 250, 250]` ms | privé |
+| `weigh-in` (🔄 D38) | Rappel de pesée | Weigh-in reminder | HIGH | défaut | `[0, 250, 250, 250]` ms | privé |
 
 - 🔄 D31 : le canal `rest-timer-ongoing` (« Repos en cours », 🔄 D6) des versions jusqu'à la
   v1.0.6 est **supprimé** au démarrage ; la notification « Séance en cours » (§ 15.5) le remplace.
@@ -1445,6 +1452,8 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
 - Toutes ces opérations passent par une **file sérielle** (une à la fois, chacune relisant
   l'état le plus récent), et le récepteur se « répare » lui-même (vérification ci-dessus) :
   aucune notification orpheline possible.
+- 🔄 D38 — le **rappel de pesée** (§ 15.13.4) suit le même mécanisme : alarme exacte à la prochaine
+  occurrence d'un jour coché, relecture à la sonnerie, mêmes resynchronisations.
 
 ---
 
@@ -1797,7 +1806,8 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 (§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
 l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
-(§ 15.11), D37 avec le résumé de fin de séance (§ 15.12).
+(§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
+de pesée (§ 15.13).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1838,6 +1848,7 @@ Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finiti
 | D35 | Refonte « Studio épuré », étape 5a : Nutrition et Paramètres | Nutrition au gabarit hub avec toutes ses fonctions, rappels compris, une seule surface : ce qui compte aujourd'hui ; quantités au pavé numérique ; pas d'objectif de protéines ; Paramètres en liste groupée, mêmes réglages, chaque réglage en formulaire ; thème Sombre (par défaut), Clair, Système ; export, sauvegarde, Health Connect et avis inchangés ; aucun changement du format JSON sauf le thème | Nutrition : surface « Aujourd'hui » (kcal du jour en chiffre héros, « encore … » gris, « dans l'objectif » vert, « +… kcal » rouge selon le ratio de D15, piste, eau et compléments pris, boutons Calories et Eau), compléments en lignes (case « pris aujourd'hui » séparée, toucher → sheet du complément : rappels, suppression confirmée), « Nouveau complément » en sheet au clavier (nom, dosage texte libre, unités, rappels) ; formulaires Calories et Eau au pavé : « Ajouter » ou « Total du jour » (remplace ⟲ ; nouvelle règle `setWater`), « Nouveau total », objectif quotidien à partir d'aujourd'hui ; heure au `TimePicker` avec « Supprimer » ; Paramètres : Mes données, Préférences (langue, thème, minuteur, notifications), Données (sauvegarde automatique, exports, import, Health Connect), À propos (mises à jour, rapport de plantage, avis), messages sans couleur ; thème par défaut `"dark"` (absent, invalide, import v1), choix déjà enregistré gardé ; tendances de calories et d'eau toujours dans Progrès, protéines et stock hors périmètre (§ 2.11, 2.12, 3.14, 4.1, 5.3, 15.10) |
 | D36 | Refonte « Studio épuré », étape 5b : finitions avant la fusion | plus aucune couleur, taille ou police en dur hors du design system, ancien thème et icônes inutiles retirés ; contrastes en sombre et en clair, texte à 200 % sans rien de coupé, TalkBack ; mise à jour depuis la v1.0 sans perte | « Démarrer une séance » en formulaire (bottom sheet : type puis poids au pavé), sélecteur d'exercices en bottom sheet (lignes à cocher, appui long pour un exercice perso), éditeur de séance au gabarit fiche (type et poids en lignes, séries au pavé, « Enregistrer » en bas) ; `ui/theme/`, Inter et les polices téléchargeables, couleurs de groupe, 52 icônes retirés ; aplat `live` en clair `#9E7100` ; composants qui grandissent avec le texte, chiffres qui rétrécissent, cibles de 48 dp, libellés TalkBack des séries ; notes de version sans les commits qui ne touchent que les tests ; aucun changement du format JSON (§ 2.3, 2.7, 2.9, 15.1, 15.11) |
 | D37 | Résumé de fin de séance | affiché après « Terminer la séance » (gabarit fiche) et consultable ensuite depuis le Journal ; chiffre héros = volume total, variation par rapport à la dernière séance du même programme (verte, rouge ou grise, rien la première fois) ; durée, nombre de séries, puis chaque exercice avec sa meilleure série et un repère si un record est battu (charge ou 1RM estimé, règles de records existantes) ; un seul bouton « Terminer », qui ramène à l'Accueil ; aucun changement du format JSON, tout est calculé | résumé à la place de la séance en cours dans la pile (au-dessus de l'Accueil), notification de séance retirée comme avant ; toucher une séance du Journal ou la « Dernière séance » de l'Accueil ouvre son résumé (l'éditeur reste dans l'appui long et dans ⋮) ; même programme = même clé de séance (§ 3.1), parmi les séances plus anciennes ; variation au kg ; records = record personnel (métrique de la fiche exercice : charge, reps au poids du corps, durée en cardio) et 1RM estimé, strictement supérieurs à ceux des séances plus anciennes — égalité ou première fois : pas de record ; « Records battus · n » en vert en tête de la liste (§ 3.3, 15.7.1, 15.8.1, 15.8.4, 15.12) |
+| D38 | Pesée facultative et rappel de pesée | au début de séance, pesée facultative : champ vide avec la dernière pesée (valeur et ancienneté), « Passer » qui n'enregistre aucune pesée, champ masqué si une pesée existe déjà aujourd'hui ; les calculs prennent la dernière pesée connue, ou ne s'affichent pas ; section « Rappels » de Paramètres (rappels de Nutrition et rappel de pesée), raccourci depuis la courbe de poids de Progrès ; rappel de pesée désactivé par défaut, 7 h 30, jours de la semaine, rien si déjà pesé ce jour-là (Health Connect compris si l'app le lit), toucher → saisie de la pesée au pavé, reprogrammé après un redémarrage comme les rappels de Nutrition ; poids rendu facultatif sans migration destructive, anciennes données relues telles quelles | « pesé ce jour-là » = la règle du poids d'un jour de Progrès (pesée, sinon séance avec un poids, séance en cours comprise) ; Health Connect n'est pas lu (D29, aucune permission de lecture) ; aide « Dernière pesée : 78,4 kg, il y a 3 jours. », « Passer » = séance à `bodyWeight` 0, « Commencer » exige un poids ; déjà pesé → l'étape n'a plus de champ, la séance démarre sans poids ; poids d'une séance = le sien, sinon la dernière pesée connue à son jour, affiché dans l'en-tête de la séance et la surface « En cours », jamais recopié (Progrès, Health Connect, CSV, sauvegarde inchangés) ; « Rappels » entre « Préférences » et « Données » : rappel de pesée puis une ligne par complément (sa sheet de Nutrition) ; bouton `notifications` sur la surface « Poids de corps » ; réglage dans les préférences (sauvegardé), alarme exacte à la prochaine occurrence d'un jour coché (heure locale murale, changements d'heure), relecture à la sonnerie, canal `weigh-in`, toucher → Progrès et « Nouvelle pesée » ; `bodyWeight` toujours écrit et lu absent = 0, `weighInReminder` facultatif omis au défaut ; aucune version, migration ni permission nouvelle (§ 2.3, 3.14, 4.1, 5.3, 7.1, 7.3, 15.7.1, 15.8.2, 15.9.2, 15.10.3, 15.11.1, 15.13) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2107,6 +2118,19 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   premier lest, cardio, séries non validées). À vérifier **sur l'appareil** : « Terminer la séance »
   → résumé → « Terminer » → Accueil, retour système depuis le résumé, notification retirée, ⋮ et
   suppression depuis le résumé d'une séance du Journal.
+- **Pesée facultative et rappel de pesée** (🔄 D38, § 15.13), branche `feat/pesee-rappel` : règles
+  pures `data/nutrition/BodyWeightRules.kt` (poids du jour, dernière pesée connue, poids d'une séance,
+  étape du poids) et `data/nutrition/WeighInReminderRules.kt` (réglage, décision à la sonnerie, résumé
+  des jours), prochaine occurrence par jour de la semaine dans `ReminderSchedule` ; réglage
+  `Preferences.weighInReminder` ; alarme `notifications/WeighInReminderScheduler.kt` derrière
+  `WeighInReminders`, récepteur `WeighInReminderReceiver`, resynchronisation par
+  `ReminderResyncReceiver` ; sheet `ui/settings/ReminderSettings.kt`, section « Rappels » de
+  Paramètres, bouton de la surface de Progrès ; « Passer » et l'étape sans champ dans
+  `ui/workout/StartWorkoutSheet.kt`. Design system : icône `notifications`, second bouton de
+  `MetricSurface`. Tests `BodyWeightRulesTest`, `WeighInReminderRulesTest`, `ReminderScheduleTest`,
+  `BackupV2Test`, `RepositoryLoadTest`. À vérifier **sur l'appareil** : sonnerie du rappel, toucher →
+  « Nouvelle pesée », silence un jour déjà pesé, reprogrammation après un redémarrage, « Passer » et
+  l'étape sans champ.
 
 ---
 
@@ -2272,7 +2296,9 @@ le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus ; puis la fiche exer
 thème par défaut change (sombre) ; enfin les derniers écrans (démarrer, sélecteur, éditeur) et les
 finitions — ancien thème retiré, accessibilité, mise à jour vérifiée (🔄 D36, § 15.11). **Résumé de
 fin de séance** (🔄 D37, § 15.12) : la première nouveauté après la refonte, calculée sur les séances
-existantes, sans donnée nouvelle ni composant nouveau.
+existantes, sans donnée nouvelle ni composant nouveau. **Pesée facultative et rappel de pesée**
+(🔄 D38, § 15.13) : « Passer » au début de séance, section « Rappels » de Paramètres, un réglage
+nouveau dans les préférences, sans changement de version du format.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2641,6 +2667,10 @@ cours : elle revient au changement suivant de la séance ou du repos.
   « +30 s » et « Passer » pendant le repos. Elle demanderait un module Wear, la synchronisation de
   la séance entre téléphone et montre (Data Layer) et une publication à part : hors du périmètre
   actuel (§ 15.5).
+- **Lire le poids dans Health Connect** (🔄 D38) : une pesée faite par une balance connectée ou une
+  autre app compterait alors comme « pesé ce jour-là » (§ 15.13.1) et ferait taire le rappel. Elle
+  demanderait la permission `health.READ_WEIGHT` (D19, D29 : aujourd'hui aucune lecture) et de
+  distinguer les poids écrits par MuscleNote : hors du périmètre actuel.
 
 ### 15.7 Refonte « Studio épuré » : séance en cours (🔄 D32)
 
@@ -2654,7 +2684,8 @@ migration.
 #### 15.7.1 Écran
 
 - **En-tête, fixe** : « Réduire » (⌄ : retour à l'Accueil, la séance reste en cours) ; nom affiché
-  (§ 3.1) et « 78,4 kg · 2 / 16 séries » (poids omis s'il vaut 0) ; chronomètre `m:ss` en jaune
+  (§ 3.1) et « 78,4 kg · 2 / 16 séries » (poids omis s'il vaut 0 ; 🔄 D38 : le poids de la séance,
+  sinon la dernière pesée connue, omis sans aucun poids, § 15.13.1) ; chronomètre `m:ss` en jaune
   (minutes non bornées). Dessous, la progression en segments, un par série (masquée sans série).
 - **Échauffement** (§ 2.4, toujours local à l'écran, non enregistré) : une ligne « Échauffement »
   avec « 2/5 exercices » ; la toucher ouvre une bottom sheet avec les 5 exercices à cocher.
@@ -2866,7 +2897,8 @@ Remplace le § 2.2. Gabarit **hub** (DESIGN.md § 10.1), de haut en bas :
      séance (`m:ss`, minutes non bornées) en grand, en jaune ; pendant un repos, « Repos **1:48** ·
      Développé couché, série 3 » (temps restant en jaune, puis la prochaine série du § 15.5 ; sans
      prochaine série, « Repos 1:48 » seul) ; les segments des séries, « 2 / 16 séries » à gauche et
-     le poids de corps « 78,4 kg » à droite (omis s'il vaut 0) ; sans série, ni segments ni
+     le poids de corps « 78,4 kg » à droite (omis s'il vaut 0 ; 🔄 D38 : poids de la séance, sinon
+     dernière pesée connue, § 15.13.1) ; sans série, ni segments ni
      compteur ; bouton principal « Reprendre » → séance.
    - **sinon** — « Prochaine séance » : légende « Prochaine séance » ; titre = le type sélectionné
      (au départ le type suggéré, § 15.8.3), ou « Nouvelle séance » sans suggestion ; dessous
@@ -3126,7 +3158,8 @@ paresseuse, de haut en bas :
 1. **Barre** : « Progrès » (le nom de l'onglet ; « Progression » est retiré).
 2. **Surface « Poids de corps »** (surface « Mesure », la seule de l'écran) :
    - légende « Poids de corps · 12 nov. » (date du dernier point, « aujourd'hui », « hier ») et le
-     bouton + « Ajouter une pesée » → formulaire « Nouvelle pesée » (ci-dessous) ;
+     bouton + « Ajouter une pesée » → formulaire « Nouvelle pesée » (ci-dessous) ; 🔄 D38 : avant lui,
+     le bouton `notifications` « Rappel de pesée » → sheet du rappel (§ 15.13.3) ;
    - chiffre héros = **Actuel** (dernier point, § 3.10) et « kg » ; variation = **Évolution**
      (dernier − premier, au dixième) « +10,4 kg depuis le 12 févr. », **en gris** : sans objectif de
      poids déclaré, ni une hausse ni une baisse n'est un progrès (DESIGN.md § 1 ; 🔄 l'app colorait la
@@ -3419,7 +3452,9 @@ bottom sheet, ou lance l'action. De haut en bas :
    - **Notifications désactivées** (seulement si `POST_NOTIFICATIONS` est refusée ou les
      notifications de l'app coupées, revérifié au retour sur l'écran, 🔄 D6) — sous-titre
      « Minuteur et rappels silencieux », chevron → réglages de notification de l'app.
-4. **Section « Données »** :
+4. **Section « Rappels »** (🔄 D38, § 15.13.3) : « Rappel de pesée » → sheet du rappel, puis une ligne
+   par complément → sa sheet de Nutrition (§ 15.10.2).
+5. **Section « Données »** :
    - **Sauvegarde automatique** (🔄 D28, § 15.2) — valeur « Activée » / « Désactivée » ; sous-titre :
      « Dernière le 14 nov. 2026, 08:12 », « Aucune sauvegarde pour l'instant », « Dossier
      inaccessible » ou « Échec le … », désactivée « Chaque jour, dans le dossier de ton choix » →
@@ -3446,7 +3481,7 @@ bottom sheet, ou lance l'action. De haut en bas :
      d'information « Dernier envoi » et « Écrits » (« 12 séances · 30 poids »), dernière erreur
      datée ; bouton principal « Envoyer l'historique » (« Envoi… » pendant l'envoi) et son résultat
      en phrase. La section « SANTÉ » disparaît : la ligne rejoint « Données ».
-5. **Section « À propos »** (remplace « APPLICATION » et « TON AVIS ») :
+6. **Section « À propos »** (remplace « APPLICATION » et « TON AVIS ») :
    - **Mises à jour** (🔄 D25, § 3.17) — valeur = version installée ; sous-titre « Gérées par
      Obtainium » (ligne inactive), « Pas encore vérifié », « À jour · vérifié le 14 nov., 08:12 »,
      « La 1.0.43 est disponible », « Vérification impossible : pas de connexion ? » après un échec,
@@ -3604,6 +3639,8 @@ vide, étape du type). Plus de route `start-workout`.
   chevron → étape du type) ; pavé numérique, pas ±0,1 (comme la pesée), touche principale
   « ✓ Commencer ». Poids ≤ 0 : l'aide devient « Saisis ton poids de corps » avec une vibration
   d'erreur.
+- 🔄 D38 (§ 15.13.2) : champ vide, dernière pesée en aide, bouton texte « Passer » (séance sans
+  poids) ; déjà pesé aujourd'hui → pas de champ, « Suivant » devient « ✓ Commencer ».
 - « Commencer » : permission des notifications puis `startWorkout` comme au § 2.3, la sheet se
   ferme et la séance en cours s'ouvre. Retour à l'étape du poids : l'étape du type ; voile ou
   glisser : la sheet se ferme sans rien démarrer.
@@ -3852,3 +3889,187 @@ Clés Android (`strings.xml`) ; les libellés existants sont repris (« Séance 
 | `summary_stat_sets` (pluriel) | série / séries | set / sets |
 | `summary_records` (pluriel) | Record battu · {{n}} / Records battus · {{n}} | Record broken · {{n}} / Records broken · {{n}} |
 | `summary_done` | Terminer | Done |
+
+### 15.13 Pesée facultative et rappel de pesée (🔄 D38)
+
+Le poids de corps n'est plus exigé à chaque séance : au démarrage, la pesée devient **facultative**
+(« Passer »), et elle n'est plus demandée du tout quand le poids du jour est déjà connu. En échange,
+un **rappel de pesée**, désactivé par défaut et réglé dans une nouvelle section « Rappels » de
+Paramètres, propose de se peser certains jours à heure fixe. Aucune mesure n'est inventée : un poids
+n'est jamais recopié d'un jour sur l'autre ; à l'affichage, une séance sans poids montre la dernière
+pesée connue. Le **format des données ne change pas de version** (§ 15.13.5) : `bodyWeight` garde sa
+forme et le réglage du rappel s'ajoute aux préférences comme champ facultatif ; aucune migration.
+
+#### 15.13.1 Poids du jour et dernière pesée connue
+
+- **Poids d'un jour** : la règle de Progrès et de Health Connect (§ 3.10, § 15.3) — la pesée manuelle
+  du jour (§ 3.11) si elle existe, sinon le `bodyWeight > 0` de la séance la plus récente du jour
+  (jour local de son début). Ici, la **séance en cours** compte comme une séance de son jour.
+- **Pesé ce jour-là** = ce jour a un poids. MuscleNote ne lit pas Health Connect (🔄 D29 : aucune
+  permission de lecture) : une pesée faite dans une autre app (balance connectée…) n'existe pas pour
+  MuscleNote (piste au § 15.6).
+- **Dernière pesée connue** au jour J : le poids du jour le plus récent ≤ J, avec son jour. Aucune →
+  rien.
+- **Poids d'une séance**, pour l'affichage : son `bodyWeight` s'il est > 0 ; sinon la dernière pesée
+  connue au jour local de son début (pesées et autres séances, ce jour compris) ; sinon rien, et la
+  valeur n'est pas affichée. Il sert à l'en-tête de la séance en cours « 78,4 kg · 2 / 16 séries »
+  (§ 15.7.1) et à la surface « En cours » de l'Accueil (§ 15.8.2).
+- Partout ailleurs, seul le poids **saisi** compte, jamais recopié : courbe et pesées de Progrès
+  (§ 15.9.2), Health Connect (une séance sans poids n'écrit pas de poids, § 15.3), export CSV (colonne
+  « Poids de corps (kg) » vide, § 8), éditeur (« Poids de corps » « — », § 15.11.3), sauvegarde JSON.
+- **Le 0 n'est jamais une valeur** : un `bodyWeight` ≤ 0 ne s'affiche nulle part (« — » ou rien,
+  selon l'écran), ne part pas vers Health Connect et laisse sa cellule CSV vide. Aucun calcul n'utilise
+  le poids d'une séance : le volume (§ 3.8) et le 1RM estimé (§ 3.5) se calculent sur la charge des
+  séries, et un exercice « au poids du corps » se reconnaît à ses séries à 0 kg, sa métrique étant les
+  reps (§ 15.9.3).
+
+#### 15.13.2 Démarrer une séance : étape « Poids de corps »
+
+Remplace le préremplissage du poids (§ 2.3, § 15.11.1) ; le reste de la sheet ne change pas.
+
+- **Pas encore pesé aujourd'hui** (§ 15.13.1) :
+  - champ héros **vide** (il n'est plus prérempli avec le poids de la dernière séance) ;
+  - aide = la dernière pesée connue, valeur et ancienneté : « Dernière pesée : 78,4 kg, hier. »,
+    « Dernière pesée : 78,4 kg, il y a 3 jours. » (jours calendaires locaux) ; sans aucune pesée,
+    « Ton poids aujourd'hui ? Facultatif. » ;
+  - puces 55 … 100, ligne « Type de séance » et pavé (pas ±0,1) inchangés ; champ vide, les pas − / +
+    partent de la dernière pesée connue (« +0,1 » donne 78,5) ;
+  - bouton texte **« Passer »**, pleine largeur, sous la ligne « Type de séance » : démarre la séance
+    **sans poids** (`bodyWeight = 0`) et **n'enregistre aucune pesée** ; sinon comme « Commencer »
+    (permission des notifications, `startWorkout`, la séance s'ouvre) ;
+  - « ✓ Commencer » exige toujours un poids > 0 : champ vide ou 0 → l'aide devient « Saisis ton
+    poids, ou touche « Passer ». » avec une vibration d'erreur.
+- **Déjà pesé aujourd'hui** : **pas de champ**. L'étape « Poids de corps » n'a plus que l'aide « Déjà
+  pesé aujourd'hui : 78,4 kg. », la ligne « Type de séance » et le bouton principal « ✓ Commencer » ;
+  depuis l'étape du type, « Suivant » devient « ✓ Commencer » et démarre directement (« Démarrer » de
+  l'Accueil avec un type ouvre l'étape du poids, donc cette confirmation). La séance démarre sans
+  poids : celui du jour s'affiche (§ 15.13.1) sans être recopié.
+- Un poids saisi est enregistré dans la séance comme avant (`bodyWeight`) et devient le poids du jour
+  s'il n'y a pas de pesée (§ 3.10) ; il ne crée pas de pesée manuelle (section « Pesées » de Progrès
+  inchangée).
+
+#### 15.13.3 Réglage du rappel de pesée
+
+- **Réglage** : activé ou non (**désactivé par défaut**), heure (**07:30** par défaut, toute minute),
+  jours de la semaine (**tous** par défaut). Gardé dans les préférences (§ 15.13.5), donc sauvegardé
+  et importé comme la durée du repos.
+- **Paramètres, section « Rappels »** (nouvelle, entre « Préférences » et « Données », § 15.10.3) :
+  - **Rappel de pesée** — valeur « 07:30 » ou « Désactivé » ; sous-titre : les jours (« Tous les
+    jours », « lun., mer., ven. », « Aucun jour ») ou, désactivé, « Pour penser à te peser » → sheet
+    « Rappel de pesée » ;
+  - puis **une ligne par complément** (les rappels de Nutrition, § 15.10.1, dans l'ordre de création) :
+    titre = nom, sous-titre = résumé de ses rappels (« Rappel à 08:00 », « 3 rappels », « Pas de
+    rappel »…), chevron → **la sheet du complément** de Nutrition (§ 15.10.2 : rappels, suppression
+    confirmée, « Fermer »), la même. Sans complément, pas de ligne : ils se créent dans Nutrition.
+- **Sheet « Rappel de pesée »** (réglage composé, comme la sauvegarde automatique ; chaque changement
+  s'applique tout de suite, retour ou voile ferment) :
+  - titre « Rappel de pesée », aide « Il ne sonne pas si tu t'es déjà pesé ce jour-là. » ;
+  - ligne à cocher « Me rappeler de me peser » ; cocher demande `POST_NOTIFICATIONS` si nécessaire
+    (§ 7.1) ;
+  - ligne d'information « Heure » « 07:30 », chevron → choix de l'heure (§ 15.10.2 : `TimePicker`,
+    « Heure du rappel », sans « Supprimer ») ;
+  - « Jours » (champ sous son libellé) : 7 puces de filtre à **choix multiple**, du lundi au dimanche,
+    libellés courts de la langue (« lun. » … « dim. », « Mon » … « Sun »), lus en entier par TalkBack
+    (« lundi ») ; toucher une puce ajoute ou retire le jour ; aucun jour → aucun rappel ;
+  - heure et jours se règlent même décoché ; bouton texte « Fermer ».
+- **Raccourci depuis Progrès** : la surface « Poids de corps » (§ 15.9.2) gagne, avant le bouton +, un
+  bouton icône `notifications` « Rappel de pesée » qui ouvre la même sheet au-dessus de Progrès.
+
+#### 15.13.4 Alarme et notification
+
+Même mécanisme que les rappels de compléments (§ 7.3, 🔄 D7) :
+
+- **Une alarme exacte** (`setExactAndAllowWhileIdle`, `RTC_WAKEUP`) à la
+  **prochaine occurrence** : le premier jour, aujourd'hui compris, dont le jour de la semaine est coché
+  et où l'heure locale `heure:minute` est strictement après maintenant. Heure **locale murale**,
+  résolue par `ZonedDateTime.of` : heure inexistante (passage à l'heure d'été) → décalée après le
+  saut ; heure ambiguë (passage à l'heure d'hiver) → première occurrence. Rappel désactivé ou aucun
+  jour → pas d'alarme (celle qui existait est annulée).
+- **Alarmes exactes refusées** sur le téléphone (`canScheduleExactAlarms()` faux, Android 12+, ou
+  `SecurityException`) : le même repli que les rappels de compléments (§ 7.1), une alarme inexacte
+  `setAndAllowWhileIdle` (`RTC_WAKEUP`), qui peut sonner un peu plus tard mais jamais plus tôt.
+- Identité : `PendingIntent` d'URI `musclenote://weigh-in-reminder` (une seule alarme).
+- **Programmée** à chaque changement du réglage, au démarrage de l'app, après un import et par les
+  récepteurs système du § 7.3 (`BOOT_COMPLETED`, `MY_PACKAGE_REPLACED`, `TIME_SET`,
+  `TIMEZONE_CHANGED`, `SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED`) ; file sérielle, chaque
+  opération relisant le réglage le plus récent.
+- **À la sonnerie**, le récepteur relit les données (processus relancé par l'alarme compris) :
+  - rappel désactivé → rien, sans reprogrammation ;
+  - jour local de la sonnerie non coché (réglage changé entre-temps) → pas de notification ;
+  - **déjà pesé ce jour-là** (§ 15.13.1 : pesée manuelle, séance terminée ou en cours avec un poids) →
+    pas de notification ;
+  - sinon la notification ;
+  - puis, rappel activé, l'occurrence suivante.
+- **Notification** sur un nouveau canal `weigh-in` (§ 7.1) : titre « ⚖️ Pesée du jour », texte « Monte
+  sur la balance, puis note ton poids. », dans la langue de l'app au moment de l'affichage ;
+  `CATEGORY_REMINDER`, auto-annulable, une seule à la fois (la suivante la remplace). **Toucher** →
+  onglet Progrès avec le formulaire « Nouvelle pesée » ouvert (§ 15.9.2 : pavé numérique,
+  aujourd'hui).
+- **Aucune permission nouvelle** : `POST_NOTIFICATIONS`, alarmes exactes et `RECEIVE_BOOT_COMPLETED`
+  servent déjà (§ 1). Notifications refusées : rien ne s'affiche, comme pour les compléments, et
+  Paramètres montre « Notifications désactivées » (§ 15.10.3).
+
+#### 15.13.5 Format des données
+
+- **`Workout.bodyWeight`** (§ 4.1) : même champ, même sens — `0` = **non saisi** (pesée passée, ou
+  séance démarrée un jour déjà pesé), comme l'« inconnu » d'avant. Il est **toujours écrit**
+  (`"bodyWeight": 0` dans les fichiers et les sauvegardes), pour que les versions précédentes de l'app
+  relisent tout ; il est désormais **lu absent comme 0** dans `workouts.json` et
+  `current_workout.json` (l'import l'acceptait déjà absent ou `null`, § 5.3). Pas de nouvelle version,
+  pas de migration : les séances existantes gardent leur poids et se relisent telles quelles.
+- **`Preferences.weighInReminder`** (nouveau, facultatif) : `{ "enabled": false, "hour": 7,
+  "minute": 30, "days": [1, 2, 3, 4, 5, 6, 7] }`, jours ISO (1 = lundi … 7 = dimanche), **omis** quand
+  il vaut le réglage par défaut. Dans `preferences.json` et dans `@gymtracker_preferences` de la
+  sauvegarde v2 (un ajout de champ, § 5.1 : les versions précédentes l'ignorent). Lecture (fichier ou
+  import) : absent ou pas un objet → le défaut ; `enabled` non booléen → `false` ; `hour` hors 0–23 ou
+  `minute` hors 0–59 → 07:30 ; `days` : entiers de 1 à 7 gardés, sans doublon, triés (`[]` = aucun
+  jour) ; absent ou pas un tableau → tous les jours.
+
+#### 15.13.6 Règles (pures, testées en JVM)
+
+- **Poids** : poids du jour, « pesé ce jour-là » (pesée, séance terminée, séance en cours, séance
+  sans poids, autre jour), dernière pesée connue et son ancienneté, poids d'une séance (le sien, la
+  dernière pesée connue — pesée ou autre séance, le jour même compris —, rien).
+- **Étape du poids** : champ affiché ou non (pesée du jour, séance du jour, rien aujourd'hui), aide
+  (dernière pesée ou aucune), point de départ des pas.
+- **Décision à la sonnerie** : désactivé, jour non coché, déjà pesé (pesée, séance terminée, séance en
+  cours), pesée d'un autre jour, Health Connect (jamais lu : seules les données de l'app comptent),
+  notifier.
+- **Prochaine occurrence** : aujourd'hui ou un jour suivant, jours cochés seulement, aucun jour, heure
+  passée ou exactement maintenant (→ occurrence suivante), passage à l'heure d'été (heure inexistante,
+  23 h réelles entre deux sonneries) et à l'heure d'hiver (heure ambiguë, 25 h réelles).
+- **Réglage** : résumé des jours ; lecture (absent, invalide, jours en double ou hors 1–7) ;
+  `bodyWeight` absent relu à 0 et toujours écrit.
+- **Le 0 jamais utilisé** : séance à `bodyWeight` 0 (ou négatif) → cellule CSV vide, aucun poids pour
+  Health Connect (la séance, elle, part), aucun poids affiché (poids de la séance absent).
+
+#### 15.13.7 Design system
+
+Composants existants, sauf (DESIGN.md § 8 et § 9) :
+- icône `notifications` (Material Symbols Rounded), bouton du rappel de pesée ;
+- `MetricSurface` : un second bouton icône facultatif dans l'en-tête, avant `add`.
+
+#### 15.13.8 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Poids de corps », « Commencer »,
+« Saisis ton poids de corps », « Heure du rappel », « Fermer », « Désactivé », « aujourd'hui »,
+« hier », « Nouvelle pesée », résumés des rappels de compléments).
+
+| clé | FR | EN |
+|---|---|---|
+| `start_workout_weight_optional` | Ton poids aujourd'hui ? Facultatif. | Your weight today? Optional. |
+| `start_workout_weight_last` | Dernière pesée : {{poids}} kg, {{ancienneté}}. | Last weigh-in: {{weight}} kg, {{age}}. |
+| `common_days_ago` (pluriel) | il y a {{n}} jour / il y a {{n}} jours | {{n}} day ago / {{n}} days ago |
+| `start_workout_weight_or_skip` | Saisis ton poids, ou touche « Passer ». | Enter your weight, or tap “Skip”. |
+| `start_workout_skip` | Passer | Skip |
+| `start_workout_weighed_today` | Déjà pesé aujourd'hui : {{poids}} kg. | Already weighed today: {{weight}} kg. |
+| `settings_section_reminders` | Rappels | Reminders |
+| `weigh_in_reminder_title` | Rappel de pesée | Weigh-in reminder |
+| `weigh_in_reminder_off_subtitle` | Pour penser à te peser | So you remember to weigh in |
+| `weigh_in_reminder_help` | Il ne sonne pas si tu t'es déjà pesé ce jour-là. | It stays silent if you've already weighed in that day. |
+| `weigh_in_reminder_toggle` | Me rappeler de me peser | Remind me to weigh in |
+| `weigh_in_reminder_time` / `_days` | Heure / Jours | Time / Days |
+| `weigh_in_reminder_every_day` / `_no_day` | Tous les jours / Aucun jour | Every day / No day |
+| `channel_weigh_in` | Rappel de pesée | Weigh-in reminder |
+| `weigh_in_notif_title` | ⚖️ Pesée du jour | ⚖️ Daily weigh-in |
+| `weigh_in_notif_body` | Monte sur la balance, puis note ton poids. | Step on the scale, then log your weight. |
