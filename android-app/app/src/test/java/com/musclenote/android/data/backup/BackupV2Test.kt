@@ -7,6 +7,7 @@ import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORIGIN
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
@@ -282,5 +283,41 @@ class BackupV2Test {
         assertEquals(listOf(7 to 45, 22 to 0), supplement.reminders.map { it.hour to it.minute })
         assertTrue(supplement.reminders[0].id.isNotEmpty())
         assertEquals("r5", supplement.reminders[1].id)
+    }
+
+    // ─── Historique des prises (§ 15.15.4, 🔄 D41) ───────────────────────────────────
+
+    private fun intakesOf(json: String) =
+        readV2(
+            """"@gymtracker_supplements": [ { "id": "s1", "name": "Créatine", "dosage": "5", "unit": "g",
+               "reminderEnabled": false, "reminders": []$json } ]""",
+        ).supplements!!.single().intakes
+
+    @Test
+    fun `l'historique des prises est lu, ses entrées invalides écartées`() {
+        assertEquals(
+            mapOf("2026-11-14" to 1, "2026-11-15" to 2),
+            intakesOf(""", "intakes": { "2026-11-14": 1, "2026-11-15": 2, "2026-02-30": 1, "hier": 1, "2026-11-13": 0, "2026-11-12": -1, "2026-11-11": "1", "2026-11-10": 1.5 }"""),
+        )
+    }
+
+    @Test
+    fun `un complément sans historique, ou dont l'historique n'est pas un objet, a un historique vide`() {
+        assertTrue(intakesOf("").isEmpty())
+        assertTrue(intakesOf(""", "intakes": [ "2026-11-14" ]""").isEmpty())
+        assertTrue(intakesOf(""", "intakes": null""").isEmpty())
+        // Une sauvegarde v1 de l'app Expo n'en a pas.
+        assertTrue(success(reader().read(resource("v1_sample.json"))).data.supplements!!.all { it.intakes.isEmpty() })
+    }
+
+    @Test
+    fun `l'export n'écrit l'historique des prises que s'il existe, et le relit à l'identique`() {
+        val plain = Supplement("s1", "Créatine", "5", "g", false, emptyList())
+        val withHistory = plain.copy(id = "s2", intakes = mapOf("2026-11-14" to 1, "2026-11-15" to 2))
+        val text = BackupWriter.write(BackupData(supplements = listOf(plain, withHistory)), exportedAt)
+        val written = Json.parseToJsonElement(text).jsonObject.getValue(BackupKeys.SUPPLEMENTS).jsonArray
+        assertFalse("intakes" in written[0].jsonObject)
+        assertTrue("intakes" in written[1].jsonObject)
+        assertEquals(listOf(plain, withHistory), success(reader().read(text)).data.supplements)
     }
 }
