@@ -166,15 +166,30 @@ object PreviewData {
     /** Rappel de pesée activé, 07:30, en semaine (§ 15.13.3). */
     val weighInReminder = WeighInReminder(enabled = true, hour = 7, minute = 30, days = listOf(1, 2, 3, 4, 5))
 
+    /** Jours des deux dernières semaines (hier compris), du plus ancien au plus récent. */
+    private val lastTwoWeeks: List<LocalDate> = (13 downTo 1).map { today.minusDays(it.toLong()) }
+
+    /**
+     * Historique des prises (§ 15.15.4) : créatine tous les jours (aujourd'hui compris, comme
+     * [taken]) sauf le dimanche, whey les jours de séance (deux doses le mercredi), vitamine D un
+     * jour sur deux ; rien avant deux semaines (prises antérieures à l'historique).
+     */
     val supplements = listOf(
         Supplement(
             id = "sup-creatine", name = "Créatine", dosage = "5", unit = "g", reminderEnabled = true,
             reminders = listOf(Reminder(id = "rem-creatine", hour = 8, minute = 0)),
+            intakes = (lastTwoWeeks.filter { it.dayOfWeek != java.time.DayOfWeek.SUNDAY } + today).associate { it.toString() to 1 },
         ),
-        Supplement(id = "sup-whey", name = "Whey", dosage = "30", unit = "g", reminderEnabled = false, reminders = emptyList()),
+        Supplement(
+            id = "sup-whey", name = "Whey", dosage = "30", unit = "g", reminderEnabled = false, reminders = emptyList(),
+            intakes = lastTwoWeeks
+                .filter { day -> workouts.any { Instant.parse(it.date).atZone(zone).toLocalDate() == day } }
+                .associate { it.toString() to if (it.dayOfWeek == java.time.DayOfWeek.WEDNESDAY) 2 else 1 },
+        ),
         Supplement(
             id = "sup-vitd", name = "Vitamine D3", dosage = "1000", unit = "ui", reminderEnabled = true,
             reminders = listOf(Reminder(id = "rem-vitd-am", hour = 8, minute = 30), Reminder(id = "rem-vitd-pm", hour = 20, minute = 0)),
+            intakes = lastTwoWeeks.filter { it.toEpochDay() % 2 == 0L }.associate { it.toString() to 1 },
         ),
     )
 

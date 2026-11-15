@@ -83,19 +83,21 @@ internal fun compactDurationText(minutes: Int): String {
 }
 
 /**
- * Ligne d'une séance : nom affiché ; « mer. 11 nov. · 1 h 12 » ; volume (« 6 840 kg ») ou, sans
- * volume, le nombre de séries validées.
+ * Ligne d'une séance : nom affiché ; « mer. 11 nov. · 1 h 12 » (ou l'heure de début, « 18:30 ·
+ * 1 h 12 », avec [timeOfDay] : sheet « Journée », § 15.15.2) ; volume (« 6 840 kg ») ou, sans
+ * volume, le nombre de séries validées. [onLongPress] `null` : pas d'appui long.
  */
 @Composable
 internal fun SessionRow(
     summary: SessionSummary,
     dates: DateFormats,
     onOpen: () -> Unit,
-    onLongPress: () -> Unit,
+    onLongPress: (() -> Unit)?,
     modifier: Modifier = Modifier,
     showDivider: Boolean = true,
+    timeOfDay: Boolean = false,
 ) {
-    val date = summary.start?.let { dates.weekdayDayMonth(it.toInstant()) }
+    val date = summary.start?.let { if (timeOfDay) dates.time(it.toInstant()) else dates.weekdayDayMonth(it.toInstant()) }
     val duration = summary.durationMinutes?.let { durationText(it) }
     val subtitle = if (date != null && duration != null) stringResource(R.string.session_subtitle, date, duration) else date ?: duration
     val value = if (summary.showsVolume) {
@@ -111,7 +113,7 @@ internal fun SessionRow(
         showDivider = showDivider,
         onClick = onOpen,
         onLongClick = onLongPress,
-        onLongClickLabel = stringResource(R.string.session_long_press),
+        onLongClickLabel = if (onLongPress != null) stringResource(R.string.session_long_press) else null,
     )
 }
 

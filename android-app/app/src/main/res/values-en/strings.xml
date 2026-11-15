@@ -557,6 +557,44 @@
     <string name="journal_empty_message">Your finished workouts will show up here, week by week.</string>
     <string name="journal_empty_start">Start a workout</string>
     <string name="journal_empty_resume">Resume the workout</string>
+    <!-- Journal calendar (§ 15.15, D41) -->
+    <string name="journal_calendar_previous">Previous month</string>
+    <string name="journal_calendar_next">Next month</string>
+    <plurals name="journal_calendar_month_sessions">
+        <item quantity="one">%1$d workout in %2$s</item>
+        <item quantity="other">%1$d workouts in %2$s</item>
+    </plurals>
+    <string name="journal_calendar_month_none">No workouts in %1$s</string>
+    <plurals name="journal_calendar_sessions">
+        <item quantity="one">%1$d workout</item>
+        <item quantity="other">%1$d workouts</item>
+    </plurals>
+    <string name="journal_calendar_no_session">no workout</string>
+    <string name="journal_calendar_today">today</string>
+    <string name="journal_calendar_upcoming">upcoming</string>
+    <string name="journal_calendar_open_day">Open the day</string>
+    <string name="journal_day_sessions">Workouts</string>
+    <string name="journal_day_weight">Weight</string>
+    <string name="journal_day_weigh_in">Weigh-in</string>
+    <string name="journal_day_weight_from_session">Entered when starting %1$s</string>
+    <string name="journal_day_supplements">Supplements taken</string>
+    <plurals name="journal_day_doses">
+        <item quantity="one">%1$d dose</item>
+        <item quantity="other">%1$d doses</item>
+    </plurals>
+    <string name="journal_day_nutrition">Calories and water</string>
+    <string name="journal_day_goal">goal %1$s</string>
+    <string name="journal_day_empty">Nothing logged that day.</string>
+    <string name="journal_week_count">%1$d/%2$d</string>
+    <string name="journal_week_validated">%1$d/%2$d · done</string>
+    <plurals name="journal_week_count_description">
+        <item quantity="one">%1$d workout out of %2$d</item>
+        <item quantity="other">%1$d workouts out of %2$d</item>
+    </plurals>
+    <plurals name="journal_week_validated_description">
+        <item quantity="one">%1$d workout out of %2$d, week done</item>
+        <item quantity="other">%1$d workouts out of %2$d, week done</item>
+    </plurals>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
     <string name="duration_hours_minutes">%1$d h %2$02d min</string>
