@@ -1898,7 +1898,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11). Les règles métier pures sont couvertes par 454 tests JVM (40 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 513 tests JVM (42 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2124,11 +2124,14 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   des jours), prochaine occurrence par jour de la semaine dans `ReminderSchedule` ; réglage
   `Preferences.weighInReminder` ; alarme `notifications/WeighInReminderScheduler.kt` derrière
   `WeighInReminders`, récepteur `WeighInReminderReceiver`, resynchronisation par
-  `ReminderResyncReceiver` ; sheet `ui/settings/ReminderSettings.kt`, section « Rappels » de
-  Paramètres, bouton de la surface de Progrès ; « Passer » et l'étape sans champ dans
-  `ui/workout/StartWorkoutSheet.kt`. Design system : icône `notifications`, second bouton de
-  `MetricSurface`. Tests `BodyWeightRulesTest`, `WeighInReminderRulesTest`, `ReminderScheduleTest`,
-  `BackupV2Test`, `RepositoryLoadTest`. À vérifier **sur l'appareil** : sonnerie du rappel, toucher →
+  `ReminderResyncReceiver`, toucher → `MainActivity.ACTION_OPEN_WEIGH_IN` (Progrès, « Nouvelle
+  pesée ») ; sheet `ui/settings/ReminderSettings.kt`, section « Rappels » de Paramètres (la sheet d'un
+  complément, `SupplementSheetHost`, est partagée avec Nutrition), bouton de la surface de Progrès ;
+  « Passer » et l'étape sans champ dans `ui/workout/StartWorkoutSheet.kt` ; poids affiché d'une
+  séance `ui/workout/SessionWeight.kt`. `ExerciseSession` perd le poids de corps, que rien ne lisait.
+  Design system : icône `notifications`, second bouton de `MetricSurface` (`SurfaceAction`), puces de
+  filtre à choix multiple. Tests `BodyWeightRulesTest`, `WeighInReminderRulesTest`,
+  `ReminderScheduleTest`, `CsvExportTest`, `HealthRecordsTest`, `BackupV2Test`, `RepositoryLoadTest`. À vérifier **sur l'appareil** : sonnerie du rappel, toucher →
   « Nouvelle pesée », silence un jour déjà pesé, reprogrammation après un redémarrage, « Passer » et
   l'étape sans champ.
 
@@ -4047,7 +4050,9 @@ Même mécanisme que les rappels de compléments (§ 7.3, 🔄 D7) :
 
 Composants existants, sauf (DESIGN.md § 8 et § 9) :
 - icône `notifications` (Material Symbols Rounded), bouton du rappel de pesée ;
-- `MetricSurface` : un second bouton icône facultatif dans l'en-tête, avant `add`.
+- `MetricSurface` : un second bouton icône facultatif dans l'en-tête, avant `add` ;
+- `FilterChip` : choix multiple (jours du rappel), lu comme une case à cocher, avec une description
+  TalkBack en toutes lettres.
 
 #### 15.13.8 Textes (FR et EN)
 
