@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Spacer
@@ -37,6 +38,7 @@ import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.designsystem.components.FicheTitle
 import com.musclenote.android.ui.designsystem.components.FicheTopBar
+import com.musclenote.android.ui.designsystem.components.ListGroup
 import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.SectionHeader
@@ -127,15 +129,19 @@ fun SettingsScreen(
             }
         },
         insets = insets,
+        // 🔄 D40 : listes groupées (DESIGN.md § 10.1), 32 sous le titre comme dans la maquette.
+        grouped = true,
     ) {
-        // Mes données : 24 sous le titre, comme la rangée de stats d'une fiche (DESIGN.md § 10.2).
-        StatRow(
-            modifier = Modifier.padding(top = Studio.spacing.s),
-            stats = listOf(
-                Stat(formatInteger(workouts.size.toDouble()), stringResource(R.string.settings_stat_sessions)),
-                Stat(formatInteger(customExercises.count { !it.archived }.toDouble()), stringResource(R.string.settings_stat_custom_exercises)),
-            ),
-        )
+        // Mes données : rangée de stats dans un groupe, sans étiquette.
+        ListGroup {
+            StatRow(
+                modifier = Modifier.padding(Studio.spacing.m),
+                stats = listOf(
+                    Stat(formatInteger(workouts.size.toDouble()), stringResource(R.string.settings_stat_sessions)),
+                    Stat(formatInteger(customExercises.count { !it.archived }.toDouble()), stringResource(R.string.settings_stat_custom_exercises)),
+                ),
+            )
+        }
 
         SettingsSection(
             stringResource(R.string.settings_section_preferences),
@@ -207,10 +213,8 @@ fun SettingsScreen(
             },
         ) {
             state.status?.let { status ->
-                Spacer(Modifier.height(Studio.spacing.s))
                 StatusMessage(status.message())
             }
-            Spacer(Modifier.height(Studio.spacing.s))
             Text(stringResource(R.string.settings_info), style = Studio.typography.caption, color = Studio.colors.textSecondary)
         }
 
@@ -299,29 +303,39 @@ internal data class SettingsRow(
     val onClick: (() -> Unit)? = null,
 )
 
-/** Une section de la liste groupée : en-tête, lignes (pas de filet sous la dernière), [footer]. */
+/**
+ * Une section de la liste groupée (🔄 D40) : étiquette, groupe de lignes (pas de filet sous la
+ * dernière), puis [footer] sous le groupe, aligné sur le texte des lignes et espacé de 8.
+ */
 @Composable
-internal fun SettingsSection(title: String, rows: List<SettingsRow>, footer: @Composable ColumnScope.() -> Unit = {}) {
-    Column(Modifier.fillMaxWidth()) {
-        SectionHeader(title)
-        Spacer(Modifier.height(Studio.spacing.xxs))
-        rows.forEachIndexed { index, row ->
-            key(row.key) {
-                ListRow(
-                    title = row.title,
-                    subtitle = row.subtitle,
-                    trailing = when {
-                        row.checked != null -> ListRowTrailing.Check(row.checked)
-                        row.value != null -> ListRowTrailing.Value(row.value)
-                        row.chevron -> ListRowTrailing.Chevron
-                        else -> null
-                    },
-                    showDivider = index < rows.lastIndex,
-                    onClick = row.onClick,
-                )
+internal fun SettingsSection(title: String, rows: List<SettingsRow>, footer: (@Composable ColumnScope.() -> Unit)? = null) {
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
+        SectionHeader(title, grouped = true)
+        ListGroup {
+            rows.forEachIndexed { index, row ->
+                key(row.key) {
+                    ListRow(
+                        title = row.title,
+                        subtitle = row.subtitle,
+                        trailing = when {
+                            row.checked != null -> ListRowTrailing.Check(row.checked)
+                            row.value != null -> ListRowTrailing.Value(row.value)
+                            row.chevron -> ListRowTrailing.Chevron
+                            else -> null
+                        },
+                        showDivider = index < rows.lastIndex,
+                        onClick = row.onClick,
+                    )
+                }
             }
         }
-        footer()
+        if (footer != null) {
+            Column(
+                Modifier.fillMaxWidth().padding(horizontal = Studio.spacing.screenGrouped),
+                verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs),
+                content = footer,
+            )
+        }
     }
 }
 

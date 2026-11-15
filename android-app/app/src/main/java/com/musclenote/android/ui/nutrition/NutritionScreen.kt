@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +32,7 @@ import com.musclenote.android.ui.components.rememberToday
 import com.musclenote.android.ui.designsystem.components.ButtonVariant
 import com.musclenote.android.ui.designsystem.components.DailySurface
 import com.musclenote.android.ui.designsystem.components.EmptyState
+import com.musclenote.android.ui.designsystem.components.ListGroup
 import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
@@ -70,6 +72,7 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
     val requestNotificationPermission = rememberNotificationPermissionRequest()
 
     val day = DailyDay.of(tracker, todayKey)
+    // 🔄 D40 : listes groupées (DESIGN.md § 10.1) ; « Aujourd'hui » est le groupe du héros.
     HubTemplate(
         modifier = modifier,
         titleBar = { ScreenTitleBar(stringResource(R.string.nutrition_title)) },
@@ -83,6 +86,7 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
             )
         },
         insets = insets,
+        grouped = true,
     ) {
         SupplementsSection(
             supplements = supplements,
@@ -288,8 +292,8 @@ internal fun SupplementsSection(
 ) {
     Column(Modifier.fillMaxWidth()) {
         // Le compte des compléments pris est déjà sur la surface « Aujourd'hui ».
-        SectionHeader(stringResource(R.string.nutrition_supplements))
-        Spacer(Modifier.height(Studio.spacing.xxs))
+        SectionHeader(stringResource(R.string.nutrition_supplements), grouped = true)
+        Spacer(Modifier.height(Studio.spacing.xs))
         if (supplements.isEmpty()) {
             EmptyState(
                 icon = R.drawable.ds_ic_pill,
@@ -302,19 +306,21 @@ internal fun SupplementsSection(
         }
         val toggleLabel = stringResource(R.string.nutrition_taken_toggle)
         val openLabel = stringResource(R.string.nutrition_supplement_options)
-        supplements.forEachIndexed { index, supplement ->
-            ListRow(
-                title = supplement.name,
-                subtitle = supplementSubtitle(supplement),
-                trailing = ListRowTrailing.Check(
-                    checked = NutritionRules.isTaken(taken, supplement.id, todayKey),
-                    onToggle = { onToggleTaken(supplement.id) },
-                    toggleLabel = toggleLabel,
-                ),
-                showDivider = index < supplements.lastIndex,
-                onClick = { onOpen(supplement.id) },
-                onClickLabel = openLabel,
-            )
+        ListGroup {
+            supplements.forEachIndexed { index, supplement ->
+                ListRow(
+                    title = supplement.name,
+                    subtitle = supplementSubtitle(supplement),
+                    trailing = ListRowTrailing.Check(
+                        checked = NutritionRules.isTaken(taken, supplement.id, todayKey),
+                        onToggle = { onToggleTaken(supplement.id) },
+                        toggleLabel = toggleLabel,
+                    ),
+                    showDivider = index < supplements.lastIndex,
+                    onClick = { onOpen(supplement.id) },
+                    onClickLabel = openLabel,
+                )
+            }
         }
         Spacer(Modifier.height(Studio.spacing.m))
         StudioButton(
@@ -326,7 +332,12 @@ internal fun SupplementsSection(
         )
         if (supplements.any { it.reminderEnabled }) {
             Spacer(Modifier.height(Studio.spacing.s))
-            Text(stringResource(R.string.nutrition_info_mobile), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+            Text(
+                stringResource(R.string.nutrition_info_mobile),
+                Modifier.padding(horizontal = Studio.spacing.screenGrouped),
+                style = Studio.typography.caption,
+                color = Studio.colors.textSecondary,
+            )
         }
     }
 }
