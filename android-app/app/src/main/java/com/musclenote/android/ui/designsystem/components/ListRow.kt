@@ -37,6 +37,15 @@ private val LeadingSize = 40.dp
 private val PressBleed = 12.dp
 private val PressRadius = 12.dp
 
+/** Valeur → bouton plein d'une ligne (🔄 D42, maquette Nutrition : 12). */
+private val TrailingActionGap = 12.dp
+
+/**
+ * Le bouton plein (rond de 40 centré dans une cible de 48) déborde de 8 dans le retrait de 16 : son rond
+ * s'arrête à 12 du bord du groupe, comme sur la maquette.
+ */
+private val TrailingActionBleed = 8.dp
+
 /** Dans un groupe : ligne d'une seule ligne de texte (Paramètres), retrait avant un chevron. */
 private val GroupRowSingleLineHeight = 56.dp
 private val GroupChevronEndPadding = 12.dp
@@ -75,17 +84,36 @@ sealed interface ListRowTrailing {
     data object Chevron : ListRowTrailing
 
     /**
+     * Valeur ([valueTrend] la colore : `up` une fois l'objectif atteint) puis bouton icône plein
+     * (🔄 D42) : le bouton a sa propre action [onAction], lue [actionDescription] par TalkBack ; le reste
+     * de la ligne garde son `onClick` (eau et protéines de Nutrition : + → saisie, ligne → détail).
+     */
+    @Immutable
+    data class ValueAction(
+        val value: String,
+        @param:DrawableRes val icon: Int,
+        val actionDescription: String,
+        val onAction: () -> Unit,
+        val valueTrend: Trend? = null,
+    ) : ListRowTrailing
+
+    /**
      * Case à cocher (celle de la ligne de série). Sans [onToggle], toute la ligne la bascule
      * (échauffement de la séance en cours, lignes à cocher d'une sheet) ; sans `onClick` de la ligne
      * non plus, elle est lue cochée (ou non) et inactive (exercice déjà dans la séance). Avec [onToggle], la case
      * seule (cible 48) la bascule, lue [toggleLabel] par TalkBack, et le reste de la ligne garde son
-     * `onClick` (complément : la case = « pris aujourd'hui », la ligne ouvre ses rappels).
+     * `onClick` (complément : la case = « pris aujourd'hui », la ligne ouvre ses rappels). [value]
+     * (🔄 D42) : une valeur avant la case (jours de stock d'un complément), colorée par [valueTrend]
+     * (`down` pour un stock bas) et lue [valueDescription] par TalkBack.
      */
     @Immutable
     data class Check(
         val checked: Boolean,
         val onToggle: (() -> Unit)? = null,
         val toggleLabel: String? = null,
+        val value: String? = null,
+        val valueTrend: Trend? = null,
+        val valueDescription: String? = null,
     ) : ListRowTrailing
 }
 
@@ -241,7 +269,23 @@ fun ListRow(
                 contentDescription = null,
                 tint = Studio.colors.textSecondary,
             )
+            is ListRowTrailing.ValueAction -> Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(TrailingActionGap)) {
+                TrailingValue(trailing.value, delta = null, trend = Trend.Neutral, valueTrend = trailing.valueTrend)
+                StudioIconButton(
+                    trailing.icon,
+                    contentDescription = trailing.actionDescription,
+                    onClick = trailing.onAction,
+                    filled = true,
+                    modifier = Modifier.bleed(end = TrailingActionBleed),
+                )
+            }
             is ListRowTrailing.Check -> {
+                if (trailing.value != null) {
+                    val description = trailing.valueDescription
+                    Box(if (description != null) Modifier.semantics { contentDescription = description } else Modifier) {
+                        TrailingValue(trailing.value, delta = null, trend = Trend.Neutral, valueTrend = trailing.valueTrend)
+                    }
+                }
                 val onToggle = trailing.onToggle
                 if (onToggle == null) {
                     CheckBoxVisual(trailing.checked)

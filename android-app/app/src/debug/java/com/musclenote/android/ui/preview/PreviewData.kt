@@ -8,9 +8,12 @@ import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.ProteinGoal
+import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Supplement
+import com.musclenote.android.data.model.SupplementStock
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
@@ -172,41 +175,53 @@ object PreviewData {
     /**
      * Historique des prises (§ 15.15.4) : créatine tous les jours (aujourd'hui compris, comme
      * [taken]) sauf le dimanche, whey les jours de séance (deux doses le mercredi), vitamine D un
-     * jour sur deux ; rien avant deux semaines (prises antérieures à l'historique).
+     * jour sur deux ; rien avant deux semaines (prises antérieures à l'historique). Stocks (§ 15.16.4,
+     * comme sur la maquette) : créatine à 4 jours (stock bas), whey à 2 doses par jour, 12 jours,
+     * vitamine D à 38 jours, saisis aujourd'hui.
      */
     val supplements = listOf(
         Supplement(
             id = "sup-creatine", name = "Créatine", dosage = "5", unit = "g", reminderEnabled = true,
             reminders = listOf(Reminder(id = "rem-creatine", hour = 8, minute = 0)),
             intakes = (lastTwoWeeks.filter { it.dayOfWeek != java.time.DayOfWeek.SUNDAY } + today).associate { it.toString() to 1 },
+            stock = SupplementStock(doses = 4, day = today.toString(), dayIntake = 1),
         ),
         Supplement(
             id = "sup-whey", name = "Whey", dosage = "30", unit = "g", reminderEnabled = false, reminders = emptyList(),
             intakes = lastTwoWeeks
                 .filter { day -> workouts.any { Instant.parse(it.date).atZone(zone).toLocalDate() == day } }
                 .associate { it.toString() to if (it.dayOfWeek == java.time.DayOfWeek.WEDNESDAY) 2 else 1 },
+            dosesPerDay = 2,
+            stock = SupplementStock(doses = 25, day = today.toString()),
         ),
         Supplement(
             id = "sup-vitd", name = "Vitamine D3", dosage = "1000", unit = "ui", reminderEnabled = true,
             reminders = listOf(Reminder(id = "rem-vitd-am", hour = 8, minute = 30), Reminder(id = "rem-vitd-pm", hour = 20, minute = 0)),
             intakes = lastTwoWeeks.filter { it.toEpochDay() % 2 == 0L }.associate { it.toString() to 1 },
+            stock = SupplementStock(doses = 38, day = today.toString()),
         ),
     )
 
     /** Créatine prise aujourd'hui. */
     val taken: Map<String, String> = mapOf("sup-creatine" to today.toString())
 
-    /** Calories et eau des deux dernières semaines ; aujourd'hui en cours de journée. */
+    /**
+     * Calories, eau et protéines des deux dernières semaines (protéines notées 5 jours sur 7) ;
+     * aujourd'hui en cours de journée ; objectif de protéines fixe, 150 g, comme sur la maquette.
+     */
     val tracker: DailyTracker = run {
         val calories = LinkedHashMap<String, Int>()
         val water = LinkedHashMap<String, Int>()
+        val protein = LinkedHashMap<String, Int>()
         for (daysAgo in 13 downTo 1) {
             val day = today.minusDays(daysAgo.toLong()).toString()
             calories[day] = 2250 + (daysAgo * 137) % 600
             water[day] = 1750 + (daysAgo * 211) % 1000
+            if (daysAgo % 7 != 3 && daysAgo % 7 != 6) protein[day] = 120 + (daysAgo * 53) % 50
         }
         calories[today.toString()] = 1850
         water[today.toString()] = 1500
+        protein[today.toString()] = 112
         DailyTracker(
             calorieGoal = 2600,
             waterGoal = 2500,
@@ -214,6 +229,8 @@ object PreviewData {
             waterGoalHistory = mapOf("0000-01-01" to 2500),
             caloriesLog = calories,
             waterLog = water,
+            proteinLog = protein,
+            proteinGoal = ProteinGoal(ProteinGoalMode.Fixed, perKg = 1.6, grams = 150),
         )
     }
 

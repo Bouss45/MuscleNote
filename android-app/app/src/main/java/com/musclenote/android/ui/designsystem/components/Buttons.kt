@@ -111,9 +111,14 @@ fun StudioButton(
     }
 }
 
+/** Bouton icône plein (🔄 D42) : rond de 40 sur `surfaceControl`, dans une cible de 48. */
+private val FilledIconButtonSize = 40.dp
+
 /**
  * Bouton icône — `StudioIconButton` (DESIGN.md § 9.2) : rond, 48 (44 en petit, dans une cible
- * tactile de 48), icône 24 ; pressé sur `surfaceControl`.
+ * tactile de 48), icône 24 ; pressé sur `surfaceControl`. [filled] (🔄 D42, boutons + du groupe
+ * « Aujourd'hui » de Nutrition) : rond de 40 `surfaceControl`, pressé `surfacePressed`, icône 22, dans
+ * la même cible de 48 ([size] est alors ignorée).
  */
 @Composable
 fun StudioIconButton(
@@ -125,12 +130,17 @@ fun StudioIconButton(
     enabled: Boolean = true,
     tone: ButtonTone = ButtonTone.Default,
     interactionSource: MutableInteractionSource? = null,
+    filled: Boolean = false,
 ) {
     val colors = Studio.colors
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed = source.pressed()
     val background by animateColorAsState(
-        if (enabled && pressed) colors.surfaceControl else colors.surfaceControl.copy(alpha = 0f),
+        when {
+            filled -> if (enabled && pressed) colors.surfacePressed else colors.surfaceControl
+            enabled && pressed -> colors.surfaceControl
+            else -> colors.surfaceControl.copy(alpha = 0f)
+        },
         Studio.motion.fast.spec(),
         label = "iconButton",
     )
@@ -149,11 +159,17 @@ fun StudioIconButton(
     ) {
         Box(
             Modifier
-                .size(if (size == ButtonSize.Small) ButtonSize.Small.height else ButtonSize.Medium.height)
+                .size(
+                    when {
+                        filled -> FilledIconButtonSize
+                        size == ButtonSize.Small -> ButtonSize.Small.height
+                        else -> ButtonSize.Medium.height
+                    },
+                )
                 .background(background, Studio.shapes.full),
             contentAlignment = Alignment.Center,
         ) {
-            StudioIcon(icon, contentDescription = contentDescription, tint = tint)
+            StudioIcon(icon, contentDescription = contentDescription, size = if (filled) IconSize.Row else IconSize.Default, tint = tint)
         }
     }
 }

@@ -14,8 +14,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -219,12 +221,19 @@ fun MetricSurface(
 }
 
 
+/** En-tête de la surface « Aujourd'hui » : la légende et son bouton + plein (cible 48). */
+private val DailyHeaderHeight = 48.dp
+private val DailyHeroGap = 6.dp
+
+/** Le bouton + plein déborde de 8 : son rond de 40 s'arrête à 12 du bord, comme ceux des lignes. */
+private val DailyActionBleed = 8.dp
+
 /**
- * Surface « Aujourd'hui » — `DailySurface` (hub Nutrition, SPEC § 15.10.1) : légende, chiffre héros
- * et unité (kcal du jour), état par rapport à l'objectif ([status], coloré par [statusTrend], suivi
- * de [statusContext]), piste de progression, rangée de stats (eau, compléments pris), puis deux
- * boutons secondaires moyens de largeurs égales (icône `add`). Groupe du héros d'un hub groupé
- * (v2) : retrait de 16 sur les côtés.
+ * Surface « Aujourd'hui » — `DailySurface` (hub Nutrition, SPEC § 15.16.2, 🔄 D42) : groupe du héros,
+ * comme sur la maquette : légende et bouton + plein ([addDescription], [onAdd] : les calories) ; chiffre
+ * héros et unité (kcal du jour), état par rapport à l'objectif ([status], coloré par [statusTrend],
+ * suivi de [statusContext]) ; piste de progression ; puis, après un filet en retrait, des lignes
+ * ([rows] : `ListRow` en disposition de groupe — eau et protéines). Retrait de 16 sur les côtés.
  */
 @Composable
 fun DailySurface(
@@ -232,37 +241,49 @@ fun DailySurface(
     value: String,
     unit: String,
     progress: Float,
-    stats: List<Stat>,
-    firstAction: String,
-    onFirstAction: () -> Unit,
-    secondAction: String,
-    onSecondAction: () -> Unit,
+    addDescription: String,
+    onAdd: () -> Unit,
     modifier: Modifier = Modifier,
     status: String? = null,
     statusTrend: Trend = Trend.Neutral,
     statusContext: String? = null,
+    rows: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
-    HighlightSurface(modifier, grouped = true) {
-        HeroNumber(value, label = label, unit = unit, delta = status, trend = statusTrend, deltaContext = statusContext)
-        ProgressTrack(progress)
-        if (stats.isNotEmpty()) StatRow(stats)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
-            StudioButton(
-                firstAction,
-                onFirstAction,
-                Modifier.weight(1f),
-                variant = ButtonVariant.Secondary,
-                size = ButtonSize.Medium,
-                icon = R.drawable.ds_ic_add,
+    Column(
+        modifier
+            .fillMaxWidth()
+            .clip(Studio.shapes.surface)
+            .background(Studio.colors.surfaceRaised),
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(start = Studio.spacing.screenGrouped, end = Studio.spacing.screenGrouped, top = Studio.spacing.s, bottom = Studio.spacing.screen),
+        ) {
+            Row(Modifier.fillMaxWidth().heightIn(min = DailyHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
+                Text(label, Modifier.weight(1f), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+                StudioIconButton(
+                    R.drawable.ds_ic_add,
+                    contentDescription = addDescription,
+                    onClick = onAdd,
+                    filled = true,
+                    modifier = Modifier.bleed(end = DailyActionBleed),
+                )
+            }
+            Spacer(Modifier.height(DailyHeroGap))
+            HeroNumber(value, unit = unit, delta = status, trend = statusTrend, deltaContext = statusContext)
+            Spacer(Modifier.height(SurfaceGap))
+            ProgressTrack(progress)
+        }
+        if (rows != null) {
+            Spacer(
+                Modifier
+                    .padding(start = Studio.spacing.screenGrouped)
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(Studio.colors.separator),
             )
-            StudioButton(
-                secondAction,
-                onSecondAction,
-                Modifier.weight(1f),
-                variant = ButtonVariant.Secondary,
-                size = ButtonSize.Medium,
-                icon = R.drawable.ds_ic_add,
-            )
+            CompositionLocalProvider(LocalInListGroup provides true) { rows() }
         }
     }
 }

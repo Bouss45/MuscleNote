@@ -371,9 +371,6 @@
     <string name="nutrition_goal_dot">· %1$s kcal</string>
     <string name="nutrition_goal_over">au-dessus de %1$s</string>
     <string name="nutrition_goal_only">objectif %1$s kcal</string>
-    <string name="nutrition_water_of">eau · sur %1$s</string>
-    <string name="nutrition_water_reached">eau · objectif atteint</string>
-    <string name="nutrition_supplements_taken_label">compléments pris</string>
     <string name="nutrition_ml_value">%1$s ml</string>
     <string name="nutrition_supplements">Compléments</string>
     <string name="nutrition_taken_toggle">Pris aujourd\'hui</string>
@@ -391,6 +388,67 @@
     <string name="nutrition_reminder">Rappel</string>
     <string name="nutrition_delete_supplement">Supprimer le complément</string>
     <string name="nutrition_delete_message">Le complément et ses rappels seront retirés.</string>
+    <!-- Protéines, stock des compléments et moyenne sur 7 jours (SPEC § 15.16, D42) -->
+    <string name="nutrition_today_calories">Aujourd\'hui · calories</string>
+    <string name="nutrition_calories_add">Ajouter des calories</string>
+    <string name="nutrition_water_add">Ajouter de l\'eau</string>
+    <string name="nutrition_protein_add">Ajouter des protéines</string>
+    <string name="nutrition_detail_open">Voir le détail</string>
+    <string name="nutrition_goal_reached">objectif %1$s atteint</string>
+    <string name="nutrition_supplements_taken_count">%1$d sur %2$d pris</string>
+    <plurals name="nutrition_supplements_taken_description">
+        <item quantity="one">%1$d complément sur %2$d pris aujourd\'hui</item>
+        <item quantity="other">%1$d compléments sur %2$d pris aujourd\'hui</item>
+    </plurals>
+    <string name="nutrition_protein">Protéines</string>
+    <string name="nutrition_grams_value">%1$s g</string>
+    <string name="nutrition_protein_no_goal">Pas d\'objectif</string>
+    <string name="nutrition_entry_help_no_goal">Aujourd\'hui : %1$s.</string>
+    <string name="nutrition_goal_undefined">À définir</string>
+    <string name="nutrition_protein_goal_title">Objectif de protéines</string>
+    <string name="nutrition_protein_mode_per_kg">Par kg</string>
+    <string name="nutrition_protein_mode_fixed">Valeur fixe</string>
+    <string name="nutrition_protein_per_kg_help">Avec ta dernière pesée : %1$s kg.</string>
+    <string name="nutrition_protein_fixed_help">Le même objectif chaque jour.</string>
+    <string name="nutrition_protein_no_weight_help">Sans pesée, l\'objectif est une valeur fixe.</string>
+    <string name="nutrition_protein_goal_label">Objectif</string>
+    <string name="nutrition_protein_goal_per_kg_value">%1$s · %2$s g/kg</string>
+    <string name="nutrition_protein_per_kg_invalid">Choisis entre 1,2 et 2,2 g par kg</string>
+    <string name="nutrition_average_title">Moyenne sur 7 jours</string>
+    <string name="nutrition_average_kcal">kcal par jour</string>
+    <string name="nutrition_average_water">d\'eau</string>
+    <string name="nutrition_average_protein">de protéines</string>
+    <string name="nutrition_stock">Stock</string>
+    <string name="nutrition_stock_untracked">Non suivi</string>
+    <plurals name="nutrition_stock_days">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
+    <string name="nutrition_stock_value">%1$s · %2$s</string>
+    <string name="nutrition_stock_description">Stock : %1$s</string>
+    <string name="nutrition_stock_low_description">Stock bas : %1$s</string>
+    <string name="nutrition_doses_per_day">Doses par jour</string>
+    <plurals name="nutrition_doses_per_day_subtitle">
+        <item quantity="one">%1$d dose par jour</item>
+        <item quantity="other">%1$d doses par jour</item>
+    </plurals>
+    <string name="nutrition_doses_per_day_help">Cocher « pris aujourd\'hui » compte ces doses.</string>
+    <string name="nutrition_doses_per_day_invalid">Saisis entre 1 et 20 doses</string>
+    <string name="nutrition_doses_unit">doses</string>
+    <string name="nutrition_stock_help">Doses qu\'il te reste aujourd\'hui.</string>
+    <string name="nutrition_stock_days_left">Jours restants</string>
+    <string name="nutrition_stock_stop">Ne plus suivre le stock</string>
+    <string name="nutrition_stock_low">Stock bas</string>
+    <string name="nutrition_stock_low_value">à %1$s</string>
+    <string name="nutrition_stock_low_help">En rouge quand il reste ce nombre de jours ou moins.</string>
+    <string name="nutrition_stock_low_invalid">Saisis un nombre de jours entre 0 et 99</string>
+    <string name="nutrition_days_unit">jours</string>
+    <string name="nutrition_restocked">Racheté</string>
+    <string name="nutrition_restock_title">Ajouter du stock</string>
+    <string name="nutrition_restock_help">%1$s · il reste %2$s, soit %3$s.</string>
+    <string name="nutrition_restock_help_doses">%1$s · il reste %2$s.</string>
+    <string name="nutrition_restock_unit">doses ajoutées</string>
+    <string name="nutrition_new_stock">Nouveau stock</string>
     <string name="common_close">Fermer</string>
     <string name="common_ok">OK</string>
 
@@ -584,7 +642,7 @@
         <item quantity="one">%1$d dose</item>
         <item quantity="other">%1$d doses</item>
     </plurals>
-    <string name="journal_day_nutrition">Calories et eau</string>
+    <string name="journal_day_nutrition">Nutrition</string>
     <string name="journal_day_goal">objectif %1$s</string>
     <string name="journal_day_empty">Rien de noté ce jour-là.</string>
     <string name="journal_week_count">%1$d/%2$d</string>
