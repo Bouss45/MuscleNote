@@ -2,8 +2,9 @@
 
 Référence unique de l'interface de MuscleNote : jetons, typographie, composants, gabarits d'écran
 et navigation. Source : la maquette Claude Design « MuscleNote — refonte », page **Tour 2 · Studio
-épuré** (12/11/2026), exportée dans [`design/claude-design/`](design/claude-design/) (fichiers
-`T2-*.dc.html`). Le comportement et les règles métier restent dans `SPEC.md` ; ce document dit à
+épuré** (12/11/2026 ; **v2 listes groupées** du 15/11/2026 : tokens, Composants 1 et 2, gabarit hub,
+Journal, Paramètres et Nutrition), exportée dans [`design/claude-design/`](design/claude-design/)
+(fichiers `T2-*.dc.html`). Le comportement et les règles métier restent dans `SPEC.md` ; ce document dit à
 quoi ressemble l'interface et avec quoi on la construit.
 
 **Règle** : toute interface est faite des jetons et des composants décrits ici, jamais d'une couleur
@@ -44,7 +45,9 @@ Code : `ui/designsystem/` (§ 14).
 - **Le jaune n'est jamais une action.** Le bouton principal est en inverse (blanc sur sombre, noir
   sur clair) ; le jaune marque ce qui se passe maintenant : chrono, repos, champ en saisie.
 - **Un chiffre héros par écran**, **une surface mise en avant par écran au plus**. Le reste repose
-  sur le fond, en sections séparées par des filets.
+  sur le fond, en sections séparées par des filets. 🔄 v2 (Journal, Paramètres, Nutrition) : les
+  listes vivent dans des **groupes** tonaux titrés (§ 9.1, § 10.1) ; le premier peut porter le
+  héros. Aucune bordure : c'est le ton qui sépare.
 - **Plat** : ni ombre ni bordure de carte ; la hiérarchie vient des surfaces (§ 6).
 - **Rien ne boucle** : pas de pulsation du chrono ni d'animation permanente.
 - **Cibles tactiles de 48 dp minimum**, même quand le visuel est plus petit.
@@ -52,15 +55,17 @@ Code : `ui/designsystem/` (§ 14).
 ## 2. Couleurs
 
 `Studio.colors`, deux palettes ; le choix Sombre (par défaut), Clair, Système de Paramètres (SPEC
-§ 15.10.4). Pas de couleurs dynamiques (Material You).
+§ 15.10.4). Pas de couleurs dynamiques (Material You). Valeurs de la planche **Tokens v2 listes
+groupées** (15/11/2026) pour toute l'app (SPEC D40) : en clair, fond gris et groupes blancs.
 
 | jeton (Kotlin) | maquette | sombre | clair | rôle |
 |---|---|---|---|---|
-| `background` | fond | `#0F1012` | `#FFFFFF` | fond de tous les écrans, de la fenêtre et du splash |
-| `surfaceRaised` | surface.avant | `#1C1D21` | `#F2F2F0` | la seule surface mise en avant d'un écran, bottom sheet, mini-barre, état pressé d'un bouton texte ou d'une ligne |
-| `surfaceControl` | surface.controle | `#2A2C31` | `#E7E7E4` | touches du pavé, contrôle segmenté, puces, bouton secondaire, pastille d'icône, filets posés sur une surface |
-| `surfacePressed` | surface.pressee | `#36383E` | `#D9D9D5` | état pressé, option sélectionnée du segmenté, touches d'action du pavé, pistes de progression, poignée de sheet |
-| `separator` | separateur | `#222428` | `#EBEBE8` | filets de liste, 1 dp, posés sur le fond |
+| `background` | fond | `#0F1012` | `#F2F2F0` | fond de tous les écrans (sous les groupes), de la fenêtre et du splash |
+| `surfaceRaised` | surface.groupe | `#1A1B1F` | `#FFFFFF` | groupes de liste, surface mise en avant (groupe du héros), bottom sheet, barre d'onglets, mini-barre, état pressé d'un bouton texte ou d'une ligne posée sur le fond |
+| `surfaceControl` | surface.controle | `#2A2C31` | `#E6E6E3` | touches du pavé, contrôle segmenté, puces, bouton secondaire, pastille d'icône, filets posés sur une surface |
+| `surfacePressed` | surface.selection | `#36383E` | `#D9D9D5` | état pressé d'un contrôle, option sélectionnée du segmenté, touches d'action du pavé, pistes de progression, poignée de sheet |
+| `surfaceGroupPressed` | surface.pressee | `#232529` | `#EDEDEA` | ligne pressée dans un groupe |
+| `separator` | separateur | `#2B2D32` | `#E8E8E5` | filets de liste, 1 dp, entre les lignes d'un groupe ou posés sur le fond |
 | `textPrimary` | texte.primaire | `#F3F3F1` | `#121315` | titres, chiffres, valeurs saisies, courbes |
 | `textSecondary` | texte.secondaire | `#A2A5AB` | `#5C5F65` | légendes, colonne « Préc. », onglets inactifs, unités |
 | `textTertiary` | texte.tertiaire | `#6F737A` | `#85888E` | valeurs pré-remplies, désactivé, semaine non validée — **chiffres de 24 sp et plus seulement** |
@@ -89,7 +94,10 @@ Code : `ui/designsystem/` (§ 14).
 
 **Contrastes sur fond** (maquette) : texte 17,1:1 · secondaire 7,7:1 · direct 12,4:1 (en clair,
 `liveText` 6,5:1) · hausse 10,2:1 / 5,4:1 · baisse 6,8:1 / 5,5:1. Tertiaire 4,0:1 / 3,6:1, d'où
-sa limite aux chiffres de 24 sp et plus.
+sa limite aux chiffres de 24 sp et plus. **v2** (calculés sur les jetons) : secondaire 6,97:1 sur
+un groupe sombre, 6,2:1 sur une ligne pressée ; en clair sur le fond gris, texte 16,6:1, secondaire
+5,7:1, `liveText` 5,75:1, hausse 4,8:1, baisse 4,9:1, tertiaire 3,2:1 ; secondaire 6,4:1 sur un
+groupe blanc et 5,5:1 sur une ligne pressée.
 
 **Vérifiés sur toutes les paires utilisées** (SPEC § 15.11.4), sombre / clair : tout texte ≥ 4,5:1
 sur son fond (au plus bas : secondaire sur `surfacePressed` 4,75 / 4,52, `up` sur `upDim` 7,6 /
@@ -137,7 +145,7 @@ Archivo (largeur 100) et **Archivo condensée (largeur 75)**.
 | `paragraph` | — | 14 · 400 · 1,45 | texte d'une sheet de confirmation, d'un état vide |
 | `caption` | texte.legende | 13 · 400 | légendes, sous-titres de ligne, mini-puce |
 | `captionStrong` | — | 13 · 600 | variation d'une ligne, compteur arrivé à sa limite |
-| `label` | etiquette | 12 · 700 · capitales · +12 % | « En cours », « Repos » |
+| `label` | etiquette | 12 · 700 · capitales · +12 % | « En cours », « Repos » ; étiquette d'un groupe (v2 : `titre.section`, en `textSecondary`) |
 | `small` | — | 12 · 400 | libellés d'onglets (500 / 700), axes de courbe (400 / 700), légende des semaines |
 | `columnHeader` | — | 11 · 700 · capitales · +12 % | en-têtes de colonnes des séries (#, Préc., Kg, Reps) |
 
@@ -167,6 +175,8 @@ Base 4. `Studio.spacing` :
 | `s` | esp.3 | 12 | titre de section → contenu, barre de titre → surface |
 | `m` | esp.4 | 16 | padding vertical de ligne, colonnes d'une rangée de stats |
 | `screen` | esp.5 | 20 | **marge d'écran**, padding de la surface mise en avant et des sheets |
+| `screenGrouped` | esp.4 (v2) | 16 | **marge d'écran des listes groupées**, retrait dans un groupe (lignes, étiquettes, padding latéral du groupe du héros) |
+| `group` | esp.8 (v2) | 32 | **entre deux groupes**, titre d'écran → première étiquette |
 | `l` | esp.6 | 24 | bloc exercice suivant (séance), rangée de stats sous la période |
 | `hero` | esp.8 | 32 | autour du chiffre héros |
 | `section` | esp.10 | 40 | **entre sections** |
@@ -185,7 +195,7 @@ l'inset de la barre de navigation, absorbé par la barre d'onglets ou la barre d
 | jeton | dp | usage |
 |---|---|---|
 | `control` | 12 | boutons, puces, touches, segmenté, champ en saisie, case de série, mini-barre, ligne pressée |
-| `surface` | 20 | surface mise en avant ; bottom sheet (coins du haut seulement) |
+| `surface` | 20 | surface mise en avant, groupe de liste ; bottom sheet (coins du haut seulement) |
 | `full` | cercle | points, pastilles d'icône, boutons icône |
 
 Rayons internes, fixés par leur composant : 9 (option du segmenté, 12 − 3 de retrait), 8
@@ -194,7 +204,8 @@ Rayons internes, fixés par leur composant : 9 (option du segmenté, 12 − 3 de
 ## 6. Élévation
 
 Aucune ombre. Quatre niveaux de surface, du plus bas au plus haut : `background` →
-`surfaceRaised` → `surfaceControl` → `surfacePressed`. Une bottom sheet est `surfaceRaised` sur
+`surfaceRaised` → `surfaceControl` → `surfacePressed` (une ligne pressée dans un groupe prend
+`surfaceGroupPressed`, un cran au-dessus du groupe). Une bottom sheet est `surfaceRaised` sur
 un `scrim` ; posés dessus, filets et contrôles passent d'un niveau (`surfaceControl`).
 
 ## 7. Mouvements
@@ -254,6 +265,12 @@ Chaque composant n'utilise que des jetons ; il reçoit ses textes déjà format�
 - Variante avec sous-titre : titre + 2 + `caption` `textSecondary` (« Encore 1 séance pour
   valider »), hauteur libre.
 - Suivi de 4 avant la première ligne.
+- 🔄 **Variante groupée** (`grouped`, v2 : Journal, Paramètres, Nutrition) — l'étiquette d'un groupe :
+  `label` (12 · 700 · capitales +12 %) en `textSecondary`, hauteur 32, retrait de 16 (alignée sur le
+  texte des lignes), **8 au-dessus de son groupe** ; à droite, lien ou mention en casse normale
+  (`captionStrong`, `textSecondary` ou couleur de la variation), sans chevron. TalkBack lit le titre
+  dans sa casse d'origine, comme un titre. Les écrans non redessinés (Accueil, Progrès, fiches,
+  résumé) gardent l'en-tête de 20.
 
 **Rangée de stats** — `StatRow`. 2 à 4 valeurs sans fond, colonnes égales séparées de 16 :
 valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
@@ -278,6 +295,10 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   déjà dans la séance, sélecteur) ; avec un **appui long**, la ligne à cocher le garde (exercice
   perso du sélecteur : modifier, supprimer).
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
+- 🔄 **Dans un groupe** (`ListGroup`, v2) : retrait de 16 de chaque côté (12 avant un chevron) ;
+  filet en retrait, du début du texte (après la pastille d'icône s'il y en a une) jusqu'au bord
+  droit du groupe ; 56 de haut sans sous-titre (64 avec) ; pressée, toute la ligne prend
+  `surfaceGroupPressed` (le groupe la découpe, sans débord ni rayon) et garde son filet.
 - **Appui long** optionnel (`onLongClick` + libellé d'accessibilité) : les actions secondaires
   d'une ligne, dans une bottom sheet (séance du Journal et « Dernière séance » de l'Accueil :
   modifier, changer la date, supprimer). Le toucher garde l'action principale ; `onClickLabel` la
@@ -337,8 +358,16 @@ Chaque option se touche sur toute la hauteur du conteneur (**48**), l'option cho
 retrait. Variante **compacte** (en-tête du pavé) : option de 36 (conteneur 48), largeur au
 contenu, padding 14.
 
+**Groupe de liste** — `ListGroup` (v2). Les lignes d'une section vivent dans un groupe tonal :
+`surfaceRaised`, rayon 20, **sans bordure**, qui découpe ses lignes. Contenu : des `ListRow`
+(dernière sans filet), ou une rangée de stats avec un padding de 16 (« Depuis le début », « Mes
+données »). Dans une liste paresseuse, chaque ligne est un segment (`ListGroupSegment` à sa
+`GroupPosition` : seul, premier, milieu, dernier), arrondi en haut du premier et en bas du dernier.
+
 **Section** (assemblage) — en-tête de section + lignes, posés sur le fond. Pas un composant :
-c'est la brique des gabarits hub et fiche.
+c'est la brique des gabarits hub et fiche. 🔄 v2 : **groupe titré** — étiquette (`SectionHeader`
+groupé), 8, `ListGroup` ; une phrase sous le groupe (info, message d'une opération) est en retrait
+de 16, 8 plus bas.
 
 ### 9.2 Actions et saisie (planche « Composants 2 »)
 
@@ -363,7 +392,8 @@ c'est la brique des gabarits hub et fiche.
 - Un bouton icône aligné sur un bord déborde de 12 pour que son icône tombe sur la marge.
 
 **Surface mise en avant** — `HighlightSurface`. Une seule par écran : `surfaceRaised`, rayon 20,
-padding 20, éléments espacés de 14. Variantes de la maquette :
+padding 20, éléments espacés de 14 ; 🔄 v2, groupe du héros d'un hub groupé (`grouped`,
+`DailySurface`) : padding latéral 16, comme les lignes. Variantes de la maquette :
 - **En direct** (`LiveSessionCard`) : étiquette en direct « EN COURS » à gauche, nom de la séance
   (`emphasis` 700) à droite ; chrono `numberHero` `liveText` ; 8 ; « Repos **1:48** ·
   développé couché, série 3 » (`body`, `textSecondary`, temps en `liveText` 700) ; barre de
@@ -461,8 +491,8 @@ chacun sous son libellé (`caption` `textSecondary`).
   500 `textSecondary`, temps en `liveText`) ; bouton texte petit « Reprendre ». Hors repos :
   « **Push** · 17:48 », le chrono de la séance. Posée 8 au-dessus de la barre d'onglets, dans les
   marges d'écran, sur tous les hubs sauf l'Accueil (sa surface « En cours » la remplace).
-- Barre d'onglets : filet `separator` en haut, 4 colonnes égales, padding 10 en haut, inset de
-  navigation en bas ; icône 24 + 4 + libellé `small`. Sélectionné : icône pleine, `textPrimary`,
+- Barre d'onglets : sur `surfaceRaised` (🔄 v2 : le ton la détache du fond, **sans filet**), 4
+  colonnes égales, padding 10 en haut, inset de navigation en bas ; icône 24 + 4 + libellé `small`. Sélectionné : icône pleine, `textPrimary`,
   700 ; sinon icône contour, `textSecondary`, 500. **Pas d'indicateur** (pastille Material).
 
 ### 9.3 Pièces des gabarits (tirées des écrans et des gabarits)
@@ -533,6 +563,14 @@ ne reçoit que l'inset du haut (`tabScreenInsets()`).
 Variante **paresseuse** (`HubLazyTemplate`) : même disposition, pour un hub dont les lignes se
 comptent par centaines (Journal, Progrès) ; chaque section (`section` : en-tête, 4, lignes) ou bloc sans
 en-tête (`block` : rangée de stats, état vide) est précédé de 40, sauf le premier.
+
+🔄 **Hub en listes groupées** (`grouped = true`, v2, planche Gabarits) — Journal, Paramètres,
+Nutrition : marges de 16 (`screenGrouped`) ; titre en retrait de 16, aligné sur le texte des lignes ;
+**8** entre la barre de titre et le groupe du héros (la surface mise en avant, padding latéral 16),
+ou **32** jusqu'à la première étiquette sans héros ; puis des **groupes titrés** (étiquette, 8,
+groupe) séparés de **32** (`group`) ; 32 en bas. Dans la variante paresseuse, `group` (une ligne par
+élément, chacune un segment du groupe) et `groupBlock` (un groupe d'un seul bloc, rangée de stats)
+remplacent `section` et `block` ; un état vide reste hors groupe.
 
 ### 10.2 Fiche
 
@@ -639,6 +677,9 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | bloc titre du résumé sous sa barre | 8 | 4, comme toutes les fiches |
 | barre de titre du hub Progrès | tassée par le navigateur (contenu plus haut que la planche) | 56, comme tous les hubs |
 | marge latérale des boutons | aucune (bouton HTML par défaut) | 4 / 12 / 20 (§ 9.2) |
+| écart titre d'écran → première étiquette (v2) | 40 (planche Tokens : « après le titre d'écran »), 32 (Paramètres) | 32 (`group`), comme l'écran dessiné ; 8 avant un groupe du héros (Journal, Nutrition) |
+| hauteur d'une ligne dans un groupe (v2) | 64 (planche Composants 1), 56 (lignes d'une seule ligne de Paramètres) | 56 sans sous-titre, 64 avec |
+| barre d'onglets (v2) | fond + filet (Accueil, Progrès v1), `surface.groupe` sans filet (Journal, Nutrition v2) | `surfaceRaised` sans filet partout (rôle « onglets » de la planche Tokens v2) |
 
 Les mesures internes des composants (14 entre éléments d'une ligne, 6 sous une légende de héros,
 3 entre titre et sous-titre…) sont gardées telles quelles.
@@ -761,11 +802,29 @@ Décidé (15/11/2026, SPEC § 15.13) :
   de filtre à choix multiple, « Fermer ». Sur la surface « Poids de corps », la cloche
   `notifications` ouvre la même sheet, avant le +.
 
+Décidé (15/11/2026, SPEC D40) :
+
+- **Listes groupées v2** : couleurs de la planche Tokens v2 pour toute l'app (fond clair gris,
+  groupes et surface du héros blancs, barre d'onglets sans filet) ; groupes titrés seulement sur les
+  trois écrans redessinés — **Journal** (« Depuis le début » en groupe de stats, un groupe par
+  semaine avec son compteur), **Paramètres** (« Mes données » en groupe de stats, puis Préférences,
+  Notifications, Données — l'info sous le groupe —, À propos), **Nutrition** (« Aujourd'hui » groupe
+  du héros, « Compléments » en groupe, « Nouveau complément » et l'info sous le groupe). Accueil,
+  Progrès, fiches, séance et résumé gardent leur disposition v1 jusqu'à ce qu'ils soient redessinés.
+- **Non repris des planches v2** (ni groupe, ni titre, ni espacement) : dans Paramètres, la pastille
+  d'icône de chaque ligne, l'interrupteur (la sauvegarde automatique garde sa sheet), la section
+  « Connexions » (Health Connect reste dans « Données ») et la valeur grise suivie d'un chevron ;
+  dans Nutrition, la case ronde à gauche (la case 48 reste à droite) ; dans le Journal, le filtre par
+  type de séance.
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
-  fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part.
+  fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part. Les
+  planches v2 en ajoutent : **calendrier du mois et objectif de séances** (« 3/3 · validée ») dans le
+  Journal, **protéines**, **stock des compléments** (« 12 jours ») et **moyenne sur 7 jours** dans
+  Nutrition — maquettes disponibles pour les futurs sujets (SPEC § 15.6).
 
 Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
 
@@ -783,7 +842,8 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille ;
   `TextField.kt` pour le champ texte ; `TrendCurve.kt` pour les trois courbes et
   `CurveGeometry.kt`, leur géométrie pure, testée en JVM ; `FitText`, dans `Foundation.kt`, pour un
-  mot qui doit tenir sur une ligne).
+  mot qui doit tenir sur une ligne ; `ListGroup.kt` pour les groupes de liste v2 — `ListGroup`,
+  `ListGroupSegment`, `GroupPosition` testée en JVM, `LocalInListGroup` lu par `ListRow`).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
   variante paresseuse `HubLazyTemplate`, `FicheTemplate` et `FicheLazyTemplate`, `LiveTemplate`,
   `FormSheetTemplate`), en
@@ -795,8 +855,9 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   `debug` (`app/src/debug/java/com/musclenote/android/ui/designsystem/`), comme les aperçus des
   écrans : un aperçu par composant (`DataComponentPreviews`, `ActionComponentPreviews`,
   `TemplatePiecePreviews`), les deux planches de composants recomposées à la taille de la
-  maquette (`BoardPreviews`, 1400 × 1320) et les gabarits remplis comme les écrans de la maquette
-  (`TemplatePreviews`, 412 × 915, insets de la maquette).
+  maquette (`BoardPreviews`, 1400 × 1320 ; Composants 1 dans sa version v2 « Données et listes
+  groupées ») et les gabarits remplis comme les écrans de la maquette (`TemplatePreviews`,
+  412 × 915, insets de la maquette ; le hub paresseux du Journal en listes groupées).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni

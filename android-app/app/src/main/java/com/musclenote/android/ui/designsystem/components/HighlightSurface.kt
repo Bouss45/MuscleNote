@@ -29,19 +29,25 @@ private val ChipGap = 6.dp
 
 /**
  * Surface mise en avant — `HighlightSurface` (DESIGN.md § 9.2) : une seule par écran,
- * `surfaceRaised`, rayon 20, padding 20, éléments espacés de [spacing] (14).
+ * `surfaceRaised`, rayon 20, padding 20, éléments espacés de [spacing] (14). [grouped] : groupe du
+ * héros d'un hub en listes groupées (v2), en retrait de 16 sur les côtés comme les lignes, 20 en
+ * haut et en bas.
  */
 @Composable
 fun HighlightSurface(
     modifier: Modifier = Modifier,
     spacing: Dp = SurfaceGap,
+    grouped: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier
             .fillMaxWidth()
             .background(Studio.colors.surfaceRaised, Studio.shapes.surface)
-            .padding(Studio.spacing.screen),
+            .padding(
+                horizontal = if (grouped) Studio.spacing.screenGrouped else Studio.spacing.screen,
+                vertical = Studio.spacing.screen,
+            ),
         verticalArrangement = Arrangement.spacedBy(spacing),
         content = content,
     )
@@ -217,7 +223,8 @@ fun MetricSurface(
  * Surface « Aujourd'hui » — `DailySurface` (hub Nutrition, SPEC § 15.10.1) : légende, chiffre héros
  * et unité (kcal du jour), état par rapport à l'objectif ([status], coloré par [statusTrend], suivi
  * de [statusContext]), piste de progression, rangée de stats (eau, compléments pris), puis deux
- * boutons secondaires moyens de largeurs égales (icône `add`).
+ * boutons secondaires moyens de largeurs égales (icône `add`). Groupe du héros d'un hub groupé
+ * (v2) : retrait de 16 sur les côtés.
  */
 @Composable
 fun DailySurface(
@@ -235,7 +242,7 @@ fun DailySurface(
     statusTrend: Trend = Trend.Neutral,
     statusContext: String? = null,
 ) {
-    HighlightSurface(modifier) {
+    HighlightSurface(modifier, grouped = true) {
         HeroNumber(value, label = label, unit = unit, delta = status, trend = statusTrend, deltaContext = statusContext)
         ProgressTrack(progress)
         if (stats.isNotEmpty()) StatRow(stats)

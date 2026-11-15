@@ -4,21 +4,27 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 
 /**
- * Jetons de couleur du design system « Studio épuré » (DESIGN.md § 2). Noir, blanc et gris pour
- * tout ; trois couleurs qui ont un sens : [live] = en direct, [up] = progression, [down] = baisse.
+ * Jetons de couleur du design system « Studio épuré », v2 listes groupées (DESIGN.md § 2). Noir,
+ * blanc et gris pour tout ; trois couleurs qui ont un sens : [live] = en direct, [up] =
+ * progression, [down] = baisse.
  */
 @Immutable
 data class StudioColors(
     val isDark: Boolean,
-    /** Fond de tous les écrans, de la fenêtre et du splash. */
+    /** Fond de tous les écrans (sous les groupes), de la fenêtre et du splash. */
     val background: Color,
-    /** La seule surface mise en avant d'un écran, bottom sheet, mini-barre, état pressé léger. */
+    /**
+     * Surface « groupe » : groupes de liste, surface du héros, bottom sheet, barre d'onglets,
+     * mini-barre, état pressé léger d'une ligne posée sur le fond.
+     */
     val surfaceRaised: Color,
     /** Touches, segmenté, puces, bouton secondaire, pastille d'icône, filets sur une surface. */
     val surfaceControl: Color,
-    /** État pressé, option sélectionnée, touches d'action, pistes de progression, poignée. */
+    /** « Sélection » : état pressé, option choisie, touches d'action, pistes de progression, poignée. */
     val surfacePressed: Color,
-    /** Filets de liste (1 dp) posés sur le fond. */
+    /** Ligne pressée dans un groupe (v2) : un cran au-dessus du groupe. */
+    val surfaceGroupPressed: Color,
+    /** Filets de liste (1 dp), entre les lignes d'un groupe ou posées sur le fond. */
     val separator: Color,
     val textPrimary: Color,
     val textSecondary: Color,
@@ -45,10 +51,11 @@ data class StudioColors(
 val StudioDarkColors = StudioColors(
     isDark = true,
     background = Color(0xFF0F1012),
-    surfaceRaised = Color(0xFF1C1D21),
+    surfaceRaised = Color(0xFF1A1B1F),
     surfaceControl = Color(0xFF2A2C31),
     surfacePressed = Color(0xFF36383E),
-    separator = Color(0xFF222428),
+    surfaceGroupPressed = Color(0xFF232529),
+    separator = Color(0xFF2B2D32),
     textPrimary = Color(0xFFF3F3F1),
     textSecondary = Color(0xFFA2A5AB),
     textTertiary = Color(0xFF6F737A),
@@ -67,11 +74,13 @@ val StudioDarkColors = StudioColors(
 
 val StudioLightColors = StudioColors(
     isDark = false,
-    background = Color(0xFFFFFFFF),
-    surfaceRaised = Color(0xFFF2F2F0),
-    surfaceControl = Color(0xFFE7E7E4),
+    // v2 : fond gris, groupes blancs (c'est le ton qui sépare, sans bordure).
+    background = Color(0xFFF2F2F0),
+    surfaceRaised = Color(0xFFFFFFFF),
+    surfaceControl = Color(0xFFE6E6E3),
     surfacePressed = Color(0xFFD9D9D5),
-    separator = Color(0xFFEBEBE8),
+    surfaceGroupPressed = Color(0xFFEDEDEA),
+    separator = Color(0xFFE8E8E5),
     textPrimary = Color(0xFF121315),
     textSecondary = Color(0xFF5C5F65),
     textTertiary = Color(0xFF85888E),

@@ -2,8 +2,8 @@
 <!-- Couleurs utilisées hors Compose (fenêtre, splash, icône). Thème clair ; le sombre est
      dans values-night. Fond = jeton `background` de DESIGN.md (§ 2) ; logo (SPEC § 15.8.5). -->
 <resources>
-    <color name="window_background">#FFFFFF</color>
-    <color name="splash_background">#FFFFFF</color>
+    <color name="window_background">#F2F2F0</color>
+    <color name="splash_background">#F2F2F0</color>
     <!-- Logo : haltère jaune sur graphite. -->
     <color name="logo_yellow">#FFC93D</color>
     <color name="logo_graphite">#17181B</color>

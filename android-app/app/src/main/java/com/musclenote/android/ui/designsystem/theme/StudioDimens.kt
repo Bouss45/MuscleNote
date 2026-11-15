@@ -23,6 +23,10 @@ data class StudioSpacing(
     val m: Dp = 16.dp,
     /** 20 — marge d'écran, padding de surface et de sheet. */
     val screen: Dp = 20.dp,
+    /** 16 — marge d'écran et retrait dans un groupe : listes groupées (v2, DESIGN.md § 10.1). */
+    val screenGrouped: Dp = 16.dp,
+    /** 32 — entre deux groupes, titre d'écran → première étiquette (v2). */
+    val group: Dp = 32.dp,
     /** 24 — bloc exercice suivant, stats sous la période. */
     val l: Dp = 24.dp,
     /** 32 — autour du chiffre héros. */
@@ -40,7 +44,7 @@ data class StudioSpacing(
 data class StudioShapes(
     /** 12 — boutons, puces, touches, segmenté, champ, case de série. */
     val control: Shape = RoundedCornerShape(12.dp),
-    /** 20 — surface mise en avant. */
+    /** 20 — surface mise en avant, groupe de liste. */
     val surface: Shape = RoundedCornerShape(20.dp),
     /** 20 en haut seulement — bottom sheet. */
     val sheet: Shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),

@@ -1,8 +1,6 @@
 package com.musclenote.android.ui.journal
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -32,8 +30,9 @@ import java.time.LocalDate
 import kotlin.math.roundToInt
 
 /**
- * Onglet Journal (SPEC § 15.8.4), gabarit hub en liste paresseuse : les totaux depuis le début,
- * puis une section par semaine (du lundi au dimanche) avec une ligne par séance terminée —
+ * Onglet Journal (SPEC § 15.8.4), gabarit hub en liste paresseuse et listes groupées (🔄 D40) : le
+ * groupe des totaux depuis le début, puis un groupe par semaine (du lundi au dimanche) avec une
+ * ligne par séance terminée —
  * toucher → résumé ([onOpenSession], § 15.12), appui long → modifier ([onEditWorkout]), changer la
  * date, supprimer. Sans
  * séance : état vide qui démarre ([onStartWorkout]) ou reprend ([onOpenWorkout]) une séance.
@@ -58,10 +57,12 @@ fun JournalScreen(
     val totals = remember(workouts) { JournalRules.totals(workouts) }
     val actions = rememberSessionActions()
 
+    // 🔄 D40 : listes groupées (DESIGN.md § 10.1) — « Depuis le début » et chaque semaine en groupe.
     HubLazyTemplate(
         modifier = modifier,
         titleBar = { ScreenTitleBar(stringResource(R.string.journal_title)) },
         insets = insets,
+        grouped = true,
     ) {
         if (weeks.isEmpty()) {
             block("empty") {
@@ -76,35 +77,39 @@ fun JournalScreen(
             }
             return@HubLazyTemplate
         }
-        block("totals") { TotalsSection(totals) }
+        groupBlock("totals", label = { SectionHeader(stringResource(R.string.journal_all_time), grouped = true) }) {
+            TotalsStats(totals)
+        }
         weeks.forEach { week ->
-            section(
+            group(
                 key = week.monday ?: "unknown",
-                header = {
+                label = {
                     SectionHeader(
                         weekTitle(week.monday, today, dates),
                         trailingText = pluralStringResource(R.plurals.common_sessions_count, week.sessions.size, week.sessions.size),
+                        grouped = true,
                     )
                 },
-            ) {
-                itemsIndexed(week.sessions, key = { _, summary -> summary.workout.id }, contentType = { _, _ -> "session" }) { index, summary ->
-                    SessionRow(
-                        summary = summary,
-                        dates = dates,
-                        onOpen = { onOpenSession(summary.workout.id) },
-                        onLongPress = { actions.actionsFor = summary.workout.id },
-                        showDivider = index < week.sessions.lastIndex,
-                    )
-                }
+                items = week.sessions,
+                itemKey = { summary -> summary.workout.id },
+                contentType = "session",
+            ) { summary, position ->
+                SessionRow(
+                    summary = summary,
+                    dates = dates,
+                    onOpen = { onOpenSession(summary.workout.id) },
+                    onLongPress = { actions.actionsFor = summary.workout.id },
+                    showDivider = !position.isLast,
+                )
             }
         }
     }
     SessionActionSheets(actions, workouts, onEditWorkout)
 }
 
-/** « Depuis le début » : séances, volume (t), temps en salle et moyenne par séance (§ 3.7). */
+/** « Depuis le début » : séances, volume (t), temps en salle et moyenne par séance (§ 3.7), dans leur groupe. */
 @Composable
-private fun TotalsSection(totals: JournalTotals) {
+private fun TotalsStats(totals: JournalTotals) {
     val stats = buildList {
         add(Stat(formatInteger(totals.sessions.toDouble()), stringResource(R.string.journal_stat_sessions)))
         add(Stat(stringResource(R.string.journal_tonnes, formatInteger(totals.volumeTonnes.toDouble())), stringResource(R.string.journal_stat_volume)))
@@ -118,10 +123,7 @@ private fun TotalsSection(totals: JournalTotals) {
         }
         totals.averageMinutes?.let { add(Stat(compactDurationText(it), stringResource(R.string.journal_stat_average))) }
     }
-    Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.s)) {
-        SectionHeader(stringResource(R.string.journal_all_time))
-        StatRow(stats)
-    }
+    StatRow(stats, Modifier.padding(Studio.spacing.m))
 }
 
 private const val MINUTES_PER_HOUR = 60
