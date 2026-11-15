@@ -49,6 +49,27 @@ class ReleaseNotesTest {
     }
 
     @Test
+    fun `les tests sont reconnus`() {
+        assertTrue(ReleaseNotes.isTest("android-app/app/src/test/java/com/musclenote/android/data/WorkoutRulesTest.kt"))
+        assertTrue(ReleaseNotes.isTest("android-app/release-notes/src/test/kotlin/com/musclenote/releasenotes/ReleaseNotesTest.kt"))
+        assertTrue(ReleaseNotes.isTest("android-app/app/src/androidTest/java/A.kt"))
+        assertTrue(ReleaseNotes.isTest("android-app/app/src/testDebug/java/A.kt"))
+        assertTrue(ReleaseNotes.isTest("src/test/resources/backup-v1.json"))
+        assertFalse(ReleaseNotes.isTest("android-app/app/src/main/java/com/musclenote/android/data/test/Fake.kt"))
+        assertFalse(ReleaseNotes.isTest("android-app/app/src/debug/java/com/musclenote/android/ui/preview/ScreenPreviews.kt"))
+        assertFalse(ReleaseNotes.isTest("android-app/app/src/testing/A.kt"))
+        assertFalse(ReleaseNotes.isTest("android-app/app/src/main/java/TestData.kt"))
+    }
+
+    @Test
+    fun `les commits qui ne touchent que les tests, la doc ou la CI ne sont pas listés`() {
+        val tests = commit("Tests du Journal : semaine à cheval sur deux années", "android-app/app/src/test/java/JournalRulesTest.kt")
+        val testsAndDocs = commit("Tests et SPEC", "android-app/release-notes/src/test/kotlin/R.kt", "SPEC.md")
+        val appAndTests = commit("Journal : semaine du lundi", "android-app/app/src/main/java/JournalRules.kt", "android-app/app/src/test/java/JournalRulesTest.kt")
+        assertEquals(listOf(appAndTests), ReleaseNotes.select(listOf(tests, testsAndDocs, appAndTests)))
+    }
+
+    @Test
     fun `les fusions et les commits de doc ou de CI seuls ne sont pas listés`() {
         val app = commit("Health Connect : envoi des séances", "android-app/app/src/main/H.kt")
         val mixed = commit("Notes de version", "android-app/release-notes/R.kt", ".github/workflows/release.yml", "CLAUDE.md")
