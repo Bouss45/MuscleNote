@@ -632,4 +632,19 @@
     <string name="weigh_in_today">Today</string>
     <string name="weigh_in_yesterday">Yesterday</string>
     <string name="weigh_in_add">Add</string>
+    <!-- Workout summary (SPEC § 15.12) -->
+    <string name="summary_finished">Workout finished</string>
+    <string name="summary_finished_on">Workout finished · %1$s · %2$s</string>
+    <string name="summary_volume">Total volume</string>
+    <string name="summary_delta_context">vs %1$s on %2$s</string>
+    <string name="summary_stat_duration">duration</string>
+    <plurals name="summary_stat_sets">
+        <item quantity="one">set</item>
+        <item quantity="other">sets</item>
+    </plurals>
+    <plurals name="summary_records">
+        <item quantity="one">Record broken · %1$d</item>
+        <item quantity="other">Records broken · %1$d</item>
+    </plurals>
+    <string name="summary_done">Done</string>
 </resources>

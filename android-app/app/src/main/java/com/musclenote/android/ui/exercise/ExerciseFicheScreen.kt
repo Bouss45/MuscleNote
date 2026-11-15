@@ -305,27 +305,11 @@ private fun SessionHistoryRow(
     onClick: () -> Unit,
     showDivider: Boolean,
 ) {
-    val best = ProgressStats.bestSet(session.sets, isCardio)
-    val bestText = best?.let { set ->
-        when {
-            isCardio -> {
-                val minutes = formatNumber(set.duration ?: 0.0)
-                val km = set.distance?.takeIf { it > 0 }
-                if (km != null) {
-                    stringResource(R.string.exercise_fiche_cardio_set, minutes, formatNumber(km))
-                } else {
-                    stringResource(R.string.exercise_fiche_cardio_set_minutes, minutes)
-                }
-            }
-            set.weight > 0 -> stringResource(R.string.workout_previous_strength, formatNumber(set.weight), set.reps)
-            else -> stringResource(R.string.workout_previous_reps, set.reps)
-        }
-    }
-    val oneRepMax = if (isCardio) 0.0 else session.bestOneRepMax
-    val subtitle = listOfNotNull(
-        bestText?.let { stringResource(R.string.exercise_fiche_best_set, it) },
-        oneRepMax.takeIf { it > 0 }?.let { stringResource(R.string.exercise_fiche_one_rm, formatNumber(it)) },
-    ).joinToString(" · ").ifEmpty { null }
+    val subtitle = bestSetLine(
+        best = ProgressStats.bestSet(session.sets, isCardio),
+        oneRepMax = if (isCardio) 0.0 else session.bestOneRepMax,
+        isCardio = isCardio,
+    )
     val value = when {
         isCardio -> stringResource(R.string.common_min_value, formatNumber(session.totalDuration))
         session.volume > 0 -> stringResource(R.string.session_volume_kg, formatInteger(session.volume))

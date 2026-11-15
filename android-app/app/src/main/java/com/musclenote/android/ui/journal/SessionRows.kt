@@ -56,8 +56,8 @@ import java.time.ZoneId
 
 /*
  * Ligne d'une séance terminée et ses actions (SPEC § 15.8.4), communes au Journal et à la section
- * « Dernière séance » de l'Accueil : toucher → éditeur, appui long → modifier, changer la date,
- * supprimer.
+ * « Dernière séance » de l'Accueil : toucher → résumé (§ 15.12), appui long → modifier, changer la
+ * date, supprimer. Les actions servent aussi au ⋮ du résumé.
  */
 
 /** Durée d'une ligne : « 45 min », « 1 h », « 1 h 05 » (en anglais « 1 h 05 min »). */

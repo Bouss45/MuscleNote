@@ -34,11 +34,13 @@ import kotlin.math.roundToInt
 /**
  * Onglet Journal (SPEC § 15.8.4), gabarit hub en liste paresseuse : les totaux depuis le début,
  * puis une section par semaine (du lundi au dimanche) avec une ligne par séance terminée —
- * toucher → éditeur ([onEditWorkout]), appui long → modifier, changer la date, supprimer. Sans
+ * toucher → résumé ([onOpenSession], § 15.12), appui long → modifier ([onEditWorkout]), changer la
+ * date, supprimer. Sans
  * séance : état vide qui démarre ([onStartWorkout]) ou reprend ([onOpenWorkout]) une séance.
  */
 @Composable
 fun JournalScreen(
+    onOpenSession: (workoutId: String) -> Unit,
     onEditWorkout: (workoutId: String) -> Unit,
     onStartWorkout: () -> Unit,
     onOpenWorkout: () -> Unit,
@@ -89,7 +91,7 @@ fun JournalScreen(
                     SessionRow(
                         summary = summary,
                         dates = dates,
-                        onOpen = { onEditWorkout(summary.workout.id) },
+                        onOpen = { onOpenSession(summary.workout.id) },
                         onLongPress = { actions.actionsFor = summary.workout.id },
                         showDivider = index < week.sessions.lastIndex,
                     )

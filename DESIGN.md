@@ -592,8 +592,8 @@ n'a pas encore, cf. § 13) :
 
 | hub | sections → gabarit ouvert |
 |---|---|
-| Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → éditeur (en attendant la fiche résumé), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
-| Journal | **Depuis le début** : totaux · **une section par semaine** : séances → éditeur (en attendant la fiche résumé), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub ; résumés (*Nouveau*) → fiche |
+| Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → résumé (fiche, SPEC § 15.12), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
+| Journal | **Depuis le début** : totaux · **une section par semaine** : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub |
 | Progrès | **Poids de corps** (surface) : pesée → formulaire · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
@@ -731,10 +731,20 @@ Décidé (15/11/2026, SPEC § 15.11) :
 - **Accessibilité** : les règles du § 3 (texte agrandi), du § 9 (cibles de 48, libellés TalkBack)
   et l'aplat `live` foncé en clair (§ 2).
 
+Décidé (15/11/2026, SPEC § 15.12) :
+
+- **Résumé de fin de séance** : gabarit fiche paresseux, sans composant nouveau. Bloc titre
+  « Séance terminée · date · heure » puis le nom ; chiffre héros = volume total, variation par
+  rapport à la dernière séance du même programme (« vs Push du jeu. 5 nov. ») ; rangée de stats
+  (durée, séries) ; section « Exercices » avec « Records battus · n » en `up` à droite, une
+  `ListRow` par exercice (meilleure série en sous-titre, « Record » en variation seule). En fin de
+  séance, **aucun bouton en haut** (une barre vide de 48) et « Terminer » seul en `BottomActionBar`
+  (la maquette avait ✕, note et « Enregistrer la séance ») ; en consultation depuis le Journal, ←
+  et ⋮ (actions de la séance), sans barre d'action.
+
 Hors périmètre pour l'instant :
 
-- **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
-  Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
+- **Données nouvelles** : calendrier du Journal, Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part.
 

@@ -62,6 +62,7 @@ private fun PreviewHomeScreen() = HomeScreen(
     onOpenSettings = {},
     onStartWorkout = { _, _ -> },
     onOpenWorkout = {},
+    onOpenSession = {},
     onEditWorkout = {},
     onOpenJournal = {},
     insets = PreviewTabInsets,
@@ -71,14 +72,14 @@ private fun PreviewHomeScreen() = HomeScreen(
 @ScreenPreviews
 @Composable
 private fun JournalScreenPreview() = ScreenPreview {
-    JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
+    JournalScreen(onOpenSession = {}, onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
 }
 
 /** Journal sans séance terminée : état vide. */
 @PhonePreviews
 @Composable
 private fun JournalScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
+    JournalScreen(onOpenSession = {}, onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
 }
 
 /** Écran d'onglet sans la barre d'onglets : l'inset de la barre d'état de la maquette seul. */

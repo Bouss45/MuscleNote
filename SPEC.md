@@ -674,6 +674,8 @@ terminée la plus récente contenant cet exercice** ; aucune → 0 série.
   tête de l'historique **avec toutes ses séries** (les non validées restent stockées comme
   plan pour le prochain pré-remplissage, mais ne comptent dans aucune statistique), et la
   séance en cours est effacée.
+- 🔄 D37 : une séance terminée s'affiche ensuite en **résumé** (§ 15.12) ; un abandon revient à
+  l'Accueil, sans résumé.
 
 ### 3.4 Finalisation automatique des séances de plus de 24 h
 
@@ -1795,7 +1797,7 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 (§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
 l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
-(§ 15.11).
+(§ 15.11), D37 avec le résumé de fin de séance (§ 15.12).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1835,6 +1837,7 @@ Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finiti
 | D34 | Refonte « Studio épuré », étape 4 : fiche exercice et Progrès | fiche exercice au gabarit fiche (chiffre héros = dernière séance de la période, variation depuis le début de la période, courbe fine touchable, périodes 1M – Tout, historique date · meilleure série · volume) ; Progrès au gabarit hub en gardant tout son contenu, exercices avec mini-courbe et variation → fiche ; rien de l'existant retiré (record personnel, 1RM estimé, 1RM par séance), seule la nouvelle fonctionnalité Records est hors périmètre ; reps au poids du corps ; pesée au pavé numérique ; aucun changement du format JSON | héros = métrique de la dernière séance de la période, variation = dernière − premier point (au toucher : point − premier point), verte / rouge / grise, défilement 250 ms au changement de période ; record de la période marqué dans la liste ; courbe `TrendCurve` en Canvas (toucher → point le plus proche, réduction au-delà de 120 points en gardant creux et pics, description TalkBack période · départ · arrivée · variation), Tout par défaut ; record personnel et 1RM estimé en rangée de stats ; séances : toutes, « 1RM ~ », toucher → éditeur ; métrique au poids du corps = reps max, charge ajoutée dès qu'il y a du lest ; Progrès : surface Poids de corps (évolution en gris faute d'objectif), Exercices (puces des groupes utilisés, stats, lignes par date de dernière séance avec mini-courbe, dernière valeur et variation, charge max sur tous les exercices en kg), Calories et eau (stats, courbe avec objectif, récapitulatif), Pesées (suppression confirmée) ; « Nouvelle pesée » au gabarit formulaire avec pavé numérique et sélecteur de date (§ 2.8, 2.10, 2.13, 3.10, 15.9) |
 | D35 | Refonte « Studio épuré », étape 5a : Nutrition et Paramètres | Nutrition au gabarit hub avec toutes ses fonctions, rappels compris, une seule surface : ce qui compte aujourd'hui ; quantités au pavé numérique ; pas d'objectif de protéines ; Paramètres en liste groupée, mêmes réglages, chaque réglage en formulaire ; thème Sombre (par défaut), Clair, Système ; export, sauvegarde, Health Connect et avis inchangés ; aucun changement du format JSON sauf le thème | Nutrition : surface « Aujourd'hui » (kcal du jour en chiffre héros, « encore … » gris, « dans l'objectif » vert, « +… kcal » rouge selon le ratio de D15, piste, eau et compléments pris, boutons Calories et Eau), compléments en lignes (case « pris aujourd'hui » séparée, toucher → sheet du complément : rappels, suppression confirmée), « Nouveau complément » en sheet au clavier (nom, dosage texte libre, unités, rappels) ; formulaires Calories et Eau au pavé : « Ajouter » ou « Total du jour » (remplace ⟲ ; nouvelle règle `setWater`), « Nouveau total », objectif quotidien à partir d'aujourd'hui ; heure au `TimePicker` avec « Supprimer » ; Paramètres : Mes données, Préférences (langue, thème, minuteur, notifications), Données (sauvegarde automatique, exports, import, Health Connect), À propos (mises à jour, rapport de plantage, avis), messages sans couleur ; thème par défaut `"dark"` (absent, invalide, import v1), choix déjà enregistré gardé ; tendances de calories et d'eau toujours dans Progrès, protéines et stock hors périmètre (§ 2.11, 2.12, 3.14, 4.1, 5.3, 15.10) |
 | D36 | Refonte « Studio épuré », étape 5b : finitions avant la fusion | plus aucune couleur, taille ou police en dur hors du design system, ancien thème et icônes inutiles retirés ; contrastes en sombre et en clair, texte à 200 % sans rien de coupé, TalkBack ; mise à jour depuis la v1.0 sans perte | « Démarrer une séance » en formulaire (bottom sheet : type puis poids au pavé), sélecteur d'exercices en bottom sheet (lignes à cocher, appui long pour un exercice perso), éditeur de séance au gabarit fiche (type et poids en lignes, séries au pavé, « Enregistrer » en bas) ; `ui/theme/`, Inter et les polices téléchargeables, couleurs de groupe, 52 icônes retirés ; aplat `live` en clair `#9E7100` ; composants qui grandissent avec le texte, chiffres qui rétrécissent, cibles de 48 dp, libellés TalkBack des séries ; notes de version sans les commits qui ne touchent que les tests ; aucun changement du format JSON (§ 2.3, 2.7, 2.9, 15.1, 15.11) |
+| D37 | Résumé de fin de séance | affiché après « Terminer la séance » (gabarit fiche) et consultable ensuite depuis le Journal ; chiffre héros = volume total, variation par rapport à la dernière séance du même programme (verte, rouge ou grise, rien la première fois) ; durée, nombre de séries, puis chaque exercice avec sa meilleure série et un repère si un record est battu (charge ou 1RM estimé, règles de records existantes) ; un seul bouton « Terminer », qui ramène à l'Accueil ; aucun changement du format JSON, tout est calculé | résumé à la place de la séance en cours dans la pile (au-dessus de l'Accueil), notification de séance retirée comme avant ; toucher une séance du Journal ou la « Dernière séance » de l'Accueil ouvre son résumé (l'éditeur reste dans l'appui long et dans ⋮) ; même programme = même clé de séance (§ 3.1), parmi les séances plus anciennes ; variation au kg ; records = record personnel (métrique de la fiche exercice : charge, reps au poids du corps, durée en cardio) et 1RM estimé, strictement supérieurs à ceux des séances plus anciennes — égalité ou première fois : pas de record ; « Records battus · n » en vert en tête de la liste (§ 3.3, 15.7.1, 15.8.1, 15.8.4, 15.12) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2094,6 +2097,16 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   dans une sheet à étapes, glisser sur une courbe, TalkBack et grand texte (200 %) sur un vrai
   téléphone, notification de séance et Live Update (Android 16+), sélecteur de dossier, Health
   Connect, import d'un fichier partagé.
+- **Résumé de fin de séance** (🔄 D37, § 15.12), branche `feat/resume-seance` : écran
+  `ui/summary/WorkoutSummaryScreen.kt` (gabarit `FicheLazyTemplate`, route `workout-summary/{workoutId}`),
+  ouvert à la fin de la séance et depuis les lignes de séance (`ui/journal/SessionRows.kt`) ; règles
+  pures `data/workout/WorkoutSummaryRules.kt` (séance précédente du même programme, variation du
+  volume, records battus). Aucun composant nouveau. Tests `WorkoutSummaryRulesTest` (première séance
+  du programme, autre programme plus récent ignoré, égalité « identique », hausse et baisse, séances
+  plus récentes ignorées ; records : égalité, première fois, charge, 1RM seul, reps au poids du corps,
+  premier lest, cardio, séries non validées). À vérifier **sur l'appareil** : « Terminer la séance »
+  → résumé → « Terminer » → Accueil, retour système depuis le résumé, notification retirée, ⋮ et
+  suppression depuis le résumé d'une séance du Journal.
 
 ---
 
@@ -2257,7 +2270,9 @@ et un pavé numérique intégré, sans donnée nouvelle ; puis la navigation, l'
 le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus ; puis la fiche exercice et Progrès (🔄 D34,
 § 15.9), toujours sans donnée nouvelle ; puis Nutrition et Paramètres (🔄 D35, § 15.10), dont seul le
 thème par défaut change (sombre) ; enfin les derniers écrans (démarrer, sélecteur, éditeur) et les
-finitions — ancien thème retiré, accessibilité, mise à jour vérifiée (🔄 D36, § 15.11).
+finitions — ancien thème retiré, accessibilité, mise à jour vérifiée (🔄 D36, § 15.11). **Résumé de
+fin de séance** (🔄 D37, § 15.12) : la première nouveauté après la refonte, calculée sur les séances
+existantes, sans donnée nouvelle ni composant nouveau.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2666,7 +2681,8 @@ migration.
 - **En bas, fixe** : le pavé numérique quand une valeur est en saisie (§ 15.7.4), sinon
   « Terminer la séance », qui ouvre une confirmation en bottom sheet : « Terminer la séance ? »,
   ou, sans série validée, « Abandonner la séance ? » (elle ne sera pas enregistrée, 🔄 D15). Le
-  bouton de confirmation reste en inverse, jamais rouge (DESIGN.md § 13).
+  bouton de confirmation reste en inverse, jamais rouge (DESIGN.md § 13). 🔄 D37 : « Terminer »
+  ouvre le résumé de la séance (§ 15.12).
 - **Supprimer une série** : bouton « Supprimer la série » de l'en-tête du pavé, puis confirmation
   en bottom sheet (🔄 jusqu'ici immédiate, § 10.8).
 - **Valider une série** (case, pavé ou notification) : comme avant, non validée → validée lance le
@@ -2824,7 +2840,8 @@ Racine (Navigation Compose, aucun en-tête système)
 - **Quitter la séance** : « Réduire » et le retour système reviennent à l'écran d'où on l'a ouverte
   (un onglet, Paramètres) ; juste après « Commencer », c'est l'écran d'où « Démarrer une séance »
   a été ouvert (l'Accueil, ou le Journal vide), puisque « Démarrer » a été remplacé (§ 2.3).
-  Terminer ou abandonner la séance revient à l'Accueil.
+  Abandonner la séance revient à l'Accueil ; la terminer ouvre son résumé au-dessus de l'Accueil
+  (🔄 D37, § 15.12), dont « Terminer » et le retour reviennent à l'Accueil.
 - **Autres entrées externes** : rappel de complément → onglet Nutrition ; fichier JSON partagé ou
   ouvert → Accueil puis Paramètres (confirmation d'import, § 5.4). Les actions des notifications
   (« Valider la série », « −30 s », « +30 s », « Passer », § 15.5) n'ouvrent pas l'app et ne changent
@@ -2924,7 +2941,8 @@ séances) :
    - à droite : le volume (§ 3.8, séries validées, arrondi au kg, séparateur de milliers de la
      langue : « 6 840 kg ») ; volume nul (cardio, poids du corps) → le nombre de séries validées
      (« 12 séries ») ;
-   - **toucher** → éditeur de la séance (§ 2.9, écran actuel) ;
+   - **toucher** → 🔄 D37 : **résumé** de la séance (§ 15.12) ; c'était l'éditeur (§ 2.9), qui
+     reste dans l'appui long et dans le ⋮ du résumé ;
    - **appui long** → bottom sheet : titre = nom affiché, texte = « mer. 11 nov. · 18:30 » ;
      boutons secondaires « Modifier la séance » (→ éditeur), « Modifier la date », « Supprimer la
      séance » ; bouton texte « Fermer ». « Supprimer la séance » ouvre une confirmation en bottom
@@ -3740,3 +3758,97 @@ Vérifié le 15 novembre 2026, en release, sur un émulateur Android 16 (API 36)
   alarmes des rappels : gardés ; aucun plantage. Accueil, Journal, Progrès et Nutrition affichent
   les mêmes chiffres qu'avant (le « 19h 30m » de l'ancien Accueil devient « 20 h » dans le
   Journal : arrondi à l'heure du § 15.8).
+
+### 15.12 Résumé de fin de séance (🔄 D37)
+
+Après « Terminer la séance », la séance terminée s'affiche en **résumé** : un écran au gabarit
+**fiche** (DESIGN.md § 10.2), fait des composants existants. Le même résumé est ensuite la fiche
+d'une séance du Journal. Tout est **calculé** à partir des séances terminées : le **format des
+données ne change pas** (§ 4, § 5), aucune migration ; les règles du § 3 non plus.
+
+#### 15.12.1 Ouverture et navigation
+
+- **Fin de séance** : « Terminer » dans la confirmation (§ 15.7.1), avec au moins une série
+  validée → la séance est terminée comme avant (§ 3.3 : historique, repos arrêté, notification
+  « Séance en cours » retirée, § 15.5) et son résumé **prend la place de la séance en cours** dans
+  la pile, au-dessus de l'Accueil. Aucun bouton en haut ; **un seul bouton**, « Terminer »
+  (principal, barre d'action en bas), qui ramène à l'Accueil ; le retour système aussi. Sans série
+  validée (« Abandonner »), rien n'est enregistré et l'on revient à l'Accueil, sans résumé.
+- **Consultation** : toucher une séance du **Journal** ou la ligne « Dernière séance » de l'Accueil
+  (§ 15.8.4) ouvre son résumé (🔄 c'était l'éditeur ; DESIGN.md § 11 l'annonçait « en attendant la
+  fiche résumé »). Barre : ← (retour à l'écran d'origine) et ⋮ « Options de la séance », qui ouvre
+  la sheet de l'appui long (« Modifier la séance » → éditeur, « Modifier la date », « Supprimer la
+  séance ») ; pas de barre d'action. Une séance supprimée ferme son résumé. L'appui long sur une
+  ligne ne change pas ; les séances de la fiche exercice (§ 15.9.1) ouvrent toujours l'éditeur.
+- Route `workout-summary/{workoutId}`, avec `?finished=true` en fin de séance. Séance introuvable :
+  « Séance introuvable » et « Retour », comme l'éditeur (§ 2.9).
+
+#### 15.12.2 Écran
+
+De haut en bas :
+
+1. **Barre** (§ 15.12.1).
+2. **Bloc titre** : surtitre « Séance terminée · jeu. 12 nov. · 18:04 » (date et heure locales du
+   début ; date illisible, § 10.3 : « Séance terminée ») ; titre = nom affiché (§ 3.1).
+3. **Chiffre héros** : légende « Volume total » ; valeur = le **volume** de la séance (§ 3.8, séries
+   validées, arrondi au kg, séparateur de milliers de la langue : « 8 240 ») et l'unité « kg » ;
+   **variation** par rapport à la séance précédente du même programme (§ 15.12.3), toujours signée
+   — « +280 kg » en vert, « −150 kg » en rouge, « identique » en gris — suivie de « vs Push du
+   jeu. 5 nov. » (nom affiché et date de cette séance). **Première séance du programme : ni
+   variation ni contexte.** Une séance sans charge (cardio, poids du corps) affiche « 0 kg ».
+4. **Rangée de stats** : la **durée** « 1 h 14 » (format compact du Journal, § 15.8.4), absente sans
+   `durationMinutes` (séance finalisée après 24 h, § 3.4) ; le nombre de **séries** validées « 16 ».
+5. **Section « Exercices »** ; à droite « Records battus · 2 » en vert (nombre d'exercices qui ont
+   battu un record, DESIGN.md § 9.1), sinon le nombre d'exercices. Une ligne par exercice ayant au
+   moins une série validée, dans l'ordre de la séance (exercice inconnu masqué, § 10.5) :
+   - titre : nom de l'exercice (§ 6) ;
+   - sous-titre : « Meilleure série 82,5 × 8 · 1RM ~104 kg », mêmes règles et textes que les séances
+     de la fiche exercice (§ 15.9.1, point 7 : la série validée la plus lourde, à égalité le plus de
+     reps puis la première ; « 12 reps » à 0 kg ; 1RM omis s'il vaut 0 ; cardio « 30 min · 5,2 km »,
+     sans 1RM) ;
+   - à droite, **seulement si un record est battu** (§ 15.12.3) : « Record » en vert (variation
+     seule). Rien sinon.
+   Les lignes ne s'ouvrent pas (la fiche exercice reste accessible depuis Progrès et la séance).
+6. **En fin de séance** seulement : barre d'action « Terminer ».
+
+#### 15.12.3 Règles (pures, testées en JVM)
+
+- **Séances plus anciennes** qu'une séance S : les séances terminées placées après S dans
+  l'historique, trié par date décroissante (§ 4.2). La séance en cours n'en fait jamais partie, ni
+  les séances plus récentes que S : le résumé d'une ancienne séance se lit comme le jour où elle a
+  été faite (une date modifiée déplace la séance, § 15.8.4).
+- **Séance précédente du même programme** : la plus récente des séances plus anciennes qui a la
+  même **clé de séance** que S (§ 3.1 : préréglage, sinon nom normalisé). Aucune → pas de variation.
+  Une séance d'un autre programme ne compte jamais, même si elle est plus récente.
+- **Variation du volume** = volume de S arrondi au kg − volume de la précédente arrondi au kg :
+  > 0 hausse (vert), < 0 baisse (rouge), 0 « identique » (gris) ; jamais « +0 kg ».
+- **Records battus** par un exercice de S (au moins une série validée dans S), comparés aux séances
+  plus anciennes où il a au moins une série validée — les deux records de la fiche exercice
+  (§ 15.9.1, point 6) :
+  - **record personnel** : la métrique de S (§ 15.9.3 : charge max ; reps max au poids du corps ;
+    durée totale en cardio) est **strictement supérieure** au maximum de cette métrique sur les
+    séances plus anciennes. Le choix charge / reps se fait sur les séances plus anciennes et S :
+    un premier lest sur un exercice jusque-là au poids du corps est un record de charge ;
+  - **1RM estimé** (force seulement) : le meilleur 1RM Epley de S (§ 3.5) est > 0 et
+    **strictement supérieur** au meilleur des séances plus anciennes ;
+  - **égalité : pas de record** ; **première fois** que l'exercice a une série validée (aucune
+    séance plus ancienne) : **pas de record**, il n'y a rien à battre ;
+  - seules les séries validées comptent (§ 3.16) ; l'exercice a battu un record si l'un des deux
+    l'est (un seul « Record » sur sa ligne).
+
+#### 15.12.4 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Séance introuvable », « Retour »,
+« Exercices », « Options de la séance », « Meilleure série … », « 1RM ~… kg », « Record »,
+« identique », les séries de la fiche exercice, les durées du Journal, `common_sets_count`).
+
+| clé | FR | EN |
+|---|---|---|
+| `summary_finished` | Séance terminée | Workout finished |
+| `summary_finished_on` | Séance terminée · {{date}} · {{heure}} | Workout finished · {{date}} · {{time}} |
+| `summary_volume` | Volume total | Total volume |
+| `summary_delta_context` | vs {{séance}} du {{date}} | vs {{workout}} on {{date}} |
+| `summary_stat_duration` | durée | duration |
+| `summary_stat_sets` (pluriel) | série / séries | set / sets |
+| `summary_records` (pluriel) | Record battu · {{n}} / Records battus · {{n}} | Record broken · {{n}} / Records broken · {{n}} |
+| `summary_done` | Terminer | Done |
