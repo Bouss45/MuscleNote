@@ -4,16 +4,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
 import com.musclenote.android.ui.designsystem.components.AlwaysPressedInteractionSource
 import com.musclenote.android.ui.designsystem.components.ChipTone
+import com.musclenote.android.ui.designsystem.components.CurveHeightDense
+import com.musclenote.android.ui.designsystem.components.CurvePoint
 import com.musclenote.android.ui.designsystem.components.FilterChip
 import com.musclenote.android.ui.designsystem.components.HeroNumber
+import com.musclenote.android.ui.designsystem.components.ListGroup
 import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.LiveHeroNumber
+import com.musclenote.android.ui.designsystem.components.MiniTrendCurve
 import com.musclenote.android.ui.designsystem.components.PeriodSelector
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.SegmentedControl
@@ -22,13 +28,11 @@ import com.musclenote.android.ui.designsystem.components.StatRow
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.TrendCurve
-import com.musclenote.android.ui.designsystem.components.MiniTrendCurve
-import com.musclenote.android.ui.designsystem.components.CurveHeightDense
-import com.musclenote.android.ui.designsystem.components.CurvePoint
 
 /*
- * Planche « Composants 1 · Données et listes » (DESIGN.md § 9.1) : un aperçu par composant, avec
- * ses états, et les échantillons réutilisés par la planche complète (BoardPreviews.kt).
+ * Planche « Composants 1 · Données et listes groupées » (DESIGN.md § 9.1) : un aperçu par
+ * composant, avec ses états, et les échantillons réutilisés par la planche complète
+ * (BoardPreviews.kt).
  */
 
 /** 1RM estimé de février à novembre (points de la courbe de la maquette). */
@@ -60,6 +64,57 @@ fun SectionHeaderSamples() {
 @Composable
 fun StatRowSample() {
     StatRow(listOf(Stat("2/3", "séances"), Stat("4 sem.", "série"), Stat("9 sem.", "record")))
+}
+
+/** Étiquettes de groupe (v2) : capitales, lien ou mention à droite en casse normale. */
+@Composable
+fun GroupLabelSamples() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Récentes", linkLabel = "Tout voir", onLinkClick = {}, grouped = true)
+        SectionHeader("Cette semaine", trailingText = "3 séances", grouped = true)
+    }
+}
+
+/** Rangée de stats dans un groupe (v2), sous son étiquette. */
+@Composable
+fun GroupedStatRowSample() {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SectionHeader("Cette semaine", grouped = true)
+        ListGroup {
+            StatRow(listOf(Stat("3/3", "séances"), Stat("5 sem.", "série"), Stat("9 sem.", "record")), Modifier.padding(16.dp))
+        }
+    }
+}
+
+/** Groupes de liste (v2) : simple, valeur, variation ; case, ligne pressée. */
+@Composable
+fun ListGroupSamples() {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        StateCaption("Simple, valeur, variation")
+        ListGroup {
+            ListRow("Mensurations", leadingIcon = R.drawable.ds_ic_straighten, trailing = ListRowTrailing.Chevron, onClick = {})
+            ListRow("Pull", subtitle = "mer. 11 nov. · 1 h 12", trailing = ListRowTrailing.Value("6 840 kg"))
+            ListRow("Tirage vertical", subtitle = "14 séances", trailing = ListRowTrailing.Value("71 kg", "+18,0 kg", Trend.Up))
+            ListRow("Tirage horizontal", subtitle = "11 séances", trailing = ListRowTrailing.Value("72 kg", "−5,0 kg", Trend.Down), showDivider = false)
+        }
+        StateCaption("Case, ligne pressée")
+        ListGroup {
+            ListRow(
+                "Créatine",
+                subtitle = "5 g · rappel à 08:00",
+                trailing = ListRowTrailing.Check(checked = true, onToggle = {}, toggleLabel = "Pris aujourd'hui"),
+                onClick = {},
+            )
+            ListRow(
+                "Legs",
+                subtitle = "lun. 9 nov. · 1 h 31",
+                trailing = ListRowTrailing.Value("11 420 kg"),
+                onClick = {},
+                interactionSource = AlwaysPressedInteractionSource(),
+            )
+            ListRow("Langue", trailing = ListRowTrailing.Value("Système"), showDivider = false, onClick = {})
+        }
+    }
 }
 
 @Composable
@@ -146,6 +201,18 @@ private fun SectionHeaderPreview() = StudioComponentPreview { SectionHeaderSampl
 @StudioComponentPreviews
 @Composable
 private fun StatRowPreview() = StudioComponentPreview { StatRowSample() }
+
+@StudioComponentPreviews
+@Composable
+private fun GroupLabelPreview() = StudioComponentPreview { GroupLabelSamples() }
+
+@StudioComponentPreviews
+@Composable
+private fun GroupedStatRowPreview() = StudioComponentPreview { GroupedStatRowSample() }
+
+@StudioComponentPreviews
+@Composable
+private fun ListGroupPreview() = StudioComponentPreview { ListGroupSamples() }
 
 @StudioComponentPreviews
 @Composable

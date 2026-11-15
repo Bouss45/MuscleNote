@@ -84,19 +84,20 @@ private fun BoardItem(name: String, note: String, gap: Dp = 14.dp, content: @Com
 @StudioBoardPreviews
 @Composable
 private fun ComponentsBoard1Preview() = Board(
-    kicker = "Composants 1",
-    title = "Données et listes",
-    intro = "Chaque composant n'utilise que des tokens. Le thème se change dans les réglages de la planche : la version claire, à droite, est ce même fichier.",
-    gap = 40.dp,
-    columnGap = 40.dp,
+    kicker = "Composants 1 · v2",
+    title = "Données et listes groupées",
+    intro = "Les listes vivent dans des groupes tonaux, un cran au-dessus du fond, rayon 20, sans bordure. Chaque groupe porte une petite étiquette en capitales. Le thème se change dans les réglages de la planche.",
+    gap = 36.dp,
+    columnGap = 32.dp,
     columns = listOf(
         {
             BoardItem("Chiffre héros", "un seul par écran") { HeroNumberSamples() }
-            BoardItem("En-tête de section", "titre.section") { SectionHeaderSamples() }
-            BoardItem("Rangée de stats", "2 à 4 valeurs, sans fond") { StatRowSample() }
+            BoardItem("Titre de section", "12 · 700 · capitales +12 %", gap = 10.dp) { GroupLabelSamples() }
+            BoardItem("Rangée de stats", "dans un groupe", gap = 10.dp) { GroupedStatRowSample() }
+            BoardItem("En-tête de section v1", "Accueil, Progrès, fiches", gap = 10.dp) { SectionHeaderSamples() }
         },
         {
-            BoardItem("Ligne de liste", "64 dp · filet entre les lignes", gap = 10.dp) { ListRowSamples() }
+            BoardItem("Groupe de liste", "rayon 20 · lignes 64", gap = 10.dp) { ListGroupSamples() }
             BoardItem("Puce", "32 dp · rayon 12") {
                 ChipSamples()
                 Text(

@@ -2,6 +2,7 @@ package com.musclenote.android.ui.designsystem.templates
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.ColumnScope
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -28,9 +30,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.musclenote.android.ui.designsystem.components.GroupPosition
+import com.musclenote.android.ui.designsystem.components.ListGroup
+import com.musclenote.android.ui.designsystem.components.ListGroupSegment
 import com.musclenote.android.ui.designsystem.components.SheetSurface
 import com.musclenote.android.ui.designsystem.components.SheetTitle
 import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.designsystem.theme.StudioSpacing
 
 /*
  * Les quatre gabarits d'écran (DESIGN.md § 10) : hub, fiche, en direct, formulaire. Tout écran est
@@ -60,9 +66,27 @@ fun tabScreenInsets(): ScreenInsets = ScreenInsets(top = systemScreenInsets().to
 private val MiniBarGap = 8.dp
 
 /**
+ * Rythme d'un hub : marges, écart après le titre, écart entre sections. Les listes groupées (v2,
+ * DESIGN.md § 10.1) ont des marges de 16, le titre aligné sur le texte des lignes (retrait de 16),
+ * 8 entre le titre et le groupe du héros (32 sans héros) et 32 entre les groupes.
+ */
+private class HubRhythm(grouped: Boolean, hasHighlight: Boolean, spacing: StudioSpacing) {
+    val margin: Dp = if (grouped) spacing.screenGrouped else spacing.screen
+    val titleInset: Dp = if (grouped) spacing.screenGrouped else 0.dp
+    val afterTitle: Dp = when {
+        !grouped -> spacing.s
+        hasHighlight -> spacing.xs
+        else -> spacing.group
+    }
+    val sectionGap: Dp = if (grouped) spacing.group else spacing.section
+}
+
+/**
  * Gabarit **hub** (DESIGN.md § 10.1) : barre de titre, au plus une surface mise en avant, sections
  * espacées de 40 ; en bas, la mini-barre éventuelle et la barre d'onglets ([navigation] reçoit
- * l'inset du bas). Accueil, Journal, Progrès, Nutrition, Paramètres, Mes records.
+ * l'inset du bas). Accueil, Journal, Progrès, Nutrition, Paramètres, Mes records. [grouped] : hub en
+ * listes groupées (v2 : Journal, Paramètres, Nutrition), les sections étant des groupes titrés
+ * ([com.musclenote.android.ui.designsystem.components.SectionHeader] `grouped` puis [ListGroup]).
  */
 @Composable
 fun HubTemplate(
@@ -72,27 +96,29 @@ fun HubTemplate(
     miniBar: (@Composable () -> Unit)? = null,
     navigation: (@Composable (bottomInset: Dp) -> Unit)? = null,
     insets: ScreenInsets = systemScreenInsets(),
+    grouped: Boolean = false,
     sections: @Composable ColumnScope.() -> Unit,
 ) {
+    val rhythm = HubRhythm(grouped, highlight != null, Studio.spacing)
     Column(modifier.fillMaxSize().background(Studio.colors.background)) {
         Column(
             Modifier
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = Studio.spacing.screen, end = Studio.spacing.screen, top = insets.top),
+                .padding(start = rhythm.margin, end = rhythm.margin, top = insets.top),
         ) {
-            titleBar()
-            Spacer(Modifier.height(Studio.spacing.s))
+            Box(Modifier.fillMaxWidth().padding(start = rhythm.titleInset)) { titleBar() }
+            Spacer(Modifier.height(rhythm.afterTitle))
             if (highlight != null) {
                 highlight()
-                Spacer(Modifier.height(Studio.spacing.section))
+                Spacer(Modifier.height(rhythm.sectionGap))
             }
-            Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.section), content = sections)
-            Spacer(Modifier.height(if (navigation == null) insets.bottom + Studio.spacing.section else Studio.spacing.section))
+            Column(verticalArrangement = Arrangement.spacedBy(rhythm.sectionGap), content = sections)
+            Spacer(Modifier.height(if (navigation == null) insets.bottom + rhythm.sectionGap else rhythm.sectionGap))
         }
         if (miniBar != null) {
-            Column(Modifier.padding(horizontal = Studio.spacing.screen)) {
+            Column(Modifier.padding(horizontal = rhythm.margin)) {
                 miniBar()
                 Spacer(Modifier.height(MiniBarGap))
             }
@@ -103,10 +129,51 @@ fun HubTemplate(
 
 /**
  * Sections d'un [HubLazyTemplate] : chaque [section] ajoute 40 avant elle (sauf la première), son
- * en-tête puis ses lignes, chacune en élément paresseux.
+ * en-tête puis ses lignes, chacune en élément paresseux. Dans un hub groupé (v2), [group] et
+ * [groupBlock] posent des groupes titrés, espacés de 32.
  */
 class HubSections internal constructor(private val list: LazyListScope, private val sectionGap: Dp) {
     private var first = true
+
+    /**
+     * Un groupe (v2) : étiquette [label] (`SectionHeader` groupé, 8 au-dessus du groupe), puis une
+     * ligne par élément de [items], chacune un segment du groupe ; [row] reçoit sa position (le
+     * dernier n'a pas de filet).
+     */
+    fun <T> group(
+        key: Any,
+        label: (@Composable () -> Unit)?,
+        items: List<T>,
+        itemKey: (T) -> Any,
+        contentType: Any? = null,
+        row: @Composable (item: T, position: GroupPosition) -> Unit,
+    ) {
+        gap(key)
+        if (label != null) {
+            list.item(key = hubKey(key, "label"), contentType = "hub-group-label") {
+                label()
+                Spacer(Modifier.height(GroupLabelGap))
+            }
+        }
+        list.itemsIndexed(items, key = { _, item -> itemKey(item) }, contentType = { _, _ -> contentType }) { index, item ->
+            val position = GroupPosition.of(index, items.size)
+            ListGroupSegment(position) { row(item, position) }
+        }
+    }
+
+    /** Un groupe d'un seul bloc (rangée de stats, avec son padding), sous son étiquette [label]. */
+    fun groupBlock(key: Any, label: (@Composable () -> Unit)?, content: @Composable () -> Unit) {
+        gap(key)
+        list.item(key = hubKey(key, "group-block"), contentType = "hub-group-block") {
+            Column {
+                if (label != null) {
+                    label()
+                    Spacer(Modifier.height(GroupLabelGap))
+                }
+                ListGroup { content() }
+            }
+        }
+    }
 
     /** Une section : en-tête ([header], suivi de 4), puis [rows] (`items`, `item`). */
     fun section(key: Any, header: @Composable () -> Unit, rows: LazyListScope.() -> Unit) {
@@ -139,10 +206,14 @@ private fun hubKey(section: Any, part: String): String = "hub:$section:$part"
 /** Écart entre un en-tête de section et sa première ligne. */
 private val SectionHeaderGap = 4.dp
 
+/** Écart entre l'étiquette d'un groupe et le groupe (v2). */
+private val GroupLabelGap = 8.dp
+
 /**
  * Gabarit **hub** en liste paresseuse (DESIGN.md § 10.1) : même disposition que [HubTemplate],
  * pour un hub dont les lignes peuvent se compter par centaines (Journal). Les sections viennent de
- * [HubSections.section] ; [listState] garde le défilement.
+ * [HubSections.section], ou des groupes [HubSections.group] si [grouped] ; [listState] garde le
+ * défilement.
  */
 @Composable
 fun HubLazyTemplate(
@@ -153,34 +224,35 @@ fun HubLazyTemplate(
     navigation: (@Composable (bottomInset: Dp) -> Unit)? = null,
     insets: ScreenInsets = systemScreenInsets(),
     listState: LazyListState = rememberLazyListState(),
+    grouped: Boolean = false,
     sections: HubSections.() -> Unit,
 ) {
-    val spacing = Studio.spacing
+    val rhythm = HubRhythm(grouped, highlight != null, Studio.spacing)
     Column(modifier.fillMaxSize().background(Studio.colors.background)) {
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f).fillMaxWidth(),
             contentPadding = PaddingValues(
-                start = spacing.screen,
-                end = spacing.screen,
+                start = rhythm.margin,
+                end = rhythm.margin,
                 top = insets.top,
-                bottom = if (navigation == null) insets.bottom + spacing.section else spacing.section,
+                bottom = if (navigation == null) insets.bottom + rhythm.sectionGap else rhythm.sectionGap,
             ),
         ) {
             item(key = "hub-title", contentType = "hub-title") {
-                titleBar()
-                Spacer(Modifier.height(spacing.s))
+                Box(Modifier.fillMaxWidth().padding(start = rhythm.titleInset)) { titleBar() }
+                Spacer(Modifier.height(rhythm.afterTitle))
             }
             if (highlight != null) {
                 item(key = "hub-highlight", contentType = "hub-highlight") {
                     highlight()
-                    Spacer(Modifier.height(spacing.section))
+                    Spacer(Modifier.height(rhythm.sectionGap))
                 }
             }
-            HubSections(this, spacing.section).sections()
+            HubSections(this, rhythm.sectionGap).sections()
         }
         if (miniBar != null) {
-            Column(Modifier.padding(horizontal = spacing.screen)) {
+            Column(Modifier.padding(horizontal = rhythm.margin)) {
                 miniBar()
                 Spacer(Modifier.height(MiniBarGap))
             }

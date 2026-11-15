@@ -40,7 +40,8 @@ private val NavItemsHeight = 53.dp
 private val NavIconGap = 4.dp
 
 /**
- * Barre d'onglets — `StudioNavigationBar` (DESIGN.md § 9.2) : filet en haut, 4 colonnes égales,
+ * Barre d'onglets — `StudioNavigationBar` (DESIGN.md § 9.2) : sur la surface des groupes
+ * (`surfaceRaised`, v2 : c'est le ton qui la détache du fond, sans filet), 4 colonnes égales,
  * icône 24 + libellé `small`. Sélectionné : icône pleine, `textPrimary`, 700. Pas d'indicateur.
  * [bottomInset] : inset de la barre de navigation du système.
  */
@@ -55,8 +56,7 @@ fun StudioNavigationBar(
     Row(
         modifier
             .fillMaxWidth()
-            .background(Studio.colors.background)
-            .topDivider()
+            .background(Studio.colors.surfaceRaised)
             .padding(top = NavTop, bottom = bottomInset)
             .heightIn(min = NavItemsHeight)
             .selectableGroup(),
@@ -86,14 +86,6 @@ fun StudioNavigationBar(
             }
         }
     }
-}
-
-@Composable
-private fun Modifier.topDivider(): Modifier {
-    val color = Studio.colors.separator
-    return this.then(
-        Modifier.background(color).padding(top = 1.dp).background(Studio.colors.background),
-    )
 }
 
 private val MiniBarHeight = 56.dp

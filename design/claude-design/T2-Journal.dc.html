@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Journal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; background: {{c.bg}}; color: {{c.fg}}; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 40px 16px 0; display: flex; flex-direction: column">
+    <div style="display: flex; align-items: center; justify-content: space-between; height: 56px; padding-left: 16px">
+      <h1 style="margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.01em">Journal</h1>
+      <button type="button" aria-label="Filtrer par type de séance" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">tune</span></button>
+    </div>
+
+    <div style="margin-top: 8px; border-radius: 20px; background: {{c.s1}}; padding: 12px 12px 0; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; justify-content: space-between; padding-left: 4px">
+        <span style="font-size: 17px; font-weight: 700">Novembre 2026</span>
+        <div style="display: flex">
+          <button type="button" aria-label="Mois précédent" style="width: 44px; height: 44px; border: none; border-radius: 22px; background: none; color: {{c.fg2}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">chevron_left</span></button>
+          <button type="button" aria-label="Mois suivant" style="width: 44px; height: 44px; border: none; border-radius: 22px; background: none; color: {{c.fg2}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">chevron_right</span></button>
+        </div>
+      </div>
+      <div style="margin-top: 4px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); text-align: center; font-size: 12px; font-weight: 600; color: {{c.fg2}}" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+      <div style="margin-top: 6px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); row-gap: 2px; font-size: 15px" aria-label="Novembre 2026 : séances les 2, 4, 5, 9, 11 et 12">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">1</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">2</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">3</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">4</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">5</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">6</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">7</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">8</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">9</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">10</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">11</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; background: {{c.inv}}; color: {{c.onInv}}; font-weight: 700">12</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">13</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center">14</span>
+        <span style="justify-self: center; width: 36px; height: 36px; border-radius: 18px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1.5px {{c.fg2}}; font-weight: 700">15</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">16</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">17</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">18</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">19</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">20</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">21</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">22</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">23</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">24</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">25</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">26</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">27</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">28</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">29</span>
+        <span style="justify-self: center; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; color: {{c.fg2}}">30</span>
+      </div>
+      <div style="margin: 10px -12px 0; padding: 14px 16px; border-top: 1px solid {{c.line}}; display: flex; justify-content: space-between; font-size: 13px; color: {{c.fg2}}"><span>6 séances en novembre</span><span>S45 et S46 validées</span></div>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px"><h2 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Cette semaine · S46</h2><span style="font-size: 13px; font-weight: 600; color: {{c.up}}">3/3 · validée</span></div>
+      <div style="border-radius: 20px; background: {{c.s1}}; overflow: hidden">
+        <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Push</span><span style="font-size: 13px; color: {{c.fg2}}">jeu. 12 nov. · 1 h 14 · 2 records</span></div><span style="font-size: 16px; font-weight: 600">8 240 kg</span></div></div>
+        <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Pull</span><span style="font-size: 13px; color: {{c.fg2}}">mer. 11 nov. · 1 h 12</span></div><span style="font-size: 16px; font-weight: 600">6 840 kg</span></div></div>
+        <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Legs</span><span style="font-size: 13px; color: {{c.fg2}}">lun. 9 nov. · 1 h 31</span></div><span style="font-size: 16px; font-weight: 600">11 420 kg</span></div></div>
+      </div>
+    </div>
+
+    <div style="margin-top: 32px; display: flex; flex-direction: column; gap: 8px">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 16px"><h2 style="margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Semaine 45</h2><span style="font-size: 13px; font-weight: 600; color: {{c.up}}">3/3 · validée</span></div>
+      <div style="border-radius: 20px; background: {{c.s1}}; overflow: hidden">
+        <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Push</span><span style="font-size: 13px; color: {{c.fg2}}">jeu. 5 nov. · 1 h 18</span></div><span style="font-size: 16px; font-weight: 600">7 960 kg</span></div></div>
+        <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Pull</span><span style="font-size: 13px; color: {{c.fg2}}">mer. 4 nov. · 1 h 09</span></div><span style="font-size: 16px; font-weight: 600">6 610 kg</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <nav style="flex-shrink: 0; height: 88px; box-sizing: border-box; padding: 10px 8px 24px; background: {{c.s1}}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">home</span>Accueil</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg}}; font: 700 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'; font-variation-settings: 'FILL' 1">calendar_month</span>Journal</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">monitoring</span>Progrès</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">restaurant</span>Nutrition</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Thème"},"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      sombre: { bg: '#0F1012', s1: '#1A1B1F', s2: '#2A2C31', s3: '#36383E', press: '#232529', line: '#2B2D32', fg: '#F3F3F1', fg2: '#A2A5AB', fg3: '#6F737A', live: '#FFC93D', liveTx: '#FFC93D', onLive: '#17140A', liveDim: '#332C14', up: '#3DD68C', upDim: '#12301F', down: '#FF6B5E', downDim: '#3A1714', inv: '#F3F3F1', onInv: '#0F1012', scrim: 'rgba(0,0,0,0.6)' },
+      clair: { bg: '#F2F2F0', s1: '#FFFFFF', s2: '#E6E6E3', s3: '#D9D9D5', press: '#EDEDEA', line: '#E8E8E5', fg: '#121315', fg2: '#5C5F65', fg3: '#85888E', live: '#FFC93D', liveTx: '#7A5900', onLive: '#17140A', liveDim: '#FFF0C2', up: '#0B7A43', upDim: '#E3F5EA', down: '#C62D22', downDim: '#FCE6E3', inv: '#121315', onInv: '#FFFFFF', scrim: 'rgba(18,19,21,0.4)' }
+    };
+    return { c: this.props.theme === 'clair' ? P.clair : P.sombre };
+  }
+}
+</script>
+</body>
+</html>

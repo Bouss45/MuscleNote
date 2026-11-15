@@ -52,6 +52,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.components.appLocale
@@ -252,10 +253,13 @@ internal fun Modifier.bleed(start: Dp = 0.dp, end: Dp = 0.dp): Modifier = layout
 }
 
 /** Filet de 1 en bas de l'élément. */
-internal fun Modifier.bottomDivider(color: Color, show: Boolean = true): Modifier =
+internal fun Modifier.bottomDivider(color: Color, show: Boolean = true, startInset: Dp = 0.dp): Modifier =
     if (!show) this else drawBehind {
         val stroke = 1.dp.toPx()
-        drawRect(color, topLeft = Offset(0f, size.height - stroke), size = Size(size.width, stroke))
+        // Filet en retrait au début (ligne d'un groupe) : il commence sous le texte, jusqu'au bord.
+        val inset = startInset.toPx().coerceIn(0f, size.width)
+        val left = if (layoutDirection == LayoutDirection.Ltr) inset else 0f
+        drawRect(color, topLeft = Offset(left, size.height - stroke), size = Size(size.width - inset, stroke))
     }
 
 /** Fond d'état pressé qui déborde de [bleed] de chaque côté (ligne de liste pressée). */

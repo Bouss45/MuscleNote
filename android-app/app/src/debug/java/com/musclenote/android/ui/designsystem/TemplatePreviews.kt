@@ -160,7 +160,7 @@ private fun HubTemplateProgresPreview() = StudioPreviewTheme {
     }
 }
 
-/** Hub en liste paresseuse (Journal) : totaux, puis une section par semaine. */
+/** Hub en liste paresseuse et listes groupées (Journal, v2) : groupe des totaux, puis un groupe par semaine. */
 @StudioScreenPreviews
 @Composable
 private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
@@ -177,20 +177,22 @@ private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
         titleBar = { ScreenTitleBar("Journal") },
         navigation = { StudioNavigationBar(SampleNavItems, 1, {}, bottomInset = it) },
         insets = MockupInsets,
+        grouped = true,
     ) {
-        block("totals") {
-            Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.s)) {
-                SectionHeader("Depuis le début")
-                StatRow(listOf(Stat("48", "séances"), Stat("312 t", "volume"), Stat("52 h", "en salle"), Stat("1 h 05", "par séance")))
-            }
+        groupBlock("totals", label = { SectionHeader("Depuis le début", grouped = true) }) {
+            StatRow(
+                listOf(Stat("48", "séances"), Stat("312 t", "volume"), Stat("52 h", "en salle"), Stat("1 h 05", "par séance")),
+                Modifier.padding(Studio.spacing.m),
+            )
         }
         weeks.forEach { (title, rows) ->
-            section(title, header = { SectionHeader(title, trailingText = "${rows.size} séances") }) {
-                rows.forEachIndexed { index, (name, subtitle, value) ->
-                    item(key = "$title-$index") {
-                        ListRow(name, subtitle = subtitle, trailing = ListRowTrailing.Value(value), showDivider = index < rows.lastIndex, onClick = {})
-                    }
-                }
+            group(
+                key = title,
+                label = { SectionHeader(title, trailingText = "${rows.size} séances", grouped = true) },
+                items = rows,
+                itemKey = { (name, subtitle, _) -> "$title-$name-$subtitle" },
+            ) { (name, subtitle, value), position ->
+                ListRow(name, subtitle = subtitle, trailing = ListRowTrailing.Value(value), showDivider = !position.isLast, onClick = {})
             }
         }
     }

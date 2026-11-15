@@ -37,6 +37,10 @@ private val LeadingSize = 40.dp
 private val PressBleed = 12.dp
 private val PressRadius = 12.dp
 
+/** Dans un groupe : ligne d'une seule ligne de texte (Paramètres), retrait avant un chevron. */
+private val GroupRowSingleLineHeight = 56.dp
+private val GroupChevronEndPadding = 12.dp
+
 /** Fin d'une ligne de liste (DESIGN.md § 9.1). */
 sealed interface ListRowTrailing {
     /**
@@ -90,6 +94,9 @@ sealed interface ListRowTrailing {
  * bas ; pastille d'icône optionnelle, titre et sous-titre ou mini-puces, fin au choix. Pressée :
  * fond `surfaceRaised` qui déborde de 12. [onLongClick] (optionnel, libellé d'accessibilité
  * [onLongClickLabel]) : appui long, pour les actions secondaires d'une ligne (séance du Journal).
+ *
+ * Dans un groupe ([ListGroup], v2) : retrait de 16 (12 avant un chevron), filet en retrait sous le
+ * texte, 56 de haut sans sous-titre ; pressée, toute la ligne prend `surfaceGroupPressed`.
  */
 @Composable
 fun ListRow(
@@ -108,13 +115,33 @@ fun ListRow(
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed = source.pressed()
-    val minHeight = if (tags.isEmpty()) Studio.spacing.row else RowHeightWithTags
+    val inGroup = LocalInListGroup.current
+    val minHeight = when {
+        tags.isNotEmpty() -> RowHeightWithTags
+        inGroup && subtitle == null -> GroupRowSingleLineHeight
+        else -> Studio.spacing.row
+    }
+    val groupInset = Studio.spacing.screenGrouped
     Row(
         modifier
             .fillMaxWidth()
             .heightIn(min = minHeight)
-            .pressedBackground(pressed, Studio.colors.surfaceRaised, PressBleed, PressRadius)
-            .bottomDivider(Studio.colors.separator, show = showDivider && !pressed)
+            .then(
+                if (inGroup) {
+                    // Le groupe découpe : la ligne pressée se remplit, le filet reste en retrait.
+                    Modifier
+                        .then(if (pressed) Modifier.background(Studio.colors.surfaceGroupPressed) else Modifier)
+                        .bottomDivider(
+                            Studio.colors.separator,
+                            show = showDivider,
+                            startInset = if (leadingIcon != null) groupInset + LeadingSize + RowGap else groupInset,
+                        )
+                } else {
+                    Modifier
+                        .pressedBackground(pressed, Studio.colors.surfaceRaised, PressBleed, PressRadius)
+                        .bottomDivider(Studio.colors.separator, show = showDivider && !pressed)
+                },
+            )
             .then(
                 when {
                     // Case sans action (exercice déjà dans la séance) : lue cochée et inactive.
@@ -160,6 +187,16 @@ fun ListRow(
                         onClickLabel = onClickLabel,
                         onClick = onClick,
                     )
+                },
+            )
+            .then(
+                if (inGroup) {
+                    Modifier.padding(
+                        start = groupInset,
+                        end = if (trailing == ListRowTrailing.Chevron) GroupChevronEndPadding else groupInset,
+                    )
+                } else {
+                    Modifier
                 },
             )
             .padding(vertical = Studio.spacing.xs),
