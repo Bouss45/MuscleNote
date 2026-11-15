@@ -75,11 +75,8 @@ class NutritionRepository(
     /** Eau du jour += [deltaMl], résultat ≥ 0. */
     suspend fun addWater(deltaMl: Int) = updateTracker { NutritionRules.addWater(it, todayKey(), deltaMl) }
 
-    /** ⟲ de l'eau : `addWater(−valeur du jour)`. */
-    suspend fun resetWaterToday() = updateTracker { tracker ->
-        val day = todayKey()
-        NutritionRules.addWater(tracker, day, -(tracker.waterLog[day] ?: 0))
-    }
+    /** « Total du jour » de l'eau (🔄 D35, § 15.10.2) : valeur du jour = [ml], ≥ 0 ; 0 la remet à zéro. */
+    suspend fun setWaterToday(ml: Int) = updateTracker { NutritionRules.setWater(it, todayKey(), ml) }
 
     /** Objectif de calories à partir d'aujourd'hui (🔄 D15) ; ≤ 0 ignoré. */
     suspend fun setCalorieGoal(kcal: Int) = updateTracker { NutritionRules.setCalorieGoal(it, todayKey(), kcal) }

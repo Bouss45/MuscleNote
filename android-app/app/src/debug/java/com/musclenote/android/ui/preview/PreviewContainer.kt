@@ -15,7 +15,7 @@ import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.crash.CrashReports
 import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.ui.LocalAppContainer
-import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.designsystem.theme.Studio
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
@@ -95,7 +95,7 @@ fun ScreenPreview(dataSet: PreviewDataSet = PreviewDataSet.Full, content: @Compo
     val previewContext = remember(context) { PreviewContext(context, previewApplication(context)) }
     CompositionLocalProvider(LocalAppContainer provides container, LocalContext provides previewContext) {
         PreviewTheme {
-            Box(Modifier.fillMaxSize().background(MuscleNoteTheme.colors.background)) {
+            Box(Modifier.fillMaxSize().background(Studio.colors.background)) {
                 content(container)
             }
         }

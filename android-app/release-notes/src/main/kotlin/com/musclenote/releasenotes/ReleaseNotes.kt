@@ -11,7 +11,7 @@ data class Commit(
 /**
  * Notes de version des Releases (SPEC § 15.1, 🔄 D27), en fonctions pures testables sur la JVM :
  * commits depuis la Release précédente, sans les fusions ni ceux qui ne touchent que la
- * documentation ou la CI.
+ * documentation, la CI ou les tests.
  */
 object ReleaseNotes {
     /** Au-delà, une dernière ligne « … et N autres changements ». */
@@ -50,12 +50,18 @@ object ReleaseNotes {
     fun isDocOrCi(path: String): Boolean =
         path.endsWith(".md", ignoreCase = true) || path.startsWith(".github/")
 
+    /** Dossier de tests Gradle : `src/test/`, `src/androidTest/` et leurs variantes (`src/testDebug/`…). */
+    private val TEST_SOURCE_SET = Regex("""(^|/)src/(test|androidTest)([A-Z][A-Za-z0-9]*)?/""")
+
+    /** Test (tout fichier d'un dossier de tests Gradle) : rien qui n'entre dans l'APK. */
+    fun isTest(path: String): Boolean = TEST_SOURCE_SET.containsMatchIn(path)
+
     /**
      * Commit listé : pas une fusion (au plus un parent) et au moins un fichier modifié hors de la
-     * documentation et de la CI (un commit sans fichier n'est donc pas listé).
+     * documentation, de la CI et des tests (un commit sans fichier n'est donc pas listé).
      */
     fun isListed(commit: Commit): Boolean =
-        commit.parents.size <= 1 && commit.files.any { !isDocOrCi(it) }
+        commit.parents.size <= 1 && commit.files.any { !isDocOrCi(it) && !isTest(it) }
 
     /** Commits listés, dans l'ordre reçu (du plus ancien au plus récent). */
     fun select(commits: List<Commit>): List<Commit> = commits.filter(::isListed)

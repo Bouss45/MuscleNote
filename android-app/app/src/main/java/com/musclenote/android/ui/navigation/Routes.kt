@@ -2,11 +2,15 @@ package com.musclenote.android.ui.navigation
 
 import android.net.Uri
 
-/** Écrans plein écran, hors onglets (SPEC § 2.1) : la barre d'onglets y est masquée. */
+/**
+ * Écrans hors onglets (SPEC § 15.8.1) : Paramètres (avec la barre d'onglets, l'Accueil
+ * sélectionné) et les écrans plein écran, où la barre d'onglets est masquée. « Démarrer une
+ * séance » et le sélecteur d'exercices sont des bottom sheets, sans route (§ 15.11).
+ */
 object Routes {
-    const val START_WORKOUT = "start-workout"
+    const val SETTINGS = "settings"
+
     const val WORKOUT = "workout"
-    const val EXERCISE_PICKER = "exercise-picker"
 
     const val ARG_EXERCISE_ID = "exerciseId"
     const val EXERCISE_HISTORY = "exercise-history/{$ARG_EXERCISE_ID}"

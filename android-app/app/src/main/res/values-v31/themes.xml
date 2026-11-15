@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Écran de démarrage (SPEC § 15.8.5) : fond au jeton `background`, logo posé sur un disque
+         graphite pour que le jaune reste lisible sur le fond clair. -->
     <style name="Theme.MuscleNote" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="android:windowBackground">@color/window_background</item>
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenIconBackgroundColor">@color/logo_graphite</item>
     </style>
 </resources>

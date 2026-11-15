@@ -57,8 +57,8 @@
     « Envoyer »** : le type, le message, le pseudo facultatif et les quatre informations
     techniques affichées sous le formulaire. C'est le seul envoi de données de l'app.
 
-  Exception indirecte : la police Inter est obtenue via les polices téléchargeables de Google
-  Play Services (🔄 D12).
+  La police est embarquée dans l'app (🔄 D36, DESIGN.md § 3) : plus aucun accès, même indirect,
+  aux polices téléchargeables de Google Play Services.
 
   Deux écritures hors de l'app, **sur le téléphone** et seulement si l'utilisateur les active :
   la sauvegarde automatique dans un dossier qu'il choisit (🔄 D28, § 15.2) et l'envoi des
@@ -74,7 +74,8 @@
   - stockage en fichiers JSON (§ 4.2, 🔄 D2), pas de Room ;
   - `AlarmManager` (alarmes exactes) pour le minuteur et les rappels (🔄 D6, D7) ;
   - AppCompat pour la langue par application (🔄 D9) ;
-  - `androidx.compose.ui:ui-text-google-fonts` pour Inter (🔄 D12) ;
+  - police Archivo embarquée (`res/font/archivo.ttf`, DESIGN.md § 3 ; 🔄 D36 remplace l'Inter
+    téléchargée de D12) ;
   - `sh.calvin.reorderable` pour le glisser-déposer (🔄 D14) ;
   - graphiques dessinés au `Canvas` Compose (🔄 D13) ;
   - WorkManager (`androidx.work`) pour la sauvegarde automatique quotidienne (🔄 D28) ;
@@ -111,6 +112,10 @@
 
 ### 2.1 Arborescence
 
+> 🔄 D33 — **arborescence et barre d'onglets remplacées par le § 15.8.1** : onglets Accueil,
+> Journal, Progrès, Nutrition ; Paramètres ouvert par l'engrenage de l'Accueil ; mini-barre de la
+> séance en cours ; retour prédictif. Les écrans plein écran ci-dessous ne changent pas.
+
 ```
 Racine (Navigation Compose, aucun en-tête système)
 ├── Onglets (NavigationBar Material 3, 4 destinations)
@@ -137,6 +142,13 @@ Racine (Navigation Compose, aucun en-tête système)
 - Plus d'écran d'erreur fatale (🔄 D17) : un plantage écrit un rapport local (§ 10.9).
 
 ### 2.2 Accueil
+
+> 🔄 D33 — **disposition remplacée par le § 15.8.2** (gabarit hub : une surface « En cours » ou
+> « Prochaine séance », puis « Dernière séance » et « Cette semaine ») ; la liste de toutes les
+> séances, avec la modification de la date et la suppression, passe au **Journal** (§ 15.8.4). Plus
+> d'image de fond. Restent valables ci-dessous, sous leur nouvelle forme : les conditions de
+> l'annonce de mise à jour (D25) et de la carte de transfert (D4/D5), le calcul de la série
+> hebdomadaire (§ 3.6) et les règles de la modale « Modifier la date ».
 
 Fond : `background` + image `home-bg.png` plein écran, `ContentScale.Crop`, flou (rayon
 6 dp, `Modifier.blur`, Android 12+ ; sans flou en dessous), opacité **0,35 en thème sombre,
@@ -209,6 +221,11 @@ enregistrer.
 
 ### 2.3 Démarrer une séance
 
+> 🔄 D36 — **remplacé par le formulaire en bottom sheet du § 15.11.1** (étapes « Type de séance »
+> puis « Poids de corps » au pavé numérique, posé sur l'écran qui l'ouvre). Les règles ci-dessous
+> (préréglages, nom de 30 caractères, poids prérempli, raccourcis, permission puis `startWorkout`)
+> restent valables.
+
 Deux étapes dans le même écran ; bouton en haut à gauche : ✕ (fermer) à l'étape 1,
 ← (retour à l'étape 1) à l'étape 2. Le retour système suit la même logique.
 
@@ -237,6 +254,11 @@ Deux étapes dans le même écran ; bouton en haut à gauche : ✕ (fermer) à l
   3. **remplace** cet écran par `workout` dans la pile.
 
 ### 2.4 Séance en cours
+
+> 🔄 D32 — **disposition remplacée par le § 15.7** (gabarit « en direct » de DESIGN.md, colonne
+> « Préc. », suggestion de charge, pavé numérique intégré, repos dans la liste, confirmations en
+> bottom sheet). Restent valables ci-dessous : l'échauffement (non enregistré), le glisser-déposer,
+> la fin ou l'abandon de la séance (D15) ; les règles du § 3 ne changent pas.
 
 Si aucune séance n'est en cours : « Aucune séance active » + lien « Retour » (→ accueil).
 
@@ -277,6 +299,10 @@ bornées, ex. `75:03`) calculé depuis `date`, rafraîchi chaque seconde. Si la 
 
 ### 2.5 Carte d'exercice (séance en cours)
 
+> 🔄 D32 — en séance, la carte devient un **bloc exercice** (§ 15.7.1) : note et retrait passent
+> par le menu ⋮, « + Ajouter une série » par la ligne « + Série ». Les règles d'une nouvelle série
+> ci-dessous restent valables.
+
 - **En-tête** (toucher = replier/déplier) : nom affiché (§ 6), badge du groupe, badge
   `validées/total` (vert `success` quand tout est validé, sinon `muted`). Trois icônes :
   - **note** (`edit_note`, `primary` si une note existe) ;
@@ -296,6 +322,10 @@ bornées, ex. `75:03`) calculé depuis `date`, rafraîchi chaque seconde. Si la 
 
 Utilisée en séance et dans `edit-workout`, **avec une case de validation dans les deux cas**
 (🔄 D15). Le minuteur de repos n'existe qu'en séance.
+
+> 🔄 D32 — **en séance**, la ligne de série et le clavier du système sont remplacés par la ligne
+> du § 15.7.1 et le pavé numérique du § 15.7.4 (mêmes longueurs maximales, enregistrement à
+> chaque touche). L'éditeur de séance terminée (§ 2.9) garde la ligne ci-dessous.
 
 - Numéro de série (1, 2, 3…).
 - **Force** : `[reps] reps × [poids] kg`. Reps : clavier numérique, 3 caractères max, entier
@@ -319,6 +349,10 @@ Utilisée en séance et dans `edit-workout`, **avec une case de validation dans 
 
 ### 2.7 Sélecteur d'exercices
 
+> 🔄 D36 — **remplacé par la bottom sheet du § 15.11.2** (lignes à cocher, appui long sur un
+> exercice perso pour le modifier ou le supprimer). Le filtre, l'ordre, l'archivage et les ajouts
+> multiples ci-dessous restent valables.
+
 Agit sur la **séance en cours**. Reste ouvert après chaque ajout (ajouts multiples).
 
 - En-tête : ✕ (fermer), titre « Exercices », **+** (affiche/masque le formulaire de création).
@@ -341,6 +375,12 @@ Agit sur la **séance en cours**. Reste ouvert après chaque ajout (ajouts multi
 
 ### 2.8 Historique d'un exercice
 
+> 🔄 D34 — **remplacé par la fiche exercice du § 15.9.1** (gabarit fiche : la dernière séance de la
+> période en chiffre héros, courbe touchable, périodes 1M – Tout, record personnel et 1RM estimé en
+> rangée de stats, liste des séances avec meilleure série, 1RM, volume et record de la période).
+> Restent valables ci-dessous : la sélection des séances et des séries, le record et le 1RM ; la
+> métrique gagne les reps au poids du corps (§ 15.9.3).
+
 Paramètre `exerciseId`. Introuvable → « Exercice introuvable » + Retour.
 
 - En-tête : ←, nom affiché, badge du groupe.
@@ -362,6 +402,11 @@ Paramètre `exerciseId`. Introuvable → « Exercice introuvable » + Retour.
 - Vide : « Aucune séance avec cet exercice ». La séance en cours n'est pas incluse.
 
 ### 2.9 Éditer une séance terminée
+
+> 🔄 D36 — **disposition remplacée par la fiche du § 15.11.3** (type et poids de corps en lignes
+> qui ouvrent un formulaire, blocs exercice et séries au pavé numérique, « Enregistrer » en bas).
+> La copie de travail, la sortie confirmée, les séries ajoutées et l'enregistrement ci-dessous
+> restent valables.
 
 Paramètre `workoutId`. Introuvable → « Séance introuvable » + Retour.
 
@@ -389,6 +434,11 @@ Travaille sur une **copie locale** ; rien n'est enregistré avant [✓ Enregistr
 - Enregistrer = `patchWorkout(id, { exercises, bodyWeight, name, preset })` puis retour.
 
 ### 2.10 Progrès
+
+> 🔄 D34 — **disposition remplacée par le § 15.9.2** (gabarit hub) : surface « Poids de corps »,
+> sections « Exercices » (puces des groupes, stats, une ligne par exercice avec mini-courbe → fiche
+> exercice), « Calories et eau », « Pesées ». Le titre devient « Progrès ». Restent valables
+> ci-dessous : les valeurs affichées et leurs calculs (§ 3.10), et les règles de la pesée.
 
 Titre « Progression ». Rangée horizontale défilante d'onglets (puces), dans cet ordre :
 
@@ -441,6 +491,12 @@ d'objectif actuel en L), sous-titre « N jours · Objectif X L/jour » ; récapi
   nom, « N séances », record, chevron → historique.
 
 ### 2.11 Nutrition
+
+> 🔄 D35 — **disposition remplacée par le § 15.10.1** (gabarit hub) : surface « Aujourd'hui »
+> (calories en grand, état par rapport à l'objectif, eau et compléments pris), saisies au pavé
+> numérique en formulaires (§ 15.10.2), compléments en lignes avec la case « pris aujourd'hui » et
+> une sheet par complément pour ses rappels. Les règles ci-dessous restent, sauf le ⟲, remplacé par
+> « Total du jour ».
 
 En-tête : titre « Nutrition » + bouton `primary` « + Complément » (devient « ✕ Annuler »
 quand le formulaire est ouvert).
@@ -502,6 +558,10 @@ Si ≥ 1 complément a ses rappels activés : encart info `nutrition.infoMobile`
 
 ### 2.12 Paramètres
 
+> 🔄 D35 — **disposition remplacée par le § 15.10.3** : liste groupée (Préférences, Données, À
+> propos), chaque réglage ouvert en formulaire ; mêmes réglages et mêmes règles. Thème : Sombre
+> (par défaut), Clair, Système (§ 15.10.4).
+
 En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
 
 1. **Carte « Mes données »** : nombre de séances terminées | nombre d'exercices perso
@@ -552,6 +612,10 @@ En-tête « Paramètres ». Contenu (padding 20, espacement 12) :
    formulaire d'envoi d'un avis, décrit au § 14.1.
 
 ### 2.13 Graphique linéaire
+
+> 🔄 D34 — **remplacé par la courbe `TrendCurve` du design system** (DESIGN.md § 9.1) : trait fin,
+> ni grille ni remplissage, point final, dates du premier et du dernier point, toucher (§ 15.9) ;
+> variantes compacte et mini, ligne d'objectif. `ui/components/LineChart.kt` est retiré.
 
 Composant maison dessiné au **`Canvas` Compose** (🔄 D13), utilisé partout.
 - Largeur = largeur du parent ; hauteur paramétrable (130 / 180 / 200 dp).
@@ -721,6 +785,10 @@ l'accueil (`Xt`), en tonnes au dixième dans Progrès.
   - « Vol. max » = max, sur les séances, de `Σ reps×poids` des exercices du groupe, affiché
     `round(v / 100) / 10` + `t` ; cardio : max de `Σ distance` → `x.x km` ;
   - tendance = dernier point − premier point (si ≥ 2 points), 1 décimale.
+  - 🔄 D34 (§ 15.9.3) : métrique au poids du corps = reps max par séance (charge ajoutée dès qu'il
+    y a du lest) ; « Charge max » = max des records en kg de **tous** les exercices du groupe ; plus
+    de top 3 : les exercices sont triés par date de dernière séance ; la tendance reste dernier −
+    premier point.
 
 ### 3.11 Pesées manuelles
 
@@ -762,7 +830,8 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
 ### 3.14 Préférences
 
 - `restSeconds` : entier > 0, sinon 180.
-- `theme` (🔄 D10) : `"system"` (défaut) | `"light"` | `"dark"`.
+- `theme` (🔄 D10) : `"system"` | `"light"` | `"dark"` ; défaut `"dark"` (🔄 D35, § 15.10.4 ; c'était
+  `"system"`).
 - **Langue** (🔄 D9) : n'est plus une préférence de l'app ; elle est gérée par AppCompat
   (langue du système par défaut, surcharge possible FR/EN). Un changement de langue recrée
   l'activité, renomme les canaux de notification ; les textes des notifications sont
@@ -898,7 +967,8 @@ saisis/affichés, pas la présence des champs.
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
-**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark" }`.
+**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark" }` (défaut 180 et
+`"dark"`, 🔄 D35).
 
 **`RestTimerState`** (non sauvegardé) : `{ endsAt: instant ms, total: s, exerciseName }`.
 
@@ -1123,10 +1193,10 @@ ou racine non-objet → « Format invalide ».
   `waterGoalHistory = { "0000-01-01": waterGoal }`.
 - **Pris aujourd'hui** : seules les entrées dont la valeur est aujourd'hui sont gardées.
 - **Préférences** : `language` ignoré (la langue suit le système, D9) ; `restSeconds`
-  validé (> 0 sinon 180) ; `theme = "system"`.
+  validé (> 0 sinon 180) ; `theme = "dark"` (🔄 D35 : l'app Expo n'avait que le thème sombre).
 
-**Normalisation v2** (après migration) : `preset` inconnu → retiré ; `theme` invalide →
-`"system"` ; si `calorieGoal` diffère de `goalFor(aujourd'hui)` (fichier v2 modifié par
+**Normalisation v2** (après migration) : `preset` inconnu → retiré ; `theme` invalide ou absent →
+`"dark"` (🔄 D35) ; si `calorieGoal` diffère de `goalFor(aujourd'hui)` (fichier v2 modifié par
 l'app Expo), on ajoute `history[aujourd'hui] = calorieGoal` (idem eau) ; historique
 d'objectif absent ou vide → `{ "0000-01-01": objectif courant }` ; entrées `taken` de
 compléments inconnus retirées.
@@ -1238,6 +1308,10 @@ comprises : `calfraize`, `legrise`).
 | `cardio` | Cardio | Cardio | `#ec4899` | `#be185d` |
 | `avant-bras` | Avant-bras | Forearms | `#14b8a6` | `#0f766e` |
 
+> 🔄 D36 — les couleurs de groupe sont retirées avec l'ancien thème : les groupes s'affichent en
+> texte (puces neutres, sous-titres), DESIGN.md § 2. Les colonnes de couleur ci-dessus et le
+> badge ci-dessous ne valent plus que pour mémoire.
+
 Badge de groupe : fond couleur à 13 %, bordure couleur à 33 %, texte couleur, forme pilule ;
 taille normale 12 sp (padding 10×4), petite 10 sp (padding 7×2), Inter 600. Mêmes couleurs
 dans les deux thèmes pour les fonds, bordures et courbes ; 🔄 D23 — en thème clair, le **texte
@@ -1294,6 +1368,7 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
   v1.0.6 est **supprimé** au démarrage ; la notification « Séance en cours » (§ 15.5) le remplace.
 - Petite icône : silhouette blanche sur transparent (vecteur dérivé de
   `assets/images/notification-icon.png`), couleur d'accent `#9B1C1C`. Pas de badge.
+  🔄 D33 : l'haltère du logo en silhouette blanche, accent graphite `#17181B` (§ 15.8.5).
 - Notification affichée app ouverte : oui (comportement Android standard des canaux HIGH),
   sauf la fin de repos au premier plan (§ 7.2).
 - Tous les `PendingIntent` sont `FLAG_IMMUTABLE`.
@@ -1330,6 +1405,8 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
   de 30 s, l'alarme est reprogrammée ; `total` suit (sans descendre sous le temps restant), pour
   que la barre du bandeau garde son sens. « −30 s » avec moins de 30 s restantes arrête le repos
   comme « Passer » (sans alerte).
+- 🔄 D32 — le bandeau ci-dessous est remplacé par le **bandeau de repos dans la liste** de la
+  séance (§ 15.7.1) : jaune, avec « −30 s », « +30 s » et « Passer ».
 - **Bandeau** (pied de l'écran de séance) : icône horloge, « Repos », compte à rebours
   `m:ss` (17 sp gras, recalculé chaque seconde depuis `endsAt`), barre de progression
   (restant / total), bouton « ⏭ Passer ». Couleur selon la part restante : > 50 % →
@@ -1428,6 +1505,11 @@ exercices et des séries ; **colonnes fixes**, celles qui ne s'appliquent pas re
 
 ## 9. Thème et textes
 
+> 🔄 D36 — **les § 9.1 à 9.3 décrivent l'ancien thème, retiré** : couleurs, typographie (Inter),
+> formes, espacements et icônes sont ceux de `DESIGN.md` (§ 2 à 8), avec le thème Sombre par
+> défaut (§ 15.10.4). Restent valables : le splash et le fond de fenêtre au thème choisi dans
+> l'app (§ 9.1, fin), les retours haptiques (§ 9.3) et les textes (§ 9.4, 9.5).
+
 ### 9.1 Couleurs (🔄 D10 — thème clair ajouté)
 
 Deux palettes ; choix « Système / Clair / Sombre » (§ 2.12), défaut = thème du système. Pas
@@ -1470,6 +1552,8 @@ Le splash et le fond de fenêtre suivent le thème **choisi dans l'app** : sur A
 choix est transmis au système (`UiModeManager.setApplicationNightMode`, « Système » = pas de
 surcharge), ce qui recrée l'activité quand le thème effectif change ; avant Android 12, le
 splash suit le thème du système.
+🔄 D33 : fond du splash et de la fenêtre au jeton `background` de DESIGN.md (`#0F1012` en sombre,
+`#FFFFFF` en clair) et icône du logo sur le splash (§ 15.8.5).
 
 **Transparences** : l'app Expo concaténait un suffixe d'alpha (`#RRGGBB` + `AA`). En Compose,
 `Color(0xAARRGGBB)` met l'alpha **au début** : utiliser `couleur.copy(alpha = …)`. Les
@@ -1679,6 +1763,9 @@ transformer en identifiants ASCII dans le format de sauvegarde : enum Kotlin ave
 - Supprimer une série ou une pesée : immédiat. Retirer un exercice de la séance en cours,
   supprimer une séance, un exercice perso ou un complément : confirmation en ligne.
   Quitter l'éditeur avec des modifications : dialogue (§ 2.9).
+  🔄 D32 — en séance, supprimer une série, retirer un exercice, terminer ou abandonner la séance
+  demandent une confirmation en bottom sheet (§ 15.7.1) ; l'éditeur garde la suppression immédiate
+  d'une série (il travaille sur une copie).
 - Le dernier poids de l'accueil vient de la dernière séance, pas des pesées manuelles.
 - Le pré-remplissage et le temps en salle utilisent la même clé de séance (§ 3.1).
 
@@ -1705,7 +1792,10 @@ traduction dans la spec. D4, D5 et D8 ont été complétées, et D21–D22 ajout
 aux questions de la deuxième version (cf. § 12). D23–D24 ont été ajoutées lors de la
 vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le lot 1 des évolutions
 (§ 15), D30 avec le correctif de Health Connect (§ 15.3), D31 avec la notification de séance
-(§ 15.5).
+(§ 15.5), D32 avec la refonte de l'écran de séance en cours (§ 15.7), D33 avec la navigation,
+l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
+Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
+(§ 15.11).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1740,6 +1830,11 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 | D29 | Health Connect | écrire les séances et le poids | option masquée sans Health Connect ; `ExerciseSessionRecord` musculation et `WeightRecord` (séances et pesées), `clientRecordId` stables pour mettre à jour et supprimer, « Envoyer l'historique » ; activité de politique de confidentialité ; aucune lecture (§ 1, 2.12, 15.3) |
 | D30 | Health Connect : poids en double, séances absentes, compteur (retour d'un utilisateur, v1.0.5) | un poids par jour, durée estimée, ne compter que le confirmé | un `WeightRecord` par jour local avec la règle de Progrès (§ 3.10 : la pesée remplace le poids de séance), anciens enregistrements supprimés ; séance de moins de 10 min ou sans durée envoyée avec l'estimation du temps en salle (§ 3.7, sinon 10 min), sans jamais finir après sa fin dans l'app ; envoi par type, seuls les enregistrements confirmés par Health Connect sont comptés et retenus ; état de la carte (écrit, dernier envoi, dernière erreur datée) (§ 15.3) |
 | D31 | Notification de séance avec actions | une notification « Séance en cours » qui remplace celle du repos | séance, chronomètre, exercice et prochaine série ; « Valider la série » hors repos, « −30 s », « +30 s », « Passer » pendant le repos ; Live Update sur Android 16+ (`POST_PROMOTED_NOTIFICATIONS`, sans demande), sinon notification en cours ; montres : l'alerte de fin de repos, relayée par Android, vibre et propose « Valider la série » (une notification en cours n'est pas relayée) ; pas d'app Wear OS, notée comme piste ; pas de service de premier plan (§ 1, 7.1, 7.2, 15.5) |
+| D32 | Refonte « Studio épuré », étape 2 : séance en cours | gabarit « en direct » ; colonne « Préc. », suggestion de charge, pavé numérique intégré, « + Série » toujours visible, repos jaune | « Préc. » = série de même rang de la dernière séance de l'exercice, recopiée au toucher ; +2,5 kg (+1 rep au poids du corps) si toutes les séries ont tenu les reps de la première, sinon même charge, jamais appliquée d'office ; pavé avec virgule, effacer, pas −/+, « Suivant » puis « Valider la série » ; confirmations en bottom sheet ; aucun changement du format JSON (§ 2.4 – 2.6, 7.2, 10.8, 15.7) |
+| D33 | Refonte « Studio épuré », étape 3 : navigation, Accueil, Journal, logo | 4 onglets (Accueil, Journal, Progrès, Nutrition), Paramètres par l'engrenage, mini-barre partout ; Accueil à une seule surface (reprendre ou démarrer), dernière séance, séances de la semaine ; Journal groupé par semaine ; logo de la maquette, marque jaune pour la preview | Paramètres hors barre (l'onglet Accueil y reste sélectionné) ; mini-barre sur Journal, Progrès, Nutrition et Paramètres (sur l'Accueil, la surface la remplace) ; la séance n'est jamais deux fois dans la pile, « Réduire » revient à l'écran d'origine ; retour prédictif avec transitions en fondu ; Accueil : surface « En cours » ou « Prochaine séance » avec type suggéré (types réguliers des 42 derniers jours, le moins récent d'abord) qui ouvre « Démarrer » à l'étape du poids, puis « Dernière séance » et « Cette semaine » (séances de la semaine, série, 8 semaines) ; Journal : totaux, une section par semaine ISO (du lundi, à cheval sur deux années comprise), ligne date · durée · volume, toucher → éditeur, appui long → date ou suppression ; icône adaptative avec couche monochrome, splash, petite icône de notification ; aucun changement du format JSON (§ 2.1, 2.2, 7.1, 9.1, 15.8) |
+| D34 | Refonte « Studio épuré », étape 4 : fiche exercice et Progrès | fiche exercice au gabarit fiche (chiffre héros = dernière séance de la période, variation depuis le début de la période, courbe fine touchable, périodes 1M – Tout, historique date · meilleure série · volume) ; Progrès au gabarit hub en gardant tout son contenu, exercices avec mini-courbe et variation → fiche ; rien de l'existant retiré (record personnel, 1RM estimé, 1RM par séance), seule la nouvelle fonctionnalité Records est hors périmètre ; reps au poids du corps ; pesée au pavé numérique ; aucun changement du format JSON | héros = métrique de la dernière séance de la période, variation = dernière − premier point (au toucher : point − premier point), verte / rouge / grise, défilement 250 ms au changement de période ; record de la période marqué dans la liste ; courbe `TrendCurve` en Canvas (toucher → point le plus proche, réduction au-delà de 120 points en gardant creux et pics, description TalkBack période · départ · arrivée · variation), Tout par défaut ; record personnel et 1RM estimé en rangée de stats ; séances : toutes, « 1RM ~ », toucher → éditeur ; métrique au poids du corps = reps max, charge ajoutée dès qu'il y a du lest ; Progrès : surface Poids de corps (évolution en gris faute d'objectif), Exercices (puces des groupes utilisés, stats, lignes par date de dernière séance avec mini-courbe, dernière valeur et variation, charge max sur tous les exercices en kg), Calories et eau (stats, courbe avec objectif, récapitulatif), Pesées (suppression confirmée) ; « Nouvelle pesée » au gabarit formulaire avec pavé numérique et sélecteur de date (§ 2.8, 2.10, 2.13, 3.10, 15.9) |
+| D35 | Refonte « Studio épuré », étape 5a : Nutrition et Paramètres | Nutrition au gabarit hub avec toutes ses fonctions, rappels compris, une seule surface : ce qui compte aujourd'hui ; quantités au pavé numérique ; pas d'objectif de protéines ; Paramètres en liste groupée, mêmes réglages, chaque réglage en formulaire ; thème Sombre (par défaut), Clair, Système ; export, sauvegarde, Health Connect et avis inchangés ; aucun changement du format JSON sauf le thème | Nutrition : surface « Aujourd'hui » (kcal du jour en chiffre héros, « encore … » gris, « dans l'objectif » vert, « +… kcal » rouge selon le ratio de D15, piste, eau et compléments pris, boutons Calories et Eau), compléments en lignes (case « pris aujourd'hui » séparée, toucher → sheet du complément : rappels, suppression confirmée), « Nouveau complément » en sheet au clavier (nom, dosage texte libre, unités, rappels) ; formulaires Calories et Eau au pavé : « Ajouter » ou « Total du jour » (remplace ⟲ ; nouvelle règle `setWater`), « Nouveau total », objectif quotidien à partir d'aujourd'hui ; heure au `TimePicker` avec « Supprimer » ; Paramètres : Mes données, Préférences (langue, thème, minuteur, notifications), Données (sauvegarde automatique, exports, import, Health Connect), À propos (mises à jour, rapport de plantage, avis), messages sans couleur ; thème par défaut `"dark"` (absent, invalide, import v1), choix déjà enregistré gardé ; tendances de calories et d'eau toujours dans Progrès, protéines et stock hors périmètre (§ 2.11, 2.12, 3.14, 4.1, 5.3, 15.10) |
+| D36 | Refonte « Studio épuré », étape 5b : finitions avant la fusion | plus aucune couleur, taille ou police en dur hors du design system, ancien thème et icônes inutiles retirés ; contrastes en sombre et en clair, texte à 200 % sans rien de coupé, TalkBack ; mise à jour depuis la v1.0 sans perte | « Démarrer une séance » en formulaire (bottom sheet : type puis poids au pavé), sélecteur d'exercices en bottom sheet (lignes à cocher, appui long pour un exercice perso), éditeur de séance au gabarit fiche (type et poids en lignes, séries au pavé, « Enregistrer » en bas) ; `ui/theme/`, Inter et les polices téléchargeables, couleurs de groupe, 52 icônes retirés ; aplat `live` en clair `#9E7100` ; composants qui grandissent avec le texte, chiffres qui rétrécissent, cibles de 48 dp, libellés TalkBack des séries ; notes de version sans les commits qui ne touchent que les tests ; aucun changement du format JSON (§ 2.3, 2.7, 2.9, 15.1, 15.11) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1783,14 +1878,15 @@ Aucune. Les quatre questions de la version précédente ont été tranchées :
 
 Vérification finale avant la bascule (11 novembre 2026) :
 l'app native (`android-app/`, branche `native`) a été comparée à ce document section par
-section. Les chemins ci-dessous sont relatifs à
-`android-app/app/src/main/java/com/musclenote/android/`.
+section ; tableaux mis à jour à la fin de la refonte « Studio épuré » (15 novembre 2026, § 13.6).
+Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/musclenote/android/`.
 
 ### 13.1 Fait
 
-Tout ce que décrivent les § 1 à 10 est implémenté. Les règles métier pures sont couvertes par
-245 tests JVM (23 classes, `app/src/test/`), lancés par la CI à chaque push avant la
-construction de l'APK.
+Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
+15.11). Les règles métier pures sont couvertes par 454 tests JVM (40 classes, `app/src/test/`),
+plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
+construction de l'APK (à la bascule : 245 tests, 23 classes).
 
 | § | sujet | où |
 |---|---|---|
@@ -1798,18 +1894,18 @@ construction de l'APK.
 | 2.1 | navigation, 4 onglets, entrées externes (notifications, fichier partagé) | `ui/MuscleNoteApp.kt`, `MainActivity.kt` |
 | 2.2 | Accueil : fond flouté, séance en cours, carte de transfert, série hebdo, stats, temps en salle, séances avec édition / date / suppression | `ui/home/` |
 | 2.3 – 2.6 | démarrer une séance, séance en cours (chronomètre, échauffement, glisser-déposer, fin ou abandon), carte d'exercice, ligne de série | `ui/workout/` |
-| 2.7 – 2.9 | sélecteur d'exercices, historique d'un exercice, éditeur de séance (copie de travail, renommage, dialogue de sortie) | `ui/workout/`, `ui/history/` |
+| 2.7 – 2.9 | sélecteur d'exercices, historique d'un exercice (fiche), éditeur de séance (copie de travail, renommage, sortie confirmée) | `ui/workout/`, `ui/exercise/` |
 | 2.10 | Progrès : poids corps et pesées, calories, eau, groupes musculaires | `ui/progress/`, `data/progress/ProgressStats.kt` |
 | 2.11 | Nutrition : suivi du jour, compléments, rappels au `TimePicker` | `ui/nutrition/` |
 | 2.12 | Paramètres : mes données, langue, thème, minuteur, notifications, sauvegarde, export CSV, import, rapport de plantage | `ui/settings/` |
-| 2.13 | graphique linéaire au `Canvas` | `ui/components/LineChart.kt` |
+| 2.13 | courbes au `Canvas` (🔄 D34, § 15.9) | `ui/designsystem/components/TrendCurve.kt` |
 | 3 | règles métier (séance, 1RM, série hebdo, temps en salle, volume, archivage, Progrès, pesées, nutrition, préférences, séries validées) | `data/workout/`, `data/progress/`, `data/nutrition/`, `data/repository/` |
 | 4 | modèle, un fichier JSON par document, écritures atomiques et différées, fichiers illisibles mis de côté | `data/model/`, `data/storage/` |
 | 5 | sauvegarde v2, import v1 / v2 (validation, migration, normalisation), transfert depuis l'app Expo | `data/backup/`, `ui/settings/BackupViewModel.kt` |
 | 6 | 42 exercices intégrés, 9 groupes, 11 préréglages | `data/catalog/`, `data/model/` |
 | 7 | canaux, minuteur de repos (notification en cours, alarme exacte), rappels de compléments (alarmes exactes, resynchronisations) | `notifications/`, `data/repository/RestTimerRepository.kt` |
 | 8 | export CSV | `data/export/CsvExport.kt`, `ui/settings/CsvExportTexts.kt` |
-| 9 | palettes sombre et claire, Inter, icônes Material Symbols, textes FR / EN | `ui/theme/`, `res/` |
+| 9 | thème : design system « Studio épuré » (DESIGN.md ; 🔄 D36 : l'ancien thème est retiré), Archivo embarquée, icônes Material Symbols Rounded, textes FR / EN | `ui/designsystem/`, `res/` |
 | 10 | virgule décimale, jour local, dates impossibles, recherche, rapport de plantage | `data/util/`, `CrashHandler.kt`, `data/crash/` |
 
 Textes : les 320 clés de `constants/i18n/fr.ts` (tag `expo-final`) sont reprises, sauf celles que le § 9.4
@@ -1824,16 +1920,16 @@ clés du § 9.5 existent en FR et EN (même jeu de clés et d'arguments, vérifi
 |---|---|
 | Dates et nombres formatés dans la première langue du système même quand l'app s'affiche dans une autre (système en allemand → textes en français, dates en allemand ; liste [de, en] → en-têtes CSV anglais avec séparateur français) | locale de formatage = celle des textes (§ 3.14) ; `data/util/AppLocales.kt` |
 | Avant Android 13, notification construite dans un processus relancé par une alarme : texte dans la langue du système au lieu de la langue choisie dans l'app | copie de la langue dans les préférences locales (§ 3.14, § 9.4) |
-| Splash et fond de fenêtre au thème du système, pas au choix Clair / Sombre de l'app (flash de l'autre thème au lancement) | Android 12+ : `setApplicationNightMode` (§ 9.1) ; `ui/theme/SystemNightMode.kt` |
+| Splash et fond de fenêtre au thème du système, pas au choix Clair / Sombre de l'app (flash de l'autre thème au lancement) | Android 12+ : `setApplicationNightMode` (§ 9.1) ; `ui/designsystem/theme/SystemNightMode.kt` (`ui/theme/` jusqu'à l'étape 5b) |
 | Texte en couleur de groupe peu lisible en thème clair (1,9 – 3,6:1) | décision D23 : nuance foncée en thème clair (§ 6.2, 9.1) |
 | Deux préréglages « Legs » en anglais | décision D24 : « Legs (split) » (§ 6.3) |
 
 ### 13.3 Manque
 
-Rien de fonctionnel. Restent à valider **à l'œil, sur l'appareil**, ce que la spec présente
-comme des propositions :
-- la palette claire (§ 9.1) ;
-- l'opacité de l'image de fond de l'Accueil, 0,35 en sombre et 0,12 en clair (§ 2.2).
+Rien de fonctionnel. Les deux propositions à valider à l'œil de la bascule sont tombées avec la
+refonte : la palette claire est celle de DESIGN.md (§ 2) et l'image de fond de l'Accueil a été
+retirée (étape 3). Restent à vérifier **sur l'appareil** les points listés étape par étape au
+§ 13.6, regroupés à la fin de l'étape 5b.
 
 ### 13.4 Diffère (interprétations et limites connues)
 
@@ -1854,8 +1950,6 @@ comme des propositions :
 - **Partage vers l'app** (§ 5.4) : `ACTION_SEND` est déclaré pour `application/json` seulement
   (type utilisé par l'app Expo), pour ne pas apparaître dans tous les partages de texte ;
   `ACTION_VIEW` accepte `application/json` et `text/plain`.
-- **Valeurs ≥ 1000 du graphique des calories** : `2,5k` en français, `2.5k` en anglais
-  (séparateur décimal de la locale, § 9.4).
 - **`DUMP`** apparaît dans le manifeste fusionné : c'est la permission qui *protège* le
   récepteur d'`androidx.profileinstaller`, pas une permission demandée par l'app.
 
@@ -1906,6 +2000,100 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   « Valider la série »), `WorkoutRepositoryTest` (validation depuis la notification). À vérifier
   **sur l'appareil** : la promotion en Live Update (Android 16+, règles du fabricant), le relais
   de l'alerte et de son action sur une montre, les actions écran verrouillé.
+- Refonte « Studio épuré » (DESIGN.md), branche `redesign` : design system dans
+  `ui/designsystem/` (étape 1) ; **séance en cours** (🔄 D32, § 15.7, étape 2) : écran
+  `ui/workout/WorkoutScreen.kt` au gabarit « en direct » (blocs `LiveExerciseBlock.kt`, pavé
+  `WorkoutKeypad.kt`, bottom sheets `WorkoutSheets.kt`), posé dans `StudioTheme` par la navigation ;
+  règles pures `data/workout/SessionInsights.kt` (séance de référence, « Préc. », suggestion, place
+  du repos) et `data/workout/SetEntryRules.kt` (saisie au pavé) ; dépôt : `completeSet`,
+  `updateExerciseSets`. Design system : case à cocher de `ListRow`, puce à action, « Préc. »
+  touchable et série validée en saisie dans `SetRow`, « Supprimer la série » dans l'en-tête du
+  pavé, champ texte `StudioTextField`, gabarit « en direct » à en-tête fixe et liste paresseuse.
+  Tests `SetEntryRulesTest` (séparateur de la langue, décimales, longueurs, pas arrondis, champ et
+  série suivants), `SessionInsightsTest` (référence, rang, recopie, suggestion et son application,
+  repos) et `WorkoutRepositoryTest` (valider sans dévalider, séries d'un exercice). Les anciens
+  `ExerciseCard`, `RestTimerBanner` et `WarmupCard` sont retirés. À vérifier **sur l'appareil** :
+  saisie au pavé, défilement vers le champ en saisie, recopie de « Préc. », suggestion, repos et
+  notification de séance.
+- Refonte, **étape 3** (🔄 D33, § 15.8) sur `redesign` : navigation `ui/MuscleNoteApp.kt` (onglets
+  `TopLevelDestination`, Paramètres `Routes.SETTINGS` poussé au-dessus de l'Accueil, mini-barre,
+  `openWorkout()` qui revient à la séance si elle est dans la pile, fondus, retour prédictif
+  `enableOnBackInvokedCallback`) ; Accueil `ui/home/HomeScreen.kt` et Journal
+  `ui/journal/JournalScreen.kt` au design system, lignes et actions de séance partagées
+  `ui/journal/SessionRows.kt` (« Modifier la date » en formulaire), horloges `ui/workout/LiveClock.kt` ;
+  « Démarrer une séance » accepte un type (`Routes.startWorkout`) ; règles pures
+  `data/home/HomeRules.kt` et `data/journal/JournalRules.kt`. Design system : appui long de
+  `ListRow`, puces sur plusieurs lignes de `NextSessionCard`, mini-barre hors repos, champ numérique
+  de `StudioTextField`, gabarit `HubLazyTemplate`. Tests `HomeRulesTest` (surface, types réguliers,
+  fenêtre de 42 jours, ordre, égalités, jours locaux, semaine en cours) et `JournalRulesTest`
+  (semaine du lundi au jour local, semaine à cheval sur deux années, dates illisibles, libellés,
+  durée, volume, totaux). Logo : `res/drawable/ic_launcher_foreground.xml`, `ic_launcher_monochrome.xml`,
+  `ic_notification.xml`, splash dans `values-v31/themes.xml`, bandeau de la preview dans
+  `app/src/preview/res/drawable/`. Retirés : `UpdateBanner`, `WorkoutDateDialog`, image `home-bg`,
+  anciennes images de l'icône. À
+  vérifier **sur l'appareil** : retour prédictif, notification touchée depuis chaque onglet,
+  appui long, « Modifier la date », logo.
+- Refonte, **étape 4** (🔄 D34, § 15.9) sur `redesign` : fiche exercice
+  `ui/exercise/ExerciseFicheScreen.kt` (gabarit `FicheLazyTemplate`, textes communs
+  `ui/exercise/ExerciseFormats.kt`) et Progrès `ui/progress/ProgressScreen.kt` (hub paresseux), pesée
+  au pavé `ui/progress/WeighInSheet.kt` ; règles pures `data/progress/ProgressCurves.kt` (périodes,
+  résumé, variation, réduction des points) et `ProgressStats` (métrique au poids du corps, meilleure
+  série, tri des exercices, charge max en kg), géométrie de la courbe
+  `ui/designsystem/components/CurveGeometry.kt`. Design system : `TrendCurve` (texte si vide, ligne
+  d'objectif, variante mini), fin de ligne `ListRowTrailing.CurveValue` et `onClickLabel`, héros qui
+  suit le doigt sans défiler, descriptions TalkBack du sélecteur de période, légende et état vide de
+  `MetricSurface`, phrase facultative de `EmptyState`, `FicheLazyTemplate`. Tests `ProgressCurvesTest`
+  (périodes, fin de mois, période vide, un point, valeurs égales, record, réduction), `CurveGeometryTest`
+  (abscisses, point le plus proche, égalités, bords), `ProgressStatsTest` (tri, reps au poids du corps,
+  lest, charge max, meilleure série) et `SetEntryRulesTest` (pas de 0,1 kg). Retirés :
+  `ui/history/ExerciseHistoryScreen.kt`, `ui/components/LineChart.kt`, `ui/components/FormDialog.kt`,
+  les onglets et cartes de Progrès, les couleurs du top 3. À vérifier **sur l'appareil** : glisser sur la
+  courbe (sans faire défiler la fiche), défilement du chiffre au changement de période, TalkBack sur la
+  courbe et les périodes, sélecteur de date de la pesée, suppression d'une pesée.
+- Refonte, **étape 5a** (🔄 D35, § 15.10) sur `redesign` : Nutrition `ui/nutrition/NutritionScreen.kt`
+  (gabarit hub, surface « Aujourd'hui », compléments) et ses sheets `ui/nutrition/NutritionSheets.kt`
+  (calories et eau au pavé, objectifs, nouveau complément, complément, choix de l'heure) ; Paramètres
+  `ui/settings/SettingsScreen.kt` (liste groupée, hub de second niveau) et ses formulaires
+  (`PreferenceSheets.kt`, `AutoBackupSettings.kt`, `HealthConnectSettings.kt`, `UpdateRows.kt`,
+  `CrashReportSettings.kt`, `FeedbackSheet.kt`), tous posés dans `StudioTheme` par la navigation ;
+  thème sombre par défaut (`Preferences.DEFAULT`, lecture d'une sauvegarde, migration v1). Règles
+  pures `data/nutrition/NutritionRules.kt` (état des calories, objectif d'eau, compléments pris,
+  résumé des rappels, « Total du jour » de l'eau, validation des saisies) et saisie au pavé partagée
+  avec la séance (`EntryFormat`, `NutritionEntry`, `SetEntryRules`). Design system : case séparée de
+  `ListRow`, surface `DailySurface`, piste `ProgressTrack`, `minLines` / `enabled` de
+  `StudioTextField`, icône `pill`. Tests `NutritionEntryTest` (entiers, litres, longueurs, pas,
+  validation, nouveau total, objectifs), `NutritionRulesTest` (état des calories, total d'eau, objectif
+  d'eau, compléments pris, résumé des rappels), `NutritionRepositoryTest` (total d'eau du jour),
+  `BackupV2Test` / `BackupV1MigrationTest` (thème sombre par défaut, « system » gardé) et
+  `RepositoryLoadTest` (sans préférences : sombre ; choix enregistré gardé). Retirés : les cartes de
+  Nutrition (`DailyTrackingCards.kt`, `SupplementCard.kt`, `SupplementForm.kt`, `ReminderInputs.kt`)
+  et de Paramètres (`AppSwitch`, `StatusBox`, `CardIcon`, `CardButton`, `MyDataCard`…). À vérifier
+  **sur l'appareil** : saisies au pavé et passage à l'objectif (retour), case « pris aujourd'hui »,
+  sheet d'un complément et choix de l'heure, permission des rappels, changement de langue et de thème
+  depuis leur sheet (recréation de l'activité), sélecteur de dossier, autorisation Health Connect,
+  envoi d'un avis au clavier dans la sheet, import d'un fichier partagé vers l'app.
+- Refonte, **étape 5b** (🔄 D36, § 15.11) sur `redesign`, dernière avant la fusion : « Démarrer une
+  séance » en bottom sheet `ui/workout/StartWorkoutSheet.kt` (formulaire du poids partagé avec
+  l'éditeur, `BodyWeightForm.kt` ; type de séance `WorkoutNameFields.kt`), posée par
+  `ui/MuscleNoteApp.kt` (routes `start-workout` et `exercise-picker` retirées) ; sélecteur
+  d'exercices `ui/workout/ExercisePickerSheet.kt` ; éditeur `ui/workout/EditWorkoutScreen.kt` au
+  gabarit fiche ; politique de confidentialité de Health Connect au design system. Ancien thème
+  `ui/theme/`, Inter, `font_certs.xml`, dépendance `ui-text-google-fonts`, composants
+  `InlineConfirm`, `MuscleGroupBadge`, `NotFoundScreen`, `ScreenHeader`, `DashedBorder`, barre de
+  recherche, ancienne ligne de série, 52 icônes et 6 textes retirés (§ 15.11.5) ; `StudioTheme`
+  posé une fois par `MainActivity`. Audit : plus aucune couleur, taille, police ou graisse en dur
+  hors de `ui/designsystem/` (jetons `bodyStrong`, `captionStrong`, composants `StatusMessage`,
+  `LabeledField`). Accessibilité (§ 15.11.4) : contrastes calculés sur les jetons (aplat `live` en
+  clair foncé), rendus à 200 % de tous les écrans, règles ATF sur tous les aperçus. Notes de
+  version : commits de tests écartés (§ 15.1, `ReleaseNotesTest`). Mise à jour depuis la v1.0.8
+  vérifiée en release sur un émulateur Android 16 (§ 15.11.8) : données identiques, séance en cours
+  et réglages gardés. README : captures du nouveau design (`docs/captures/`, même émulateur).
+  Restent à vérifier **sur l'appareil**, pour toute la refonte : saisie au pavé et défilement vers
+  le champ (séance, éditeur), « Démarrer » depuis l'Accueil, le Journal et Progrès (permission des
+  notifications), sélecteur (ajouts multiples, appui long sur un exercice perso, clavier), retour
+  dans une sheet à étapes, glisser sur une courbe, TalkBack et grand texte (200 %) sur un vrai
+  téléphone, notification de séance et Live Update (Android 16+), sélecteur de dossier, Health
+  Connect, import d'un fichier partagé.
 
 ---
 
@@ -1916,37 +2104,37 @@ Discord du développeur, par un webhook. C'est le **seul envoi de données** de 
 lieu que lorsque l'utilisateur appuie sur « Envoyer » : pas d'envoi automatique, pas de file
 d'attente, pas de nouvel essai en arrière-plan.
 
-### 14.1 Formulaire (Paramètres, section « TON AVIS »)
+### 14.1 Formulaire (Paramètres, ligne « Envoyer un avis »)
 
-Dernière section de Paramètres (après « APPLICATION », § 2.12), **affichée seulement si l'URL
-du webhook a été fournie au build** (§ 14.5) ; sinon elle est absente, titre compris. Une carte
-au style des cartes de Paramètres :
+🔄 D35 — depuis la refonte de Paramètres (§ 15.10.3), le formulaire est une **bottom sheet**
+ouverte par la ligne « Envoyer un avis » / « Une idée, un bug ? » de la section « À propos »,
+**affichée seulement si l'URL du webhook a été fournie au build** (§ 14.5) ; sinon la ligne est
+absente. Fait des composants du design system (DESIGN.md), de haut en bas :
 
-- **En-tête** : icône ronde `forum` (`primary`), titre « Ton avis », description « Une idée, un
-  bug ? Envoie-le directement au développeur. ».
-- **Type** : puces « Idée » (choisie par défaut), « Bug », « Autre » ; choix unique, style des
-  puces du minuteur.
-- **Message** : champ multiligne (4 lignes visibles, grandit jusqu'à 8 puis défile),
-  indication « Décris ton idée ou le problème… », majuscule en début de phrase. **1 000
-  caractères au plus** : la saisie s'arrête à la limite et un collage trop long est tronqué.
-  Caractère = point de code Unicode (un emoji simple compte pour 1 et n'est jamais coupé en
-  deux). Compteur « {n} / 1 000 » aligné à droite sous le champ (`mutedForeground`, `destructive`
-  à 1 000), nombres formatés dans la locale de l'app (§ 3.14).
-- **Pseudo** (facultatif) : champ d'une ligne, indication « Pseudo (facultatif) », 32 caractères
-  au plus, touche « Terminé ».
-- **Bouton plein « Envoyer »** (`primary`, icône `send`), actif seulement si le message contient
-  autre chose que des espaces, qu'aucun envoi n'est en cours et qu'aucun délai ne court
-  (§ 14.3). Pendant l'envoi : indicateur dans le bouton, puces et champs désactivés. Pendant un
-  délai : bouton désactivé et, dessous, « Prochain envoi possible dans {délai} », décompté à la
-  seconde (« 42 s » ; à partir d'une minute, en minutes arrondies au-dessus : « 3 min »).
-- **Informations jointes**, en petit (`mutedForeground`, 11 sp, icône `info`) sous le bouton :
-  « Joint automatiquement : MuscleNote {version} · Android {version} · {modèle} · langue
-  {langue}. Rien d'autre : aucune donnée d'entraînement. », avec exactement les valeurs envoyées
-  (§ 14.2).
-- **Encart de résultat** sous le formulaire, au style de l'encart de statut (§ 2.12, point 4) :
-  succès ou erreur (§ 14.4) ; il disparaît dès que le formulaire est modifié.
-- **Brouillon** gardé en mémoire tant que l'app tourne : changer d'onglet, de langue ou de thème
-  ne le perd pas. Il n'est pas écrit sur disque.
+- **Titre** « Ton avis » et aide « Une idée, un bug ? Envoie-le directement au développeur. ».
+- **Type** : puces de filtre « Idée » (choisie par défaut), « Bug », « Autre » ; choix unique.
+- **Message** : `StudioTextField` multiligne (4 lignes visibles, grandit jusqu'à 8 puis défile),
+  invite « Décris ton idée ou le problème… », majuscule en début de phrase. **1 000 caractères au
+  plus** : la saisie s'arrête à la limite et un collage trop long est tronqué. Caractère = point de
+  code Unicode (un emoji simple compte pour 1 et n'est jamais coupé en deux). Compteur
+  « {n} / 1 000 » aligné à droite sous le champ, en légende (`textSecondary`, puis `textPrimary`
+  appuyé à 1 000 : pas de rouge, réservé à la baisse), nombres formatés dans la locale de l'app
+  (§ 3.14).
+- **Pseudo** (facultatif) : `StudioTextField` d'une ligne, invite « Pseudo (facultatif) »,
+  32 caractères au plus, touche « Terminé ».
+- **Bouton principal « Envoyer »**, actif seulement si le message contient autre chose que des
+  espaces, qu'aucun envoi n'est en cours et qu'aucun délai ne court (§ 14.3). Pendant l'envoi :
+  « Envoi… », champs désactivés (texte `textTertiary`), puces sans effet. Pendant un délai : bouton
+  désactivé et, dessous, « Prochain envoi possible dans {délai} », décompté à la seconde (« 42 s » ;
+  à partir d'une minute, en minutes arrondies au-dessus : « 3 min »).
+- **Informations jointes**, en légende sous le bouton : « Joint automatiquement : MuscleNote
+  {version} · Android {version} · {modèle} · langue {langue}. Rien d'autre : aucune donnée
+  d'entraînement. », avec exactement les valeurs envoyées (§ 14.2).
+- **Résultat** (§ 14.4) en phrase sous le formulaire (`StatusMessage` : `textPrimary` 600, sans
+  couleur) ; il disparaît dès que le formulaire est modifié.
+- **Brouillon** gardé en mémoire tant que l'app tourne : fermer la sheet, changer d'onglet, de
+  langue ou de thème ne le perd pas ; l'envoi continue si la sheet est fermée. Il n'est pas écrit
+  sur disque.
 
 ### 14.2 Requête
 
@@ -2006,7 +2194,7 @@ au style des cartes de Paramètres :
 
 ### 14.4 Résultats
 
-| issue | encart | formulaire |
+| issue | message | formulaire |
 |---|---|---|
 | réponse 2xx | succès : « Merci, ton avis a été envoyé ! » (+ retour haptique) | vidé : type « Idée », message et pseudo vides |
 | pas de réseau, délai dépassé, erreur TLS | « Envoi impossible : vérifie ta connexion. Ton message est conservé. » | conservé |
@@ -2032,8 +2220,7 @@ au style des cartes de Paramètres :
 
 | clé | FR | EN |
 |---|---|---|
-| `settings.section.feedback` | TON AVIS | YOUR FEEDBACK |
-| `feedback.title` | Ton avis | Your feedback |
+| `feedback.title` (titre de la sheet) | Ton avis | Your feedback |
 | `feedback.desc` | Une idée, un bug ? Envoie-le directement au développeur. | An idea, a bug? Send it straight to the developer. |
 | `feedback.type.idea` | Idée | Idea |
 | `feedback.type.bug` | Bug | Bug |
@@ -2050,7 +2237,9 @@ au style des cartes de Paramètres :
 | `feedback.error.server` | L'envoi a échoué (erreur {{code}}). Ton message est conservé ; réessaie plus tard. | Sending failed (error {{code}}). Your message is kept; try again later. |
 
 Le délai (`{{delay}}`) réutilise les formats du minuteur (`settings.restTimer.seconds` /
-`settings.restTimer.minutes` : « 42 s », « 3 min »).
+`settings.restTimer.minutes` : « 42 s », « 3 min »). La ligne de Paramètres et l'état « Envoi… »
+ont leurs textes au § 15.10.7 (`feedback_row_title`, `feedback_row_subtitle`, `feedback_sending`) ;
+l'ancien titre de section « TON AVIS » est retiré.
 
 ---
 
@@ -2062,7 +2251,13 @@ les cartes, interrupteurs, boutons et encarts existants de Paramètres (§ 2.12,
 **Correctif de Health Connect** après la v1.0.5 (🔄 D30) : un poids par jour, durée des séances
 courtes ou sans durée, comptage de ce que Health Connect confirme (§ 15.3). **Notification de
 séance** avec actions (🔄 D31, § 15.5) : elle remplace la notification de repos, sans écran ni
-réglage nouveau.
+réglage nouveau. **Refonte « Studio épuré »** (DESIGN.md), écran par écran : la séance en cours
+(🔄 D32, § 15.7) passe au gabarit « en direct », avec la colonne « Préc. », la suggestion de charge
+et un pavé numérique intégré, sans donnée nouvelle ; puis la navigation, l'Accueil, le Journal et
+le logo (🔄 D33, § 15.8), sans donnée nouvelle non plus ; puis la fiche exercice et Progrès (🔄 D34,
+§ 15.9), toujours sans donnée nouvelle ; puis Nutrition et Paramètres (🔄 D35, § 15.10), dont seul le
+thème par défaut change (sombre) ; enfin les derniers écrans (démarrer, sélecteur, éditeur) et les
+finitions — ancien thème retiré, accessibilité, mise à jour vérifiée (🔄 D36, § 15.11).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2083,9 +2278,11 @@ Tous les commits : https://github.com/Bouss45/MuscleNote/compare/v1.0.11...v1.0.
   listés du plus ancien au plus récent. Le dépôt est récupéré avec tout son historique
   (`fetch-depth: 0`).
 - **Commits retenus** : ni les commits de fusion (plus d'un parent), ni ceux qui ne touchent que la
-  documentation ou la CI. Documentation = tout fichier `*.md` (`SPEC.md`, `README.md`,
-  `CLAUDE.md`…) ; CI = tout fichier sous `.github/`. Un commit qui touche aussi autre chose est
-  retenu ; un commit sans fichier modifié ne l'est pas.
+  documentation, la CI ou les tests. Documentation = tout fichier `*.md` (`SPEC.md`, `README.md`,
+  `CLAUDE.md`…) ; CI = tout fichier sous `.github/` ; tests (🔄 D36) = tout fichier d'un dossier de
+  tests Gradle, `src/test/`, `src/androidTest/` et leurs variantes (`src/testDebug/`…), où que soit
+  le module (rien n'en entre dans l'APK ; les aperçus de `src/debug/` ne sont pas des tests). Un
+  commit qui touche aussi autre chose est retenu ; un commit sans fichier modifié ne l'est pas.
 - **Une ligne par commit** : son titre (première ligne du message), tel quel. Au plus 50 lignes ;
   au-delà, une dernière ligne « … et N autres changements ».
 - **Aucun commit retenu** (seule la CI a changé, par exemple) : « Aucun changement dans l'app :
@@ -2429,3 +2626,1117 @@ cours : elle revient au changement suivant de la séance ou du repos.
   « +30 s » et « Passer » pendant le repos. Elle demanderait un module Wear, la synchronisation de
   la séance entre téléphone et montre (Data Layer) et une publication à part : hors du périmètre
   actuel (§ 15.5).
+
+### 15.7 Refonte « Studio épuré » : séance en cours (🔄 D32)
+
+Deuxième étape de la refonte décrite dans `DESIGN.md` : l'écran de séance en cours passe au
+gabarit **« en direct »** (DESIGN.md § 10.3), fait uniquement des jetons et composants du design
+system. Il **remplace** la disposition des § 2.4 – 2.6 et le bandeau de repos du § 7.2 ; l'éditeur
+de séance terminée (§ 2.9) garde ses lignes et le clavier du système. Les règles du § 3, la
+notification de séance (§ 15.5) et le **format des données ne changent pas** (§ 4, § 5) : aucune
+migration.
+
+#### 15.7.1 Écran
+
+- **En-tête, fixe** : « Réduire » (⌄ : retour à l'Accueil, la séance reste en cours) ; nom affiché
+  (§ 3.1) et « 78,4 kg · 2 / 16 séries » (poids omis s'il vaut 0) ; chronomètre `m:ss` en jaune
+  (minutes non bornées). Dessous, la progression en segments, un par série (masquée sans série).
+- **Échauffement** (§ 2.4, toujours local à l'écran, non enregistré) : une ligne « Échauffement »
+  avec « 2/5 exercices » ; la toucher ouvre une bottom sheet avec les 5 exercices à cocher.
+- **Un bloc par exercice** (ordre de la séance, exercices inconnus masqués — § 10.5), 24 dp entre
+  deux blocs, sans carte :
+  - titre — **appui long** pour réordonner (glisser-déposer, 🔄 D14) —, bouton « fiche »
+    (→ historique de l'exercice, § 2.8), bouton ⋮ (bottom sheet : note de l'exercice, enregistrée
+    à chaque frappe, et « Retirer de la séance » avec confirmation). La note s'affiche sous le titre ;
+  - puces : **dernière fois** (date de la séance de référence, § 15.7.2) et **suggestion**
+    (§ 15.7.3) ;
+  - colonnes **# · Préc. · Kg · Reps** (cardio : **# · Préc. · Min · Km**) ;
+  - **lignes de série** de 56 dp : valeurs d'une série à faire en gris (`textTertiary`), d'une
+    série validée en `textPrimary` ; case de 48 dp (validée : inverse avec ✓). Toucher une valeur
+    ouvre le pavé (§ 15.7.4) ; toucher la case bascule la validation (§ 2.6) ;
+  - le **repos** (§ 7.2), en jaune, juste après la **dernière série validée** dans l'ordre de la
+    séance (tout en haut s'il n'y en a pas) : « REPOS », temps restant, « sur 2:30 », barre du temps
+    écoulé, « −30 s », « +30 s », « Passer » (mêmes effets que les actions de la notification,
+    § 15.5). Il disparaît à la fin du repos, comme avant ;
+  - la ligne **« + Série »**, toujours visible sous la dernière série du bloc : ajoute une série
+    (règles du § 2.5).
+- Fin de liste : « Ajouter un exercice » (→ sélecteur, § 2.7). Sans exercice : état vide « Aucun
+  exercice » / « Ajoute des exercices pour commencer » avec la même action. Sans séance en cours :
+  « Aucune séance active » et « Retour ».
+- **En bas, fixe** : le pavé numérique quand une valeur est en saisie (§ 15.7.4), sinon
+  « Terminer la séance », qui ouvre une confirmation en bottom sheet : « Terminer la séance ? »,
+  ou, sans série validée, « Abandonner la séance ? » (elle ne sera pas enregistrée, 🔄 D15). Le
+  bouton de confirmation reste en inverse, jamais rouge (DESIGN.md § 13).
+- **Supprimer une série** : bouton « Supprimer la série » de l'en-tête du pavé, puis confirmation
+  en bottom sheet (🔄 jusqu'ici immédiate, § 10.8).
+- **Valider une série** (case, pavé ou notification) : comme avant, non validée → validée lance le
+  repos avec le nom de l'exercice (§ 2.6, § 7.2) ; la notification de séance et ses actions
+  (§ 15.5) sont inchangées.
+
+#### 15.7.2 Colonne « Préc. »
+
+- **Séance de référence** d'un exercice : la séance **terminée** la plus récente où il a **au moins
+  une série validée**, quelle que soit sa clé de séance (la séance en cours n'en fait pas partie).
+- La ligne de rang n (n-ième série de l'exercice dans la séance en cours) montre la **n-ième série
+  validée** de l'exercice dans la séance de référence (les séries non validées y sont sautées) :
+  - force : « 80 × 8 » (charge × reps, charge à la locale : `82,5`) ; « 12 reps » à 0 kg ;
+  - cardio : « 30 · 5,2 » (min · km) ; « 30 min » sans distance ;
+  - aucune série de ce rang, ou pas de séance de référence : « — ».
+- **Toucher** la valeur la recopie dans la ligne : reps et charge (cardio : durée, distance,
+  vitesse et inclinaison). La validation de la ligne ne change pas ; « — » ne fait rien.
+- Puce **dernière fois** (icône historique) : date de la séance de référence (« jeu. 5 nov. ») ;
+  absente sans séance de référence.
+
+#### 15.7.3 Suggestion de charge
+
+Pour un exercice de force qui a une séance de référence (§ 15.7.2) ; jamais en cardio.
+
+- **Reps tenues** : dans la séance de référence, **toutes** les séries de l'exercice sont validées
+  (une série prévue mais non validée = objectif manqué) et **chacune a au moins autant de reps que
+  la première**. L'app n'enregistre pas d'objectif de reps : celui de la première série en tient
+  lieu (des séries à reps décroissantes, 12 / 10 / 8, donnent donc « même charge »).
+- **Poids du corps** : toutes les séries validées de la séance de référence sont à 0 kg.
+- **Proposition** : reps tenues → **+2,5 kg** (poids du corps : **+1 rep**) ; sinon **même
+  charge** (poids du corps : **mêmes reps**).
+- **Affichage** dans le bloc : puce verte « ↑ +2,5 kg » / « ↑ +1 rep » ; « Même charge » /
+  « Mêmes reps » en puce neutre (le vert ne marque qu'une hausse, DESIGN.md § 1).
+- **Jamais appliquée d'office.** Toucher la puce l'applique aux séries **non validées** de
+  l'exercice qui ont une série « Préc. » de même rang : charge = charge de cette série + 2,5 (ou
+  + 0), reps inchangées ; au poids du corps, reps = reps de cette série + 1 (ou + 0), charge
+  inchangée. Les séries validées ne bougent pas ; toucher deux fois donne le même résultat.
+
+#### 15.7.4 Pavé numérique
+
+Remplace le clavier du système pour les séries de la séance en cours.
+
+- **Ouverture** : toucher une valeur d'une ligne. Le champ en saisie est **en jaune** (fond
+  `liveDim`, curseur `liveText`) et la liste défile pour qu'il reste visible au-dessus du pavé.
+  Fermeture : bouton « Fermer le pavé », retour système, ou après la dernière série (ci-dessous).
+- **En-tête** : contrôle segmenté des champs de la série, le premier rappelant le rang
+  (« Kg · série 3 » / « Reps » ; cardio « Min · série 2 » / « Km » / « Km/h » / « % ») —
+  toucher un segment change de champ ; « Supprimer la série » ; « Fermer le pavé ». Vitesse et
+  inclinaison, absentes des colonnes, s'affichent pendant leur saisie dans un champ héros au-dessus
+  des touches.
+- **Touches** : 1 – 9, 0, séparateur décimal de la langue (« , » en français, « . » en anglais),
+  effacer, pas « − » et « + », touche principale sur deux colonnes.
+- **Saisie** (règles pures, testées en JVM) :
+  - un champ qui vient d'être ouvert (toucher, « Suivant », segment, pas) est **neuf** : la
+    première touche chiffre ou séparateur **remplace** sa valeur, « effacer » le **vide** ;
+    ensuite, ajout et effacement caractère par caractère ;
+  - séparateur : sans effet sur les reps ou s'il y en a déjà un ; sur un champ vide, il donne
+    « 0, » ; **2 décimales** au plus ;
+  - pas de zéro inutile en tête (« 0 » puis « 7 » → « 7 ») ;
+  - longueur maximale, comme au § 2.6 : reps 3, charge 6, durée 4, distance 5, vitesse 4,
+    inclinaison 4 caractères ; une touche qui la dépasserait est sans effet ;
+  - chaque touche s'applique **tout de suite** à la série (🔄 D20 conservé), lue par
+    `parseDecimal` / `parseInteger` (§ 10.1) ; un champ vide vaut 0 ;
+  - **pas** : ±2,5 kg, ±1 rep, ±1 min, ±0,5 km, ±0,5 km/h, ±1 % ; jamais sous 0 ; résultat
+    arrondi au centième (demi vers +∞, § 3.5) ; sans effet s'il dépasserait la longueur maximale ;
+  - affichage des valeurs (lignes et pavé) : 2 décimales au plus, sans zéro final ni séparateur de
+    milliers (`82,5`, `80`, `81,25`) ; une valeur 0 s'affiche `0`.
+- **Touche principale** : « **Suivant** » passe au champ suivant de la série (Kg → Reps ; Min → Km
+  → Km/h → %) ; sur le dernier, « **✓ Valider la série** » valide la série (le repos démarre) puis
+  ouvre la **série non validée suivante du même exercice** (premier champ, neuf), ou ferme le pavé
+  s'il n'y en a plus. Sur une série déjà validée, la touche du dernier champ est « OK » et ferme le
+  pavé.
+
+#### 15.7.5 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Terminer la séance », « Ajouter
+un exercice », « Repos », « Passer », « −30 s », « +30 s », « Valider la série », échauffement,
+note, retrait).
+
+| clé | FR | EN |
+|---|---|---|
+| `workout_subtitle` (pluriel sur le total) | {{poids}} kg · {{faites}} / {{total}} séries | {{weight}} kg · {{done}} / {{total}} sets |
+| `workout_subtitle_no_weight` (pluriel) | {{faites}} / {{total}} séries | {{done}} / {{total}} sets |
+| `workout_col_index` / `_previous` | # / Préc. | # / Prev. |
+| `workout_col_kg` / `_reps` / `_min` / `_km` | Kg / Reps / Min / Km | Kg / Reps / Min / Km |
+| `workout_previous_strength` | {{charge}} × {{reps}} | {{weight}} × {{reps}} |
+| `workout_previous_reps` | {{reps}} reps | {{reps}} reps |
+| `workout_previous_cardio` / `_minutes` | {{min}} · {{km}} / {{min}} min | {{min}} · {{km}} / {{min}} min |
+| `workout_previous_copy` | Recopier la série précédente {{valeur}} | Copy previous set {{value}} |
+| `workout_last_time` | Dernière fois le {{date}} | Last time on {{date}} |
+| `workout_suggest_plus_kg` / `_plus_rep` | +{{valeur}} kg / +1 rep | +{{value}} kg / +1 rep |
+| `workout_suggest_same_weight` / `_same_reps` | Même charge / Mêmes reps | Same weight / Same reps |
+| `workout_suggest_apply` | Appliquer la suggestion : {{valeur}} | Apply suggestion: {{value}} |
+| `workout_add_set_row` | Série | Set |
+| `workout_set_check` / `_checked` | Valider la série {{n}} / Série {{n}} validée | Complete set {{n}} / Set {{n}} completed |
+| `workout_rest_total` | sur {{total}} | of {{total}} |
+| `workout_keypad_first` | {{champ}} · série {{n}} | {{field}} · set {{n}} |
+| `workout_keypad_speed` / `_incline` | Km/h / % | Km/h / % |
+| `workout_keypad_next` / `_ok` | Suivant / OK | Next / OK |
+| `workout_delete_set` | Supprimer la série | Delete set |
+| `workout_delete_set_title` | Supprimer la série {{n}} ? | Delete set {{n}}? |
+| `workout_delete_set_message` | Elle sera retirée de cette séance. | It will be removed from this session. |
+| `workout_exercise_remove` | Retirer de la séance | Remove from session |
+| `workout_exercise_remove_message` | Ses séries de cette séance seront perdues. | Its sets in this session will be lost. |
+| `workout_finish_message` (pluriel) | {{n}} séries validées en {{durée}}. Tu pourras corriger la séance ensuite. | {{n}} sets completed in {{duration}}. You can edit the session afterwards. |
+| `workout_abandon_title` | Abandonner la séance ? | Abandon the session? |
+| `workout_continue` | Continuer la séance | Keep going |
+| `workout_empty_title` | Aucun exercice | No exercises |
+| `workout_no_active_message` | Démarre une séance depuis l'Accueil. | Start a session from Home. |
+
+### 15.8 Refonte « Studio épuré » : navigation, Accueil, Journal et logo (🔄 D33)
+
+Troisième étape de la refonte décrite dans `DESIGN.md` : la navigation à quatre onglets, l'Accueil
+et le **Journal** (la liste des séances, qui quitte l'Accueil) passent aux gabarits et composants du
+design system, et l'app reçoit le logo de la maquette. Progrès, Nutrition et Paramètres gardent leurs
+écrans actuels, comme « Démarrer une séance », le sélecteur d'exercices, l'historique d'un exercice
+et l'éditeur de séance. Les règles du § 3, les notifications (§ 7, § 15.5) et le **format des
+données ne changent pas** (§ 4, § 5) : aucune migration.
+
+#### 15.8.1 Navigation
+
+Remplace le § 2.1 :
+
+```
+Racine (Navigation Compose, aucun en-tête système)
+├── Onglets (StudioNavigationBar, 4 destinations)
+│   ├── home        « Accueil »     icône `home`
+│   ├── journal     « Journal »     icône `calendar_month`
+│   ├── progress    « Progrès »     icône `monitoring`      écran actuel (§ 2.10)
+│   └── nutrition   « Nutrition »   icône `restaurant`      écran actuel (§ 2.11)
+├── settings                        Paramètres, écran actuel (§ 2.12), par l'engrenage de l'Accueil
+├── start-workout                   plein écran, inchangés : démarrer une séance,
+├── workout                         séance en cours,
+├── exercise-picker                 sélecteur d'exercices,
+├── exercise-history/{exerciseId}   historique d'un exercice,
+└── edit-workout/{workoutId}        éditeur de séance terminée
+```
+
+- **Barre d'onglets** (DESIGN.md § 9.2) : filet en haut, icône pleine et libellé en gras pour
+  l'onglet sélectionné, sans indicateur. Affichée sur les quatre onglets et sur **Paramètres**, page
+  de second niveau de l'Accueil : l'onglet Accueil y reste sélectionné et le toucher y ramène.
+  Masquée sur les écrans plein écran. Chaque onglet garde son état (défilement) d'une visite à
+  l'autre.
+- **Mini-barre** de la séance en cours, dès qu'une séance est en cours, 8 dp au-dessus de la barre
+  d'onglets, dans les marges de l'écran : sur **Journal, Progrès, Nutrition et Paramètres**. Point
+  jaune, nom affiché de la séance (§ 3.1), puis pendant un repos « repos **1:48** » (temps restant),
+  sinon le chrono de la séance « **17:48** » (`m:ss`, minutes non bornées) en jaune ; bouton texte
+  « Reprendre ». Toucher la barre ou « Reprendre » ouvre la séance. Sur l'Accueil, la surface « En
+  cours » (§ 15.8.2) tient ce rôle : pas de mini-barre (maquette).
+- **Ouvrir la séance** (surface de l'Accueil, mini-barre, toucher de la notification « Séance en
+  cours » ou de l'alerte « Repos terminé ») : si la séance est déjà dans la pile (sous l'historique
+  d'un exercice ou le sélecteur, par exemple), on y revient ; sinon elle s'ouvre par-dessus l'écran
+  affiché. Elle n'est **jamais deux fois** dans la pile. Sans séance en cours (notification restée
+  affichée), l'écran « Aucune séance active » s'affiche comme avant.
+- **Quitter la séance** : « Réduire » et le retour système reviennent à l'écran d'où on l'a ouverte
+  (un onglet, Paramètres) ; juste après « Commencer », c'est l'écran d'où « Démarrer une séance »
+  a été ouvert (l'Accueil, ou le Journal vide), puisque « Démarrer » a été remplacé (§ 2.3).
+  Terminer ou abandonner la séance revient à l'Accueil.
+- **Autres entrées externes** : rappel de complément → onglet Nutrition ; fichier JSON partagé ou
+  ouvert → Accueil puis Paramètres (confirmation d'import, § 5.4). Les actions des notifications
+  (« Valider la série », « −30 s », « +30 s », « Passer », § 15.5) n'ouvrent pas l'app et ne changent
+  pas.
+- **Retour, geste prédictif compris** (`android:enableOnBackInvokedCallback="true"`, Android 13+ ;
+  d'office à partir d'Android 16) :
+  - une bottom sheet ouverte, puis le pavé numérique, se ferment d'abord ;
+  - Journal, Progrès, Nutrition et Paramètres → Accueil ; écran plein écran → écran précédent
+    (étape 2 de « Démarrer » → étape 1, comme avant) ; Accueil → quitte l'app, avec l'aperçu du
+    système (retour à l'écran d'accueil du téléphone) ;
+  - transitions en **fondu** au rythme `standard` (DESIGN.md § 7) entre deux écrans : pendant le
+    geste, l'écran précédent apparaît sous le doigt ; geste annulé, rien ne change.
+
+#### 15.8.2 Accueil
+
+Remplace le § 2.2. Gabarit **hub** (DESIGN.md § 10.1), de haut en bas :
+
+1. **Barre** : date du jour, jour de la semaine en toutes lettres (« Samedi 14 novembre »,
+   « Saturday, November 14 »), et l'engrenage → Paramètres.
+2. **Une seule surface mise en avant** :
+   - **séance en cours** — « En cours » : « EN COURS » à gauche, nom affiché à droite ; chrono de la
+     séance (`m:ss`, minutes non bornées) en grand, en jaune ; pendant un repos, « Repos **1:48** ·
+     Développé couché, série 3 » (temps restant en jaune, puis la prochaine série du § 15.5 ; sans
+     prochaine série, « Repos 1:48 » seul) ; les segments des séries, « 2 / 16 séries » à gauche et
+     le poids de corps « 78,4 kg » à droite (omis s'il vaut 0) ; sans série, ni segments ni
+     compteur ; bouton principal « Reprendre » → séance.
+   - **sinon** — « Prochaine séance » : légende « Prochaine séance » ; titre = le type sélectionné
+     (au départ le type suggéré, § 15.8.3), ou « Nouvelle séance » sans suggestion ; dessous
+     « Dernière fois il y a 7 jours · 5 exercices » (« aujourd'hui », « hier » ; la dernière séance
+     de ce type), ou sans suggestion « Choisis ta séance à l'étape suivante » ; puces des **types
+     réguliers** (3 au plus, le suggéré en premier et sélectionné ; une seule sélection), puis
+     « Autre… » ; bouton principal « Démarrer ».
+     - « Démarrer » avec un type → écran « Démarrer une séance » **directement à l'étape du poids de
+       corps** (§ 2.3, étape 2), avec ce type : son préréglage, ou le nom perso de sa dernière
+       séance ; ← revient à l'étape 1, ce type déjà choisi.
+     - « Autre… », ou « Démarrer » sans type → « Démarrer une séance » à l'étape 1, comme avant.
+3. **Sections**, espacées de 40 dp, chacune seulement si elle a un contenu :
+   1. **« Mise à jour disponible »** (🔄 D25, mêmes conditions qu'au § 2.2) : une ligne « MuscleNote
+      {version} » / « Version installée : {installée} » avec chevron → téléchargement (APK dans le
+      navigateur, sinon page de la Release) ; bouton texte « Plus tard », qui masque l'annonce
+      jusqu'à la version suivante.
+   2. **« Depuis l'ancienne app »** (🔄 D4/D5, mêmes conditions : aucune séance terminée ni en cours,
+      carte non masquée) : « Tu viens de l'ancienne MuscleNote ? » et le mode d'emploi (§ 5.5) en
+      paragraphe ; bouton texte « Masquer » (préférence locale, comme avant).
+   3. **« Dernière séance »**, lien « Tout voir » → onglet Journal : la ligne de la séance terminée la
+      plus récente (même ligne et mêmes actions qu'au Journal, § 15.8.4).
+   4. **« Cette semaine »** : rangée de stats « **2/3** séances » (séances terminées de la semaine
+      en cours, sur les 3 qui la valident), « **4 sem.** série en cours » (§ 3.6 : `current` si
+      `isAlive`, sinon 0), « **9 sem.** record » (`best`) ; barres des 8 dernières semaines (cette
+      semaine à droite ; hauteur selon le nombre de séances, semaine validée en `textPrimary`, les
+      autres en `textTertiary`) et la légende « 8 dernières semaines · 3 séances = semaine
+      validée ».
+   Sans aucune séance terminée, les sections 3 et 4 n'apparaissent pas.
+
+Quittent l'Accueil : l'image de fond floutée, la ligne « Séances / Volume total / Dernier poids »
+et la carte « temps en salle » (totaux → Journal ; le dernier poids reste dans Progrès, « Actuel »,
+§ 2.10), la légende Validée / Partielle / Aucune et les phrases d'aide de la série, la liste de
+toutes les séances (→ Journal) et l'état vide « Prêt à s'entraîner ? » (la surface « Nouvelle
+séance » le remplace).
+
+#### 15.8.3 Surface de l'Accueil et type suggéré (règles pures, testées en JVM)
+
+- **Choix de la surface** : une séance en cours → « En cours » ; sinon « Prochaine séance ».
+- **Fenêtre** : les séances terminées des **42 derniers jours** (jour local de la séance ≥
+  aujourd'hui − 41 jours), groupées par **clé de séance** (§ 3.1 : préréglage, ou nom normalisé).
+- **Types réguliers** : les clés qui ont **au moins 2 séances** dans la fenêtre **et au moins la
+  moitié** des séances de la clé la plus fréquente (un « Cardio » occasionnel au milieu d'un Push /
+  Pull / Legs n'en est pas un).
+- **Ordre** : de la clé dont la dernière séance est la plus ancienne à la plus récente (à égalité :
+  la plus fréquente, puis l'ordre alphabétique de la clé). La première est le **type suggéré** —
+  dans une rotation, celui qui revient ; les puces montrent les trois premières.
+- Aucun type régulier → pas de suggestion (« Nouvelle séance », pas de puce de type).
+- Pour chaque type : nom affiché et démarrage selon sa séance la plus récente (préréglage, sinon son
+  `name`) ; « il y a N jours » = jours calendaires locaux entre cette séance et aujourd'hui ;
+  « N exercices » = ses exercices, ceux que le pré-remplissage reprendra (§ 3.1).
+
+#### 15.8.4 Journal
+
+Nouvel onglet, gabarit **hub** en liste paresseuse (l'historique peut compter des centaines de
+séances) :
+
+1. Barre de titre « Journal ».
+2. **« Depuis le début »** (s'il y a une séance terminée) : rangée de stats « **48** séances »,
+   « **312 t** volume » (§ 3.8, tonnes arrondies à l'entier), « **52 h** en salle » (total du § 3.7,
+   arrondi à l'heure ; « 45 min » en dessous d'une heure) et « **1 h 05** par séance » (moyenne du
+   § 3.7) ; ces deux dernières absentes si aucune séance n'est retenue par le § 3.7.
+3. **Une section par semaine** ayant au moins une séance terminée, de la plus récente à la plus
+   ancienne. Semaine = semaine ISO, **du lundi au dimanche**, au jour local de la séance (comme le
+   § 3.6) : une semaine à cheval sur deux années reste une seule section. Titre : « Cette semaine »,
+   « Semaine dernière », sinon « Semaine du 26 oct. » (son lundi), avec l'année quand ce lundi n'est
+   pas dans l'année en cours (« Semaine du 29 déc. 2025 »). À droite : « 3 séances ». Une séance à
+   la date illisible (§ 10.3) va dans une dernière section « Date inconnue ».
+4. **Une ligne par séance**, de la plus récente à la plus ancienne :
+   - titre : nom affiché (§ 3.1) ;
+   - sous-titre : date courte locale, puis la durée si `durationMinutes` > 0 : « mer. 11 nov. ·
+     1 h 12 » (« 45 min », « 1 h », « 1 h 05 » ; en anglais « 45 min », « 1 h », « 1 h 05 min ») ;
+   - à droite : le volume (§ 3.8, séries validées, arrondi au kg, séparateur de milliers de la
+     langue : « 6 840 kg ») ; volume nul (cardio, poids du corps) → le nombre de séries validées
+     (« 12 séries ») ;
+   - **toucher** → éditeur de la séance (§ 2.9, écran actuel) ;
+   - **appui long** → bottom sheet : titre = nom affiché, texte = « mer. 11 nov. · 18:30 » ;
+     boutons secondaires « Modifier la séance » (→ éditeur), « Modifier la date », « Supprimer la
+     séance » ; bouton texte « Fermer ». « Supprimer la séance » ouvre une confirmation en bottom
+     sheet : « Supprimer la séance ? » / « {séance} du {date} sera retirée de ton historique. » /
+     [Supprimer] (principal, en inverse, jamais rouge — DESIGN.md § 13) / [Annuler].
+5. **Sans séance terminée** : état vide « Aucune séance » / « Tes séances terminées s'afficheront
+   ici, semaine par semaine. » ; action « Démarrer une séance » (→ « Démarrer une séance », étape 1),
+   ou « Reprendre la séance » si une séance est en cours.
+
+**Modifier la date** : formulaire en bottom sheet (gabarit formulaire, DESIGN.md § 10.4) qui reprend
+la modale du § 2.2 : titre « Modifier la date », nom affiché dessous ; champs Jour / Mois / Année puis
+Heure : Min au clavier numérique du système (le champ en saisie en jaune), préremplis avec la date
+locale de la séance ; mêmes règles (heure ou minute vide → 12 h / 00 ; date impossible, § 10.3 →
+« Date ou heure invalide » et vibration d'erreur, la sheet reste ouverte) ; « Enregistrer »
+(principal) et « Annuler ». L'historique est retrié (§ 2.2).
+
+**Règles pures, testées en JVM** : regroupement par semaine (lundi, changement d'année, date
+illisible), libellé de semaine, résumé d'une séance (durée affichée seulement si > 0, volume des
+seules séries validées arrondi au kg, repli sur le nombre de séries), totaux.
+
+#### 15.8.5 Logo
+
+- **Dessin** : la variante « Deux disques » de la maquette `design/claude-design/T2-Logo.dc.html` (un grand et
+  un petit disque de chaque côté, la barre qui dépasse),
+  haltère **jaune `#FFC93D` sur graphite `#17181B`**, barres arrondies, dans le calque de 108 dp et
+  sa zone sûre de 66 dp.
+- **Icône adaptative** (`mipmap-anydpi/ic_launcher.xml`, aussi `roundIcon`) : fond = couleur
+  graphite ; avant-plan = l'haltère en vecteur ; **couche monochrome** = le même haltère, d'une seule
+  couleur, pour les icônes à thème (Android 13+). Les anciennes images de l'app Expo sont retirées.
+- **Écran de démarrage** (Android 12+) : fond au jeton `background` du thème choisi (`#0F1012` /
+  `#FFFFFF`, § 9.1) ; icône = l'avant-plan de l'icône posé sur un disque graphite
+  (`windowSplashScreenIconBackgroundColor`), pour que le jaune reste lisible sur le blanc. Avant
+  Android 12, pas d'icône (le fond seul, comme aujourd'hui) : pas de dépendance ajoutée.
+- **Petite icône des notifications** : l'haltère en silhouette blanche ; couleur d'accent graphite
+  `#17181B` (§ 7.1).
+- **Variante preview** (`com.musclenote.android.preview`, ressources du source set `preview`) : le
+  même logo avec une **marque jaune** — un bandeau jaune au bas de l'icône, sous l'haltère, dans
+  l'avant-plan et dans la couche monochrome, visible quel que soit le masque du lanceur (et donc sur
+  son écran de démarrage). La petite icône des notifications ne change pas.
+
+#### 15.8.6 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Modifier la date », Jour / Mois
+/ Année / Heure / Min, « Date ou heure invalide », « Mise à jour disponible », mode d'emploi du
+transfert, « {n} sem. », pluriels séances / séries / exercices).
+
+| clé | FR | EN |
+|---|---|---|
+| `tabs_journal` / `journal_title` | Journal | Journal |
+| `common_see_all` | Tout voir | See all |
+| `common_kg_value` | {{valeur}} kg | {{value}} kg |
+| `mini_bar_rest` | repos | rest |
+| `home_resume` | Reprendre | Resume |
+| `home_live_label` | En cours | In progress |
+| `home_rest_detail` | {{exercice}}, série {{n}} | {{exercise}}, set {{n}} |
+| `home_next_caption` | Prochaine séance | Next workout |
+| `home_next_new` | Nouvelle séance | New workout |
+| `home_next_new_detail` | Choisis ta séance à l'étape suivante | Pick your workout in the next step |
+| `home_next_last_today` / `_yesterday` | Dernière fois aujourd'hui / hier | Last time today / yesterday |
+| `home_next_last_days` (pluriel) | Dernière fois il y a {{n}} jours | Last time {{n}} days ago |
+| `home_next_detail` | {{dernière fois}} · {{exercices}} | {{last time}} · {{exercises}} |
+| `home_next_other` | Autre… | Other… |
+| `home_start` | Démarrer | Start |
+| `home_update_row` | MuscleNote {{version}} | MuscleNote {{version}} |
+| `home_update_installed` | Version installée : {{version}} | Installed version: {{version}} |
+| `home_update_later` | Plus tard | Later |
+| `home_migrate_section` | Depuis l'ancienne app | From the old app |
+| `home_hide` | Masquer | Hide |
+| `home_last_session` | Dernière séance | Last workout |
+| `home_this_week` | Cette semaine | This week |
+| `home_week_sessions_value` / `_label` | {{n}}/{{3}} / séances | {{n}}/{{3}} / workouts |
+| `home_weeks_value` (pluriel) | {{n}} sem. | {{n}} wk / {{n}} wks |
+| `home_streak_label` / `home_record_label` | série en cours / record | current streak / best |
+| `home_week_bars_caption` | 8 dernières semaines · 3 séances = semaine validée | Last 8 weeks · 3 workouts = week done |
+| `home_week_bars_description` | 8 dernières semaines : {{liste}}, puis {{n}} cette semaine | Last 8 weeks: {{list}}, then {{n}} this week |
+| `journal_all_time` | Depuis le début | All time |
+| `journal_stat_sessions` / `_volume` / `_gym_time` / `_average` | séances / volume / en salle / par séance | workouts / volume / at the gym / per workout |
+| `journal_tonnes` | {{valeur}} t | {{value}} t |
+| `journal_week_current` / `_previous` | Cette semaine / Semaine dernière | This week / Last week |
+| `journal_week_of` | Semaine du {{date}} | Week of {{date}} |
+| `journal_unknown_date` | Date inconnue | Unknown date |
+| `journal_empty_title` | Aucune séance | No workouts yet |
+| `journal_empty_message` | Tes séances terminées s'afficheront ici, semaine par semaine. | Your finished workouts will show up here, week by week. |
+| `journal_empty_start` / `_resume` | Démarrer une séance / Reprendre la séance | Start a workout / Resume the workout |
+| `duration_minutes` / `_hours` / `_hours_minutes` | {{m}} min / {{h}} h / {{h}} h {{mm}} | {{m}} min / {{h}} h / {{h}} h {{mm}} min |
+| `duration_compact` (rangée de stats) | {{h}} h {{mm}} | {{h}}h {{mm}}m |
+| `session_subtitle` | {{date}} · {{durée ou heure}} | {{date}} · {{duration or time}} |
+| `session_volume_kg` | {{volume}} kg | {{volume}} kg |
+| `session_long_press` (accessibilité) | Options de la séance | Workout options |
+| `session_actions_edit` / `_delete` | Modifier la séance / Supprimer la séance | Edit workout / Delete workout |
+| `session_delete_title` | Supprimer la séance ? | Delete this workout? |
+| `session_delete_message` | {{séance}} du {{date}} sera retirée de ton historique. | {{workout}} on {{date}} will be removed from your history. |
+
+Les clés de l'ancien Accueil devenues inutiles (`home_new_session`, `home_streak_*`, `home_stat_*`,
+`home_gym_time`, `home_recent_sessions`, `home_empty_*`…) sont retirées.
+
+### 15.9 Refonte « Studio épuré » : fiche exercice et Progrès (🔄 D34)
+
+Quatrième étape de la refonte décrite dans `DESIGN.md` : l'historique d'un exercice (§ 2.8) devient
+la **fiche exercice** (gabarit fiche, DESIGN.md § 10.2) et l'onglet **Progrès** (§ 2.10) passe au
+gabarit hub (§ 10.1), avec tout ce qu'ils affichent aujourd'hui, refait avec les composants. La
+courbe est le composant `TrendCurve` du design system (Canvas Compose, aucune bibliothèque), qui
+remplace le graphique linéaire du § 2.13. **Hors périmètre** : la nouvelle fonctionnalité Records
+(page Mes records, records battus) ; le record personnel et le 1RM estimé existants restent.
+Nutrition, Paramètres, « Démarrer une séance », le sélecteur d'exercices et l'éditeur de séance
+gardent leurs écrans actuels. Les règles du § 3 (sauf le § 3.10, § 15.9.3) et le **format des
+données ne changent pas** (§ 4, § 5) : aucune migration.
+
+#### 15.9.1 Fiche exercice
+
+Remplace le § 2.8, même route (`exercise-history/{exerciseId}`), ouverte depuis le bouton « fiche » du
+bloc exercice de la séance en cours (§ 15.7.1) et depuis Progrès. Gabarit **fiche**, en liste
+paresseuse (la liste des séances peut compter des centaines de lignes). Comme avant : séances
+**terminées** où l'exercice a **au moins une série validée**, seules les séries validées comptent
+(🔄 D15), la séance en cours n'en fait pas partie, exercices archivés compris (§ 3.9). La
+**métrique** d'une séance (charge max, reps max au poids du corps, durée en cardio) et son unité
+(« kg », « reps », « min ») suivent le § 15.9.3.
+
+1. **Barre** : ← (retour). Exercice introuvable → « Exercice introuvable » et Retour, comme avant.
+2. **Titre** : nom affiché ; dessous « Pecs · 19 séances depuis févr. 2026 » (groupe, nombre de
+   séances, mois de la première).
+3. **Chiffre héros** (pas de contrôle segmenté : une seule métrique) :
+   - **au repos** : légende « Dernière séance · jeu. 5 nov. » ; valeur = métrique de la **dernière
+     séance de la période** (2 décimales au plus, `82,5`) et son unité ; **variation** = dernière
+     séance − **premier point de la période**, au dixième, toujours signée (« +7,5 kg », « −2,5 kg »,
+     « +3 reps ») ou « identique » si nulle, suivie de « depuis le 14 août » (date du premier point).
+     **Vert** si hausse, **rouge** si baisse, **gris** si égale (DESIGN.md § 1). Une seule séance dans
+     la période : pas de variation ;
+   - **au toucher de la courbe** : légende = date du point (« jeu. 22 oct. ») ; valeur = métrique de
+     cette séance ; variation = point − premier point de la période (même contexte). Lâcher revient
+     au repos ;
+   - **période sans séance** : valeur « — », légende « Aucune séance sur cette période », ni unité
+     ni variation ;
+   - le chiffre **défile en 250 ms** (`numberChange`, DESIGN.md § 7) quand la période change ; au
+     toucher, il suit le doigt sans défiler.
+4. **Courbe** (`TrendCurve`, 172 dp) : la métrique de chaque séance de la période, de la plus ancienne
+   à gauche à la plus récente, l'abscisse proportionnelle à la date ; réduite au-delà de 120 points
+   (§ 15.9.3) ; dates du premier et du dernier point sous l'axe (« 14 août », « 5 nov. » ; l'année
+   quand elle n'est pas l'année en cours : « 12 févr. 2025 »). Un seul point : le point seul, à droite.
+   Période vide : « Choisis une période plus longue. » au centre.
+   - **Glisser le doigt** sur la courbe sélectionne le point le plus proche (§ 15.9.3) : trait
+     jusqu'au point, la suite en gris, guide vertical, date du point sous l'axe, et le héros affiche
+     sa valeur et sa variation (DESIGN.md § 9.1). La courbe garde le geste : elle ne fait pas
+     défiler la fiche.
+   - **TalkBack** lit la période, la valeur de départ, celle d'arrivée et la variation : « Charge max
+     par séance, 3 mois : de 92,5 kg le 14 août à 100 kg le 5 nov., +7,5 kg » ; « …, 1 mois : 95 kg
+     le 5 nov. » ; « … : aucune séance ».
+5. **Sélecteur de période** : 1M · 3M · 6M · 1A · Tout, **Tout** par défaut (maquette), lus « 1 mois »,
+   « 3 mois », « 6 mois », « 1 an », « Tout l'historique » par TalkBack. Le choix est gardé à la
+   rotation, pas d'une ouverture à l'autre. Période = séances dont le **jour local** est postérieur
+   ou égal à aujourd'hui moins 1, 3, 6 ou 12 mois calendaires (le 14 nov., « 1M » part du 14 oct.) ;
+   « Tout » = toutes.
+6. **Rangée de stats** (sur tout l'historique, comme les cartes de record du § 2.8) : « 100 kg »
+   record personnel (meilleure métrique : charge max, « 15 reps » au poids du corps ; en cardio
+   « 60 min » séance la plus longue) et « 112 kg » 1RM estimé (meilleur 1RM Epley des séries
+   validées, § 3.5, seulement s'il est > 0 ; jamais en cardio).
+7. **Section « Séances »**, compteur à droite : **toutes** les séances de l'exercice (pas seulement
+   celles de la période), la plus récente en haut (🔄 D15) :
+   - titre : date « jeu. 5 nov. » (avec l'année si ce n'est pas l'année en cours) ;
+   - sous-titre : « Meilleure série 80 × 8 · 1RM ~101 kg » — la série validée la plus lourde, à
+     égalité celle qui a le plus de reps puis la première ; « 12 reps » à 0 kg ; « 1RM ~ » = meilleur
+     1RM de la séance, omis s'il vaut 0 ; cardio : la série la plus longue, à égalité la plus longue
+     distance (« 30 min · 5,2 km », « 30 min » sans distance), sans 1RM ;
+   - à droite : le **volume** (§ 3.8) « 1 920 kg » ; volume nul (poids du corps) → « 3 séries » ;
+     cardio → la durée totale « 45 min » ; dessous, **« Record »** en vert sur la séance qui détient
+     le **record de la période** choisie (meilleure métrique de la période, la plus ancienne à
+     égalité) : la marque se déplace avec la période ;
+   - toucher → éditeur de la séance (§ 2.9).
+8. **Aucune séance** : sous le titre, état vide « Aucune séance » / « Valide une série de cet exercice
+   pour suivre sa progression. », action « Retour ».
+
+Le poids de corps et les puces de chaque série d'une séance (§ 2.8) restent dans l'éditeur, ouvert
+en touchant la ligne ; « Max X kg » est la charge de la meilleure série ; le message « Fais encore
+des séances… » est remplacé par le point seul.
+
+#### 15.9.2 Progrès
+
+Remplace la disposition du § 2.10 (onglets en puces colorées, cartes). Gabarit **hub** en liste
+paresseuse, de haut en bas :
+
+1. **Barre** : « Progrès » (le nom de l'onglet ; « Progression » est retiré).
+2. **Surface « Poids de corps »** (surface « Mesure », la seule de l'écran) :
+   - légende « Poids de corps · 12 nov. » (date du dernier point, « aujourd'hui », « hier ») et le
+     bouton + « Ajouter une pesée » → formulaire « Nouvelle pesée » (ci-dessous) ;
+   - chiffre héros = **Actuel** (dernier point, § 3.10) et « kg » ; variation = **Évolution**
+     (dernier − premier, au dixième) « +10,4 kg depuis le 12 févr. », **en gris** : sans objectif de
+     poids déclaré, ni une hausse ni une baisse n'est un progrès (DESIGN.md § 1 ; 🔄 l'app colorait la
+     hausse en rouge et la baisse en vert) ; pas de variation avec un seul point ;
+   - courbe compacte (48 dp) de tous les points, réduite au-delà de 120 ; dessous, « 42 jours » à
+     gauche et **Min–Max** « 68 – 78,4 kg » à droite ;
+   - sans aucun point (ni pesée ni poids de séance) : légende « Poids de corps », bouton +, et la
+     phrase « Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance. »
+3. **Section « Exercices »** :
+   - **puces de filtre**, défilantes, une par **groupe musculaire ayant au moins une séance** (ordre
+     du § 6.2 ; 🔄 les groupes sans séance ne sont plus affichés, ils l'étaient à 50 %) ; par défaut
+     le groupe qui a le plus de séances (égalité : ordre du § 6.2) ; le choix est gardé d'une visite
+     à l'autre de l'onglet ;
+   - **rangée de stats** du groupe (§ 3.10) : « 12 » séances, « 102,5 kg » charge max (cardio
+     « 45 min » durée max ; « — » si aucun exercice du groupe n'a de charge), « 4,2 t » vol. max
+     (cardio « 12,4 km » distance max) ;
+   - **une ligne par exercice** du groupe utilisé au moins une fois, **la dernière séance la plus
+     récente en haut** (égalité : le plus de séances, puis l'ordre du catalogue et des perso) :
+     « Exercices les plus utilisés » et « Tous les exercices » ne font plus qu'une liste, sans rang ni
+     couleur (DESIGN.md § 1). Titre : nom ; sous-titre : « 19 séances · record 100 kg » ; à droite :
+     la **mini-courbe** de la métrique sur tout l'historique (réduite à 24 points ; absente avec une
+     seule séance), puis la métrique de la **dernière séance** « 80 kg » (« 12 reps », « 45 min ») et
+     dessous la **variation** dernière − première séance (« +17,5 kg », « −5 kg », « identique » ;
+     verte, rouge, grise ; absente avec une seule séance) : la règle de la fiche en période « Tout ».
+     Toucher → **fiche exercice** ;
+   - aucune séance terminée : état vide « Aucune séance encore » / « Lance ta première séance pour
+     voir tes progrès ici », action « Démarrer une séance » (ou « Reprendre la séance » si une séance
+     est en cours).
+4. **Section « Calories et eau »** (le contenu des anciens onglets Calories et Eau, § 2.10 et § 3.10) :
+   - puces de filtre « Calories » / « Eau » (Calories par défaut, choix gardé) ;
+   - rangée de stats : « 1 850 » aujourd'hui, « 2 120 » moy. 7 jours (« — » sans jour saisi dans la
+     fenêtre), « 12 » jours objectif (objectif du jour concerné) ; l'eau en litres au dixième ;
+   - **courbe** (150 dp) des jours saisis s'il y en a au moins 2, réduite au-delà de 120 points,
+     dates du premier et du dernier jour, et une **ligne d'objectif** pointillée au niveau de
+     l'objectif actuel, marquée « Objectif » ; elle ne se touche pas (pas de chiffre héros dans un
+     hub) ; TalkBack : « Calories, 42 jours : de 2 100 kcal le 3 oct. à 1 850 kcal le 14 nov.,
+     −250 kcal » ;
+   - lignes **Objectif quotidien** (actuel), **Meilleure journée**, **Jours suivis** ;
+   - aucun jour saisi : état vide « Aucune donnée » et l'indication actuelle (« Commence à saisir tes
+     calories dans l'onglet Nutrition… »), action « Aller à Nutrition » (→ onglet Nutrition).
+5. **Section « Pesées »** (l'ancien « Journal de poids »), compteur à droite : les pesées manuelles,
+   la plus récente en haut — date « 12 nov. 2026 », poids « 78,4 kg » à droite. **Toucher** une pesée
+   ouvre la confirmation en bottom sheet « Supprimer la pesée ? » / « La pesée du 12 nov. 2026
+   (78,4 kg) sera retirée. » / [Supprimer] (principal, en inverse) / [Annuler] (🔄 la poubelle
+   supprimait sans confirmation, DESIGN.md § 13). Sans pesée : la phrase actuelle (« Aucune pesée
+   manuelle enregistrée… »).
+
+**Nouvelle pesée** : formulaire en bottom sheet au **gabarit formulaire** (DESIGN.md § 10.4), avec le
+pavé numérique :
+- titre « Nouvelle pesée » ; phrase d'aide « Dernier poids : 78,4 kg, le 12 nov. » (dernier point du
+  poids de corps), sinon « Ton poids, en kg. » ;
+- **champ héros** « 78,4 kg », prérempli avec le dernier poids (vide sans poids) et **neuf** : la
+  première touche le remplace ;
+- **puces de saisie rapide** « Aujourd'hui » / « Hier » (celle qui correspond à la date choisie est
+  sélectionnée ; aujourd'hui au départ) ;
+- **ligne d'information** « Date » « sam. 14 nov. » avec chevron : ouvre le sélecteur de date du
+  système (Material 3, aux couleurs du thème), pour une autre date ;
+- **pavé numérique** sans en-tête : règles de saisie du § 15.7.4 pour une charge (6 caractères,
+  2 décimales, séparateur de la langue), pas **−0,1** / **+0,1**, touche principale « ✓ Ajouter ».
+- « Ajouter » : `0 < poids ≤ 500` (§ 3.11) → enregistrée à **midi local** du jour choisi, elle
+  remplace la pesée du même jour, la sheet se ferme ; sinon la phrase d'aide devient « Vérifie le
+  poids et la date » avec une vibration d'erreur, et la sheet reste ouverte. Retour ou voile :
+  fermée sans rien enregistrer.
+
+#### 15.9.3 Règles (pures, testées en JVM)
+
+- **Métrique d'une séance** d'un exercice (🔄 D34, remplace celle du § 3.10) :
+  - **cardio** : durée totale (min) ;
+  - **force, avec lest** — au moins une série validée de l'historique de l'exercice a une charge
+    > 0 : **charge max** des séries validées de la séance (kg, la charge saisie, donc le lest ajouté
+    pour un exercice au poids du corps ; une séance sans lest compte 0 kg) ;
+  - **poids du corps** — toutes les séries validées de l'historique sont à 0 kg : **reps max** d'une
+    série de la séance (« reps »).
+- **Série d'une période** : les points (séances, ou jours) de la période (§ 15.9.1, point 5), dans
+  l'ordre chronologique ; vide si aucun.
+- **Résumé d'une série** : aucun point → rien (héros « — ») ; sinon **dernier** point (valeur au
+  repos), **départ** (premier point) et **variation** = dernier − départ, au dixième (demi vers +∞,
+  § 3.5) ; un seul point → pas de variation ; **record** = point de valeur max (le plus ancien à
+  égalité). Variation d'un point touché = point − départ. Sens : > 0 hausse, < 0 baisse, 0 (au
+  dixième) égale — jamais « +0,0 » ni « −0,0 ».
+- **Point le plus proche du doigt** : chaque point est placé à une abscisse proportionnelle à sa date
+  entre les marges de la courbe ; le point choisi est celui dont l'abscisse est la plus proche de
+  celle du doigt (à égalité, le plus ancien) ; doigt avant le premier point → le premier, après le
+  dernier → le dernier ; courbe vide → aucun.
+- **Réduction** au-delà de `max` points (120 pour une courbe de fiche ou de hub, 24 pour une
+  mini-courbe) : on garde le premier et le dernier point ; l'intervalle de dates est coupé en
+  `(max − 2) / 2` tranches égales, et chaque tranche non vide garde son point le plus bas et son
+  point le plus haut (le plus ancien à égalité ; un seul s'ils sont confondus), dans l'ordre
+  chronologique. Résultat : au plus `max` points, toujours le record, la forme de la courbe
+  conservée (creux compris). Le résumé et le chiffre héros se calculent sur la série complète ; le
+  toucher choisit parmi les points dessinés.
+- **Progrès, groupes** (§ 3.10 modifié) : « Charge max » = max des records **en kg** de tous les
+  exercices du groupe (🔄 : du top 3, qui disparaît ; les exercices au poids du corps, comptés en
+  reps, n'y entrent pas) ; « Durée max » en cardio = max des records ; exercices triés par date de
+  dernière séance décroissante (égalité : nombre de séances décroissant, puis ordre du catalogue et
+  des perso). Séances et vol. max ne changent pas.
+- **Saisie de la pesée** : celle du § 15.7.4 (champ neuf, séparateur, 2 décimales, 6 caractères,
+  pas arrondi au centième, jamais sous 0), avec un pas de 0,1 kg.
+
+#### 15.9.4 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Exercice introuvable », « Retour »,
+« Nouvelle pesée », « Ajouter une pesée », « Vérifie le poids et la date », « Aucune pesée manuelle enregistrée… », « Aucune séance
+encore », « Lance ta première séance… », « Aucune donnée » et ses indications, « Objectif
+quotidien », « Meilleure journée », « Jours suivis », « Calories », « Eau », « Date », les noms de
+groupes, les pluriels séances / séries / jours, `common_kg_value`, `session_volume_kg`,
+`journal_tonnes`, `workout_previous_strength` / `_reps`).
+
+| clé | FR | EN |
+|---|---|---|
+| `exercise_fiche_subtitle` | {{groupe}} · {{séances}} depuis {{mois}} | {{group}} · {{sessions}} since {{month}} |
+| `exercise_fiche_last_session` | Dernière séance · {{date}} | Last session · {{date}} |
+| `exercise_fiche_sessions` | Séances | Sessions |
+| `exercise_fiche_period_empty` | Aucune séance sur cette période | No sessions in this period |
+| `exercise_fiche_period_empty_hint` | Choisis une période plus longue. | Pick a longer period. |
+| `exercise_fiche_stat_record` / `_stat_longest` / `_stat_one_rm` | record personnel / séance la plus longue / 1RM estimé | personal best / longest session / estimated 1RM |
+| `exercise_fiche_best_set` | Meilleure série {{série}} | Best set {{set}} |
+| `exercise_fiche_one_rm` | 1RM ~{{valeur}} kg | 1RM ~{{value}} kg |
+| `exercise_fiche_cardio_set` / `_minutes` | {{min}} min · {{km}} km / {{min}} min | {{min}} min · {{km}} km / {{min}} min |
+| `exercise_fiche_record` | Record | Record |
+| `exercise_fiche_empty_title` / `_message` | Aucune séance / Valide une série de cet exercice pour suivre sa progression. | No sessions yet / Complete a set of this exercise to track its progress. |
+| `delta_since` | depuis le {{date}} | since {{date}} |
+| `delta_same` | identique | unchanged |
+| `period_1m` … `period_all` | 1M / 3M / 6M / 1A / Tout | 1M / 3M / 6M / 1Y / All |
+| `period_1m_description` … `_all_description` | 1 mois / 3 mois / 6 mois / 1 an / Tout l'historique | 1 month / 3 months / 6 months / 1 year / All time |
+| `curve_metric_load` / `_reps` / `_duration` | Charge max par séance / Reps max par séance / Durée par séance | Top weight per session / Top reps per session / Duration per session |
+| `curve_description_range` | {{courbe}}, {{période}} : de {{départ}} le {{date}} à {{arrivée}} le {{date}}, {{variation}} | {{curve}}, {{period}}: from {{start}} on {{date}} to {{end}} on {{date}}, {{change}} |
+| `curve_description_single` / `_empty` | {{courbe}}, {{période}} : {{valeur}} le {{date}} / {{courbe}}, {{période}} : aucune séance | {{curve}}, {{period}}: {{value}} on {{date}} / {{curve}}, {{period}}: no sessions |
+| `curve_goal` | Objectif | Goal |
+| `common_min_value` / `_reps_value` / `_km_value` / `_liters_value` / `_kcal_value` | {{valeur}} min / reps / km / L / kcal | {{value}} min / reps / km / L / kcal |
+| `progress_weight_title` | Poids de corps | Body weight |
+| `progress_weight_caption` | Poids de corps · {{date}} | Body weight · {{date}} |
+| `common_today_lower` / `common_yesterday_lower` | aujourd'hui / hier | today / yesterday |
+| `progress_weight_range` | {{min}} – {{max}} kg | {{min}} – {{max}} kg |
+| `progress_weight_none` | Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance. | No weight yet. Add a weigh-in, or enter your weight when you start a workout. |
+| `progress_exercises` | Exercices | Exercises |
+| `progress_exercise_subtitle` | {{séances}} · record {{valeur}} | {{sessions}} · best {{value}} |
+| `progress_group_sessions` / `_max_load` / `_max_duration` / `_max_volume` / `_max_distance` | séances / charge max / durée max / vol. max / distance max | workouts / top weight / longest / top volume / longest distance |
+| `progress_nutrition` | Calories et eau | Calories and water |
+| `progress_daily_today` / `_today_liters` / `_avg7` / `_goal_days` | aujourd'hui / aujourd'hui, L / moy. 7 jours / jours objectif | today / today, L / 7-day avg. / goal days |
+| `progress_daily_open_nutrition` | Aller à Nutrition | Go to Nutrition |
+| `progress_weigh_ins` | Pesées | Weigh-ins |
+| `progress_weigh_in_delete` (accessibilité) | Supprimer la pesée | Delete weigh-in |
+| `progress_weigh_in_delete_title` | Supprimer la pesée ? | Delete this weigh-in? |
+| `progress_weigh_in_delete_message` | La pesée du {{date}} ({{poids}} kg) sera retirée. | The {{date}} weigh-in ({{weight}} kg) will be removed. |
+| `weigh_in_help_last` / `_help_none` | Dernier poids : {{poids}} kg, le {{date}} / Ton poids, en kg. | Last weight: {{weight}} kg, on {{date}} / Your weight, in kg. |
+| `weigh_in_today` / `_yesterday` | Aujourd'hui / Hier | Today / Yesterday |
+| `weigh_in_add` | Ajouter | Add |
+
+Les clés devenues inutiles (`progress_title`, `progress_tab_weight`, `progress_weight_current` /
+`_change` / `_min_max` / `_chart_title`, `progress_stat_*`, `progress_cal_chart_*`,
+`progress_water_chart_*`, `progress_recap_title`, `progress_muscle_*`, `body_weight_log_title`,
+`body_weight_weight_label` / `_placeholder`, `exercise_history_*` sauf `exercise_history_not_found`…)
+sont retirées.
+
+### 15.10 Refonte « Studio épuré » : Nutrition et Paramètres (🔄 D35)
+
+Étape 5a de la refonte décrite dans `DESIGN.md` : l'onglet **Nutrition** (§ 2.11) passe au gabarit
+hub (DESIGN.md § 10.1) avec **toutes ses fonctions actuelles**, rappels compris, et ses saisies au
+gabarit formulaire (§ 10.4) ; **Paramètres** (§ 2.12) devient une liste groupée (hub de second
+niveau) dont chaque réglage s'ouvre en formulaire, avec les mêmes réglages qu'aujourd'hui. Seul
+changement de réglage : le **thème** propose Sombre, Clair, Système, **Sombre par défaut**
+(§ 15.10.4). **Hors périmètre** : objectif de protéines et stock des compléments (fonctionnalités
+prévues après), section « Tendances » de Nutrition (les courbes de calories et d'eau restent dans
+Progrès, § 15.9.2). Export, sauvegarde automatique, Health Connect et envoi d'avis gardent leurs
+règles (§ 5, § 8, § 14, § 15.2, § 15.3) ; les notifications (§ 7) ne changent pas. Le **format des
+données ne change pas** (§ 4, § 5), sauf la valeur par défaut du thème : aucune migration.
+
+#### 15.10.1 Nutrition
+
+Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
+
+1. **Barre** : « Nutrition ».
+2. **Surface « Aujourd'hui »** (la seule de l'écran) — ce qui compte aujourd'hui : les calories en
+   grand, l'eau et les compléments en résumé, les deux saisies du jour sous le pouce.
+   - légende « Aujourd'hui » ;
+   - **chiffre héros** = kcal du jour et « kcal » (défile quand il change, DESIGN.md § 7) ;
+   - dessous, l'**état par rapport à l'objectif du jour** (`goalFor(aujourd'hui)`, § 3.12), selon le
+     ratio non plafonné du § 2.11 (🔄 D15), toujours en mots :
+     - ratio < 0,9 : « encore 950 kcal » (gris) suivi de « sur 2 800 » ; à 0 kcal, « objectif
+       2 800 kcal » seul ;
+     - 0,9 ≤ ratio ≤ 1,05 : « dans l'objectif » (**vert**) suivi de « · 2 800 kcal » ;
+     - ratio > 1,05 : « +320 kcal » (**rouge**) suivi de « au-dessus de 2 800 » ;
+   - **piste de progression** (3 dp, `surfacePressed`, remplie en `textPrimary`) : kcal / objectif,
+     plafonnée à 100 % ;
+   - **rangée de stats** : l'eau du jour « 750 ml » (dès 1 000 ml « 1,5 L », au dixième) avec
+     « eau · sur 2,0 L », ou « eau · objectif atteint » une fois l'objectif d'eau atteint ; et, s'il
+     y a au moins un complément, « 1/3 » avec « compléments pris » ;
+   - deux **boutons secondaires** moyens, largeurs égales, icône `add` : « Calories » et « Eau » →
+     formulaires du § 15.10.2.
+3. **Section « Compléments »** (sans compteur : les compléments pris sont sur la surface) :
+   - **une ligne par complément**, dans l'ordre de création : titre = nom ; sous-titre = « 5 g par
+     prise » (omis si le dosage est vide, 🔄 D15) puis le résumé des rappels (« Pas de rappel »,
+     « Rappels activés », « Rappel à 08:00 », « 3 rappels », § 2.11), séparés par « · » ; à droite
+     la **case « pris aujourd'hui »** (§ 3.12) : la toucher la coche ou la décoche (vibration) ;
+     toucher **le reste de la ligne** ouvre la sheet du complément (§ 15.10.2) ;
+   - sous les lignes, bouton secondaire pleine largeur « Nouveau complément » (icône `add`) →
+     formulaire du § 15.10.2 ;
+   - sans complément : état vide (pastille `pill`) « Aucun complément » / « Ajoute tes compléments
+     alimentaires et configure des rappels pour ne jamais en oublier », action « Ajouter un
+     complément » ;
+   - si au moins un complément a ses rappels activés : la phrase `nutrition.infoMobile` en légende
+     sous la section.
+4. Mini-barre de la séance en cours et barre d'onglets (§ 15.8.1), sans changement ; le toucher d'un
+   rappel ouvre toujours cet onglet.
+
+#### 15.10.2 Formulaires de Nutrition
+
+Tous en bottom sheet (gabarit formulaire, DESIGN.md § 10.4) ; retour ou voile : fermée sans rien
+enregistrer, sauf la sheet d'un complément dont chaque changement s'applique tout de suite (comme
+la carte du § 2.11). Pavé numérique : règles du § 15.10.5.
+
+**Calories** (bouton « Calories ») :
+- titre « Calories » ; phrase d'aide « Aujourd'hui : 1 850 kcal sur 2 800. » ;
+- puces « Ajouter » (choisie à l'ouverture) / « Total du jour » (= « Définir » du § 2.11) ;
+- **champ héros** en kcal : en « Ajouter », vide ; en « Total du jour », les kcal du jour
+  (champ neuf : la première touche les remplace) ;
+- lignes d'information : « Nouveau total » « 2 200 kcal » (en « Ajouter » seulement, mis à jour à
+  chaque touche) ; « Objectif quotidien » « 2 800 kcal » avec chevron → formulaire d'objectif ;
+- pavé : pas **−50** / **+50**, touche principale « ✓ Ajouter » ou « ✓ Enregistrer » ;
+- « Ajouter » : valeur > 0 → `kcal_du_jour += v` ; « Total du jour » : champ non vide → `kcal_du_jour
+  = v` (0 remet le jour à zéro, l'ancien ⟲) ; résultat borné à ≥ 0 (§ 3.12). Puis la sheet se ferme
+  (vibration de succès). Champ vide, ou 0 en « Ajouter » : la phrase d'aide devient « Saisis une
+  quantité » avec une vibration d'erreur, la sheet reste ouverte.
+
+**Eau** (bouton « Eau ») : même formulaire en **ml** — titre « Eau », aide « Aujourd'hui : 750 ml
+sur 2,0 L. », puces « Ajouter » / « Total du jour », « Nouveau total » « 1,0 L », « Objectif
+quotidien » « 2,0 L » → objectif d'eau ; pas **−250** / **+250** (un verre). « Total du jour »
+remplace l'ancien ⟲ de l'eau (0 = remise à zéro) et permet de corriger le total (🔄 nouvelle règle
+`setWater`, § 15.10.5).
+
+**Objectif de calories / d'eau** (ligne « Objectif quotidien ») : la même sheet passe à ce
+formulaire — titre « Objectif de calories » ou « Objectif d'eau », aide « À partir d'aujourd'hui ;
+les jours passés gardent le leur. » ; champ héros prérempli avec l'objectif du jour (neuf), en kcal
+ou en **litres** ; pas ±100 kcal ou ±0,25 L ; « ✓ Enregistrer » : valeur > 0 → objectif à partir
+d'aujourd'hui (§ 3.12, litres stockés en ml `round(v × 1000)`), retour au formulaire de saisie ;
+sinon « Saisis un objectif supérieur à 0 » et vibration d'erreur. Retour : le formulaire de saisie.
+
+**Nouveau complément** (le formulaire long, DESIGN.md § 13) — une sheet défilante, au clavier du
+système puisque le nom est du texte :
+- titre « Nouveau complément » ;
+- « Nom » : `StudioTextField` d'une ligne, focus automatique, majuscule en début de phrase,
+  invite « Ex : Créatine, Whey, Oméga-3... », 40 caractères ;
+- « Dosage par prise » : `StudioTextField` numérique d'une ligne (clavier décimal), **texte libre
+  gardé tel que saisi** (§ 2.11), 10 caractères ; dessous, les **unités** en puces de filtre `g`
+  (par défaut), `mg`, `ml`, `caps`, `cp`, `dose`, `ui` ;
+- ligne à cocher « Rappels » (cochée au départ) ; cochée : une ligne d'information par rappel
+  « Rappel » « 08:00 » avec chevron → choix de l'heure, et le bouton texte « Ajouter un rappel »
+  (icône `add` ; heure du dernier + 2 h, § 2.11) ; recochée sans rappel → 08:00 ;
+- bouton principal « Enregistrer », actif dès que le nom (trim) n'est pas vide : crée le complément
+  (§ 3.12, sans rappels si la case est décochée ; demande `POST_NOTIFICATIONS` si des rappels sont
+  actifs) et ferme la sheet.
+
+**Sheet d'un complément** (toucher sa ligne) :
+- titre = le nom ; phrase d'aide « 5 g par prise » (absente sans dosage) ;
+- ligne à cocher « Rappels » (`reminderEnabled`) ; l'activer demande la permission si nécessaire ;
+- une ligne d'information par rappel (« Rappel » « 08:00 », chevron → choix de l'heure) et « Ajouter
+  un rappel », comme dans le formulaire ; affichées même rappels désactivés (ils sont conservés,
+  § 4.1), comme la liste dépliée du § 2.11 ;
+- bouton secondaire « Supprimer le complément » → confirmation en bottom sheet « Supprimer
+  « Créatine » ? » / « Le complément et ses rappels seront retirés. » / [Supprimer] (principal, en
+  inverse) / [Annuler] (🔄 remplace la confirmation en ligne) ;
+- bouton texte « Fermer ».
+
+**Choix de l'heure** (🔄 D7 inchangé) : le `TimePicker` Material 3 en dialogue, aux couleurs de
+`StudioTheme`, « Heure du rappel », 24 h ou 12 h selon le système, toute minute ; boutons texte
+« Annuler » et « OK », et « Supprimer » (à gauche) s'il y a plus d'un rappel (🔄 remplace le ✕ de la
+ligne).
+
+#### 15.10.3 Paramètres
+
+Remplace la disposition du § 2.12. **Hub de second niveau** (DESIGN.md § 10.1), ouvert par
+l'engrenage de l'Accueil, barre d'onglets gardée (Accueil sélectionné, § 15.8.1). Une liste groupée
+de lignes (`ListRow`) : chacune montre la valeur ou l'état du réglage et ouvre un **formulaire** en
+bottom sheet, ou lance l'action. De haut en bas :
+
+1. **Barre** : ← (retour à l'Accueil) puis le titre « Paramètres ».
+2. **Mes données** (rangée de stats, sans surface) : « 124 » séances terminées, « 6 » exercices
+   perso **non archivés** (§ 2.12, point 1).
+3. **Section « Préférences »** :
+   - **Langue** — valeur « Langue du système », « Français » ou « English » (sans drapeaux) → sheet
+     « Langue », aide « Langue du système : celle du téléphone. », contrôle segmenté « Système ·
+     Français · English » ; le toucher applique le choix (🔄 D9, `setApplicationLocales`) et ferme
+     la sheet ;
+   - **Thème** — valeur « Sombre », « Clair » ou « Système » → sheet « Thème », aide « Sombre par
+     défaut. Système suit le réglage du téléphone. », contrôle segmenté « Sombre · Clair ·
+     Système » ; appliqué tout de suite (§ 15.10.4), sheet fermée ;
+   - **Minuteur de repos** — valeur « 3 min » → sheet « Minuteur de repos », aide « Durée par défaut
+     du repos entre les séries », puces de filtre 1 min … 5 min (§ 2.12) ; appliqué, sheet fermée ;
+   - **Notifications désactivées** (seulement si `POST_NOTIFICATIONS` est refusée ou les
+     notifications de l'app coupées, revérifié au retour sur l'écran, 🔄 D6) — sous-titre
+     « Minuteur et rappels silencieux », chevron → réglages de notification de l'app.
+4. **Section « Données »** :
+   - **Sauvegarde automatique** (🔄 D28, § 15.2) — valeur « Activée » / « Désactivée » ; sous-titre :
+     « Dernière le 14 nov. 2026, 08:12 », « Aucune sauvegarde pour l'instant », « Dossier
+     inaccessible » ou « Échec le … », désactivée « Chaque jour, dans le dossier de ton choix » →
+     sheet « Sauvegarde automatique » : aide (`settings_auto_backup_desc`) ; ligne à cocher
+     « Sauvegarde quotidienne » (cocher sans dossier ouvre le sélecteur, § 15.2) ; activée, lignes
+     d'information « Dossier » (nom, chevron → sélecteur) et « Dernière sauvegarde » ; l'échec en
+     phrase (dossier inaccessible, échec d'écriture daté) ; bouton principal « Sauvegarder
+     maintenant » (« Sauvegarde… » et désactivé pendant l'écriture) ;
+   - **Exporter mes données** — sous-titre « Fichier JSON de toutes tes données » → JSON v2 et
+     feuille de partage (§ 5.6) ;
+   - **Exporter en CSV** (🔄 D1) — « Tableaux pour Excel ou Sheets » → § 8 ;
+   - **Importer des données** — « Depuis un fichier exporté » → sélecteur de fichiers puis
+     confirmation en bottom sheet « Écraser les données actuelles ? » / « Tes N séances actuelles
+     seront remplacées… » / [Confirmer] / [Annuler] (§ 5.4) ; un fichier partagé vers l'app ouvre
+     Paramètres sur cette confirmation (§ 15.8.1) ;
+   - pendant une opération, le sous-titre de la ligne devient « En cours… » et les trois lignes
+     sont inactives ; le message de succès ou d'erreur (`settings.export.*` / `settings.import.*`)
+     s'affiche en phrase sous les lignes ; dessous, l'info `settings.info` en légende ;
+   - **Health Connect** (🔄 D29, seulement si disponible, § 15.3) — valeur « Activé » / « Désactivé » ;
+     sous-titre « Dernier envoi le … », « Autorisation manquante », ou désactivé « Séances et poids
+     vers tes apps de santé » → sheet « Health Connect » : aide (`health_desc`) ; ligne à cocher
+     « Envoyer à Health Connect » (cocher demande l'autorisation, refus → « Autorisation refusée… ») ;
+     activé : autorisations manquantes en phrase avec le bouton secondaire « Autoriser », lignes
+     d'information « Dernier envoi » et « Écrits » (« 12 séances · 30 poids »), dernière erreur
+     datée ; bouton principal « Envoyer l'historique » (« Envoi… » pendant l'envoi) et son résultat
+     en phrase. La section « SANTÉ » disparaît : la ligne rejoint « Données ».
+5. **Section « À propos »** (remplace « APPLICATION » et « TON AVIS ») :
+   - **Mises à jour** (🔄 D25, § 3.17) — valeur = version installée ; sous-titre « Gérées par
+     Obtainium » (ligne inactive), « Pas encore vérifié », « À jour · vérifié le 14 nov., 08:12 »,
+     « La 1.0.43 est disponible », « Vérification impossible : pas de connexion ? » après un échec,
+     « Vérification… » pendant la requête ; toucher → [Vérifier] ; une mise à jour disponible ajoute
+     la ligne **« Télécharger la 1.0.43 »** (chevron) → APK dans le navigateur ;
+   - **Rapport de plantage** (🔄 D17, seulement si un rapport existe, § 10.9) — « Dernier plantage le
+     … » → sheet : aide, bouton principal « Partager », bouton secondaire « Supprimer » (tous les
+     rapports), bouton texte « Fermer » ;
+   - **Envoyer un avis** (🔄 D26, seulement si l'URL du webhook a été fournie au build, § 14.5) —
+     « Une idée, un bug ? » → sheet « Ton avis » : le formulaire du § 14.1 refait avec les
+     composants — puces de filtre Idée / Bug / Autre, message en `StudioTextField` multiligne
+     (4 à 8 lignes) avec le compteur « n / 1 000 » en légende, pseudo en `StudioTextField` d'une
+     ligne, bouton principal « Envoyer » (« Envoi… » pendant l'envoi ; désactivé pendant un délai,
+     « Prochain envoi possible dans … » dessous), informations jointes en légende, résultat (§ 14.4)
+     en phrase. Brouillon, limites, délais et requête inchangés (§ 14.1 – 14.3).
+
+Les messages de succès et d'erreur ne prennent pas de couleur (DESIGN.md § 1 : vert = progression,
+rouge = baisse) : phrase en `textPrimary` 600, comme l'erreur de la pesée (§ 15.9.2).
+
+#### 15.10.4 Thème
+
+- Choix **Sombre** (par défaut), **Clair**, **Système**, dans cet ordre (🔄 D35, remplace « Système »
+  par défaut du § 3.14 et l'ordre du § 2.12) ; effet immédiat (§ 13.4).
+- Format inchangé : `preferences.theme` vaut toujours `"system"`, `"light"` ou `"dark"`.
+  **Défaut `"dark"`** : app installée sans `preferences.json`, sauvegarde importée dont le thème est
+  absent ou invalide (§ 5.3 : `theme` invalide → `"dark"`), sauvegarde v1 de l'app Expo (qui
+  n'avait que le thème sombre : migration `theme = "dark"`).
+- Un choix déjà enregistré (`"system"` compris) est **gardé** : rien ne le réécrit.
+- Le choix est transmis au système (Android 12+, § 9.1) une fois les préférences lues, comme avant ;
+  avant la lecture, l'interface part du thème sombre.
+
+#### 15.10.5 Règles (pures, testées en JVM)
+
+- **État des calories du jour** : `ratio = kcal / objectif` (0 si objectif ≤ 0), ton du § 2.11
+  (🔄 D15) ; *encore* = `objectif − kcal` (ratio < 0,9), *au-dessus* = `kcal − objectif`
+  (ratio > 1,05) ; piste = `min(1, ratio)`.
+- **Eau** : objectif atteint ssi `ml ≥ objectif` ; `setWater(jour, v)` : `waterLog[jour] = max(0, v)`
+  (🔄 nouvelle règle, pendant de `setCaloriesToday`).
+- **Compléments pris** : nombre de compléments existants dont `taken[id] == aujourd'hui`.
+- **Résumé des rappels** d'un complément : désactivés → aucun ; activés et 0 → activés ; 1 → l'heure ;
+  n → n (§ 2.11).
+- **Saisie au pavé** des quantités, sur le modèle du § 15.7.4 (champ neuf, pas de zéro en tête,
+  touche au-delà de la longueur sans effet, pas jamais sous 0) :
+  - kcal et ml : **entiers**, 5 chiffres au plus, le séparateur est sans effet ;
+  - objectif d'eau en litres : séparateur de la langue, 2 décimales et 5 caractères au plus ;
+  - pas : ±50 kcal, ±250 ml, ±100 kcal, ±0,25 L ; un champ vide vaut 0 pour le pas ;
+  - validation : « Ajouter » > 0, « Total du jour » champ non vide (≥ 0), objectif > 0.
+- **Thème** : défaut `Dark` (`Preferences.DEFAULT`), lecture d'un `theme` invalide ou absent →
+  `Dark`, migration v1 → `"dark"`.
+
+#### 15.10.6 Design system
+
+Composants existants, sauf ces ajouts (décrits dans DESIGN.md § 9 avec leurs aperçus) :
+- **`ListRow`** : case à cocher **séparée** de la ligne (`ListRowTrailing.Check` avec sa propre
+  action) — la case bascule, la ligne ouvre autre chose (complément) ; sans action propre, toute
+  la ligne bascule comme avant (échauffement, lignes à cocher des sheets).
+- **Surface « Aujourd'hui »** (`DailySurface`, variante de `HighlightSurface`) : légende, chiffre
+  héros et état, piste, rangée de stats, deux boutons.
+- **Piste de progression** `ProgressTrack` : la piste de `LiveTrack` remplie en `textPrimary`.
+- **Icône** `pill` (Material Symbols Rounded), état vide des compléments.
+- **Contrôle segmenté** posé dans une sheet (langue, thème) et **ligne à cocher sur une sheet**
+  (`ListRow` sans filet, les `InfoRow` qui suivent portant le filet `surfaceControl`).
+- **`StudioTextField`** : `minLines` (message d'un avis, 4 à 8 lignes) et `enabled` (envoi en cours).
+
+#### 15.10.7 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Nutrition », « Calories »,
+« Eau », « Nouveau complément », « Nom », « Dosage par prise », « Rappels », « Ajouter un rappel »,
+« Heure du rappel », « Aucun complément » et son texte, « {dosage} {unité} par prise », résumés des
+rappels, « Supprimer « … » ? », `nutrition.infoMobile`, « Objectif quotidien », `common_kcal_value`,
+`common_liters_value`, et tous les textes de Paramètres, de la sauvegarde automatique, de Health
+Connect, des mises à jour, du rapport de plantage et de l'avis).
+
+| clé | FR | EN |
+|---|---|---|
+| `nutrition_today` | Aujourd'hui | Today |
+| `nutrition_calories_left` | encore {{n}} kcal | {{n}} kcal left |
+| `nutrition_calories_on_target` | dans l'objectif | on target |
+| `nutrition_calories_over` | +{{n}} kcal | +{{n}} kcal |
+| `nutrition_goal_of` / `_goal_dot` / `_goal_over` / `_goal_only` | sur {{objectif}} / · {{objectif}} kcal / au-dessus de {{objectif}} / objectif {{objectif}} kcal | of {{goal}} / · {{goal}} kcal / over {{goal}} / goal {{goal}} kcal |
+| `nutrition_water_of` / `_water_reached` | eau · sur {{objectif}} / eau · objectif atteint | water · of {{goal}} / water · goal reached |
+| `nutrition_supplements_taken_label` | compléments pris | supplements taken |
+| `nutrition_ml_value` | {{valeur}} ml | {{value}} ml |
+| `nutrition_supplements` | Compléments | Supplements |
+| `nutrition_taken_toggle` (accessibilité) | Pris aujourd'hui | Taken today |
+| `nutrition_supplement_options` (accessibilité) | Rappels et options | Reminders and options |
+| `nutrition_empty_action` | Ajouter un complément | Add a supplement |
+| `nutrition_entry_help` | Aujourd'hui : {{valeur}} sur {{objectif}}. | Today: {{value}} of {{goal}}. |
+| `nutrition_mode_add` / `_mode_total` | Ajouter / Total du jour | Add / Day total |
+| `nutrition_new_total` | Nouveau total | New total |
+| `nutrition_entry_invalid` | Saisis une quantité | Enter an amount |
+| `nutrition_calorie_goal_title` / `_water_goal_title` | Objectif de calories / Objectif d'eau | Calorie goal / Water goal |
+| `nutrition_goal_help` | À partir d'aujourd'hui ; les jours passés gardent le leur. | From today on; past days keep theirs. |
+| `nutrition_goal_invalid` | Saisis un objectif supérieur à 0 | Enter a goal above 0 |
+| `nutrition_reminder` | Rappel | Reminder |
+| `nutrition_delete_supplement` | Supprimer le complément | Delete supplement |
+| `nutrition_delete_message` | Le complément et ses rappels seront retirés. | The supplement and its reminders will be removed. |
+| `common_close` / `common_ok` | Fermer / OK | Close / OK |
+| `settings_section_preferences` / `_data` / `_about` | Préférences / Données / À propos | Preferences / Data / About |
+| `settings_language_help` | Langue du système : celle du téléphone. | System language: your phone's. |
+| `settings_language_system_short` (segment) | Système | System |
+| `settings_theme_help` | Sombre par défaut. Système suit le réglage du téléphone. | Dark by default. System follows your phone's setting. |
+| `settings_notifications_off_title` / `_subtitle` | Notifications désactivées / Minuteur et rappels silencieux | Notifications off / Rest timer and reminders are silent |
+| `settings_on_f` / `settings_off_f` | Activée / Désactivée | On / Off |
+| `settings_on_m` / `settings_off_m` | Activé / Désactivé | On / Off |
+| `settings_auto_backup_off_subtitle` | Chaque jour, dans le dossier de ton choix | Every day, in the folder you choose |
+| `settings_auto_backup_last_short` / `_failed_short` / `_folder_lost_short` | Dernière le {{date}} / Échec le {{date}} / Dossier inaccessible | Last on {{date}} / Failed on {{date}} / Folder unavailable |
+| `settings_auto_backup_toggle` / `_folder_label` / `_last_label` | Sauvegarde quotidienne / Dossier / Dernière sauvegarde | Daily backup / Folder / Last backup |
+| `settings_auto_backup_running` | Sauvegarde… | Backing up… |
+| `settings_export_short` / `_export_csv_short` / `_import_short` | Fichier JSON de toutes tes données / Tableaux pour Excel ou Sheets / Depuis un fichier exporté | JSON file with all your data / Tables for Excel or Sheets / From an exported file |
+| `settings_in_progress` | En cours… | In progress… |
+| `health_subtitle_off` / `_subtitle_last` / `_subtitle_missing` | Séances et poids vers tes apps de santé / Dernier envoi le {{date}} / Autorisation manquante | Workouts and weight to your health apps / Last sent {{date}} / Permission missing |
+| `health_toggle` / `_last_label` / `_written_label` / `_sending` | Envoyer à Health Connect / Dernier envoi / Écrits / Envoi… | Send to Health Connect / Last sent / Written / Sending… |
+| `settings_update_subtitle_managed` / `_never` / `_up_to_date` / `_available` / `_checking` | Gérées par Obtainium / Pas encore vérifié / À jour · vérifié le {{date}} / La {{version}} est disponible / Vérification… | Managed by Obtainium / Not checked yet / Up to date · checked {{date}} / {{version}} is available / Checking… |
+| `settings_update_download` | Télécharger la {{version}} | Download {{version}} |
+| `feedback_row_title` / `_row_subtitle` | Envoyer un avis / Une idée, un bug ? | Send feedback / An idea, a bug? |
+| `feedback_sending` | Envoi… | Sending… |
+
+`settings_section_preferences` devient « Préférences » / « Preferences » (titre de section, plus en
+capitales). Les clés devenues inutiles (`nutrition_section_today`, `nutrition_cal_add` / `_cal_set` /
+`_cal_placeholder`, `nutrition_water_placeholder`, `nutrition_cal_goal_placeholder`,
+`nutrition_water_goal_placeholder`, `nutrition_supplement`, `nutrition_supplements_section`,
+`nutrition_taken_yes` / `_taken_no`, `chart_goal`, `settings_section_backup` / `_app` / `_health` /
+`_feedback`, `settings_my_data`, `settings_language_desc`, `settings_theme_desc`,
+`settings_notifications_denied` / `_open`, `settings_export_desc`, `settings_export_csv_desc`,
+`settings_import_desc`, `settings_auto_backup_folder` / `_change` / `_last`, `settings_update_managed`
+/ `_never` / `_up_to_date` / `_available` / `_check`, `update_download`, `health_last`,
+`health_written`) sont retirées.
+
+### 15.11 Refonte « Studio épuré » : démarrer, sélecteur, éditeur et finitions (🔄 D36)
+
+Étape 5b, dernière de la refonte (`DESIGN.md`) : les trois écrans encore sur l'ancien thème —
+« Démarrer une séance » (§ 2.3), le sélecteur d'exercices (§ 2.7) et l'éditeur d'une séance
+terminée (§ 2.9) — passent au design system selon la correspondance de DESIGN.md § 11 ; l'ancien
+thème (`ui/theme/`), ses composants et ses icônes sont retirés ; l'interface est vérifiée pour
+l'accessibilité (contrastes, texte à 200 %, TalkBack). Les règles du § 3 et le **format des
+données ne changent pas** (§ 4, § 5) : aucune migration.
+
+#### 15.11.1 Démarrer une séance
+
+Remplace l'écran plein du § 2.3 par un **formulaire en bottom sheet** (DESIGN.md § 10.4), posé
+sur l'écran qui l'ouvre : l'Accueil (« Démarrer » de la surface « Prochaine séance », à l'étape du
+poids avec le type choisi, § 15.8.2 ; « Autre… », à l'étape du type), le Journal et Progrès (état
+vide, étape du type). Plus de route `start-workout`.
+
+- **Étape « Type de séance »** — titre et aide du § 2.3 ; les préréglages en puces de filtre sous
+  le libellé de leur groupe (PPL, Split, Autre) ; « Personnalisé » : un `StudioTextField` d'une
+  ligne (placeholder « Ex: Épaules / Mollets », 30 caractères). Toucher une puce vide le nom ;
+  écrire un nom désélectionne la puce. « Suivant » (principal) actif si un préréglage est choisi
+  ou si le nom (`trim()`) n'est pas vide.
+- **Étape « Poids de corps »** — aide « Ton poids aujourd'hui ? » ; champ héros en kg, prérempli
+  avec le poids de la séance terminée la plus récente (champ neuf : la première touche le
+  remplace), vide sinon ; puces de saisie rapide 55 … 100 sur une rangée défilante (celle qui
+  vaut la saisie est sélectionnée) ; ligne d'information « Type de séance » (le type choisi,
+  chevron → étape du type) ; pavé numérique, pas ±0,1 (comme la pesée), touche principale
+  « ✓ Commencer ». Poids ≤ 0 : l'aide devient « Saisis ton poids de corps » avec une vibration
+  d'erreur.
+- « Commencer » : permission des notifications puis `startWorkout` comme au § 2.3, la sheet se
+  ferme et la séance en cours s'ouvre. Retour à l'étape du poids : l'étape du type ; voile ou
+  glisser : la sheet se ferme sans rien démarrer.
+
+#### 15.11.2 Sélecteur d'exercices
+
+Remplace l'écran plein du § 2.7 (route `exercise-picker` retirée) par une **bottom sheet haute**
+(92 % de l'écran) ouverte par « Ajouter un exercice » de la séance en cours (bouton de fin de liste
+ou état vide). Mêmes règles : exercices archivés absents, filtre groupe **et** texte sur le nom
+affiché, ajouts multiples.
+
+- **Haut** : titre « Ajouter un exercice » et bouton icône **+** « Nouvel exercice » ; recherche
+  (`StudioTextField`, « Chercher un exercice... ») ; puces de filtre « Tous » puis les 9 groupes,
+  sur une rangée défilante (toucher la puce active la désélectionne).
+- **Liste** : une `ListRow` par exercice, titre = nom, sous-titre = groupe, et la **case** à
+  droite : cochée et inactive s'il est déjà dans la séance (TalkBack : « coché, désactivé ») ;
+  sinon toucher la ligne l'ajoute (`addExerciseToWorkout`, vibration légère) et la coche. Liste
+  vide : « Aucun exercice trouvé ».
+- **Exercice perso** non ajouté : **appui long** (« Modifier ou supprimer ») → la sheet passe à ses
+  actions : titre = nom, aide = groupe ; « Modifier l'exercice » et « Supprimer l'exercice »
+  (secondaires), « Fermer ». Modifier : formulaire nom + groupe, « Enregistrer ». Supprimer :
+  confirmation « Supprimer « Nom » ? » / `exercisePicker.deleteHint` / [Supprimer] / [Annuler]
+  (§ 3.9 : archivé s'il sert encore).
+- **Nouvel exercice** (+) : la sheet passe au formulaire — « Nom » (focus automatique, majuscule
+  en début de phrase) et « Groupe musculaire » en puces de filtre (le groupe filtré, sinon `dos`),
+  [Ajouter] actif si le nom n'est pas vide, [Annuler]. Le retour ramène à la liste.
+
+#### 15.11.3 Éditer une séance terminée
+
+Remplace la disposition du § 2.9 : gabarit **fiche** en liste paresseuse avec une action fixe en
+bas (DESIGN.md § 10.2). Toujours une **copie de travail** enregistrée par « Enregistrer » seulement,
+avec « Abandonner les modifications ? » à la sortie (🔄 D15).
+
+- **Barre** : ✕ (« Fermer ») ; bloc titre : surtitre « Modifier la séance », titre = nom affiché,
+  sous-titre = date de la séance (« lun. 9 nov. 2026 »).
+- **Séance** : deux lignes, « Type de séance » (le nom, toucher → **« Renommer la séance »** :
+  sheet aux mêmes puces et nom perso qu'au § 15.11.1, « Enregistrer ») et « Poids de corps »
+  (« 78,4 kg » ou « — », toucher → formulaire au pavé, pas ±0,1, « Enregistrer » si le poids est
+  supérieur à 0, sinon « Saisis ton poids de corps »).
+- **Un bloc par exercice** (section, 40 entre eux) : en-tête `ExerciseBlockHeader` sans bouton
+  de fiche, ⋮ → sheet de l'exercice (titre = nom, aide = groupe, « Retirer de la séance » puis
+  confirmation, « Fermer ») ; puce neutre du groupe ; colonnes # · KG · REPS (MIN · KM en cardio)
+  **sans « Préc. »** ; lignes de série avec leur case de validation ; « + Série » (copie de la
+  dernière série ou 10 × 20 kg / 30 min, validée, comme au § 2.9).
+- **Saisie au pavé** comme dans la séance en cours (§ 15.7.4) : toucher une valeur ouvre le pavé
+  en bas à la place de « Enregistrer » (segmenté des champs, vitesse et inclinaison en champ héros,
+  « Supprimer la série » confirmé, « Suivant » / « Valider la série » / « OK ») ; valider une
+  série la coche dans la copie, **sans repos**. Le retour ferme d'abord le pavé.
+- **Ajouter un exercice** (bouton secondaire en fin de liste, ou état vide « Aucun exercice » /
+  « Ajoute les exercices de cette séance. ») → le sélecteur du § 15.11.2, sans exercice perso à
+  gérer : les exercices déjà dans la séance y sont cochés ; toucher en ajoute un (série initiale
+  du § 2.9) et ferme la sheet.
+- En bas : « ✓ Enregistrer » (`patchWorkout`, puis retour) ; « Abandonner les modifications ? » en
+  bottom sheet (« Tes changements sur cette séance ne seront pas enregistrés. », [Abandonner],
+  [Continuer l'édition]).
+
+#### 15.11.4 Accessibilité
+
+- **Contrastes** (WCAG, calculés sur les jetons) : tout texte ≥ 4,5:1 sur les fonds où il est
+  posé, dans les deux thèmes ; `textTertiary` seulement pour les chiffres de 24 sp et plus (≥ 3:1)
+  et les boutons désactivés (exemptés). En clair, l'aplat `live` (point « en cours », barre de
+  repos) passe de `#FFC93D` (1,1 à 1,5:1 sur les fonds clairs) à **`#9E7100`** (≥ 3:1 partout) ;
+  le texte en direct reste `#7A5900`, le sombre et le logo ne changent pas.
+- **Texte à 200 %** : rien n'est coupé. Les hauteurs des composants deviennent des minimums
+  (boutons, puces, lignes, en-têtes, mini-barre, touches, champ héros, lignes de série) ; titres,
+  sous-titres, légendes et messages passent à la ligne ; un chiffre ne passe jamais à la ligne : il
+  rétrécit jusqu'à 60 % pour tenir dans sa colonne (stats, séries) ; les libellés d'onglets et
+  les en-têtes de colonnes rétrécissent de même ; la colonne « Préc. » s'élargit jusqu'à 1,5 fois.
+- **TalkBack** : chaque valeur de série se lit avec sa série et sa colonne (« Série 3, Kg :
+  82,5 ») ; « + Série » se lit « Ajouter une série : Développé couché » ; les boutons fiche et
+  options d'un bloc nomment l'exercice ; la touche ⌫ du pavé se lit « Effacer » ; une case sans
+  action (exercice déjà ajouté) est lue cochée et désactivée.
+- **Cibles tactiles** : 48 dp au moins partout ; les boutons icône de 44 (bloc exercice, en-tête du
+  pavé) sont posés dans une zone de 48 ; les options du contrôle segmenté se touchent sur toute la
+  hauteur du conteneur (48) ; dans l'en-tête du pavé, le segmenté défile plutôt que de serrer
+  les boutons (quatre champs du cardio).
+- Vérifié par les règles d'Accessibility Test Framework sur tous les aperçus (`compose-preview
+  a11y`) : aucune erreur sur les écrans ; restent des avertissements « texte identique » attendus
+  (« Valider la série 1 » dans chaque bloc).
+
+#### 15.11.5 Retiré
+
+- **Ancien thème** `ui/theme/` (`Color.kt`, `Shape.kt`, `Theme.kt`, `Type.kt` : palettes du § 9.1,
+  Inter du § 9.2, couleurs des groupes et du top 3) ; `SystemNightMode` (§ 9.1) passe dans
+  `ui/designsystem/theme/`. L'app entière est posée dans `StudioTheme` par `MainActivity`, comme
+  l'écran de politique de confidentialité de Health Connect.
+- **Police Inter** et les polices téléchargeables : dépendance `ui-text-google-fonts`,
+  `res/values/font_certs.xml`. L'app n'utilise plus Google Play Services pour sa police (🔄 D12
+  remplacée : Archivo embarquée, DESIGN.md § 3).
+- **Composants** de `ui/components/` : `InlineConfirm`, `MuscleGroupBadge` (et les couleurs de
+  groupe, § 6.2), `NotFoundScreen`, `ScreenHeader`, `DashedBorder`, la barre de recherche et les
+  puces de groupe (`ExerciseSearch.kt` ne garde que le filtre) ; l'ancienne ligne de série de
+  l'éditeur (`ui/workout/SetRow.kt`), `StartWorkoutScreen`, `ExercisePickerScreen`.
+- **Icônes** Material Symbols Outlined de l'ancien thème : 52 fichiers `res/drawable/ic_*.xml`.
+  Restent `ic_check`, `ic_replay_30`, `ic_forward_30`, `ic_skip_next` (actions de la notification
+  de séance), `ic_notification` et les couches du logo.
+- **Textes** devenus inutiles : `start_workout_custom_empty`, `exercise_picker_title`,
+  `exercise_card_add_set`, `edit_workout_empty_exercises`, `workout_in_progress`,
+  `workout_sets_progress`.
+
+#### 15.11.6 Design system
+
+Composants existants, sauf ces ajouts (DESIGN.md § 3 et § 9) :
+- jetons `bodyStrong` (14 · 600, message d'état sans couleur) et `captionStrong` (13 · 600) ;
+- `StatusMessage` et `statusHelp` (message de succès ou d'erreur, aussi en aide de formulaire) et
+  `LabeledField` (champ sous son libellé), sortis des écrans ;
+- `SetRow` et `SetTableHeader` sans colonne « Préc. » (`previous = null`), descriptions TalkBack
+  des valeurs ; `AddSetRow` avec description ; `ExerciseBlockHeader` sans bouton fiche ;
+- `ListRow` : case sans action lue désactivée, case avec appui long ;
+- `FicheLazyTemplate` avec une action fixe en bas (`bottomAction`) ;
+- les adaptations au texte agrandi et aux cibles tactiles du § 15.11.4.
+
+#### 15.11.7 Textes (FR et EN)
+
+| clé | FR | EN |
+|---|---|---|
+| `start_workout_weight_invalid` | Saisis ton poids de corps | Enter your body weight |
+| `exercise_picker_delete_exercise` | Supprimer l'exercice | Delete exercise |
+| `exercise_picker_actions` (accessibilité) | Modifier ou supprimer | Edit or delete |
+| `exercise_picker_name_label` / `_group_label` | Nom / Groupe musculaire | Name / Muscle group |
+| `edit_workout_empty_message` | Ajoute les exercices de cette séance. | Add this session's exercises. |
+| `edit_workout_discard_message` | Tes changements sur cette séance ne seront pas enregistrés. | Your changes to this session won't be saved. |
+| `workout_set_value_description` (accessibilité) | Série {{n}}, {{colonne}} : {{valeur}} | Set {{n}}, {{column}}: {{value}} |
+| `workout_add_set_to` (accessibilité) | Ajouter une série : {{exercice}} | Add a set: {{exercise}} |
+| `workout_exercise_details_for` / `_options_for` (accessibilité) | Fiche : {{exercice}} / Options : {{exercice}} | Details: {{exercise}} / Options: {{exercise}} |
+
+#### 15.11.8 Mise à jour depuis la v1.0
+
+Même app (`com.musclenote.android`), même clé de signature, `versionCode` supérieur : la Release
+de la refonte s'installe par-dessus une v1.0.x et garde tout. **Rien à migrer** : les fichiers de
+`filesDir/data/` (§ 4.2), données comme états propres à l'appareil (séance en cours, minuteur,
+sauvegarde automatique, Health Connect, mises à jour), sont relus tels quels. Seul
+comportement nouveau, le thème par défaut (§ 15.10.4) : sans `preferences.json` (ni la durée du
+repos ni le thème changés, rien importé), l'app s'ouvre en sombre ; sinon le thème enregistré,
+« Système » compris, est gardé.
+
+Vérifié le 15 novembre 2026, en release, sur un émulateur Android 16 (API 36) :
+- **Builds** : la v1.0.8 (tag `v1.0.8`, = `main`) puis la build de `redesign`, signées avec la même
+  clé de test, `versionCode` 1008 puis 1009 ; installation de la seconde par `adb install -r`
+  (date de première installation conservée).
+- **Données de la v1.0.8** : import d'une sauvegarde de test (18 séances Push / Pull / Legs sur six
+  semaines avec du cardio et une note, un exercice perso et un archivé, trois pesées, deux
+  compléments dont un à deux rappels, objectifs datés de calories et d'eau, thème clair, repos
+  2 min 30) ; puis, dans l'app, calories et eau du jour, complément pris, sauvegarde automatique
+  dans un dossier, langue de l'app en français, séance « Push » démarrée avec une série validée et
+  le repos en cours.
+- **Résultat** : la sauvegarde automatique écrite par la v1.0.8 juste avant la mise à jour et
+  celle écrite par la nouvelle version juste après sont **identiques hors `exportedAt`** (séances,
+  exercices, pesées, compléments, prises, suivi du jour, préférences). La séance en cours reprend où
+  elle était (1 / 9 séries, repos qui continue, notification de séance republiée au nouveau style) ;
+  langue, thème clair, durée du repos, dossier et planification de la sauvegarde automatique,
+  alarmes des rappels : gardés ; aucun plantage. Accueil, Journal, Progrès et Nutrition affichent
+  les mêmes chiffres qu'avant (le « 19h 30m » de l'ancien Accueil devient « 20 h » dans le
+  Journal : arrondi à l'heure du § 15.8).

@@ -35,10 +35,8 @@ data class GymTime(val totalMinutes: Int, val averageMinutes: Int, val sessionCo
 
 /** Une séance de l'historique d'un exercice (§ 2.8), avec **seulement** ses séries validées. */
 data class ExerciseSession(val workoutId: String, val date: Instant, val bodyWeight: Double, val sets: List<WorkoutSet>) {
-    /** Métrique de la séance (§ 2.8, § 3.10) : poids max, ou somme des durées (min) en cardio. */
-    fun metric(isCardio: Boolean): Double = if (isCardio) totalDuration else maxWeight
-
     val maxWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
+    val maxReps: Int get() = sets.maxOfOrNull { it.reps } ?: 0
     val totalDuration: Double get() = sets.sumOf { it.duration ?: 0.0 }
     val volume: Double get() = WorkoutStats.volume(sets)
     val bestOneRepMax: Double get() = WorkoutStats.bestOneRepMax(sets)

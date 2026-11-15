@@ -33,38 +33,28 @@
     <string name="tabs_progress">Progress</string>
     <string name="tabs_nutrition">Nutrition</string>
     <string name="tabs_settings">Settings</string>
-    <string name="progress_title">Progress</string>
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Settings</string>
 
     <!-- Settings: preferences (§ 2.12) -->
-    <string name="settings_section_preferences">PREFERENCES</string>
+    <string name="settings_section_preferences">Preferences</string>
     <string name="settings_rest_timer_title">Rest timer</string>
     <string name="settings_rest_timer_desc">Default rest duration between sets</string>
     <string name="settings_rest_timer_seconds">%1$d s</string>
     <string name="settings_rest_timer_minutes">%1$d min</string>
     <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
-    <string name="settings_notifications_denied">Notifications are off — timer and reminders are silent</string>
-    <string name="settings_notifications_open">Open settings</string>
-    <string name="settings_my_data">My data</string>
     <string name="settings_stat_sessions">workouts</string>
     <string name="settings_stat_custom_exercises">custom exercises</string>
     <string name="settings_language_title">Language</string>
-    <string name="settings_language_desc">Choose the app language</string>
     <string name="settings_language_system">System language</string>
     <string name="settings_theme_title">Theme</string>
-    <string name="settings_theme_desc">App appearance</string>
     <string name="settings_theme_system">System</string>
     <string name="settings_theme_light">Light</string>
     <string name="settings_theme_dark">Dark</string>
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
-    <string name="settings_section_backup">BACKUP</string>
-    <string name="settings_section_app">APP</string>
     <string name="settings_export_title">Export my data</string>
-    <string name="settings_export_desc">Download a JSON file with all your workouts, exercises, and body weights</string>
     <string name="settings_import_title">Import data</string>
-    <string name="settings_import_desc">Restore your data from an exported file — helpful when switching phones</string>
     <string name="settings_import_confirm_title">Overwrite current data?</string>
     <string name="settings_import_confirm_desc">Your %1$d current workouts will be replaced by those in the imported file.</string>
     <string name="settings_export_success_share">File shared successfully!</string>
@@ -77,7 +67,6 @@
     <string name="settings_import_invalid_key">invalid content for %1$s</string>
     <string name="settings_share_json">Export my MuscleNote data</string>
     <string name="settings_export_csv_title">Export as CSV</string>
-    <string name="settings_export_csv_desc">Creates CSV files (sessions, sets, weight, nutrition) for Excel or Sheets</string>
     <string name="settings_export_success_csv">CSV files exported!</string>
     <string name="settings_export_no_data">No data to export.</string>
     <string name="settings_share_csv">Export as CSV</string>
@@ -87,15 +76,9 @@
     <string name="settings_crash_desc">Last crash on %1$s</string>
     <string name="settings_crash_share">Share</string>
     <string name="settings_update_title">Updates</string>
-    <string name="settings_update_managed">Version %1$s · updates managed by Obtainium</string>
-    <string name="settings_update_never">Version %1$s · not checked yet</string>
-    <string name="settings_update_up_to_date">Version %1$s · up to date (checked on %2$s)</string>
-    <string name="settings_update_available">Version %1$s · %2$s is available</string>
     <string name="settings_update_failed">Couldn\'t check: no connection?</string>
-    <string name="settings_update_check">Check now</string>
 
     <!-- Envoi d'un avis (§ 14) -->
-    <string name="settings_section_feedback">YOUR FEEDBACK</string>
     <string name="feedback_title">Your feedback</string>
     <string name="feedback_desc">An idea, a bug? Send it straight to the developer.</string>
     <string name="feedback_type_idea">Idea</string>
@@ -181,37 +164,9 @@
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
 
     <!-- Home (§ 2.2) -->
-    <string name="home_new_session">New workout</string>
-    <string name="home_active_subtitle">%1$s · %2$s kg bodyweight</string>
     <string name="home_migrate_title">Coming from the old MuscleNote?</string>
     <string name="home_migrate_text">Finish any session in progress in the old app, then: Settings → Export my data → pick MuscleNote.</string>
     <string name="home_update_title">Update available</string>
-    <string name="home_update_text">MuscleNote %1$s is available (installed version: %2$s).</string>
-    <string name="update_download">Download</string>
-    <string name="home_streak_current">Current streak</string>
-    <plurals name="home_streak_week_unit">
-        <item quantity="one">week</item>
-        <item quantity="other">weeks</item>
-    </plurals>
-    <string name="home_streak_best">Best</string>
-    <string name="home_streak_best_value">%1$d wks</string>
-    <string name="home_streak_last8weeks">Last 8 weeks · this week on the right</string>
-    <string name="home_streak_legend_validated">Validated (3+)</string>
-    <string name="home_streak_legend_partial">Partial (1-2)</string>
-    <string name="home_streak_legend_none">None</string>
-    <string name="home_streak_hint_start">Complete 3 workouts this week to start a streak</string>
-    <string name="home_streak_hint_alive">Min 3 workouts/week · 1 skip allowed</string>
-    <string name="home_streak_hint_over">Streak ended — start again this week!</string>
-    <string name="home_stat_sessions">Workouts</string>
-    <string name="home_stat_total_volume">Total volume</string>
-    <string name="home_stat_last_weight">Last weight</string>
-    <string name="home_gym_time">Total gym time · avg %1$s/session</string>
-    <string name="home_recent_sessions">Recent sessions</string>
-    <string name="home_delete_confirm">Delete this workout?</string>
-    <string name="home_volume_short">%1$s kg vol</string>
-    <string name="home_minutes">%1$d min</string>
-    <string name="home_empty_title">Ready to train?</string>
-    <string name="home_empty_text">Start your first workout to begin tracking progress</string>
     <string name="home_edit_date">Edit date</string>
     <string name="home_date_day">Day</string>
     <string name="home_date_month">Month</string>
@@ -233,15 +188,13 @@
     <string name="start_workout_group_other">Other</string>
     <string name="start_workout_custom_label">Custom</string>
     <string name="start_workout_custom_placeholder">E.g. Shoulders / Calves</string>
-    <string name="start_workout_custom_empty">Custom name...</string>
     <string name="start_workout_next">Next</string>
     <string name="start_workout_body_weight_subtitle">Your weight today?</string>
     <string name="start_workout_start">Start</string>
+    <string name="start_workout_weight_invalid">Enter your body weight</string>
 
     <!-- Workout in progress (§ 2.4 – 2.6) -->
     <string name="workout_no_active">No active workout</string>
-    <string name="workout_in_progress">Workout in progress</string>
-    <string name="workout_sets_progress">%1$d/%2$d sets</string>
     <string name="workout_add_exercise">Add an exercise</string>
     <string name="workout_empty_exercises">Add exercises to get started</string>
     <string name="workout_finish">Finish workout</string>
@@ -263,48 +216,89 @@
     <string name="workout_warmup_squat_label">Bodyweight squats</string>
     <string name="workout_warmup_squat_detail">15 slow reps</string>
     <string name="exercise_card_note_placeholder">Add a note…</string>
-    <string name="exercise_card_add_set">Add a set</string>
     <string name="exercise_card_remove_confirm">Remove “%1$s” from this session?</string>
     <string name="exercise_card_remove">Remove</string>
 
+    <!-- Workout in progress, "Studio épuré" redesign (§ 15.7, D32) -->
+    <plurals name="workout_subtitle">
+        <item quantity="one">%1$s kg · %2$d / %3$d set</item>
+        <item quantity="other">%1$s kg · %2$d / %3$d sets</item>
+    </plurals>
+    <plurals name="workout_subtitle_no_weight">
+        <item quantity="one">%1$d / %2$d set</item>
+        <item quantity="other">%1$d / %2$d sets</item>
+    </plurals>
+    <string name="workout_col_index">#</string>
+    <string name="workout_col_previous">Prev.</string>
+    <string name="workout_col_kg">Kg</string>
+    <string name="workout_col_reps">Reps</string>
+    <string name="workout_col_min">Min</string>
+    <string name="workout_col_km">Km</string>
+    <string name="workout_previous_strength">%1$s\u202F×\u202F%2$d</string>
+    <string name="workout_previous_reps">%1$d reps</string>
+    <string name="workout_previous_cardio">%1$s · %2$s</string>
+    <string name="workout_previous_minutes">%1$s min</string>
+    <string name="workout_previous_copy">Copy previous set %1$s</string>
+    <string name="workout_last_time">Last time on %1$s</string>
+    <string name="workout_suggest_plus_kg">+%1$s kg</string>
+    <string name="workout_suggest_plus_rep">+1 rep</string>
+    <string name="workout_suggest_same_weight">Same weight</string>
+    <string name="workout_suggest_same_reps">Same reps</string>
+    <string name="workout_suggest_apply">Apply suggestion: %1$s</string>
+    <string name="workout_add_set_row">Set</string>
+    <string name="workout_set_value_description">Set %1$d, %2$s: %3$s</string>
+    <string name="workout_add_set_to">Add a set: %1$s</string>
+    <string name="workout_exercise_details_for">Details: %1$s</string>
+    <string name="workout_exercise_options_for">Options: %1$s</string>
+    <string name="workout_set_check">Complete set %1$d</string>
+    <string name="workout_set_checked">Set %1$d completed</string>
+    <string name="workout_rest_total">of %1$s</string>
+    <string name="workout_keypad_first">%1$s · set %2$d</string>
+    <string name="workout_keypad_speed">Km/h</string>
+    <string name="workout_keypad_incline" formatted="false">%</string>
+    <string name="workout_keypad_next">Next</string>
+    <string name="workout_keypad_ok">OK</string>
+    <string name="workout_delete_set">Delete set</string>
+    <string name="workout_delete_set_title">Delete set %1$d?</string>
+    <string name="workout_delete_set_message">It will be removed from this session.</string>
+    <string name="workout_exercise_remove">Remove from session</string>
+    <string name="workout_exercise_remove_message">Its sets in this session will be lost.</string>
+    <plurals name="workout_finish_message">
+        <item quantity="one">%1$d set completed in %2$s. You can edit the session afterwards.</item>
+        <item quantity="other">%1$d sets completed in %2$s. You can edit the session afterwards.</item>
+    </plurals>
+    <string name="workout_abandon_title">Abandon the session?</string>
+    <string name="workout_continue">Keep going</string>
+    <string name="workout_empty_title">No exercises</string>
+    <string name="workout_no_active_message">Start a session from Home.</string>
+
     <!-- Exercise picker (§ 2.7) -->
-    <string name="exercise_picker_title">Exercises</string>
     <string name="exercise_picker_search_placeholder">Search for an exercise...</string>
     <string name="exercise_picker_new_exercise">New exercise</string>
     <string name="exercise_picker_name_placeholder">Exercise name</string>
     <string name="exercise_picker_edit_exercise">Edit exercise</string>
     <string name="exercise_picker_delete_confirm">Delete %1$s?</string>
     <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
+    <string name="exercise_picker_delete_exercise">Delete exercise</string>
+    <string name="exercise_picker_actions">Edit or delete</string>
+    <string name="exercise_picker_name_label">Name</string>
+    <string name="exercise_picker_group_label">Muscle group</string>
 
     <!-- Charts (§ 2.13) -->
-    <string name="chart_no_data">No data</string>
-    <string name="chart_one_point">Only one session — keep going to see your progress!</string>
-    <string name="chart_goal">Goal</string>
 
     <!-- Exercise history (§ 2.8) -->
     <string name="exercise_history_not_found">Exercise not found</string>
-    <string name="exercise_history_pr">Personal record</string>
-    <string name="exercise_history_one_rm">Estimated 1RM</string>
-    <string name="exercise_history_longest">Longest session</string>
-    <string name="exercise_history_max_load">Max load (kg)</string>
-    <string name="exercise_history_duration_chart">Duration per session (min)</string>
-    <string name="exercise_history_need_more">Complete more sessions to track your progress!</string>
-    <string name="exercise_history_history_title">History</string>
-    <string name="exercise_history_empty">No sessions with this exercise</string>
-    <string name="exercise_history_body_weight_suffix">%1$s kg body</string>
-    <string name="exercise_history_max">Max %1$s kg</string>
-    <string name="exercise_history_volume">Volume %1$s kg</string>
-    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
     <!-- Edit a finished workout (§ 2.9) -->
     <string name="edit_workout_not_found">Workout not found</string>
     <string name="edit_workout_header_label">Edit workout</string>
     <string name="edit_workout_no_exercise_found">No exercise found</string>
-    <string name="edit_workout_empty_exercises">No exercises — tap the button above to add one</string>
     <string name="edit_workout_discard_title">Discard changes?</string>
     <string name="edit_workout_discard">Discard</string>
     <string name="edit_workout_keep_editing">Keep editing</string>
     <string name="edit_workout_rename">Rename session</string>
+    <string name="edit_workout_empty_message">Add this session\'s exercises.</string>
+    <string name="edit_workout_discard_message">Your changes to this session won\'t be saved.</string>
     <!-- Notification channels (§ 7.1) -->
     <string name="channel_workout_ongoing">Workout in progress</string>
     <string name="channel_rest_timer">Rest timer</string>
@@ -329,65 +323,27 @@
     <string name="rest_timer_label">Rest</string>
 
     <!-- Progrès (§ 2.10) -->
-    <string name="progress_tab_weight">Body weight</string>
     <string name="progress_tab_calories">Calories</string>
     <string name="progress_tab_water">Water</string>
-    <string name="progress_weight_current">Current</string>
-    <string name="progress_weight_change">Change</string>
-    <string name="progress_weight_min_max">Min–Max</string>
-    <string name="progress_weight_chart_title">Body weight (kg)</string>
     <string name="progress_empty_no_session">No sessions yet</string>
     <string name="progress_empty_no_session_hint">Start your first session to see progress here</string>
-    <string name="body_weight_log_title">Weight log</string>
     <string name="body_weight_add">Add weigh-in</string>
     <string name="body_weight_new_entry">New weigh-in</string>
-    <string name="body_weight_weight_label">Weight (kg)</string>
-    <string name="body_weight_weight_placeholder">E.g. 75.5</string>
     <string name="body_weight_date_label">Date</string>
     <string name="body_weight_empty">No manual weigh-ins recorded. Add a weigh-in to track weight on rest days.</string>
     <string name="body_weight_invalid_entry">Check the weight and the date</string>
-    <string name="progress_stat_today">Today</string>
-    <string name="progress_stat_today_liters">Today\n(L)</string>
-    <string name="progress_stat_avg7">7-day avg</string>
-    <string name="progress_stat_goal_days_hit">Goal days\nhit</string>
     <string name="progress_cal_no_data">No data</string>
     <string name="progress_cal_no_data_hint">Start logging calories in the Nutrition tab to track them here</string>
-    <string name="progress_cal_chart_title">Calories (kcal)</string>
-    <string name="progress_cal_chart_sub">%1$d days · Goal %2$s kcal</string>
     <string name="progress_water_no_data_hint">Start tracking hydration in the Nutrition tab to see it here</string>
-    <string name="progress_water_chart_title">Hydration (L)</string>
-    <string name="progress_water_chart_sub">%1$d days · Goal %2$s L/day</string>
-    <string name="progress_recap_title">Summary</string>
     <string name="progress_recap_daily_goal">Daily goal</string>
     <string name="progress_recap_best_day">Best day</string>
     <string name="progress_recap_days_tracked">Days tracked</string>
-    <string name="progress_muscle_sessions">Sessions</string>
-    <string name="progress_muscle_max_load">Max load</string>
-    <string name="progress_muscle_max_volume">Max volume</string>
-    <string name="progress_muscle_max_duration">Longest</string>
-    <string name="progress_muscle_max_distance">Max distance</string>
-    <string name="progress_muscle_empty">No %1$s sessions</string>
-    <string name="progress_muscle_empty_hint">Complete %1$s exercises to see your progress</string>
-    <string name="progress_muscle_top_exercises">Top exercises</string>
-    <string name="progress_muscle_top_exercises_sub">Max load per session</string>
-    <string name="progress_muscle_top_exercises_sub_cardio">Total duration per session</string>
-    <string name="progress_muscle_need_two">Complete at least 2 sessions to view the chart</string>
-    <string name="progress_muscle_all_exercises">All exercises</string>
 
     <!-- Supplement reminders (§ 7.3) -->
     <string name="nutrition_notif_body">Don\'t forget your dose!</string>
     <string name="nutrition_notif_body_dosage">Don\'t forget your dose (%1$s %2$s)!</string>
 
     <!-- Nutrition (§ 2.11) -->
-    <string name="nutrition_section_today">TODAY\'S TRACKING</string>
-    <string name="nutrition_cal_add">+ Add</string>
-    <string name="nutrition_cal_set">= Set</string>
-    <string name="nutrition_cal_placeholder">kcal…</string>
-    <string name="nutrition_water_placeholder">ml…</string>
-    <string name="nutrition_cal_goal_placeholder">kcal goal</string>
-    <string name="nutrition_water_goal_placeholder">E.g. 2.0 (liters)</string>
-    <string name="nutrition_supplement">Supplement</string>
-    <string name="nutrition_supplements_section">SUPPLEMENTS</string>
     <string name="nutrition_new_supplement">New supplement</string>
     <string name="nutrition_name">Name</string>
     <string name="nutrition_name_placeholder">E.g. Creatine, Whey, Omega-3...</string>
@@ -403,10 +359,40 @@
     <string name="nutrition_reminder_at">Reminder at %1$s</string>
     <string name="nutrition_reminders_count">%1$d reminders</string>
     <string name="nutrition_no_reminder">No reminder</string>
-    <string name="nutrition_taken_yes">✓ Taken today</string>
-    <string name="nutrition_taken_no">Not taken today</string>
     <string name="nutrition_delete_confirm">Delete “%1$s”?</string>
     <string name="nutrition_info_mobile">Reminders are local notifications. The app needs permission to send notifications.</string>
+
+    <!-- Nutrition, "Studio épuré" redesign (SPEC § 15.10.7) -->
+    <string name="nutrition_today">Today</string>
+    <string name="nutrition_calories_left">%1$s kcal left</string>
+    <string name="nutrition_calories_on_target">on target</string>
+    <string name="nutrition_calories_over">+%1$s kcal</string>
+    <string name="nutrition_goal_of">of %1$s</string>
+    <string name="nutrition_goal_dot">· %1$s kcal</string>
+    <string name="nutrition_goal_over">over %1$s</string>
+    <string name="nutrition_goal_only">goal %1$s kcal</string>
+    <string name="nutrition_water_of">water · of %1$s</string>
+    <string name="nutrition_water_reached">water · goal reached</string>
+    <string name="nutrition_supplements_taken_label">supplements taken</string>
+    <string name="nutrition_ml_value">%1$s ml</string>
+    <string name="nutrition_supplements">Supplements</string>
+    <string name="nutrition_taken_toggle">Taken today</string>
+    <string name="nutrition_supplement_options">Reminders and options</string>
+    <string name="nutrition_empty_action">Add a supplement</string>
+    <string name="nutrition_entry_help">Today: %1$s of %2$s.</string>
+    <string name="nutrition_mode_add">Add</string>
+    <string name="nutrition_mode_total">Day total</string>
+    <string name="nutrition_new_total">New total</string>
+    <string name="nutrition_entry_invalid">Enter an amount</string>
+    <string name="nutrition_calorie_goal_title">Calorie goal</string>
+    <string name="nutrition_water_goal_title">Water goal</string>
+    <string name="nutrition_goal_help">From today on; past days keep theirs.</string>
+    <string name="nutrition_goal_invalid">Enter a goal above 0</string>
+    <string name="nutrition_reminder">Reminder</string>
+    <string name="nutrition_delete_supplement">Delete supplement</string>
+    <string name="nutrition_delete_message">The supplement and its reminders will be removed.</string>
+    <string name="common_close">Close</string>
+    <string name="common_ok">OK</string>
 
     <!-- CSV export headers (§ 8) -->
     <string name="excel_col_date">Date</string>
@@ -431,26 +417,62 @@
     <!-- Automatic backup (§ 15.2) -->
     <string name="settings_auto_backup_title">Automatic backup</string>
     <string name="settings_auto_backup_desc">Every day, a JSON backup in the folder of your choice. The 14 most recent are kept.</string>
-    <string name="settings_auto_backup_folder">Folder: %1$s</string>
-    <string name="settings_auto_backup_change">Change</string>
-    <string name="settings_auto_backup_last">Last backup: %1$s</string>
     <string name="settings_auto_backup_never">No backup yet</string>
     <string name="settings_auto_backup_folder_lost">The backup folder can\'t be reached anymore (deleted, renamed or access removed). Choose it again.</string>
     <string name="settings_auto_backup_choose_folder">Choose a folder</string>
     <string name="settings_auto_backup_failed">Backup of %1$s failed: %2$s</string>
     <string name="settings_auto_backup_now">Back up now</string>
 
+    <!-- Settings, "Studio épuré" redesign (SPEC § 15.10.7) -->
+    <string name="settings_section_data">Data</string>
+    <string name="settings_section_about">About</string>
+    <string name="settings_language_help">System language: your phone\'s.</string>
+    <string name="settings_language_system_short">System</string>
+    <string name="settings_theme_help">Dark by default. System follows your phone\'s setting.</string>
+    <string name="settings_notifications_off_title">Notifications off</string>
+    <string name="settings_notifications_off_subtitle">Rest timer and reminders are silent</string>
+    <string name="settings_on_f">On</string>
+    <string name="settings_off_f">Off</string>
+    <string name="settings_on_m">On</string>
+    <string name="settings_off_m">Off</string>
+    <string name="settings_auto_backup_off_subtitle">Every day, in the folder you choose</string>
+    <string name="settings_auto_backup_last_short">Last on %1$s</string>
+    <string name="settings_auto_backup_failed_short">Failed on %1$s</string>
+    <string name="settings_auto_backup_folder_lost_short">Folder unavailable</string>
+    <string name="settings_auto_backup_toggle">Daily backup</string>
+    <string name="settings_auto_backup_folder_label">Folder</string>
+    <string name="settings_auto_backup_last_label">Last backup</string>
+    <string name="settings_auto_backup_none">none</string>
+    <string name="settings_auto_backup_running">Backing up…</string>
+    <string name="settings_export_short">JSON file with all your data</string>
+    <string name="settings_export_csv_short">Tables for Excel or Sheets</string>
+    <string name="settings_import_short">From an exported file</string>
+    <string name="settings_in_progress">In progress…</string>
+    <string name="health_subtitle_off">Workouts and weight to your health apps</string>
+    <string name="health_subtitle_last">Last sent %1$s</string>
+    <string name="health_subtitle_missing">Permission missing</string>
+    <string name="health_toggle">Send to Health Connect</string>
+    <string name="health_last_label">Last sent</string>
+    <string name="health_written_label">Written</string>
+    <string name="health_sending">Sending…</string>
+    <string name="settings_update_subtitle_managed">Managed by Obtainium</string>
+    <string name="settings_update_subtitle_never">Not checked yet</string>
+    <string name="settings_update_subtitle_up_to_date">Up to date · checked %1$s</string>
+    <string name="settings_update_subtitle_available">%1$s is available</string>
+    <string name="settings_update_subtitle_checking">Checking…</string>
+    <string name="settings_update_download">Download %1$s</string>
+    <string name="feedback_row_title">Send feedback</string>
+    <string name="feedback_row_subtitle">An idea, a bug?</string>
+    <string name="feedback_sending">Sending…</string>
+
     <!-- Health Connect (§ 15.3) -->
-    <string name="settings_section_health">HEALTH</string>
     <string name="health_title">Health Connect</string>
     <string name="health_desc">Sends your strength sessions and body weight to Health Connect, so your other health apps can use them.</string>
     <string name="health_denied">Permission denied: nothing is sent.</string>
     <string name="health_missing_sessions">Sessions not allowed: they aren\'t sent.</string>
     <string name="health_missing_weight">Weight not allowed: it isn\'t sent.</string>
     <string name="health_allow">Allow</string>
-    <string name="health_last">Last sent: %1$s</string>
     <string name="health_never">Nothing sent yet</string>
-    <string name="health_written">Written to Health Connect: %1$s, %2$s</string>
     <string name="health_unavailable">Couldn\'t send (%1$s).</string>
     <string name="health_type_failed_sessions">Sessions: failed (%1$s).</string>
     <string name="health_type_failed_weight">Weight: failed (%1$s).</string>
@@ -470,4 +492,144 @@
     <string name="health_privacy_when">When: when you finish, edit or delete a session, when you add or delete a weigh-in, and when you tap “Send history”.</string>
     <string name="health_privacy_nothing_else">Nothing else: MuscleNote reads no data from Health Connect and sends nothing over the internet; your data stays on your phone.</string>
     <string name="health_privacy_stop">To stop: turn off the Health Connect switch in Settings. Data already written can be deleted from Health Connect\'s settings.</string>
+    <!-- « Studio épuré » design system (DESIGN.md): component accessibility labels -->
+    <string name="ds_close">Close</string>
+    <string name="ds_more_options">More options</string>
+    <string name="ds_keypad_delete">Delete</string>
+    <string name="ds_keypad_hide">Hide keypad</string>
+    <string name="ds_collapse_session">Minimise the workout</string>
+    <string name="ds_exercise_details">Exercise details</string>
+
+    <!-- Navigation, Home and Journal (SPEC § 15.8) -->
+    <string name="tabs_journal">Journal</string>
+    <string name="common_see_all">See all</string>
+    <string name="mini_bar_rest">rest</string>
+    <string name="home_resume">Resume</string>
+    <string name="home_live_label">In progress</string>
+    <string name="home_rest_detail">%1$s, set %2$d</string>
+    <string name="home_next_caption">Next workout</string>
+    <string name="home_next_new">New workout</string>
+    <string name="home_next_new_detail">Pick your workout in the next step</string>
+    <string name="home_next_last_today">Last time today</string>
+    <string name="home_next_last_yesterday">Last time yesterday</string>
+    <plurals name="home_next_last_days">
+        <item quantity="one">Last time %1$d day ago</item>
+        <item quantity="other">Last time %1$d days ago</item>
+    </plurals>
+    <string name="home_next_detail">%1$s · %2$s</string>
+    <string name="home_next_other">Other…</string>
+    <string name="home_start">Start</string>
+    <string name="home_update_row">MuscleNote %1$s</string>
+    <string name="home_update_installed">Installed version: %1$s</string>
+    <string name="home_update_later">Later</string>
+    <string name="home_migrate_section">From the old app</string>
+    <string name="home_hide">Hide</string>
+    <string name="home_last_session">Last workout</string>
+    <string name="home_this_week">This week</string>
+    <string name="home_week_sessions_value">%1$d/%2$d</string>
+    <string name="home_week_sessions_label">workouts</string>
+    <string name="home_streak_label">current streak</string>
+    <string name="home_record_label">best</string>
+    <string name="home_week_bars_caption">Last 8 weeks · 3 workouts = week done</string>
+    <string name="home_week_bars_description">Last 8 weeks: %1$s, then %2$d this week</string>
+    <string name="journal_title">Journal</string>
+    <string name="journal_all_time">All time</string>
+    <string name="journal_stat_sessions">workouts</string>
+    <string name="journal_stat_volume">volume</string>
+    <string name="journal_stat_gym_time">at the gym</string>
+    <string name="journal_stat_average">per workout</string>
+    <string name="journal_tonnes">%1$s t</string>
+    <string name="journal_week_current">This week</string>
+    <string name="journal_week_previous">Last week</string>
+    <string name="journal_week_of">Week of %1$s</string>
+    <string name="journal_unknown_date">Unknown date</string>
+    <string name="journal_empty_title">No workouts yet</string>
+    <string name="journal_empty_message">Your finished workouts will show up here, week by week.</string>
+    <string name="journal_empty_start">Start a workout</string>
+    <string name="journal_empty_resume">Resume the workout</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$02d min</string>
+    <string name="session_subtitle">%1$s · %2$s</string>
+    <string name="session_volume_kg">%1$s kg</string>
+    <string name="session_long_press">Workout options</string>
+    <string name="session_actions_edit">Edit workout</string>
+    <string name="session_actions_delete">Delete workout</string>
+    <string name="session_delete_title">Delete this workout?</string>
+    <string name="session_delete_message">%1$s on %2$s will be removed from your history.</string>
+    <string name="common_kg_value">%1$s kg</string>
+    <plurals name="home_weeks_value">
+        <item quantity="one">%1$d wk</item>
+        <item quantity="other">%1$d wks</item>
+    </plurals>
+    <string name="duration_compact">%1$dh %2$02dm</string>
+
+    <!-- Fiche exercice et Progrès (SPEC § 15.9) -->
+    <string name="exercise_fiche_subtitle">%1$s · %2$s since %3$s</string>
+    <string name="exercise_fiche_last_session">Last session · %1$s</string>
+    <string name="exercise_fiche_sessions">Sessions</string>
+    <string name="exercise_fiche_period_empty">No sessions in this period</string>
+    <string name="exercise_fiche_period_empty_hint">Pick a longer period.</string>
+    <string name="exercise_fiche_stat_record">personal best</string>
+    <string name="exercise_fiche_stat_longest">longest session</string>
+    <string name="exercise_fiche_stat_one_rm">estimated 1RM</string>
+    <string name="exercise_fiche_best_set">Best set %1$s</string>
+    <string name="exercise_fiche_one_rm">1RM ~%1$s kg</string>
+    <string name="exercise_fiche_cardio_set">%1$s min · %2$s km</string>
+    <string name="exercise_fiche_cardio_set_minutes">%1$s min</string>
+    <string name="exercise_fiche_record">Record</string>
+    <string name="exercise_fiche_empty_title">No sessions yet</string>
+    <string name="exercise_fiche_empty_message">Complete a set of this exercise to track its progress.</string>
+    <string name="delta_since">since %1$s</string>
+    <string name="delta_same">unchanged</string>
+    <string name="period_1m">1M</string>
+    <string name="period_3m">3M</string>
+    <string name="period_6m">6M</string>
+    <string name="period_1y">1Y</string>
+    <string name="period_all">All</string>
+    <string name="period_1m_description">1 month</string>
+    <string name="period_3m_description">3 months</string>
+    <string name="period_6m_description">6 months</string>
+    <string name="period_1y_description">1 year</string>
+    <string name="period_all_description">All time</string>
+    <string name="curve_metric_load">Top weight per session</string>
+    <string name="curve_metric_reps">Top reps per session</string>
+    <string name="curve_metric_duration">Duration per session</string>
+    <string name="curve_description_range">%1$s, %2$s: from %3$s on %4$s to %5$s on %6$s, %7$s</string>
+    <string name="curve_description_single">%1$s, %2$s: %3$s on %4$s</string>
+    <string name="curve_description_empty">%1$s, %2$s: no sessions</string>
+    <string name="curve_goal">Goal</string>
+    <string name="common_min_value">%1$s min</string>
+    <string name="common_reps_value">%1$s reps</string>
+    <string name="common_km_value">%1$s km</string>
+    <string name="common_liters_value">%1$s L</string>
+    <string name="common_kcal_value">%1$s kcal</string>
+    <string name="common_today_lower">today</string>
+    <string name="common_yesterday_lower">yesterday</string>
+    <string name="progress_weight_title">Body weight</string>
+    <string name="progress_weight_caption">Body weight · %1$s</string>
+    <string name="progress_weight_range">%1$s – %2$s kg</string>
+    <string name="progress_weight_none">No weight yet. Add a weigh-in, or enter your weight when you start a workout.</string>
+    <string name="progress_exercises">Exercises</string>
+    <string name="progress_exercise_subtitle">%1$s · best %2$s</string>
+    <string name="progress_group_sessions">workouts</string>
+    <string name="progress_group_max_load">top weight</string>
+    <string name="progress_group_max_duration">longest</string>
+    <string name="progress_group_max_volume">top volume</string>
+    <string name="progress_group_max_distance">longest distance</string>
+    <string name="progress_nutrition">Calories and water</string>
+    <string name="progress_daily_today">today</string>
+    <string name="progress_daily_today_liters">today, L</string>
+    <string name="progress_daily_avg7">7-day avg.</string>
+    <string name="progress_daily_goal_days">goal days</string>
+    <string name="progress_daily_open_nutrition">Go to Nutrition</string>
+    <string name="progress_weigh_ins">Weigh-ins</string>
+    <string name="progress_weigh_in_delete">Delete weigh-in</string>
+    <string name="progress_weigh_in_delete_title">Delete this weigh-in?</string>
+    <string name="progress_weigh_in_delete_message">The %1$s weigh-in (%2$s kg) will be removed.</string>
+    <string name="weigh_in_help_last">Last weight: %1$s kg, on %2$s</string>
+    <string name="weigh_in_help_none">Your weight, in kg.</string>
+    <string name="weigh_in_today">Today</string>
+    <string name="weigh_in_yesterday">Yesterday</string>
+    <string name="weigh_in_add">Add</string>
 </resources>

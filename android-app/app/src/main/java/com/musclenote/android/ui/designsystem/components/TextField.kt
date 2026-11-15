@@ -1,0 +1,74 @@
+package com.musclenote.android.ui.designsystem.components
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.unit.dp
+import com.musclenote.android.ui.designsystem.theme.Studio
+
+private val FieldMinHeight = 48.dp
+private val FieldPaddingH = 16.dp
+private val FieldPaddingV = 14.dp
+
+/**
+ * Champ texte — `StudioTextField` (DESIGN.md § 9.2) : texte au clavier du système (note d'un
+ * exercice ; champs Jour / Mois / Année de « Modifier la date » avec [keyboardOptions] numérique et
+ * [singleLine]). Rayon 12, padding 16 / 14, `body`, plusieurs lignes par défaut ; au repos sur
+ * `surfaceControl`, en saisie sur `liveDim` avec le curseur `liveText` (le jaune marque la saisie) ;
+ * invite en texte secondaire. [minLines] / [maxLines] : message d'un avis (4 à 8 lignes) ; [enabled]
+ * faux pendant un envoi (texte en `textTertiary`).
+ */
+@Composable
+fun StudioTextField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 5,
+    minLines: Int = 1,
+    singleLine: Boolean = false,
+    enabled: Boolean = true,
+    keyboardOptions: KeyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
+) {
+    val source = remember { MutableInteractionSource() }
+    val focused by source.collectIsFocusedAsState()
+    val colors = Studio.colors
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = FieldMinHeight)
+            .background(if (focused) colors.liveDim else colors.surfaceControl, Studio.shapes.control),
+        textStyle = Studio.typography.body.copy(color = if (enabled) colors.textPrimary else colors.textTertiary),
+        cursorBrush = SolidColor(colors.liveText),
+        keyboardOptions = keyboardOptions,
+        keyboardActions = keyboardActions,
+        singleLine = singleLine,
+        maxLines = if (singleLine) 1 else maxLines,
+        minLines = if (singleLine) 1 else minLines,
+        enabled = enabled,
+        interactionSource = source,
+        decorationBox = { inner ->
+            Box(Modifier.padding(horizontal = FieldPaddingH, vertical = FieldPaddingV)) {
+                if (value.isEmpty()) Text(placeholder, style = Studio.typography.body, color = colors.textSecondary)
+                inner()
+            }
+        },
+    )
+}

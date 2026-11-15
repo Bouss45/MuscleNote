@@ -238,7 +238,7 @@ class WorkoutStatsTest {
         assertEquals(75.0, history[1].maxWeight, 0.0)
         assertEquals(10 * 70.0 + 8 * 75.0, history[1].volume, 1e-9)
         assertEquals(95.0, history[1].bestOneRepMax, 0.0) // 75 × (1 + 8/30) = 95
-        assertEquals(75.0, history[1].metric(isCardio = false), 0.0)
+        assertEquals(75.0, history[1].maxWeight, 0.0)
     }
 
     @Test
@@ -247,6 +247,6 @@ class WorkoutStatsTest {
             workout("2026-03-10T17:00:00.000Z", WorkoutExercise("treadmill", sets = listOf(cardio(20.0), cardio(12.5), cardio(30.0, completed = false)))),
         )
         val session = WorkoutStats.exerciseHistory(workouts, "treadmill", zone).single()
-        assertEquals(32.5, session.metric(isCardio = true), 0.0)
+        assertEquals(32.5, session.totalDuration, 0.0)
     }
 }

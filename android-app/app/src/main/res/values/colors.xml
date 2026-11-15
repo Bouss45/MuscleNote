@@ -1,8 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Couleurs utilisées hors Compose (fenêtre, splash, icône). Thème clair ; le sombre est
-     dans values-night. Palette complète : ui/theme/Color.kt (§ 9.1). -->
+     dans values-night. Fond = jeton `background` de DESIGN.md (§ 2) ; logo (SPEC § 15.8.5). -->
 <resources>
-    <color name="window_background">#FAF7F8</color>
-    <color name="splash_background">#FAF7F8</color>
-    <color name="ic_launcher_background">#060204</color>
+    <color name="window_background">#FFFFFF</color>
+    <color name="splash_background">#FFFFFF</color>
+    <!-- Logo : haltère jaune sur graphite. -->
+    <color name="logo_yellow">#FFC93D</color>
+    <color name="logo_graphite">#17181B</color>
+    <color name="ic_launcher_background">@color/logo_graphite</color>
 </resources>

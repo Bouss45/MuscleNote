@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Navigation qui grandit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+</style>
+</helmet>
+<div style="width: 1400px; height: 820px; box-sizing: border-box; padding: 56px; background: #0F1012; color: #F3F3F1; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; display: flex; flex-direction: column; gap: 36px; overflow: hidden">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 10px; max-width: 760px">
+      <h1 style="margin: 0; font-size: 40px; line-height: 1.05; font-weight: 800; font-stretch: 110%; letter-spacing: -0.02em">Navigation qui grandit sans nouvel onglet</h1>
+      <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #A2A5AB; text-wrap: pretty">Quatre onglets fixes, chacun est un hub : une liste de sections. Une nouveauté devient une ligne dans une section, ou une nouvelle section. Une ligne ouvre toujours l'un des quatre gabarits.</p>
+    </div>
+    <div style="width: 412px; flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 12px 0 8px; border-top: 1px solid #222428">
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; font-weight: 700"><span class="ms f" aria-hidden="true">home</span>Accueil</span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: #A2A5AB"><span class="ms" aria-hidden="true">calendar_month</span>Journal</span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: #A2A5AB"><span class="ms" aria-hidden="true">monitoring</span>Progrès</span>
+      <span style="display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 12px; color: #A2A5AB"><span class="ms" aria-hidden="true">restaurant</span>Nutrition</span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 28px">
+
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms f" aria-hidden="true">home</span><h2 style="margin: 0; font-size: 22px; font-weight: 700">Accueil</h2></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Séance</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Reprendre / démarrer</span><span style="color: #A2A5AB">en direct</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Cette semaine</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Série, 8 semaines</span><span style="color: #A2A5AB">→ Journal</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Récentes</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>3 dernières séances</span><span style="color: #A2A5AB">fiche</span></div></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">calendar_month</span><h2 style="margin: 0; font-size: 22px; font-weight: 700">Journal</h2></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Calendrier</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Mois <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">hub</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Séances</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Toutes, par type</span><span style="color: #A2A5AB">fiche</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Résumés <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">fiche</span></div></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">monitoring</span><h2 style="margin: 0; font-size: 22px; font-weight: 700">Progrès</h2></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Records</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px">Mes records <span style="font-size: 11px; font-weight: 700; color: #F3F3F1; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">hub</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Exercices</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Top, historique, 1RM</span><span style="color: #A2A5AB">fiche</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Corps</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Poids</span><span style="color: #A2A5AB">fiche</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px">Mensurations <span style="font-size: 11px; font-weight: 700; color: #F3F3F1; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">fiche</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Photos <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">hub</span></div></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">restaurant</span><h2 style="margin: 0; font-size: 22px; font-weight: 700">Nutrition</h2></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Aujourd'hui</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Calories, eau</span><span style="color: #A2A5AB">formulaire</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Protéines <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">formulaire</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Compléments</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Rappels</span><span style="color: #A2A5AB">formulaire</span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px; font-weight: 700; text-decoration: underline; text-underline-offset: 4px">Stock <span style="font-size: 11px; font-weight: 700; color: #F3F3F1; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span><span style="color: #A2A5AB">formulaire</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Tendances</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Courbes sur 30 jours</span><span style="color: #A2A5AB">fiche</span></div></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">settings</span><h2 style="margin: 0; font-size: 22px; font-weight: 700">Paramètres</h2></div>
+      <span style="font-size: 13px; color: #A2A5AB; margin-top: -10px">Icône en haut de l'Accueil, hors barre</span>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Préférences</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span>Langue, thème, repos</span><span style="color: #A2A5AB">formulaire</span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">Données</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Sauvegarde auto <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span></div><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Health Connect <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span></div></div>
+      <div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2A5AB">À propos</span><div style="display: flex; justify-content: space-between; gap: 8px; padding: 10px 0; border-bottom: 1px solid #222428; font-size: 15px"><span style="display: flex; align-items: center; gap: 6px">Envoyer un avis <span style="font-size: 11px; font-weight: 700; background: #2A2C31; border-radius: 6px; padding: 2px 6px">Nouveau</span></span></div></div>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 32px; font-size: 14px; line-height: 1.5; color: #A2A5AB">
+    <span><strong style="color: #F3F3F1; font-weight: 600">Soulignées</strong> : les 3 fonctionnalités dessinées en preuve, plus bas.</span>
+    <span><strong style="color: #F3F3F1; font-weight: 600">Ordre des sections</strong> : par fréquence d'usage, de haut en bas.</span>
+    <span><strong style="color: #F3F3F1; font-weight: 600">Séance en cours</strong> : réduite, elle reste en mini-barre au-dessus des onglets.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

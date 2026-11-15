@@ -144,8 +144,10 @@ class BackupV2Test {
     }
 
     @Test
-    fun `un thème invalide revient au thème système`() {
-        assertEquals(ThemeMode.System, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "bleu" }""").preferences!!.theme)
+    fun `un thème invalide ou absent revient au thème sombre, un thème connu est gardé`() {
+        assertEquals(ThemeMode.Dark, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "bleu" }""").preferences!!.theme)
+        assertEquals(ThemeMode.Dark, readV2(""""@gymtracker_preferences": { "restSeconds": 90 }""").preferences!!.theme)
+        assertEquals(ThemeMode.System, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "system" }""").preferences!!.theme)
         assertEquals(ThemeMode.Dark, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark" }""").preferences!!.theme)
         assertEquals(ThemeMode.Light, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "light" }""").preferences!!.theme)
     }

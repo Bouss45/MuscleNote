@@ -5,8 +5,10 @@ import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.nutrition.BodyWeightRules
 import com.musclenote.android.data.util.isDayKey
+import com.musclenote.android.data.workout.ExerciseSession
 import com.musclenote.android.data.workout.WorkoutStats
 import java.time.Instant
 import java.time.LocalDate
@@ -31,14 +33,23 @@ data class DailyStats(
     val daysTracked: Int,
 )
 
-/** Un point d'un exercice : une séance où il a au moins une série validée. */
-data class SessionPoint(val date: Instant, val value: Double)
+/**
+ * Métrique d'une séance d'un exercice (SPEC § 15.9.3, 🔄 D34) : charge max (kg), reps max au poids
+ * du corps, ou durée totale en cardio (min).
+ */
+enum class ExerciseMetric { Load, Reps, Duration }
 
 /**
- * Progression d'un exercice (§ 3.10) : ses séances dans l'ordre chronologique, avec la métrique
- * par séance (poids max, ou durée totale en cardio).
+ * Un point d'un exercice : une séance où il a au moins une série validée — son jour local, sa
+ * position sur une courbe ([x] : jour local depuis l'époque, heure en fraction) et sa métrique.
  */
-data class ExerciseProgress(val definition: ExerciseDefinition, val points: List<SessionPoint>) {
+data class SessionPoint(val workoutId: String, val date: Instant, val day: LocalDate, val x: Double, val value: Double)
+
+/**
+ * Progression d'un exercice (§ 3.10, § 15.9.3) : ses séances dans l'ordre chronologique, avec la
+ * métrique [metric] par séance.
+ */
+data class ExerciseProgress(val definition: ExerciseDefinition, val metric: ExerciseMetric, val points: List<SessionPoint>) {
     val sessionCount: Int get() = points.size
 
     /** Meilleure métrique (0 sans point). */
@@ -49,15 +60,17 @@ data class ExerciseProgress(val definition: ExerciseDefinition, val points: List
 }
 
 /**
- * Onglet d'un groupe musculaire (§ 3.10). [exercises] : exercices du groupe utilisés au moins une
- * fois, dans l'ordre du catalogue puis des perso ; [top3] : les plus utilisés.
+ * Section « Exercices » d'un groupe musculaire (§ 3.10, § 15.9.2). [exercises] : exercices du groupe
+ * utilisés au moins une fois, la dernière séance la plus récente d'abord.
  */
 data class MuscleGroupProgress(
     val sessions: Int,
     val exercises: List<ExerciseProgress>,
-    val top3: List<ExerciseProgress>,
-    /** « Charge max » (kg) ou « Durée max » (min) : meilleur record du top 3. */
-    val maxMetric: Double,
+    /**
+     * « Charge max » (kg, records des exercices comptés en charge) ou « Durée max » (min) ; `null` si
+     * aucun exercice du groupe n'a de charge.
+     */
+    val maxMetric: Double?,
     /** « Vol. max » : max par séance de Σ reps × poids (kg) ; en cardio, de Σ distance (km). */
     val maxVolume: Double,
 ) {
@@ -73,9 +86,6 @@ data class MuscleGroupProgress(
 object ProgressStats {
     /** Taille de la fenêtre calendaire de la moyenne (aujourd'hui compris). */
     const val AVERAGE_DAYS = 7L
-
-    /** Nombre d'exercices du classement « Exercices les plus utilisés ». */
-    const val TOP_COUNT = 3
 
     /** Arrondi au dixième, demis vers le haut (comme `Math.round`, § 3.5). */
     fun roundTenth(value: Double): Double = (value * 10).roundToLong() / 10.0
@@ -158,9 +168,62 @@ object ProgressStats {
         return counts
     }
 
+    // ─── Exercices ───────────────────────────────────────────────────────────────────
+
     /**
-     * Onglet du groupe [group] (§ 3.10). [definitions] dans l'ordre d'affichage (catalogue puis
-     * perso, archivés compris) : il départage les exercices à égalité dans le top 3.
+     * Métrique d'un exercice d'après son [history] (§ 15.9.3) : durée en cardio ; sinon charge max dès
+     * qu'une série validée a une charge > 0 (le lest d'un exercice au poids du corps), reps max si
+     * toutes sont à 0 kg. Sans historique : charge.
+     */
+    fun exerciseMetric(isCardio: Boolean, history: List<ExerciseSession>): ExerciseMetric = when {
+        isCardio -> ExerciseMetric.Duration
+        history.isNotEmpty() && history.all { session -> session.sets.all { it.weight <= 0.0 } } -> ExerciseMetric.Reps
+        else -> ExerciseMetric.Load
+    }
+
+    /** Valeur de [metric] pour une séance (ses séries sont déjà les séries validées). */
+    fun metricValue(session: ExerciseSession, metric: ExerciseMetric): Double = when (metric) {
+        ExerciseMetric.Load -> session.maxWeight
+        ExerciseMetric.Reps -> session.maxReps.toDouble()
+        ExerciseMetric.Duration -> session.totalDuration
+    }
+
+    /**
+     * Points d'un exercice, de la séance la plus ancienne à la plus récente ([history] est trié de la
+     * plus récente à la plus ancienne, comme [WorkoutStats.exerciseHistory]).
+     */
+    fun exerciseSeries(history: List<ExerciseSession>, metric: ExerciseMetric, zone: ZoneId): List<SessionPoint> =
+        history.asReversed().map { session ->
+            val local = session.date.atZone(zone)
+            val day = local.toLocalDate()
+            SessionPoint(
+                workoutId = session.workoutId,
+                date = session.date,
+                day = day,
+                x = day.toEpochDay() + local.toLocalTime().toSecondOfDay() / SECONDS_PER_DAY,
+                value = metricValue(session, metric),
+            )
+        }
+
+    /**
+     * Meilleure série d'une séance (§ 15.9.1) parmi [sets] (validées) : la plus lourde, à égalité le
+     * plus de reps, puis la première ; en cardio, la plus longue, puis la plus longue distance.
+     */
+    fun bestSet(sets: List<WorkoutSet>, isCardio: Boolean): WorkoutSet? {
+        val order = if (isCardio) {
+            compareBy<WorkoutSet>({ it.duration ?: 0.0 }, { it.distance ?: 0.0 })
+        } else {
+            compareBy<WorkoutSet>({ it.weight }, { it.reps })
+        }
+        // maxWithOrNull garde le premier des éléments égaux.
+        return sets.maxWithOrNull(order)
+    }
+
+    private const val SECONDS_PER_DAY = 86_400.0
+
+    /**
+     * Section « Exercices » du groupe [group] (§ 3.10, § 15.9.2). [definitions] dans l'ordre
+     * d'affichage (catalogue puis perso, archivés compris) : il départage les exercices à égalité.
      */
     fun muscleGroupProgress(
         workouts: List<Workout>,
@@ -171,13 +234,13 @@ object ProgressStats {
         val isCardio = group == MuscleGroup.Cardio
         val inGroup = definitions.filter { it.muscleGroup == group }
         val exercises = inGroup.mapNotNull { definition ->
-            val points = WorkoutStats.exerciseHistory(workouts, definition.id, zone)
-                .asReversed()
-                .map { SessionPoint(it.date, it.metric(isCardio)) }
-            if (points.isEmpty()) null else ExerciseProgress(definition, points)
+            val history = WorkoutStats.exerciseHistory(workouts, definition.id, zone)
+            if (history.isEmpty()) return@mapNotNull null
+            val metric = exerciseMetric(definition.isCardio, history)
+            ExerciseProgress(definition, metric, exerciseSeries(history, metric, zone))
         }
-        // Tri stable : à égalité, l'ordre du catalogue puis des perso est conservé.
-        val top3 = exercises.sortedByDescending { it.sessionCount }.take(TOP_COUNT)
+            // Tri stable : à égalité de date et de nombre de séances, l'ordre du catalogue puis des perso.
+            .sortedWith(compareByDescending<ExerciseProgress> { it.points.last().date }.thenByDescending { it.sessionCount })
 
         val groupIds = inGroup.mapTo(HashSet()) { it.id }
         val maxVolume = workouts.maxOfOrNull { workout ->
@@ -191,8 +254,7 @@ object ProgressStats {
         return MuscleGroupProgress(
             sessions = muscleSessionCounts(workouts, definitions).getValue(group),
             exercises = exercises,
-            top3 = top3,
-            maxMetric = top3.maxOfOrNull { it.record } ?: 0.0,
+            maxMetric = exercises.filter { it.metric != ExerciseMetric.Reps }.maxOfOrNull { it.record },
             maxVolume = maxVolume,
         )
     }

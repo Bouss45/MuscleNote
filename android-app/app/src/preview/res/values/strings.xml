@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Variante « preview » (app/build.gradle.kts) : nom affiché sous l'icône, pour la distinguer de l'app normale. -->
+<resources>
+    <string name="app_name" translatable="false">MuscleNote Preview</string>
+</resources>

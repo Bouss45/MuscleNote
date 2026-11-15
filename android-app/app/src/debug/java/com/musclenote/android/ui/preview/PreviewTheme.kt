@@ -8,8 +8,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
-import com.musclenote.android.ui.theme.MuscleNoteTheme
+import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.designsystem.theme.StudioTheme
 
 /*
  * Aperçus Compose (@Preview) des écrans et des composants : base de comparaison avant / après
@@ -49,10 +49,10 @@ const val TALL_SCREEN_HEIGHT_DP = 2400
 @Preview(name = "Sombre", group = "Écrans", locale = "fr", widthDp = 411, heightDp = 891, uiMode = Configuration.UI_MODE_NIGHT_YES)
 annotation class PhonePreviews
 
-/** Thème de l'app selon le mode de l'aperçu (clair ou sombre), sur le fond de l'app. */
+/** Thème de l'app (`StudioTheme`) selon le mode de l'aperçu (clair ou sombre). */
 @Composable
 fun PreviewTheme(content: @Composable () -> Unit) {
-    MuscleNoteTheme(darkTheme = isSystemInDarkTheme()) {
+    StudioTheme(darkTheme = isSystemInDarkTheme()) {
         content()
     }
 }
@@ -61,7 +61,7 @@ fun PreviewTheme(content: @Composable () -> Unit) {
 @Composable
 fun ComponentPreview(content: @Composable () -> Unit) {
     PreviewTheme {
-        Box(Modifier.background(MuscleNoteTheme.colors.background).padding(16.dp)) {
+        Box(Modifier.background(Studio.colors.background).padding(Studio.spacing.m)) {
             content()
         }
     }

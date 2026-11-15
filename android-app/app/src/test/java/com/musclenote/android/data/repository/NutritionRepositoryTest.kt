@@ -105,11 +105,16 @@ class NutritionRepositoryTest {
             assertEquals(mapOf("2026-03-14" to 1000), repo.tracker.value.caloriesLog)
             assertEquals(mapOf("2026-03-14" to 750), repo.tracker.value.waterLog)
             repo.setCaloriesToday(1800)
-            repo.resetWaterToday()
+            repo.setWaterToday(1250)
             assertEquals(1800, repo.tracker.value.caloriesLog["2026-03-14"])
+            assertEquals(1250, repo.tracker.value.waterLog["2026-03-14"])
+            repo.setWaterToday(0)
             assertEquals(0, repo.tracker.value.waterLog["2026-03-14"])
         }
-        coroutineScope { assertEquals(1800, repository().tracker.value.caloriesLog["2026-03-14"]) }
+        coroutineScope {
+            assertEquals(1800, repository().tracker.value.caloriesLog["2026-03-14"])
+            assertEquals(0, repository().tracker.value.waterLog["2026-03-14"])
+        }
     }
 
     @Test

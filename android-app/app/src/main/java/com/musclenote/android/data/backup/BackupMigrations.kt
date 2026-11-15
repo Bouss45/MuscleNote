@@ -131,10 +131,13 @@ internal object BackupMigrations {
     private fun originHistory(goal: Double) =
         JsonObject(mapOf(DailyTracker.GOAL_HISTORY_ORIGIN to JsonPrimitive(goal)))
 
-    /** Préférences : la langue n'en fait plus partie (🔄 D9) ; thème « système » par défaut. */
+    /**
+     * Préférences : la langue n'en fait plus partie (🔄 D9) ; thème sombre, le seul de l'app Expo
+     * (🔄 D35).
+     */
     private fun preferences(p: JsonObject): JsonObject = p.edit {
         remove("language")
-        if (p["theme"].isAbsentOrNull()) put("theme", JsonPrimitive("system"))
+        if (p["theme"].isAbsentOrNull()) put("theme", JsonPrimitive("dark"))
     }
 
     private const val GLASSES_FORMAT_MAX = 30.0

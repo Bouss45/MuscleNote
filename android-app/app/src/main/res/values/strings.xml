@@ -34,38 +34,28 @@
     <string name="tabs_progress">Progrès</string>
     <string name="tabs_nutrition">Nutrition</string>
     <string name="tabs_settings">Paramètres</string>
-    <string name="progress_title">Progression</string>
     <string name="nutrition_title">Nutrition</string>
     <string name="settings_title">Paramètres</string>
 
     <!-- Paramètres : préférences (§ 2.12) -->
-    <string name="settings_section_preferences">PRÉFÉRENCES</string>
+    <string name="settings_section_preferences">Préférences</string>
     <string name="settings_rest_timer_title">Minuteur de repos</string>
     <string name="settings_rest_timer_desc">Durée par défaut du repos entre les séries</string>
     <string name="settings_rest_timer_seconds">%1$d s</string>
     <string name="settings_rest_timer_minutes">%1$d min</string>
     <string name="settings_rest_timer_minutes_seconds">%1$d min %2$d</string>
-    <string name="settings_notifications_denied">Notifications désactivées — minuteur et rappels silencieux</string>
-    <string name="settings_notifications_open">Ouvrir les réglages</string>
-    <string name="settings_my_data">Mes données</string>
     <string name="settings_stat_sessions">séances</string>
     <string name="settings_stat_custom_exercises">exercices perso</string>
     <string name="settings_language_title">Langue</string>
-    <string name="settings_language_desc">Choisis la langue de l\'application</string>
     <string name="settings_language_system">Langue du système</string>
     <string name="settings_theme_title">Thème</string>
-    <string name="settings_theme_desc">Apparence de l\'application</string>
     <string name="settings_theme_system">Système</string>
     <string name="settings_theme_light">Clair</string>
     <string name="settings_theme_dark">Sombre</string>
 
     <!-- Paramètres : sauvegarde (§ 2.12, § 5) -->
-    <string name="settings_section_backup">SAUVEGARDE</string>
-    <string name="settings_section_app">APPLICATION</string>
     <string name="settings_export_title">Exporter mes données</string>
-    <string name="settings_export_desc">Télécharge un fichier JSON avec toutes tes séances, exercices et poids de corps</string>
     <string name="settings_import_title">Importer des données</string>
-    <string name="settings_import_desc">Restaure tes données depuis un fichier exporté — utile lors d\'un changement de téléphone</string>
     <string name="settings_import_confirm_title">Écraser les données actuelles ?</string>
     <string name="settings_import_confirm_desc">Tes %1$d séances actuelles seront remplacées par celles du fichier importé.</string>
     <string name="settings_export_success_share">Fichier partagé avec succès !</string>
@@ -78,7 +68,6 @@
     <string name="settings_import_invalid_key">contenu invalide pour %1$s</string>
     <string name="settings_share_json">Exporter mes données MuscleNote</string>
     <string name="settings_export_csv_title">Exporter en CSV</string>
-    <string name="settings_export_csv_desc">Génère des fichiers CSV (séances, séries, poids, nutrition) lisibles dans Excel ou Sheets</string>
     <string name="settings_export_success_csv">Fichiers CSV exportés !</string>
     <string name="settings_export_no_data">Aucune donnée à exporter.</string>
     <string name="settings_share_csv">Exporter en CSV</string>
@@ -88,15 +77,9 @@
     <string name="settings_crash_desc">Dernier plantage le %1$s</string>
     <string name="settings_crash_share">Partager</string>
     <string name="settings_update_title">Mises à jour</string>
-    <string name="settings_update_managed">Version %1$s · mises à jour gérées par Obtainium</string>
-    <string name="settings_update_never">Version %1$s · pas encore de vérification</string>
-    <string name="settings_update_up_to_date">Version %1$s · à jour (vérification du %2$s)</string>
-    <string name="settings_update_available">Version %1$s · la %2$s est disponible</string>
     <string name="settings_update_failed">Vérification impossible : pas de connexion ?</string>
-    <string name="settings_update_check">Vérifier</string>
 
     <!-- Envoi d'un avis (§ 14) -->
-    <string name="settings_section_feedback">TON AVIS</string>
     <string name="feedback_title">Ton avis</string>
     <string name="feedback_desc">Une idée, un bug ? Envoie-le directement au développeur.</string>
     <string name="feedback_type_idea">Idée</string>
@@ -182,38 +165,10 @@
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
 
     <!-- Accueil (§ 2.2) -->
-    <string name="home_new_session">Nouvelle séance</string>
-    <string name="home_active_subtitle">%1$s · %2$s kg corps</string>
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
     <string name="home_migrate_text">Termine ta séance en cours dans l\'ancienne app, puis : Paramètres → Exporter mes données → choisis MuscleNote.</string>
     <string name="home_update_title">Mise à jour disponible</string>
-    <string name="home_update_text">MuscleNote %1$s est disponible (version installée : %2$s).</string>
-    <string name="update_download">Télécharger</string>
-    <string name="home_streak_current">Série en cours</string>
     <!-- Unité seule, le nombre est affiché à côté en grand. -->
-    <plurals name="home_streak_week_unit" tools:ignore="ImpliedQuantity">
-        <item quantity="one">semaine</item>
-        <item quantity="other">semaines</item>
-    </plurals>
-    <string name="home_streak_best">Meilleure</string>
-    <string name="home_streak_best_value">%1$d sem.</string>
-    <string name="home_streak_last8weeks">8 dernières semaines · cette semaine à droite</string>
-    <string name="home_streak_legend_validated">Validée (3+)</string>
-    <string name="home_streak_legend_partial">Partielle (1-2)</string>
-    <string name="home_streak_legend_none">Aucune</string>
-    <string name="home_streak_hint_start">Fais 3 séances cette semaine pour démarrer une série</string>
-    <string name="home_streak_hint_alive">Minimum 3 séances/semaine · 1 pause autorisée</string>
-    <string name="home_streak_hint_over">Série terminée — recommence cette semaine !</string>
-    <string name="home_stat_sessions">Séances</string>
-    <string name="home_stat_total_volume">Volume total</string>
-    <string name="home_stat_last_weight">Dernier poids</string>
-    <string name="home_gym_time">Temps total en salle · moy. %1$s/séance</string>
-    <string name="home_recent_sessions">Séances récentes</string>
-    <string name="home_delete_confirm">Supprimer cette séance ?</string>
-    <string name="home_volume_short">%1$s kg vol.</string>
-    <string name="home_minutes">%1$d min</string>
-    <string name="home_empty_title">Prêt à s\'entrainer ?</string>
-    <string name="home_empty_text">Lance ta première séance pour commencer à suivre tes progrès</string>
     <string name="home_edit_date">Modifier la date</string>
     <string name="home_date_day">Jour</string>
     <string name="home_date_month">Mois</string>
@@ -235,15 +190,13 @@
     <string name="start_workout_group_other">Autre</string>
     <string name="start_workout_custom_label">Personnalisé</string>
     <string name="start_workout_custom_placeholder">Ex: Épaules / Mollets</string>
-    <string name="start_workout_custom_empty">Nom personnalisé...</string>
     <string name="start_workout_next">Suivant</string>
     <string name="start_workout_body_weight_subtitle">Ton poids aujourd\'hui ?</string>
     <string name="start_workout_start">Commencer</string>
+    <string name="start_workout_weight_invalid">Saisis ton poids de corps</string>
 
     <!-- Séance en cours (§ 2.4 – 2.6) -->
     <string name="workout_no_active">Aucune séance active</string>
-    <string name="workout_in_progress">Séance en cours</string>
-    <string name="workout_sets_progress">%1$d/%2$d séries</string>
     <string name="workout_add_exercise">Ajouter un exercice</string>
     <string name="workout_empty_exercises">Ajoute des exercices pour commencer</string>
     <string name="workout_finish">Terminer la séance</string>
@@ -265,48 +218,89 @@
     <string name="workout_warmup_squat_label">Squats à vide</string>
     <string name="workout_warmup_squat_detail">15 reps lents</string>
     <string name="exercise_card_note_placeholder">Ajouter une note…</string>
-    <string name="exercise_card_add_set">Ajouter une série</string>
     <string name="exercise_card_remove_confirm">Retirer « %1$s » de la séance ?</string>
     <string name="exercise_card_remove">Retirer</string>
 
+    <!-- Séance en cours, refonte « Studio épuré » (§ 15.7, D32) -->
+    <plurals name="workout_subtitle">
+        <item quantity="one">%1$s kg · %2$d / %3$d série</item>
+        <item quantity="other">%1$s kg · %2$d / %3$d séries</item>
+    </plurals>
+    <plurals name="workout_subtitle_no_weight">
+        <item quantity="one">%1$d / %2$d série</item>
+        <item quantity="other">%1$d / %2$d séries</item>
+    </plurals>
+    <string name="workout_col_index">#</string>
+    <string name="workout_col_previous">Préc.</string>
+    <string name="workout_col_kg">Kg</string>
+    <string name="workout_col_reps">Reps</string>
+    <string name="workout_col_min">Min</string>
+    <string name="workout_col_km">Km</string>
+    <string name="workout_previous_strength">%1$s\u202F×\u202F%2$d</string>
+    <string name="workout_previous_reps">%1$d reps</string>
+    <string name="workout_previous_cardio">%1$s · %2$s</string>
+    <string name="workout_previous_minutes">%1$s min</string>
+    <string name="workout_previous_copy">Recopier la série précédente %1$s</string>
+    <string name="workout_last_time">Dernière fois le %1$s</string>
+    <string name="workout_suggest_plus_kg">+%1$s kg</string>
+    <string name="workout_suggest_plus_rep">+1 rep</string>
+    <string name="workout_suggest_same_weight">Même charge</string>
+    <string name="workout_suggest_same_reps">Mêmes reps</string>
+    <string name="workout_suggest_apply">Appliquer la suggestion : %1$s</string>
+    <string name="workout_add_set_row">Série</string>
+    <string name="workout_set_value_description">Série %1$d, %2$s : %3$s</string>
+    <string name="workout_add_set_to">Ajouter une série : %1$s</string>
+    <string name="workout_exercise_details_for">Fiche : %1$s</string>
+    <string name="workout_exercise_options_for">Options : %1$s</string>
+    <string name="workout_set_check">Valider la série %1$d</string>
+    <string name="workout_set_checked">Série %1$d validée</string>
+    <string name="workout_rest_total">sur %1$s</string>
+    <string name="workout_keypad_first">%1$s · série %2$d</string>
+    <string name="workout_keypad_speed">Km/h</string>
+    <string name="workout_keypad_incline" formatted="false">%</string>
+    <string name="workout_keypad_next">Suivant</string>
+    <string name="workout_keypad_ok">OK</string>
+    <string name="workout_delete_set">Supprimer la série</string>
+    <string name="workout_delete_set_title">Supprimer la série %1$d ?</string>
+    <string name="workout_delete_set_message">Elle sera retirée de cette séance.</string>
+    <string name="workout_exercise_remove">Retirer de la séance</string>
+    <string name="workout_exercise_remove_message">Ses séries de cette séance seront perdues.</string>
+    <plurals name="workout_finish_message">
+        <item quantity="one">%1$d série validée en %2$s. Tu pourras corriger la séance ensuite.</item>
+        <item quantity="other">%1$d séries validées en %2$s. Tu pourras corriger la séance ensuite.</item>
+    </plurals>
+    <string name="workout_abandon_title">Abandonner la séance ?</string>
+    <string name="workout_continue">Continuer la séance</string>
+    <string name="workout_empty_title">Aucun exercice</string>
+    <string name="workout_no_active_message">Démarre une séance depuis l\'Accueil.</string>
+
     <!-- Sélecteur d'exercices (§ 2.7) -->
-    <string name="exercise_picker_title">Exercices</string>
     <string name="exercise_picker_search_placeholder">Chercher un exercice...</string>
     <string name="exercise_picker_new_exercise">Nouvel exercice</string>
     <string name="exercise_picker_name_placeholder">Nom de l\'exercice</string>
     <string name="exercise_picker_edit_exercise">Modifier l\'exercice</string>
     <string name="exercise_picker_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
+    <string name="exercise_picker_delete_exercise">Supprimer l\'exercice</string>
+    <string name="exercise_picker_actions">Modifier ou supprimer</string>
+    <string name="exercise_picker_name_label">Nom</string>
+    <string name="exercise_picker_group_label">Groupe musculaire</string>
 
     <!-- Graphiques (§ 2.13) -->
-    <string name="chart_no_data">Aucune donnée</string>
-    <string name="chart_one_point">Une seule séance — continue pour voir ta progression !</string>
-    <string name="chart_goal">Objectif</string>
 
     <!-- Historique d'un exercice (§ 2.8) -->
     <string name="exercise_history_not_found">Exercice introuvable</string>
-    <string name="exercise_history_pr">Record personnel</string>
-    <string name="exercise_history_one_rm">1RM estimé</string>
-    <string name="exercise_history_longest">Séance la plus longue</string>
-    <string name="exercise_history_max_load">Charge maximale (kg)</string>
-    <string name="exercise_history_duration_chart">Durée par séance (min)</string>
-    <string name="exercise_history_need_more">Fais encore des séances pour voir ta progression !</string>
-    <string name="exercise_history_history_title">Historique</string>
-    <string name="exercise_history_empty">Aucune séance avec cet exercice</string>
-    <string name="exercise_history_body_weight_suffix">%1$s kg corps</string>
-    <string name="exercise_history_max">Max %1$s kg</string>
-    <string name="exercise_history_volume">Volume %1$s kg</string>
-    <string name="exercise_history_row_one_rm">1RM ~%1$s kg</string>
 
     <!-- Éditer une séance terminée (§ 2.9) -->
     <string name="edit_workout_not_found">Séance introuvable</string>
     <string name="edit_workout_header_label">Modifier la séance</string>
     <string name="edit_workout_no_exercise_found">Aucun exercice trouvé</string>
-    <string name="edit_workout_empty_exercises">Aucun exercice — appuie sur le bouton ci-dessus pour en ajouter</string>
     <string name="edit_workout_discard_title">Abandonner les modifications ?</string>
     <string name="edit_workout_discard">Abandonner</string>
     <string name="edit_workout_keep_editing">Continuer l\'édition</string>
     <string name="edit_workout_rename">Renommer la séance</string>
+    <string name="edit_workout_empty_message">Ajoute les exercices de cette séance.</string>
+    <string name="edit_workout_discard_message">Tes changements sur cette séance ne seront pas enregistrés.</string>
     <!-- Canaux de notification (§ 7.1) -->
     <string name="channel_workout_ongoing">Séance en cours</string>
     <string name="channel_rest_timer">Timer de repos</string>
@@ -331,65 +325,27 @@
     <string name="rest_timer_label">Repos</string>
 
     <!-- Progrès (§ 2.10) -->
-    <string name="progress_tab_weight">Poids corps</string>
     <string name="progress_tab_calories">Calories</string>
     <string name="progress_tab_water">Eau</string>
-    <string name="progress_weight_current">Actuel</string>
-    <string name="progress_weight_change">Évolution</string>
-    <string name="progress_weight_min_max">Min–Max</string>
-    <string name="progress_weight_chart_title">Poids de corps (kg)</string>
     <string name="progress_empty_no_session">Aucune séance encore</string>
     <string name="progress_empty_no_session_hint">Lance ta première séance pour voir tes progrès ici</string>
-    <string name="body_weight_log_title">Journal de poids</string>
     <string name="body_weight_add">Ajouter une pesée</string>
     <string name="body_weight_new_entry">Nouvelle pesée</string>
-    <string name="body_weight_weight_label">Poids (kg)</string>
-    <string name="body_weight_weight_placeholder">Ex : 75.5</string>
     <string name="body_weight_date_label">Date</string>
     <string name="body_weight_empty">Aucune pesée manuelle enregistrée. Ajoute une pesée pour suivre ton poids même les jours sans séance.</string>
     <string name="body_weight_invalid_entry">Vérifie le poids et la date</string>
-    <string name="progress_stat_today">Aujourd\'hui</string>
-    <string name="progress_stat_today_liters">Aujourd\'hui\n(L)</string>
-    <string name="progress_stat_avg7">Moy. 7 jours</string>
-    <string name="progress_stat_goal_days_hit">Jours objectif\natteint</string>
     <string name="progress_cal_no_data">Aucune donnée</string>
     <string name="progress_cal_no_data_hint">Commence à saisir tes calories dans l\'onglet Nutrition pour voir leur évolution ici</string>
-    <string name="progress_cal_chart_title">Calories (kcal)</string>
-    <string name="progress_cal_chart_sub">%1$d jours · Objectif %2$s kcal</string>
     <string name="progress_water_no_data_hint">Commence à suivre ton hydratation dans l\'onglet Nutrition pour voir son évolution ici</string>
-    <string name="progress_water_chart_title">Hydratation (L)</string>
-    <string name="progress_water_chart_sub">%1$d jours · Objectif %2$s L/jour</string>
-    <string name="progress_recap_title">Récapitulatif</string>
     <string name="progress_recap_daily_goal">Objectif quotidien</string>
     <string name="progress_recap_best_day">Meilleure journée</string>
     <string name="progress_recap_days_tracked">Jours suivis</string>
-    <string name="progress_muscle_sessions">Séances</string>
-    <string name="progress_muscle_max_load">Charge max</string>
-    <string name="progress_muscle_max_volume">Vol. max</string>
-    <string name="progress_muscle_max_duration">Durée max</string>
-    <string name="progress_muscle_max_distance">Distance max</string>
-    <string name="progress_muscle_empty">Aucune séance %1$s</string>
-    <string name="progress_muscle_empty_hint">Fais des exercices de %1$s pour voir ta progression</string>
-    <string name="progress_muscle_top_exercises">Exercices les plus utilisés</string>
-    <string name="progress_muscle_top_exercises_sub">Charge maximale par séance</string>
-    <string name="progress_muscle_top_exercises_sub_cardio">Durée totale par séance</string>
-    <string name="progress_muscle_need_two">Fais au moins 2 séances pour voir le graphique</string>
-    <string name="progress_muscle_all_exercises">Tous les exercices</string>
 
     <!-- Rappels de compléments (§ 7.3) -->
     <string name="nutrition_notif_body">N\'oublie pas ta dose !</string>
     <string name="nutrition_notif_body_dosage">N\'oublie pas ta dose (%1$s %2$s) !</string>
 
     <!-- Nutrition (§ 2.11) -->
-    <string name="nutrition_section_today">SUIVI DU JOUR</string>
-    <string name="nutrition_cal_add">+ Ajouter</string>
-    <string name="nutrition_cal_set">= Définir</string>
-    <string name="nutrition_cal_placeholder">kcal…</string>
-    <string name="nutrition_water_placeholder">ml…</string>
-    <string name="nutrition_cal_goal_placeholder">Objectif kcal</string>
-    <string name="nutrition_water_goal_placeholder">Ex : 2.0 (en litres)</string>
-    <string name="nutrition_supplement">Complément</string>
-    <string name="nutrition_supplements_section">COMPLÉMENTS</string>
     <string name="nutrition_new_supplement">Nouveau complément</string>
     <string name="nutrition_name">Nom</string>
     <string name="nutrition_name_placeholder">Ex : Créatine, Whey, Oméga-3...</string>
@@ -405,10 +361,40 @@
     <string name="nutrition_reminder_at">Rappel à %1$s</string>
     <string name="nutrition_reminders_count">%1$d rappels</string>
     <string name="nutrition_no_reminder">Pas de rappel</string>
-    <string name="nutrition_taken_yes">✓ Pris aujourd\'hui</string>
-    <string name="nutrition_taken_no">Non pris aujourd\'hui</string>
     <string name="nutrition_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="nutrition_info_mobile">Les rappels sont des notifications locales. L\'app doit avoir la permission d\'envoyer des notifications.</string>
+
+    <!-- Nutrition, refonte « Studio épuré » (SPEC § 15.10.7) -->
+    <string name="nutrition_today">Aujourd\'hui</string>
+    <string name="nutrition_calories_left">encore %1$s kcal</string>
+    <string name="nutrition_calories_on_target">dans l\'objectif</string>
+    <string name="nutrition_calories_over">+%1$s kcal</string>
+    <string name="nutrition_goal_of">sur %1$s</string>
+    <string name="nutrition_goal_dot">· %1$s kcal</string>
+    <string name="nutrition_goal_over">au-dessus de %1$s</string>
+    <string name="nutrition_goal_only">objectif %1$s kcal</string>
+    <string name="nutrition_water_of">eau · sur %1$s</string>
+    <string name="nutrition_water_reached">eau · objectif atteint</string>
+    <string name="nutrition_supplements_taken_label">compléments pris</string>
+    <string name="nutrition_ml_value">%1$s ml</string>
+    <string name="nutrition_supplements">Compléments</string>
+    <string name="nutrition_taken_toggle">Pris aujourd\'hui</string>
+    <string name="nutrition_supplement_options">Rappels et options</string>
+    <string name="nutrition_empty_action">Ajouter un complément</string>
+    <string name="nutrition_entry_help">Aujourd\'hui : %1$s sur %2$s.</string>
+    <string name="nutrition_mode_add">Ajouter</string>
+    <string name="nutrition_mode_total">Total du jour</string>
+    <string name="nutrition_new_total">Nouveau total</string>
+    <string name="nutrition_entry_invalid">Saisis une quantité</string>
+    <string name="nutrition_calorie_goal_title">Objectif de calories</string>
+    <string name="nutrition_water_goal_title">Objectif d\'eau</string>
+    <string name="nutrition_goal_help">À partir d\'aujourd\'hui ; les jours passés gardent le leur.</string>
+    <string name="nutrition_goal_invalid">Saisis un objectif supérieur à 0</string>
+    <string name="nutrition_reminder">Rappel</string>
+    <string name="nutrition_delete_supplement">Supprimer le complément</string>
+    <string name="nutrition_delete_message">Le complément et ses rappels seront retirés.</string>
+    <string name="common_close">Fermer</string>
+    <string name="common_ok">OK</string>
 
     <!-- En-têtes de l'export CSV (§ 8) -->
     <string name="excel_col_date">Date</string>
@@ -433,26 +419,62 @@
     <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) -->
     <string name="settings_auto_backup_title">Sauvegarde automatique</string>
     <string name="settings_auto_backup_desc">Chaque jour, une sauvegarde JSON dans le dossier de ton choix. Les 14 plus récentes sont gardées.</string>
-    <string name="settings_auto_backup_folder">Dossier : %1$s</string>
-    <string name="settings_auto_backup_change">Changer</string>
-    <string name="settings_auto_backup_last">Dernière sauvegarde : %1$s</string>
     <string name="settings_auto_backup_never">Aucune sauvegarde pour l\'instant</string>
     <string name="settings_auto_backup_folder_lost">Le dossier de sauvegarde n\'est plus accessible (supprimé, renommé ou autorisation retirée). Choisis-le à nouveau.</string>
     <string name="settings_auto_backup_choose_folder">Choisir un dossier</string>
     <string name="settings_auto_backup_failed">Échec de la sauvegarde du %1$s : %2$s</string>
     <string name="settings_auto_backup_now">Sauvegarder maintenant</string>
 
+    <!-- Paramètres, refonte « Studio épuré » (SPEC § 15.10.7) -->
+    <string name="settings_section_data">Données</string>
+    <string name="settings_section_about">À propos</string>
+    <string name="settings_language_help">Langue du système : celle du téléphone.</string>
+    <string name="settings_language_system_short">Système</string>
+    <string name="settings_theme_help">Sombre par défaut. Système suit le réglage du téléphone.</string>
+    <string name="settings_notifications_off_title">Notifications désactivées</string>
+    <string name="settings_notifications_off_subtitle">Minuteur et rappels silencieux</string>
+    <string name="settings_on_f">Activée</string>
+    <string name="settings_off_f">Désactivée</string>
+    <string name="settings_on_m">Activé</string>
+    <string name="settings_off_m">Désactivé</string>
+    <string name="settings_auto_backup_off_subtitle">Chaque jour, dans le dossier de ton choix</string>
+    <string name="settings_auto_backup_last_short">Dernière le %1$s</string>
+    <string name="settings_auto_backup_failed_short">Échec le %1$s</string>
+    <string name="settings_auto_backup_folder_lost_short">Dossier inaccessible</string>
+    <string name="settings_auto_backup_toggle">Sauvegarde quotidienne</string>
+    <string name="settings_auto_backup_folder_label">Dossier</string>
+    <string name="settings_auto_backup_last_label">Dernière sauvegarde</string>
+    <string name="settings_auto_backup_none">aucune</string>
+    <string name="settings_auto_backup_running">Sauvegarde…</string>
+    <string name="settings_export_short">Fichier JSON de toutes tes données</string>
+    <string name="settings_export_csv_short">Tableaux pour Excel ou Sheets</string>
+    <string name="settings_import_short">Depuis un fichier exporté</string>
+    <string name="settings_in_progress">En cours…</string>
+    <string name="health_subtitle_off">Séances et poids vers tes apps de santé</string>
+    <string name="health_subtitle_last">Dernier envoi le %1$s</string>
+    <string name="health_subtitle_missing">Autorisation manquante</string>
+    <string name="health_toggle">Envoyer à Health Connect</string>
+    <string name="health_last_label">Dernier envoi</string>
+    <string name="health_written_label">Écrits</string>
+    <string name="health_sending">Envoi…</string>
+    <string name="settings_update_subtitle_managed">Gérées par Obtainium</string>
+    <string name="settings_update_subtitle_never">Pas encore vérifié</string>
+    <string name="settings_update_subtitle_up_to_date">À jour · vérifié le %1$s</string>
+    <string name="settings_update_subtitle_available">La %1$s est disponible</string>
+    <string name="settings_update_subtitle_checking">Vérification…</string>
+    <string name="settings_update_download">Télécharger la %1$s</string>
+    <string name="feedback_row_title">Envoyer un avis</string>
+    <string name="feedback_row_subtitle">Une idée, un bug ?</string>
+    <string name="feedback_sending">Envoi…</string>
+
     <!-- Health Connect (§ 15.3, 🔄 D29) -->
-    <string name="settings_section_health">SANTÉ</string>
     <string name="health_title">Health Connect</string>
     <string name="health_desc">Envoie tes séances de musculation et ton poids à Health Connect, pour les retrouver dans tes autres apps de santé.</string>
     <string name="health_denied">Autorisation refusée : rien n\'est envoyé.</string>
     <string name="health_missing_sessions">Séances non autorisées : elles ne sont pas envoyées.</string>
     <string name="health_missing_weight">Poids non autorisé : il n\'est pas envoyé.</string>
     <string name="health_allow">Autoriser</string>
-    <string name="health_last">Dernier envoi : %1$s</string>
     <string name="health_never">Rien d\'envoyé pour l\'instant</string>
-    <string name="health_written">Écrit dans Health Connect : %1$s, %2$s</string>
     <string name="health_unavailable">Envoi impossible (%1$s).</string>
     <string name="health_type_failed_sessions">Séances : échec (%1$s).</string>
     <string name="health_type_failed_weight">Poids : échec (%1$s).</string>
@@ -472,4 +494,144 @@
     <string name="health_privacy_when">Quand : quand tu termines, modifies ou supprimes une séance, quand tu ajoutes ou supprimes une pesée, et quand tu appuies sur « Envoyer l\'historique ».</string>
     <string name="health_privacy_nothing_else">Rien d\'autre : MuscleNote ne lit aucune donnée de Health Connect et n\'envoie rien sur internet ; tes données restent sur ton téléphone.</string>
     <string name="health_privacy_stop">Arrêter : coupe l\'interrupteur Health Connect dans Paramètres. Les données déjà écrites s\'effacent depuis les réglages de Health Connect.</string>
+    <!-- Design system « Studio épuré » (DESIGN.md) : libellés d'accessibilité des composants -->
+    <string name="ds_close">Fermer</string>
+    <string name="ds_more_options">Plus d\'options</string>
+    <string name="ds_keypad_delete">Effacer</string>
+    <string name="ds_keypad_hide">Fermer le pavé</string>
+    <string name="ds_collapse_session">Réduire la séance</string>
+    <string name="ds_exercise_details">Fiche de l\'exercice</string>
+
+    <!-- Navigation, Accueil et Journal (SPEC § 15.8) -->
+    <string name="tabs_journal">Journal</string>
+    <string name="common_see_all">Tout voir</string>
+    <string name="mini_bar_rest">repos</string>
+    <string name="home_resume">Reprendre</string>
+    <string name="home_live_label">En cours</string>
+    <string name="home_rest_detail">%1$s, série %2$d</string>
+    <string name="home_next_caption">Prochaine séance</string>
+    <string name="home_next_new">Nouvelle séance</string>
+    <string name="home_next_new_detail">Choisis ta séance à l\'étape suivante</string>
+    <string name="home_next_last_today">Dernière fois aujourd\'hui</string>
+    <string name="home_next_last_yesterday">Dernière fois hier</string>
+    <plurals name="home_next_last_days">
+        <item quantity="one">Dernière fois il y a %1$d jour</item>
+        <item quantity="other">Dernière fois il y a %1$d jours</item>
+    </plurals>
+    <string name="home_next_detail">%1$s · %2$s</string>
+    <string name="home_next_other">Autre…</string>
+    <string name="home_start">Démarrer</string>
+    <string name="home_update_row">MuscleNote %1$s</string>
+    <string name="home_update_installed">Version installée : %1$s</string>
+    <string name="home_update_later">Plus tard</string>
+    <string name="home_migrate_section">Depuis l\'ancienne app</string>
+    <string name="home_hide">Masquer</string>
+    <string name="home_last_session">Dernière séance</string>
+    <string name="home_this_week">Cette semaine</string>
+    <string name="home_week_sessions_value">%1$d/%2$d</string>
+    <string name="home_week_sessions_label">séances</string>
+    <string name="home_streak_label">série en cours</string>
+    <string name="home_record_label">record</string>
+    <string name="home_week_bars_caption">8 dernières semaines · 3 séances = semaine validée</string>
+    <string name="home_week_bars_description">8 dernières semaines : %1$s, puis %2$d cette semaine</string>
+    <string name="journal_title">Journal</string>
+    <string name="journal_all_time">Depuis le début</string>
+    <string name="journal_stat_sessions">séances</string>
+    <string name="journal_stat_volume">volume</string>
+    <string name="journal_stat_gym_time">en salle</string>
+    <string name="journal_stat_average">par séance</string>
+    <string name="journal_tonnes">%1$s t</string>
+    <string name="journal_week_current">Cette semaine</string>
+    <string name="journal_week_previous">Semaine dernière</string>
+    <string name="journal_week_of">Semaine du %1$s</string>
+    <string name="journal_unknown_date">Date inconnue</string>
+    <string name="journal_empty_title">Aucune séance</string>
+    <string name="journal_empty_message">Tes séances terminées s\'afficheront ici, semaine par semaine.</string>
+    <string name="journal_empty_start">Démarrer une séance</string>
+    <string name="journal_empty_resume">Reprendre la séance</string>
+    <string name="duration_minutes">%1$d min</string>
+    <string name="duration_hours">%1$d h</string>
+    <string name="duration_hours_minutes">%1$d h %2$02d</string>
+    <string name="session_subtitle">%1$s · %2$s</string>
+    <string name="session_volume_kg">%1$s kg</string>
+    <string name="session_long_press">Options de la séance</string>
+    <string name="session_actions_edit">Modifier la séance</string>
+    <string name="session_actions_delete">Supprimer la séance</string>
+    <string name="session_delete_title">Supprimer la séance ?</string>
+    <string name="session_delete_message">%1$s du %2$s sera retirée de ton historique.</string>
+    <string name="common_kg_value">%1$s kg</string>
+    <plurals name="home_weeks_value">
+        <item quantity="one">%1$d sem.</item>
+        <item quantity="other">%1$d sem.</item>
+    </plurals>
+    <string name="duration_compact">%1$d h %2$02d</string>
+
+    <!-- Fiche exercice et Progrès (SPEC § 15.9) -->
+    <string name="exercise_fiche_subtitle">%1$s · %2$s depuis %3$s</string>
+    <string name="exercise_fiche_last_session">Dernière séance · %1$s</string>
+    <string name="exercise_fiche_sessions">Séances</string>
+    <string name="exercise_fiche_period_empty">Aucune séance sur cette période</string>
+    <string name="exercise_fiche_period_empty_hint">Choisis une période plus longue.</string>
+    <string name="exercise_fiche_stat_record">record personnel</string>
+    <string name="exercise_fiche_stat_longest">séance la plus longue</string>
+    <string name="exercise_fiche_stat_one_rm">1RM estimé</string>
+    <string name="exercise_fiche_best_set">Meilleure série %1$s</string>
+    <string name="exercise_fiche_one_rm">1RM ~%1$s kg</string>
+    <string name="exercise_fiche_cardio_set">%1$s min · %2$s km</string>
+    <string name="exercise_fiche_cardio_set_minutes">%1$s min</string>
+    <string name="exercise_fiche_record">Record</string>
+    <string name="exercise_fiche_empty_title">Aucune séance</string>
+    <string name="exercise_fiche_empty_message">Valide une série de cet exercice pour suivre sa progression.</string>
+    <string name="delta_since">depuis le %1$s</string>
+    <string name="delta_same">identique</string>
+    <string name="period_1m">1M</string>
+    <string name="period_3m">3M</string>
+    <string name="period_6m">6M</string>
+    <string name="period_1y">1A</string>
+    <string name="period_all">Tout</string>
+    <string name="period_1m_description">1 mois</string>
+    <string name="period_3m_description">3 mois</string>
+    <string name="period_6m_description">6 mois</string>
+    <string name="period_1y_description">1 an</string>
+    <string name="period_all_description">Tout l\'historique</string>
+    <string name="curve_metric_load">Charge max par séance</string>
+    <string name="curve_metric_reps">Reps max par séance</string>
+    <string name="curve_metric_duration">Durée par séance</string>
+    <string name="curve_description_range">%1$s, %2$s : de %3$s le %4$s à %5$s le %6$s, %7$s</string>
+    <string name="curve_description_single">%1$s, %2$s : %3$s le %4$s</string>
+    <string name="curve_description_empty">%1$s, %2$s : aucune séance</string>
+    <string name="curve_goal">Objectif</string>
+    <string name="common_min_value">%1$s min</string>
+    <string name="common_reps_value">%1$s reps</string>
+    <string name="common_km_value">%1$s km</string>
+    <string name="common_liters_value">%1$s L</string>
+    <string name="common_kcal_value">%1$s kcal</string>
+    <string name="common_today_lower">aujourd\'hui</string>
+    <string name="common_yesterday_lower">hier</string>
+    <string name="progress_weight_title">Poids de corps</string>
+    <string name="progress_weight_caption">Poids de corps · %1$s</string>
+    <string name="progress_weight_range">%1$s – %2$s kg</string>
+    <string name="progress_weight_none">Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance.</string>
+    <string name="progress_exercises">Exercices</string>
+    <string name="progress_exercise_subtitle">%1$s · record %2$s</string>
+    <string name="progress_group_sessions">séances</string>
+    <string name="progress_group_max_load">charge max</string>
+    <string name="progress_group_max_duration">durée max</string>
+    <string name="progress_group_max_volume">vol. max</string>
+    <string name="progress_group_max_distance">distance max</string>
+    <string name="progress_nutrition">Calories et eau</string>
+    <string name="progress_daily_today">aujourd\'hui</string>
+    <string name="progress_daily_today_liters">aujourd\'hui, L</string>
+    <string name="progress_daily_avg7">moy. 7 jours</string>
+    <string name="progress_daily_goal_days">jours objectif</string>
+    <string name="progress_daily_open_nutrition">Aller à Nutrition</string>
+    <string name="progress_weigh_ins">Pesées</string>
+    <string name="progress_weigh_in_delete">Supprimer la pesée</string>
+    <string name="progress_weigh_in_delete_title">Supprimer la pesée ?</string>
+    <string name="progress_weigh_in_delete_message">La pesée du %1$s (%2$s kg) sera retirée.</string>
+    <string name="weigh_in_help_last">Dernier poids : %1$s kg, le %2$s</string>
+    <string name="weigh_in_help_none">Ton poids, en kg.</string>
+    <string name="weigh_in_today">Aujourd\'hui</string>
+    <string name="weigh_in_yesterday">Hier</string>
+    <string name="weigh_in_add">Ajouter</string>
 </resources>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 412px; height: 915px; box-sizing: border-box; background: {{c.bg}}; color: {{c.fg}}; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; display: flex; flex-direction: column; overflow: hidden">
+
+  <div style="flex-grow: 1; min-height: 0; overflow: hidden; padding: 40px 20px 0; display: flex; flex-direction: column">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; height: 48px">
+      <span style="font-size: 15px; font-weight: 600; color: {{c.fg2}}">Jeudi 12 novembre</span>
+      <button type="button" aria-label="Paramètres" style="width: 48px; height: 48px; margin-right: -12px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">settings</span></button>
+    </div>
+
+    <div style="margin-top: 12px; background: {{c.s1}}; border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.liveTx}}"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{c.live}}"></span>En cours</span>
+        <span style="font-size: 15px; font-weight: 700">Push</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 96px; line-height: 0.85; font-weight: 700; font-stretch: 75%; letter-spacing: -0.01em; color: {{c.liveTx}}">17:48</span>
+        <span style="font-size: 14px; color: {{c.fg2}}">Repos <span style="font-weight: 700; color: {{c.liveTx}}">1:48</span> · développé couché, série 3</span>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <div style="display: grid; grid-template-columns: repeat(16, minmax(0, 1fr)); gap: 3px" aria-hidden="true">
+          <span style="height: 3px; border-radius: 2px; background: {{c.fg}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.fg}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span><span style="height: 3px; border-radius: 2px; background: {{c.s3}}"></span>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 13px; color: {{c.fg2}}"><span>2 / 16 séries</span><span>78,4 kg</span></div>
+      </div>
+      <button type="button" style="height: 56px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 17px Archivo, sans-serif">Reprendre</button>
+    </div>
+
+    <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center; height: 40px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700">Cette semaine</h2>
+        <a href="#journal" style="color: {{c.fg2}}; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center">Journal<span aria-hidden="true" style="font: 400 20px/1 'Material Symbols Rounded'">chevron_right</span></a>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 32px; line-height: 1; font-weight: 700; font-stretch: 75%">2/3</span><span style="font-size: 13px; color: {{c.fg2}}">séances</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 32px; line-height: 1; font-weight: 700; font-stretch: 75%">4 sem.</span><span style="font-size: 13px; color: {{c.fg2}}">série en cours</span></div>
+        <div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 32px; line-height: 1; font-weight: 700; font-stretch: 75%">9 sem.</span><span style="font-size: 13px; color: {{c.fg2}}">record</span></div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px; padding-top: 4px">
+        <div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; align-items: end; height: 28px" aria-label="8 dernières semaines : 3, 3, 2, 3, 4, 3, 3, puis 2 cette semaine">
+          <span style="height: 21px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 21px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 14px; border-radius: 3px; background: {{c.fg3}}"></span><span style="height: 21px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 28px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 21px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 21px; border-radius: 3px; background: {{c.fg}}"></span><span style="height: 14px; border-radius: 3px; background: {{c.fg3}}"></span>
+        </div>
+        <span style="font-size: 12px; color: {{c.fg2}}">8 dernières semaines · 3 séances = semaine validée</span>
+      </div>
+    </div>
+
+    <div style="margin-top: 40px; display: flex; flex-direction: column">
+      <div style="display: flex; justify-content: space-between; align-items: center; height: 40px; margin-bottom: 4px">
+        <h2 style="margin: 0; font-size: 20px; font-weight: 700">Récentes</h2>
+        <a href="#journal" style="color: {{c.fg2}}; font-size: 14px; font-weight: 600; text-decoration: none; display: flex; align-items: center">Tout voir<span aria-hidden="true" style="font: 400 20px/1 'Material Symbols Rounded'">chevron_right</span></a>
+      </div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Pull</span><span style="font-size: 13px; color: {{c.fg2}}">mer. 11 nov. · 1 h 12</span></div><span style="font-size: 16px; font-weight: 600">6 840 kg</span></div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Legs</span><span style="font-size: 13px; color: {{c.fg2}}">lun. 9 nov. · 1 h 31</span></div><span style="font-size: 16px; font-weight: 600">11 420 kg</span></div>
+      <div style="display: flex; align-items: center; gap: 14px; height: 64px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Push</span><span style="font-size: 13px; color: {{c.fg2}}">jeu. 5 nov. · 1 h 18</span></div><span style="font-size: 16px; font-weight: 600">7 960 kg</span></div>
+    </div>
+  </div>
+
+  <nav style="flex-shrink: 0; height: 88px; box-sizing: border-box; padding: 10px 8px 24px; background: {{c.bg}}; border-top: 1px solid {{c.line}}; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr))">
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg}}; font: 700 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'; font-variation-settings: 'FILL' 1">home</span>Accueil</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">calendar_month</span>Journal</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">monitoring</span>Progrès</button>
+    <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; border: none; background: none; padding: 0; color: {{c.fg2}}; font: 500 12px Archivo, sans-serif"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">restaurant</span>Nutrition</button>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Thème"},"$preview":{"width":412,"height":915}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      sombre: { bg: '#0F1012', s1: '#1C1D21', s2: '#2A2C31', s3: '#36383E', line: '#222428', fg: '#F3F3F1', fg2: '#A2A5AB', fg3: '#6F737A', live: '#FFC93D', liveTx: '#FFC93D', onLive: '#17140A', liveDim: '#332C14', up: '#3DD68C', upDim: '#12301F', down: '#FF6B5E', downDim: '#3A1714', inv: '#F3F3F1', onInv: '#0F1012', scrim: 'rgba(0,0,0,0.6)' },
+      clair: { bg: '#FFFFFF', s1: '#F2F2F0', s2: '#E7E7E4', s3: '#D9D9D5', line: '#EBEBE8', fg: '#121315', fg2: '#5C5F65', fg3: '#85888E', live: '#FFC93D', liveTx: '#7A5900', onLive: '#17140A', liveDim: '#FFF0C2', up: '#0B7A43', upDim: '#E3F5EA', down: '#C62D22', downDim: '#FCE6E3', inv: '#121315', onInv: '#FFFFFF', scrim: 'rgba(18,19,21,0.4)' }
+    };
+    return { c: this.props.theme === 'clair' ? P.clair : P.sombre };
+  }
+}
+</script>
+</body>
+</html>

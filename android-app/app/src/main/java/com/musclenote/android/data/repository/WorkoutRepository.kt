@@ -188,6 +188,24 @@ class WorkoutRepository(
     suspend fun updateSet(exerciseId: String, setId: String, transform: (WorkoutSet) -> WorkoutSet) =
         updateCurrent { it.mapSet(exerciseId, setId, transform) }
 
+    /** Toutes les séries d'un exercice d'un coup (suggestion de charge, § 15.7.3). */
+    suspend fun updateExerciseSets(exerciseId: String, transform: (List<WorkoutSet>) -> List<WorkoutSet>) =
+        updateCurrent { w -> w.mapExercise(exerciseId) { e -> e.copy(sets = transform(e.sets)) } }
+
+    /**
+     * « Valider la série » du pavé (§ 15.7.4) : valide la série sans jamais la dévalider ; `true`
+     * seulement si elle vient de passer à validée (le repos démarre alors).
+     */
+    suspend fun completeSet(exerciseId: String, setId: String): Boolean {
+        return mutex.withLock {
+            val current = _currentWorkout.value ?: return false
+            val set = current.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.firstOrNull { it.id == setId }
+            if (set == null || set.completed) return false
+            commitCurrent(current.mapSet(exerciseId, setId) { it.copy(completed = true) })
+            true
+        }
+    }
+
     suspend fun removeSet(exerciseId: String, setId: String) =
         updateCurrent { w -> w.mapExercise(exerciseId) { e -> e.copy(sets = e.sets.filterNot { it.id == setId }) } }
 

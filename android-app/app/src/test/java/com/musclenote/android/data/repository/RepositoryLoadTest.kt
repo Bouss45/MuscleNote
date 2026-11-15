@@ -3,6 +3,8 @@ package com.musclenote.android.data.repository
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.backup.BackupFixtures
 import com.musclenote.android.data.backup.BackupReadResult
+import com.musclenote.android.data.model.Preferences
+import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -115,6 +117,18 @@ class RepositoryLoadTest {
         File(dataDir, "supplements_taken.json").writeText("""{"s1":"2026-03-14","s2":"2026-03-14","s3":"2026-03-13"}""")
         val c = container().also { it.awaitReady() }
         assertEquals(mapOf("s1" to "2026-03-14"), c.nutrition.taken.value)
+    }
+
+    @Test
+    fun `sans préférences enregistrées le thème est sombre, un choix enregistré est gardé`() = runBlocking<Unit> {
+        // 🔄 D35 : sombre par défaut (§ 15.10.4).
+        assertEquals(ThemeMode.Dark, container().also { it.awaitReady() }.preferences.preferences.value.theme)
+
+        // « Système » déjà enregistré (ancien défaut ou choix) : rien ne le réécrit.
+        dataDir.mkdirs()
+        File(dataDir, "preferences.json").writeText("""{"restSeconds":120,"theme":"system"}""")
+        val c = container().also { it.awaitReady() }
+        assertEquals(Preferences(120, ThemeMode.System), c.preferences.preferences.value)
     }
 
     @Test

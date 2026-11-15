@@ -129,7 +129,9 @@ data class Preferences(
 ) {
     companion object {
         const val DEFAULT_REST_SECONDS = 180
-        val DEFAULT = Preferences(restSeconds = DEFAULT_REST_SECONDS, theme = ThemeMode.System)
+        /** Thème sombre par défaut (🔄 D35, § 15.10.4) ; un choix enregistré est toujours gardé. */
+        val DEFAULT_THEME = ThemeMode.Dark
+        val DEFAULT = Preferences(restSeconds = DEFAULT_REST_SECONDS, theme = DEFAULT_THEME)
     }
 }
 

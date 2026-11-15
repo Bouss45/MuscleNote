@@ -199,7 +199,9 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         theme = when (p["theme"].stringOrNull()) {
             "light" -> ThemeMode.Light
             "dark" -> ThemeMode.Dark
-            else -> ThemeMode.System
+            "system" -> ThemeMode.System
+            // Absent ou invalide : le thème par défaut, sombre (🔄 D35).
+            else -> Preferences.DEFAULT_THEME
         },
     )
 

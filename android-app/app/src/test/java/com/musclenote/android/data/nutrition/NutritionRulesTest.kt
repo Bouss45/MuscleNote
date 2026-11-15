@@ -87,6 +87,35 @@ class NutritionRulesTest {
         assertEquals(CalorieTone.Below, NutritionRules.calorieTone(500, 0))
     }
 
+    @Test
+    fun `l'état des calories dit ce qui reste, l'objectif tenu ou le dépassement`() {
+        assertEquals(CalorieStatus(CalorieTone.Below, remaining = 950, excess = 0, progress = 1850f / 2800), NutritionRules.calorieStatus(1850, 2800))
+        assertEquals(CalorieStatus(CalorieTone.Below, remaining = 2800, excess = 0, progress = 0f), NutritionRules.calorieStatus(0, 2800))
+        // Dans l'objectif : ni reste ni dépassement affichés, même sous 100 %.
+        assertEquals(CalorieStatus(CalorieTone.OnTarget, remaining = 0, excess = 0, progress = 0.95f), NutritionRules.calorieStatus(1900, 2000))
+        assertEquals(CalorieStatus(CalorieTone.OnTarget, remaining = 0, excess = 0, progress = 1f), NutritionRules.calorieStatus(2100, 2000))
+        // Au-delà de 105 % : dépassement, piste plafonnée à 100 %.
+        assertEquals(CalorieStatus(CalorieTone.Over, remaining = 0, excess = 320, progress = 1f), NutritionRules.calorieStatus(3120, 2800))
+        assertEquals(CalorieStatus(CalorieTone.Below, remaining = 0, excess = 0, progress = 0f), NutritionRules.calorieStatus(500, 0))
+    }
+
+    @Test
+    fun `le total d'eau du jour se définit, borné à 0, sans toucher aux autres jours`() {
+        var tracker = DailyTracker.DEFAULT.copy(waterLog = mapOf(yesterday to 1500, today to 750))
+        tracker = NutritionRules.setWater(tracker, today, 1250)
+        assertEquals(mapOf(yesterday to 1500, today to 1250), tracker.waterLog)
+        assertEquals(0, NutritionRules.setWater(tracker, today, -10).waterLog[today])
+        // Total 0 = l'ancienne remise à zéro : le jour reste, à 0.
+        assertEquals(mapOf(yesterday to 1500, today to 0), NutritionRules.setWater(tracker, today, 0).waterLog)
+    }
+
+    @Test
+    fun `l'objectif d'eau est atteint à partir de l'objectif`() {
+        assertFalse(NutritionRules.waterReached(1999, 2000))
+        assertTrue(NutritionRules.waterReached(2000, 2000))
+        assertTrue(NutritionRules.waterReached(3000, 2000))
+    }
+
     // ─── « Pris aujourd'hui » ───────────────────────────────────────────────────────────
 
     @Test
@@ -99,6 +128,18 @@ class NutritionRulesTest {
         taken = NutritionRules.toggleTaken(taken, "whey", today)
         assertEquals(emptyMap<String, String>(), taken)
         assertEquals(mapOf("crea" to today), NutritionRules.toggleTaken(emptyMap(), "crea", today))
+    }
+
+    @Test
+    fun `les compléments pris se comptent pour aujourd'hui, compléments existants seulement`() {
+        val supplements = listOf(
+            Supplement("whey", "Whey", "", "dose", false, emptyList()),
+            Supplement("crea", "Créatine", "5", "g", false, emptyList()),
+            Supplement("omega", "Oméga-3", "2", "caps", false, emptyList()),
+        )
+        val taken = mapOf("whey" to today, "crea" to yesterday, "supprime" to today)
+        assertEquals(1, NutritionRules.takenCount(supplements, taken, today))
+        assertEquals(0, NutritionRules.takenCount(emptyList(), taken, today))
     }
 
     @Test
@@ -124,6 +165,16 @@ class NutritionRulesTest {
         val silent = NutritionRules.newSupplement("Whey", "", "dose", false, listOf(8 to 0), ids())
         assertEquals(emptyList<Reminder>(), silent.reminders)
         assertFalse(silent.reminderEnabled)
+    }
+
+    @Test
+    fun `le résumé des rappels dit désactivés, activés, l'heure du seul rappel ou leur nombre`() {
+        val base = Supplement("s", "Créatine", "5", "g", true, emptyList())
+        val two = listOf(Reminder("r1", 8, 0), Reminder("r2", 20, 30))
+        assertEquals(ReminderSummary.Off, NutritionRules.reminderSummary(base.copy(reminderEnabled = false, reminders = two)))
+        assertEquals(ReminderSummary.On, NutritionRules.reminderSummary(base))
+        assertEquals(ReminderSummary.At(8, 0), NutritionRules.reminderSummary(base.copy(reminders = two.take(1))))
+        assertEquals(ReminderSummary.Count(2), NutritionRules.reminderSummary(base.copy(reminders = two)))
     }
 
     @Test

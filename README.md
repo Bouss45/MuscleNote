@@ -4,6 +4,18 @@ Carnet de musculation pour Android, **hors ligne** : séances, progression, nutr
 
 Application native (Kotlin, Jetpack Compose), en français et en anglais. Elle n'est pas publiée sur le Play Store : chaque version est une [Release GitHub](https://github.com/Bouss45/MuscleNote/releases) avec son APK signé.
 
+## Aperçu
+
+Design « Studio épuré » ([DESIGN.md](DESIGN.md)) : thème sombre par défaut, clair au choix.
+
+| Accueil | Séance en cours | Saisie au pavé | Fiche exercice |
+|---|---|---|---|
+| <img src="docs/captures/accueil.png" width="200" alt="Accueil : séance en cours, dernière séance et semaine"> | <img src="docs/captures/seance.png" width="200" alt="Séance en cours : séries validées et repos"> | <img src="docs/captures/pave.png" width="200" alt="Pavé numérique pour saisir la charge"> | <img src="docs/captures/fiche-exercice.png" width="200" alt="Fiche d'un exercice : courbe et séances"> |
+
+| Journal | Progrès | Nutrition | Thème clair |
+|---|---|---|---|
+| <img src="docs/captures/journal.png" width="200" alt="Journal des séances par semaine"> | <img src="docs/captures/progres.png" width="200" alt="Progrès : poids de corps et exercices"> | <img src="docs/captures/nutrition.png" width="200" alt="Nutrition : calories, eau et compléments du jour"> | <img src="docs/captures/accueil-clair.png" width="200" alt="Accueil en thème clair"> |
+
 ## Installation avec Obtainium
 
 [Obtainium](https://github.com/ImranR98/Obtainium) installe les apps directement depuis leurs Releases GitHub et prévient des mises à jour.
@@ -17,7 +29,7 @@ Sans Obtainium : télécharger l'APK depuis la page [Releases](https://github.co
 
 Toutes les versions sont signées avec la même clé : une mise à jour s'installe par-dessus la précédente et garde les données. Les versions de test de la transition (pré-releases `v0.1.*`) sont la même app (`com.musclenote.android`) : les Releases `v1.0.*` s'installent par-dessus.
 
-Permissions : notifications (minuteur de repos, rappels de compléments), alarmes exactes, redémarrage (reprogrammer les rappels et la sauvegarde automatique), vibration, Internet (vérification des mises à jour, qui ne lit que la dernière Release GitHub et n'envoie aucune donnée ; envoi d'un avis, uniquement sur appui de « Envoyer »), maintien de l'appareil éveillé pendant la sauvegarde automatique (WorkManager), écriture des séances et du poids dans Health Connect (accordée dans Health Connect, seulement si on active l'option). Aucune permission de stockage, de localisation ni de caméra, aucune lecture dans Health Connect.
+Permissions : notifications (séance en cours, fin du repos, rappels de compléments ; mise en avant de la notification de séance sur Android 16), alarmes exactes, redémarrage (reprogrammer les rappels et la sauvegarde automatique), vibration, Internet (vérification des mises à jour, qui ne lit que la dernière Release GitHub et n'envoie aucune donnée ; envoi d'un avis, uniquement sur appui de « Envoyer »), maintien de l'appareil éveillé pendant la sauvegarde automatique (WorkManager), écriture des séances et du poids dans Health Connect (accordée dans Health Connect, seulement si on active l'option). Aucune permission de stockage, de localisation ni de caméra, aucune lecture dans Health Connect.
 
 ### Venir de l'ancienne app (Expo)
 
@@ -32,43 +44,49 @@ Une fois les données vérifiées, l'ancienne app peut être désinstallée.
 ## Fonctionnalités
 
 ### Séances
-- Préréglages (Push, Pull, Legs, Pecs, Dos…) ou nom libre ; la séance est **pré-remplie** avec les exercices et séries de la dernière séance du même type.
+- Préréglages (Push, Pull, Legs, Pecs, Dos…) ou nom libre, puis le poids de corps au pavé ; la séance est **pré-remplie** avec les exercices et séries de la dernière séance du même type.
 - 42 exercices intégrés en 9 groupes musculaires, plus des **exercices personnalisés** (archivés plutôt que supprimés s'ils servent encore à l'historique).
 - Recherche insensible aux accents, filtre par groupe, **glisser-déposer** des exercices, note par exercice, échauffement guidé.
+- Charges et répétitions au **pavé numérique** (pas de ±2,5 kg), colonne « Préc. » avec la série de la dernière fois et **suggestion de charge**.
 - Exercices **cardio** : durée, distance, vitesse, inclinaison.
 - Validation des séries ; seules les séries validées comptent dans les statistiques.
-- **Minuteur de repos** : notification avec compte à rebours sur l'écran verrouillé, alarme exacte en fin de repos.
-- Après coup : modification complète d'une séance (renommage, séries, poids de corps), de sa date, ou suppression.
+- **Minuteur de repos** (−30 s, +30 s, passer) et notification « Séance en cours » : chrono, prochaine série et actions « Valider la série », ±30 s, « Passer », même écran verrouillé ; alarme exacte en fin de repos.
+- Après coup : modification complète d'une séance (type, séries, poids de corps), de sa date, ou suppression.
 
 ### Accueil
-- **Série hebdomadaire** : une semaine est validée à partir de 3 séances ; une semaine manquée est tolérée. Meilleure série et calendrier des 8 dernières semaines.
-- Séances, volume total, dernier poids, **temps passé à la salle**.
+- La séance en cours (chrono, repos, séries faites), ou la **prochaine séance** suggérée d'après les types habituels, à démarrer d'un geste.
+- Dernière séance et semaine en cours : séances, **série hebdomadaire** (validée à partir de 3 séances, une semaine manquée tolérée), record, 8 dernières semaines.
+
+### Journal
+- Totaux depuis le début : séances, volume, **temps passé à la salle**, durée moyenne.
+- Toutes les séances, groupées par semaine ; toucher pour modifier, appui long pour changer la date ou supprimer.
 
 ### Progrès
-- Poids de corps (séances + pesées manuelles), calories et eau avec objectifs datés.
-- Par groupe musculaire : charge et volume max, exercices les plus utilisés avec tendance.
-- Historique par exercice avec records et **1RM estimé** (Epley).
+- Poids de corps (séances + pesées manuelles) en courbe, pesée au pavé.
+- Exercices par groupe musculaire : charge et volume max, mini-courbe et progression de chaque exercice.
+- **Fiche exercice** : courbe à toucher sur 1 mois à tout l'historique, record personnel, **1RM estimé** (Epley), toutes les séances.
+- Calories et eau avec objectifs datés.
 
 ### Nutrition
-- Calories et eau du jour, objectifs.
+- **Aujourd'hui** : calories et eau du jour au pavé, face à l'objectif, compléments pris.
 - Compléments avec **rappels quotidiens** à l'heure choisie (alarmes exactes, reprogrammées après un redémarrage ou un changement d'heure).
 
 ### Paramètres
-- Langue (système, français, anglais), thème (système, clair, sombre), durée du repos.
+- Langue (système, français, anglais), thème (sombre par défaut, clair, système), durée du repos.
 - **Sauvegarde / restauration JSON** (importe aussi les sauvegardes de l'ancienne app).
 - **Sauvegarde automatique** : chaque jour, une sauvegarde JSON dans un dossier choisi (par exemple synchronisé par Syncthing ou Nextcloud) ; les 14 plus récentes sont gardées, « Sauvegarder maintenant » à tout moment.
 - **Health Connect** (si disponible sur le téléphone) : les séances (musculation, début, fin, nom) et le poids (séances et pesées) sont envoyés à Health Connect, mises à jour et suppressions comprises ; « Envoyer l'historique » pour le passé.
 - **Export CSV** (séances, séries, pesées, nutrition), lisible dans Excel ou Google Sheets.
 - Mises à jour (sans Obtainium) : version installée, vérification, téléchargement de la nouvelle version.
 - Rapport de plantage local, à partager ou supprimer.
-- **Ton avis** : une idée, un bug ou une remarque envoyés au développeur (serveur Discord), avec la version de l'app et d'Android, le modèle du téléphone et la langue, affichés sous le formulaire ; aucune donnée d'entraînement.
+- **Envoyer un avis** : une idée, un bug ou une remarque envoyés au développeur (serveur Discord), avec la version de l'app et d'Android, le modèle du téléphone et la langue, affichés sous le formulaire ; aucune donnée d'entraînement.
 
 ## Stack technique
 
-- Kotlin, Jetpack Compose, Material 3, Navigation Compose
+- Kotlin, Jetpack Compose, Navigation Compose ; design system maison « Studio épuré » ([DESIGN.md](DESIGN.md)) au-dessus de Material 3
 - Coroutines + `StateFlow`, kotlinx.serialization (un fichier JSON par document, écritures atomiques)
 - `AlarmManager` (alarmes exactes) pour le minuteur et les rappels
-- AppCompat pour la langue par application, Inter via les polices téléchargeables Google
+- AppCompat pour la langue par application ; police Archivo embarquée, icônes Material Symbols Rounded
 - `sh.calvin.reorderable` pour le glisser-déposer, graphiques dessinés au `Canvas`
 - WorkManager pour la sauvegarde automatique, `androidx.health.connect` pour Health Connect
 - minSdk 26 (Android 8.0), compileSdk / targetSdk 37
@@ -78,7 +96,10 @@ Une fois les données vérifiées, l'ancienne app peut être désinstallée.
 ```
 .
 ├── SPEC.md                         # spécification de référence (comportement, données, décisions)
+├── DESIGN.md                       # référence de l'interface (jetons, composants, gabarits)
 ├── CLAUDE.md                       # notes d'architecture pour le développement
+├── design/claude-design/           # maquettes d'origine du design (export Claude Design)
+├── docs/captures/                  # captures d'écran du README
 ├── .github/workflows/
 │   ├── release.yml                 # tests, APK signé, notes de version, Release GitHub
 │   └── checks.yml                  # tests et build de chaque pull request
@@ -90,8 +111,9 @@ Une fois les données vérifiées, l'ancienne app peut être désinstallée.
         │   ├── backup/         # sauvegarde automatique (dossier choisi, WorkManager)
         │   ├── health/         # Health Connect (écriture, politique de confidentialité)
         │   ├── notifications/  # canaux, minuteur de repos, rappels de compléments
-        │   └── ui/             # écrans Compose, composants, thème
-        ├── main/res/           # textes FR (values) et EN (values-en), icônes
+        │   └── ui/             # écrans Compose ; ui/designsystem/ : thème, composants, gabarits
+        ├── main/res/           # textes FR (values) et EN (values-en), icônes, police
+        ├── debug/              # aperçus Compose (@Preview), hors de l'APK publié
         └── test/               # tests JVM des règles métier
 ```
 
@@ -106,7 +128,7 @@ Prérequis : JDK 21 et le SDK Android (ou un simple push : la CI construit tout)
 
 ## Releases
 
-`.github/workflows/release.yml` tourne à chaque push sur `main` qui touche `android-app/` : tests JVM, build de l'APK release signé, vérification de la signature, puis **Release GitHub** `v1.0.<n>` (`versionName` 1.0.<n>, `versionCode` 1000 + n). Son texte liste les titres des commits depuis la Release précédente, sans les fusions ni les commits qui ne touchent que la documentation ou la CI : un titre de commit décrit donc le changement pour l'utilisateur, en français. Chaque pull request vers `main` passe d'abord par `checks.yml` (tests JVM et APK release non signé) ; seule la fusion publie une Release. Les secrets du dépôt fournissent la clé de signature (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) et l'URL du webhook Discord des avis (`DISCORD_WEBHOOK_URL` ; sans elle, la section « Ton avis » est masquée). Cette URL n'est pas dans le dépôt, mais elle est lisible dans l'APK publié : le webhook doit poster dans un salon privé, et se régénère en cas d'abus.
+`.github/workflows/release.yml` tourne à chaque push sur `main` qui touche `android-app/` : tests JVM, build de l'APK release signé, vérification de la signature, puis **Release GitHub** `v1.0.<n>` (`versionName` 1.0.<n>, `versionCode` 1000 + n). Son texte liste les titres des commits depuis la Release précédente, sans les fusions ni les commits qui ne touchent que la documentation, la CI ou les tests : un titre de commit décrit donc le changement pour l'utilisateur, en français. Chaque pull request vers `main` passe d'abord par `checks.yml` (tests JVM et APK release non signé) ; seule la fusion publie une Release. Les secrets du dépôt fournissent la clé de signature (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) et l'URL du webhook Discord des avis (`DISCORD_WEBHOOK_URL` ; sans elle, la ligne « Envoyer un avis » est masquée). Cette URL n'est pas dans le dépôt, mais elle est lisible dans l'APK publié : le webhook doit poster dans un salon privé, et se régénère en cas d'abus.
 
 ## Données
 

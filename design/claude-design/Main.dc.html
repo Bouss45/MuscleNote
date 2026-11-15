@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Organisation des onglets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400..700&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#18181A}a:hover{color:#000}
+.ms{font-family:'Material Symbols Rounded';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24}
+.ms.f{font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24}
+</style>
+</helmet>
+<div style="width: 1680px; height: 900px; box-sizing: border-box; padding: 64px 72px; background: #FAFAF8; color: #18181A; font-family: Inter, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 40px">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 48px">
+    <div style="display: flex; flex-direction: column; gap: 12px; max-width: 760px">
+      <div style="font-size: 14px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #5E5E63">MuscleNote · refonte · tour 1</div>
+      <h1 style="margin: 0; font-size: 48px; line-height: 1.05; font-weight: 700; letter-spacing: -0.02em">Organisation des onglets</h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.45; color: #3D3D42; text-wrap: pretty">Quatre onglets. Paramètres sort de la barre pour laisser la place au Journal. Chaque nouveauté prévue trouve sa place sans ajouter d'onglet.</p>
+    </div>
+
+    <div style="width: 412px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0">
+      <div style="display: flex; align-items: center; gap: 12px; background: #18181A; color: #FAFAF8; border-radius: 18px; padding: 10px 12px 10px 16px">
+        <span class="ms" aria-hidden="true" style="font-size: 20px">timer</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px">
+          <span style="font-size: 14px; font-weight: 600">Push · 17:48</span>
+          <span style="font-size: 12px; color: #C9C9CC">Repos 1:48 · Développé couché</span>
+        </div>
+        <button type="button" style="height: 40px; padding: 0 16px; border: none; border-radius: 20px; background: #FAFAF8; color: #18181A; font: 600 14px Inter, sans-serif">Reprendre</button>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: #F0EFEB; border-radius: 20px; padding: 10px 4px 12px">
+        <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 0; color: #18181A; font: 600 12px Inter, sans-serif">
+          <span style="display: flex; align-items: center; justify-content: center; width: 56px; height: 32px; border-radius: 16px; background: #DCDAD3"><span class="ms f" aria-hidden="true">home</span></span>Accueil</button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 0; color: #4A4A4F; font: 500 12px Inter, sans-serif">
+          <span style="display: flex; align-items: center; justify-content: center; width: 56px; height: 32px"><span class="ms" aria-hidden="true">calendar_month</span></span>Journal</button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 0; color: #4A4A4F; font: 500 12px Inter, sans-serif">
+          <span style="display: flex; align-items: center; justify-content: center; width: 56px; height: 32px"><span class="ms" aria-hidden="true">monitoring</span></span>Progrès</button>
+        <button type="button" style="display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: none; padding: 0; color: #4A4A4F; font: 500 12px Inter, sans-serif">
+          <span style="display: flex; align-items: center; justify-content: center; width: 56px; height: 32px"><span class="ms" aria-hidden="true">restaurant</span></span>Nutrition</button>
+      </div>
+      <div style="font-size: 13px; color: #5E5E63; text-align: center">Séance réduite : mini-barre au-dessus des onglets</div>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 24px">
+
+    <div style="background: #F0EFEB; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 12px"><span class="ms f" aria-hidden="true" style="font-size: 28px">home</span><h2 style="margin: 0; font-size: 26px; font-weight: 700">Accueil</h2></div>
+      <div style="font-size: 15px; color: #5E5E63">Ce que je fais maintenant</div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.35">
+        <li>Démarrer ou reprendre la séance, type suggéré</li>
+        <li>Semaine en cours et série sur 8 semaines</li>
+        <li>Trois dernières séances</li>
+        <li>Paramètres : icône en haut à droite</li>
+      </ul>
+    </div>
+
+    <div style="background: #F0EFEB; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 12px"><span class="ms" aria-hidden="true" style="font-size: 28px">calendar_month</span><h2 style="margin: 0; font-size: 26px; font-weight: 700">Journal</h2></div>
+      <div style="font-size: 15px; color: #5E5E63">Ce que j'ai fait</div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.35">
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap">Calendrier mensuel <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+        <li>Toutes les séances, filtrées par type</li>
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap">Résumé de fin de séance : durée, volume, comparaison, records <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+      </ul>
+    </div>
+
+    <div style="background: #F0EFEB; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 12px"><span class="ms" aria-hidden="true" style="font-size: 28px">monitoring</span><h2 style="margin: 0; font-size: 26px; font-weight: 700">Progrès</h2></div>
+      <div style="display: flex; gap: 6px">
+        <span style="font-size: 13px; font-weight: 600; background: #18181A; color: #FAFAF8; border-radius: 14px; padding: 6px 12px">Exercices</span>
+        <span style="font-size: 13px; font-weight: 600; background: #DCDAD3; border-radius: 14px; padding: 6px 12px">Records</span>
+        <span style="font-size: 13px; font-weight: 600; background: #DCDAD3; border-radius: 14px; padding: 6px 12px">Corps</span>
+      </div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.35">
+        <li><strong style="font-weight: 600">Exercices</strong> : groupes musculaires, top, historique et 1RM estimé</li>
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap"><span><strong style="font-weight: 600">Records</strong> : tous les records</span> <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap"><span><strong style="font-weight: 600">Corps</strong> : poids, mensurations, photos</span> <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+      </ul>
+    </div>
+
+    <div style="background: #F0EFEB; border-radius: 24px; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+      <div style="display: flex; align-items: center; gap: 12px"><span class="ms" aria-hidden="true" style="font-size: 28px">restaurant</span><h2 style="margin: 0; font-size: 26px; font-weight: 700">Nutrition</h2></div>
+      <div style="font-size: 15px; color: #5E5E63">Ce que je mange</div>
+      <ul style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; font-size: 16px; line-height: 1.35">
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap"><span><strong style="font-weight: 600">Aujourd'hui</strong> : calories, eau, protéines</span> <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+        <li style="display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap"><span><strong style="font-weight: 600">Compléments</strong> : rappels et stock</span> <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; background: #18181A; color: #FAFAF8; border-radius: 6px; padding: 3px 6px">Nouveau</span></li>
+        <li><strong style="font-weight: 600">Tendances</strong> : courbes calories et eau, déplacées depuis Progrès</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px">
+    <div style="border-radius: 24px; padding: 24px 28px; background: #18181A; color: #FAFAF8; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">timer</span><h3 style="margin: 0; font-size: 20px; font-weight: 700">Séance en cours — hors barre</h3></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #D6D6D9">Plein écran, sans onglets. « Dernière fois » et suggestion de charge sur chaque exercice. Réduite, elle devient la mini-barre ci-dessus. En sortie : le résumé, puis il reste dans le Journal.</p>
+    </div>
+    <div style="border-radius: 24px; padding: 24px 28px; background: #F0EFEB; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">settings</span><h3 style="margin: 0; font-size: 20px; font-weight: 700">Paramètres — depuis l'Accueil</h3></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3D3D42">Langue, thème, durée de repos. Données : sauvegarde auto, import et export. Health Connect (alimente Corps › poids). Envoyer un avis.</p>
+    </div>
+    <div style="border-radius: 24px; padding: 24px 28px; background: #F0EFEB; display: flex; flex-direction: column; gap: 10px">
+      <div style="display: flex; align-items: center; gap: 10px"><span class="ms" aria-hidden="true">lightbulb</span><h3 style="margin: 0; font-size: 20px; font-weight: 700">Pourquoi</h3></div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #3D3D42">Paramètres sert quelques fois par an : sa place va au Journal, qui absorbe calendrier et résumés. Progrès garde ce qui se mesure dans le temps, en trois sous-onglets plutôt qu'une longue rangée de filtres.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1680,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

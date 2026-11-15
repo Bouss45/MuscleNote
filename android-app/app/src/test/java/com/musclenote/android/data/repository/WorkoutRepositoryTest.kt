@@ -302,6 +302,34 @@ class WorkoutRepositoryTest {
     }
 
     @Test
+    fun `valider une série depuis le pavé ne la dévalide jamais`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.startWithOneSet(completed = false)
+            val id = repo.sets(LIFT).single().id
+            assertTrue(repo.completeSet(LIFT, id))
+            assertTrue(repo.sets(LIFT).single().completed)
+            // Déjà validée : rien ne change, pas de nouveau repos.
+            assertFalse(repo.completeSet(LIFT, id))
+            assertTrue(repo.sets(LIFT).single().completed)
+            assertFalse(repo.completeSet(LIFT, "inconnue"))
+        }
+        coroutineScope { assertTrue(repository().sets(LIFT).single().completed) }
+    }
+
+    @Test
+    fun `les séries d'un exercice changent d'un coup (suggestion de charge)`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.startWithOneSet(completed = false)
+            repo.addSet(LIFT)
+            repo.updateExerciseSets(LIFT) { sets -> sets.map { it.copy(weight = it.weight + 2.5) } }
+            assertEquals(listOf(22.5, 22.5), repo.sets(LIFT).map { it.weight })
+        }
+        coroutineScope { assertEquals(listOf(22.5, 22.5), repository().sets(LIFT).map { it.weight }) }
+    }
+
+    @Test
     fun `sans séance en cours il n'y a rien à valider`() = runBlocking<Unit> {
         coroutineScope {
             val repo = repository()
