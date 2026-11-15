@@ -226,7 +226,8 @@ Jeu de la maquette : `home`, `calendar_month`, `monitoring`, `restaurant` (+ ple
 `check`, `backspace`, `keyboard_hide`, `history`, `arrow_upward`, `arrow_downward`,
 `emoji_events`, `edit_note`, `straighten`, `photo_camera` ; ajoutées avec la séance en cours :
 `delete` (supprimer la série, en-tête du pavé), `fitness_center` (état vide de la séance) ; avec
-Nutrition : `pill` (état vide des compléments).
+Nutrition : `pill` (état vide des compléments) ; avec le rappel de pesée (SPEC § 15.13) :
+`notifications` (bouton de la surface « Poids de corps » de Progrès).
 
 ## 9. Composants
 
@@ -292,6 +293,10 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 | record | `upDim` | `up` | `emoji_events` | 700 |
 | filtre sélectionné | `inverse` | `onInverse` | — | 700 |
 | filtre non sélectionné | `surfaceControl` | `textPrimary` | — | 400 |
+
+Choix unique par défaut (lue comme bouton radio) ; **choix multiple** (`multiSelect`, jours du rappel
+de pesée, SPEC § 15.13.3) : même dessin, chaque puce se coche ou se décoche et se lit comme une case à
+cocher, avec une `description` TalkBack en toutes lettres (« lundi » pour « lun. »).
 
 Espace icône–texte : 6 (4 pour les flèches). Les puces de filtre et de saisie rapide sont
 cliquables (cible 48 : Compose agrandit la zone de toucher d'une puce de 32 jusqu'à 48, ou jusqu'à
@@ -372,7 +377,9 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
   l'objectif » `up`, « +320 kcal » `down`) suivi de son contexte ; piste de progression
   (`ProgressTrack`) ; rangée de stats (eau, compléments pris) ; deux boutons secondaires moyens de
   largeurs égales, icône `add` (« Calories », « Eau »).
-- **Mesure** (`MetricSurface`, hub Progrès) : légende + bouton icône `add` ; chiffre héros + unité ;
+- **Mesure** (`MetricSurface`, hub Progrès) : légende + bouton icône `add`, précédé au besoin d'un
+  second bouton icône (`secondaryAction`, `SurfaceAction` : `notifications` « Rappel de pesée »,
+  SPEC § 15.13.3) ; chiffre héros + unité ;
   variation ; courbe compacte ; légende optionnelle sous la courbe, à gauche et à droite (`caption`
   `textSecondary` : « 42 jours » · « 68 – 78,4 kg »). Sans valeur : une phrase (`paragraph`
   `textSecondary`) à la place du chiffre et de la courbe.
@@ -594,9 +601,9 @@ n'a pas encore, cf. § 13) :
 |---|---|
 | Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → résumé (fiche, SPEC § 15.12), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
 | Journal | **Depuis le début** : totaux · **une section par semaine** : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub |
-| Progrès | **Poids de corps** (surface) : pesée → formulaire · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
+| Progrès | **Poids de corps** (surface) : pesée → formulaire, rappel de pesée → formulaire (SPEC § 15.13.3) · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
-| Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
+| Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Rappels** : rappel de pesée, un complément → formulaire (SPEC § 15.13.3) · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
 
 Correspondance avec les écrans d'avant la refonte (SPEC § 2) — **toute migrée** (étape 5b, SPEC
 § 15.11) :
@@ -741,6 +748,17 @@ Décidé (15/11/2026, SPEC § 15.12) :
   séance, **aucun bouton en haut** (une barre vide de 48) et « Terminer » seul en `BottomActionBar`
   (la maquette avait ✕, note et « Enregistrer la séance ») ; en consultation depuis le Journal, ←
   et ⋮ (actions de la séance), sans barre d'action.
+
+Décidé (15/11/2026, SPEC § 15.13) :
+
+- **Pesée facultative et rappel de pesée** : aucun composant nouveau. Au démarrage d'une séance,
+  l'étape « Poids de corps » garde son formulaire (champ vide, la dernière pesée en aide) et gagne
+  un bouton texte « Passer » sous la ligne du type ; déjà pesé aujourd'hui, elle n'a plus de champ ni
+  de pavé (aide, ligne du type, « ✓ Commencer »). Paramètres gagne une section « Rappels » (rappel de
+  pesée, puis une ligne par complément vers sa sheet de Nutrition) ; la sheet du rappel est un
+  réglage composé : ligne à cocher, ligne d'information « Heure » (`TimePicker`), « Jours » en puces
+  de filtre à choix multiple, « Fermer ». Sur la surface « Poids de corps », la cloche
+  `notifications` ouvre la même sheet, avant le +.
 
 Hors périmètre pour l'instant :
 

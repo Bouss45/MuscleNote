@@ -2,6 +2,7 @@ package com.musclenote.android.ui.preview
 
 import com.musclenote.android.data.backup.AutoBackupState
 import com.musclenote.android.data.model.BodyWeightEntry
+import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.LocalPreferences
@@ -158,6 +159,12 @@ object PreviewData {
         BodyWeightEntry(date = formatInstant(at(sunday, 12)), weight = bodyWeightOn(sunday) + 0.2)
     }
 
+    /** Pesée de ce matin (jeu de données « déjà pesé aujourd'hui »), à midi comme toute pesée. */
+    val weighInToday = BodyWeightEntry(date = formatInstant(at(today, 12)), weight = 78.4)
+
+    /** Rappel de pesée activé, 07:30, en semaine (§ 15.13.3). */
+    val weighInReminder = WeighInReminder(enabled = true, hour = 7, minute = 30, days = listOf(1, 2, 3, 4, 5))
+
     val supplements = listOf(
         Supplement(
             id = "sup-creatine", name = "Créatine", dosage = "5", unit = "g", reminderEnabled = true,
@@ -194,7 +201,7 @@ object PreviewData {
         )
     }
 
-    val preferences = Preferences(restSeconds = 150, theme = ThemeMode.System)
+    val preferences = Preferences(restSeconds = 150, theme = ThemeMode.System, weighInReminder = weighInReminder)
 
     val localPreferences = LocalPreferences(migrateCardDismissed = true)
 

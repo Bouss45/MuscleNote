@@ -116,6 +116,11 @@
             android:name=".notifications.SupplementReminderReceiver"
             android:exported="false" />
 
+        <!-- Rappel de pesée (§ 15.13.4) : sonnerie, intent explicite. -->
+        <receiver
+            android:name=".notifications.WeighInReminderReceiver"
+            android:exported="false" />
+
         <!--
           Resynchronisation des rappels : diffusions du système, reçues même non exporté.
           Toutes figurent parmi les exceptions aux restrictions des diffusions implicites.

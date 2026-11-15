@@ -47,17 +47,19 @@ import com.musclenote.android.ui.designsystem.templates.HubTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.templates.tabScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.nutrition.SupplementSheetHost
 import com.musclenote.android.ui.workout.ConfirmSheet
 
 /** Types proposés au sélecteur de fichiers pour l'import (§ 2.12). */
 private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 
 /** Formulaire ouvert au-dessus de Paramètres (§ 15.10.3). */
-enum class SettingsSheet { Language, Theme, RestTimer, AutoBackup, Health, CrashReport, Feedback }
+enum class SettingsSheet { Language, Theme, RestTimer, WeighInReminder, AutoBackup, Health, CrashReport, Feedback }
 
 /**
  * Paramètres (SPEC § 15.10.3, 🔄 D35) : hub de second niveau, ouvert par l'engrenage de l'Accueil.
  * Mes données ; « Préférences » (langue, thème, minuteur de repos, notifications coupées) ;
+ * « Rappels » (rappel de pesée, puis les rappels de chaque complément, § 15.13.3, 🔄 D38) ;
  * « Données » (sauvegarde automatique § 15.2, export JSON v2 et CSV, import avec confirmation § 5.4,
  * Health Connect § 15.3 s'il est disponible) ; « À propos » (mises à jour § 3.17, rapport de plantage
  * § 10.9, avis § 14 si l'URL du webhook a été fournie au build). Chaque réglage s'ouvre en formulaire
@@ -80,6 +82,8 @@ fun SettingsScreen(
     val context = LocalContext.current
 
     var sheet by rememberSaveable { mutableStateOf(initialSheet) }
+    // Complément ouvert depuis « Rappels » : sa sheet de Nutrition (§ 15.13.3).
+    var supplementId by rememberSaveable { mutableStateOf<String?>(null) }
     val crashReport = rememberLatestCrashReport()
     val healthAvailable = rememberHealthAvailable()
     var notificationsEnabled by remember { mutableStateOf(AppNotifications.areEnabled(context)) }
@@ -148,6 +152,14 @@ fun SettingsScreen(
                         ) { openNotificationSettings(context) },
                     )
                 }
+            },
+        )
+
+        SettingsSection(
+            stringResource(R.string.settings_section_reminders),
+            buildList {
+                add(weighInReminderRow { sheet = SettingsSheet.WeighInReminder })
+                addAll(supplementReminderRows { supplementId = it })
             },
         )
 
@@ -246,6 +258,7 @@ fun SettingsScreen(
             },
             onDismiss = dismiss,
         )
+        SettingsSheet.WeighInReminder -> WeighInReminderSheet(onDismiss = dismiss)
         SettingsSheet.AutoBackup -> AutoBackupSheet(onDismiss = dismiss)
         SettingsSheet.Health -> if (healthAvailable) HealthConnectSheet(onDismiss = dismiss)
         SettingsSheet.CrashReport -> crashReport.value?.let { report ->
@@ -254,6 +267,7 @@ fun SettingsScreen(
         SettingsSheet.Feedback -> if (container.feedback.enabled) FeedbackSheet(onDismiss = dismiss)
         null -> Unit
     }
+    SupplementSheetHost(supplementId, onClose = { supplementId = null })
 
     if (state.pendingImport != null) {
         ConfirmSheet(

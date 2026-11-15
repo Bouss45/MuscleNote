@@ -1,8 +1,5 @@
 package com.musclenote.android.ui.nutrition
 
-import android.Manifest
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -14,7 +11,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
@@ -26,11 +22,11 @@ import com.musclenote.android.data.nutrition.EntryMode
 import com.musclenote.android.data.nutrition.NutritionRules
 import com.musclenote.android.data.nutrition.ReminderSummary
 import com.musclenote.android.data.util.dayKey
-import com.musclenote.android.notifications.AppNotifications
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.formatOneDecimal
 import com.musclenote.android.ui.components.rememberHaptics
+import com.musclenote.android.ui.components.rememberNotificationPermissionRequest
 import com.musclenote.android.ui.components.rememberToday
 import com.musclenote.android.ui.designsystem.components.ButtonVariant
 import com.musclenote.android.ui.designsystem.components.DailySurface
@@ -64,19 +60,14 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
     val taken by nutrition.taken.collectAsStateWithLifecycle()
     val todayKey = dayKey(rememberToday())
     val haptics = rememberHaptics()
-    val context = LocalContext.current
 
     var entry by rememberSaveable { mutableStateOf<DailyKind?>(null) }
     var creating by rememberSaveable { mutableStateOf(false) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
-    var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
 
     // § 7.1 : demandée à la création avec rappels, à l'activation et à l'ajout d'un rappel ; un
     // refus n'empêche rien (les rappels ne sonneront simplement pas).
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { }
-    fun requestNotificationPermission() {
-        if (AppNotifications.needsPermissionRequest(context)) permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-    }
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
 
     val day = DailyDay.of(tracker, todayKey)
     HubTemplate(
@@ -140,11 +131,28 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
         )
     }
 
+    SupplementSheetHost(openId, onClose = { openId = null })
+}
+
+/**
+ * Sheet d'un complément et confirmation de sa suppression (§ 15.10.2), ouvertes depuis Nutrition et
+ * depuis Paramètres › Rappels (§ 15.13.3, 🔄 D38) : [openId] = le complément ouvert (rien s'il n'existe
+ * pas), [onClose] la ferme. Chaque changement s'applique tout de suite.
+ */
+@Composable
+fun SupplementSheetHost(openId: String?, onClose: () -> Unit) {
+    val container = LocalAppContainer.current
+    val nutrition = container.nutrition
+    val supplements by nutrition.supplements.collectAsStateWithLifecycle()
+    val haptics = rememberHaptics()
+    val requestNotificationPermission = rememberNotificationPermissionRequest()
+    var deletingId by rememberSaveable { mutableStateOf<String?>(null) }
+
     supplements.firstOrNull { it.id == openId }?.let { supplement ->
         val id = supplement.id
         SupplementSheet(
             supplement = supplement,
-            onDismiss = { openId = null },
+            onDismiss = onClose,
             onRemindersEnabled = { enabled ->
                 haptics.light()
                 if (enabled) requestNotificationPermission()
@@ -163,7 +171,7 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
                 container.launchMutation { nutrition.removeReminder(id, reminderId) }
             },
             onDelete = {
-                openId = null
+                onClose()
                 deletingId = id
             },
         )

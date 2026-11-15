@@ -3,6 +3,9 @@ package com.musclenote.android.data.repository
 import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
+import com.musclenote.android.data.nutrition.WeighInReminderRules
+import com.musclenote.android.data.nutrition.WeighInReminders
 import com.musclenote.android.data.storage.JsonDocument
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,12 +14,14 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Dépôt des préférences (SPEC § 3.14) : durée du minuteur et thème, sauvegardés ; et préférences
- * locales à l'appareil (carte de transfert masquée), jamais exportées ni touchées par un import.
+ * Dépôt des préférences (SPEC § 3.14) : durée du minuteur, thème et rappel de pesée (§ 15.13),
+ * sauvegardés ; et préférences locales à l'appareil (carte de transfert masquée), jamais exportées ni
+ * touchées par un import. Chaque changement du rappel de pesée met son alarme à jour.
  */
 class PreferencesRepository(
     private val preferencesDoc: JsonDocument<Preferences>,
     private val localPreferencesDoc: JsonDocument<LocalPreferences>,
+    private val weighInReminders: WeighInReminders = WeighInReminders.None,
 ) {
     private val mutex = Mutex()
 
@@ -33,7 +38,10 @@ class PreferencesRepository(
 
     suspend fun load() {
         mutex.withLock {
-            _preferences.value = preferencesDoc.read() ?: Preferences.DEFAULT
+            // Le rappel de pesée est remis en forme (heure, jours) : le fichier peut venir d'un import.
+            _preferences.value = (preferencesDoc.read() ?: Preferences.DEFAULT).let {
+                it.copy(weighInReminder = WeighInReminderRules.normalized(it.weighInReminder))
+            }
             _localPreferences.value = localPreferencesDoc.read() ?: LocalPreferences.DEFAULT
             _loaded.value = true
         }
@@ -65,6 +73,20 @@ class PreferencesRepository(
             _preferences.value = next
             preferencesDoc.save(next)
         }
+    }
+
+    /**
+     * Rappel de pesée (§ 15.13.3) : [transform] part du réglage actuel ; l'alarme suit (prochaine
+     * occurrence, ou annulée).
+     */
+    suspend fun updateWeighInReminder(transform: (WeighInReminder) -> WeighInReminder) {
+        mutex.withLock {
+            val next = _preferences.value.let { it.copy(weighInReminder = WeighInReminderRules.normalized(transform(it.weighInReminder))) }
+            if (next == _preferences.value) return
+            _preferences.value = next
+            preferencesDoc.save(next)
+        }
+        weighInReminders.sync { _preferences.value.weighInReminder }
     }
 
     /**

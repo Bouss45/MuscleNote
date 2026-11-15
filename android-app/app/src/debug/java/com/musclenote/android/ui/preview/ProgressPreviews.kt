@@ -41,7 +41,6 @@ private fun benchHistory(weeks: Int, weeksBefore: Long = 0, load: (Int) -> Doubl
         ExerciseSession(
             workoutId = "fiche-$n",
             date = date,
-            bodyWeight = 78.0,
             sets = List(4) { i -> WorkoutSet("fiche-$n-$i", reps = if (i == 3) 6 else 8, weight = weight, completed = true) },
         )
     }.asReversed()

@@ -189,7 +189,6 @@
     <string name="start_workout_custom_label">Custom</string>
     <string name="start_workout_custom_placeholder">E.g. Shoulders / Calves</string>
     <string name="start_workout_next">Next</string>
-    <string name="start_workout_body_weight_subtitle">Your weight today?</string>
     <string name="start_workout_start">Start</string>
     <string name="start_workout_weight_invalid">Enter your body weight</string>
 
@@ -647,4 +646,27 @@
         <item quantity="other">Records broken · %1$d</item>
     </plurals>
     <string name="summary_done">Done</string>
+
+    <!-- Optional weigh-in and weigh-in reminder (§ 15.13, D38) -->
+    <string name="start_workout_weight_optional">Your weight today? Optional.</string>
+    <string name="start_workout_weight_last">Last weigh-in: %1$s kg, %2$s.</string>
+    <plurals name="common_days_ago">
+        <item quantity="one">%1$d day ago</item>
+        <item quantity="other">%1$d days ago</item>
+    </plurals>
+    <string name="start_workout_weight_or_skip">Enter your weight, or tap “Skip”.</string>
+    <string name="start_workout_skip">Skip</string>
+    <string name="start_workout_weighed_today">Already weighed today: %1$s kg.</string>
+    <string name="settings_section_reminders">Reminders</string>
+    <string name="weigh_in_reminder_title">Weigh-in reminder</string>
+    <string name="weigh_in_reminder_off_subtitle">So you remember to weigh in</string>
+    <string name="weigh_in_reminder_help">It stays silent if you\'ve already weighed in that day.</string>
+    <string name="weigh_in_reminder_toggle">Remind me to weigh in</string>
+    <string name="weigh_in_reminder_time">Time</string>
+    <string name="weigh_in_reminder_days">Days</string>
+    <string name="weigh_in_reminder_every_day">Every day</string>
+    <string name="weigh_in_reminder_no_day">No day</string>
+    <string name="channel_weigh_in">Weigh-in reminder</string>
+    <string name="weigh_in_notif_title">⚖️ Daily weigh-in</string>
+    <string name="weigh_in_notif_body">Step on the scale, then log your weight.</string>
 </resources>

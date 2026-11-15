@@ -32,7 +32,9 @@ private const val WEIGHT_STEP = 0.1
  * Formulaire « Poids de corps » au pavé numérique (§ 15.11.1, § 15.11.3) : champ héros en kg,
  * raccourcis 55 … 100 ([quickWeights], au démarrage d'une séance), lignes d'information ([info]),
  * pas de ±0,1 et touche principale [actionLabel]. Le texte tapé et son état « neuf » (la prochaine
- * touche remplace la valeur) sont gardés par l'appelant ([onEdit]).
+ * touche remplace la valeur) sont gardés par l'appelant ([onEdit]). Les pas partent de
+ * [stepBase] (la saisie ; au démarrage d'une séance, la dernière pesée quand le champ est vide,
+ * § 15.13.2).
  */
 @Composable
 internal fun BodyWeightForm(
@@ -45,6 +47,7 @@ internal fun BodyWeightForm(
     onAction: () -> Unit,
     bottomInset: Dp,
     quickWeights: Boolean = false,
+    stepBase: (String) -> Double = ::parseDecimal,
     info: (@Composable ColumnScope.() -> Unit)? = null,
 ) {
     val locale = appLocale()
@@ -54,7 +57,7 @@ internal fun BodyWeightForm(
     val stepLabel = SetEntryRules.format(WEIGHT_STEP, field, locale)
 
     fun step(direction: Int) {
-        SetEntryRules.step(parseDecimal(text), direction, field, locale, step = WEIGHT_STEP)?.let {
+        SetEntryRules.step(stepBase(text), direction, field, locale, step = WEIGHT_STEP)?.let {
             haptics.light()
             onEdit(SetEntryRules.format(it, field, locale), true)
         }

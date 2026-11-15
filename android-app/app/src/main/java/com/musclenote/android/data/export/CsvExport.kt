@@ -89,7 +89,8 @@ object CsvExport {
                 start?.format(timeFormatter).orEmpty(),
                 texts.workoutName(workout),
                 workout.durationMinutes?.toString().orEmpty(),
-                if (workout.bodyWeight == 0.0) "" else number(workout.bodyWeight, format),
+                // 🔄 D38 : 0 = non saisi, jamais une valeur (§ 15.13.1) ; un poids négatif non plus.
+                if (workout.bodyWeight <= 0) "" else number(workout.bodyWeight, format),
                 WorkoutStats.exercisesWithCompletedSets(workout).toString(),
                 WorkoutStats.completedSetCount(workout).toString(),
                 number(WorkoutStats.volume(workout), format),

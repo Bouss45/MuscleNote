@@ -11,9 +11,11 @@ import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.TakenRecord
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.nutrition.WeighInReminderRules
 import com.musclenote.android.data.util.dayKey
 import com.musclenote.android.data.util.formatInstant
 import com.musclenote.android.data.util.isDayKey
@@ -203,7 +205,25 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
             // Absent ou invalide : le thème par défaut, sombre (🔄 D35).
             else -> Preferences.DEFAULT_THEME
         },
+        weighInReminder = weighInReminder(p["weighInReminder"]),
     )
+
+    /**
+     * Rappel de pesée (§ 15.13.5, 🔄 D38), lu champ par champ sans jamais refuser l'import : absent ou
+     * pas un objet → le défaut ; `enabled` non booléen → `false` ; heure ou minute invalide → 07:30 ;
+     * jours : entiers de 1 à 7, sans doublon, triés ; absents ou pas un tableau → tous les jours.
+     */
+    private fun weighInReminder(v: JsonElement?): WeighInReminder {
+        val r = v.objectOrNull() ?: return WeighInReminder.DEFAULT
+        return WeighInReminderRules.normalized(
+            WeighInReminder(
+                enabled = r["enabled"].booleanOrNull() ?: false,
+                hour = r["hour"].intOrNull() ?: -1,
+                minute = r["minute"].intOrNull() ?: -1,
+                days = r["days"].arrayOrNull()?.mapNotNull { it.intOrNull() } ?: WeighInReminder.ALL_DAYS,
+            ),
+        )
+    }
 
     /** Dates déjà validées (§ 5.3) : la lecture ne peut pas échouer ici. */
     private fun instant(v: JsonElement?): Instant = checkNotNull(parseInstantOrNull(v.stringOrNull()!!, zone))

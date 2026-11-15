@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,6 +51,7 @@ import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StatRow
+import com.musclenote.android.ui.designsystem.components.SurfaceAction
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.TrendCurve
 import com.musclenote.android.ui.designsystem.templates.HubLazyTemplate
@@ -62,6 +64,7 @@ import com.musclenote.android.ui.exercise.curveDescription
 import com.musclenote.android.ui.exercise.metricDelta
 import com.musclenote.android.ui.exercise.metricText
 import com.musclenote.android.ui.exercise.trend
+import com.musclenote.android.ui.settings.WeighInReminderSheet
 import com.musclenote.android.ui.workout.ConfirmSheet
 import java.time.LocalDate
 import java.time.ZoneId
@@ -82,6 +85,9 @@ fun ProgressScreen(
     onOpenNutrition: () -> Unit,
     modifier: Modifier = Modifier,
     insets: ScreenInsets = tabScreenInsets(),
+    /** Rappel de pesée touché (§ 15.13.4) : « Nouvelle pesée » s'ouvre, puis [onWeighInOpened]. */
+    openWeighIn: Boolean = false,
+    onWeighInOpened: () -> Unit = {},
 ) {
     val container = LocalAppContainer.current
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
@@ -97,6 +103,13 @@ fun ProgressScreen(
     var groupId by rememberSaveable { mutableStateOf<String?>(null) }
     var dailyKind by rememberSaveable { mutableStateOf(DailyKind.Calories) }
     var addingWeighIn by rememberSaveable { mutableStateOf(false) }
+    var editingReminder by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(openWeighIn) {
+        if (openWeighIn) {
+            addingWeighIn = true
+            onWeighInOpened()
+        }
+    }
     var deleting by rememberSaveable { mutableStateOf<String?>(null) }
 
     // Archivés compris : ils nomment encore l'historique (§ 3.9).
@@ -112,7 +125,9 @@ fun ProgressScreen(
     HubLazyTemplate(
         modifier = modifier,
         titleBar = { ScreenTitleBar(stringResource(R.string.tabs_progress)) },
-        highlight = { BodyWeightSurface(weightSeries, dates, today, onAdd = { addingWeighIn = true }) },
+        highlight = {
+            BodyWeightSurface(weightSeries, dates, today, onAdd = { addingWeighIn = true }, onReminder = { editingReminder = true })
+        },
         insets = insets,
     ) {
         if (group == null || groupProgress == null) {
@@ -146,6 +161,9 @@ fun ProgressScreen(
         )
     }
 
+    // Raccourci du rappel de pesée (§ 15.13.3) : la même sheet que dans Paramètres › Rappels.
+    if (editingReminder) WeighInReminderSheet(onDismiss = { editingReminder = false })
+
     deleting?.let { date -> bodyWeights.firstOrNull { it.date == date } }?.let { entry ->
         ConfirmSheet(
             title = stringResource(R.string.progress_weigh_in_delete_title),
@@ -173,10 +191,11 @@ private fun dayPoints(series: List<DayValue>, max: Int = ProgressCurves.CURVE_MA
 
 /**
  * Surface « Poids de corps » (§ 15.9.2, point 2) : actuel, évolution en gris (pas d'objectif
- * déclaré), courbe compacte, nombre de jours et min–max ; le bouton + ouvre « Nouvelle pesée ».
+ * déclaré), courbe compacte, nombre de jours et min–max ; le bouton + ouvre « Nouvelle pesée », la
+ * cloche le rappel de pesée (§ 15.13.3).
  */
 @Composable
-private fun BodyWeightSurface(series: List<DayValue>, dates: DateFormats, today: LocalDate, onAdd: () -> Unit) {
+private fun BodyWeightSurface(series: List<DayValue>, dates: DateFormats, today: LocalDate, onAdd: () -> Unit, onReminder: () -> Unit) {
     val stats = remember(series) { ProgressStats.bodyWeightStats(series) }
     val last = series.lastOrNull()
     val first = series.firstOrNull()
@@ -203,6 +222,7 @@ private fun BodyWeightSurface(series: List<DayValue>, dates: DateFormats, today:
         footerStart = stats?.let { days },
         footerEnd = stats?.let { stringResource(R.string.progress_weight_range, formatNumber(it.min), formatNumber(it.max)) },
         emptyMessage = stringResource(R.string.progress_weight_none),
+        secondaryAction = SurfaceAction(R.drawable.ds_ic_notifications, stringResource(R.string.weigh_in_reminder_title), onReminder),
     )
 }
 

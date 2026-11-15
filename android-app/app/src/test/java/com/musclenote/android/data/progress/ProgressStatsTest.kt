@@ -249,7 +249,7 @@ class ProgressStatsTest {
     @Test
     fun `métrique d'un exercice selon son historique`() {
         fun session(vararg sets: WorkoutSet) =
-            com.musclenote.android.data.workout.ExerciseSession("w", java.time.Instant.EPOCH, 80.0, sets.toList())
+            com.musclenote.android.data.workout.ExerciseSession("w", java.time.Instant.EPOCH, sets.toList())
         assertEquals(ExerciseMetric.Duration, ProgressStats.exerciseMetric(isCardio = true, history = listOf(session(cardio(20.0, 3.0)))))
         assertEquals(ExerciseMetric.Reps, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(12, 0.0)))))
         assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(5, 2.5)))))

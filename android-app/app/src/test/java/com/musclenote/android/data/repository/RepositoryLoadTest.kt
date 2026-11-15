@@ -1,17 +1,21 @@
 package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.AppContainer
+import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.backup.BackupFixtures
 import com.musclenote.android.data.backup.BackupReadResult
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.util.TimeSource
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -129,6 +133,37 @@ class RepositoryLoadTest {
         File(dataDir, "preferences.json").writeText("""{"restSeconds":120,"theme":"system"}""")
         val c = container().also { it.awaitReady() }
         assertEquals(Preferences(120, ThemeMode.System), c.preferences.preferences.value)
+    }
+
+    @Test
+    fun `des séances écrites sans bodyWeight se relisent à 0 et sont réécrites avec`() = runBlocking<Unit> {
+        // 🔄 D38 (§ 15.13.5) : lu absent comme 0, toujours écrit pour les versions précédentes.
+        dataDir.mkdirs()
+        File(dataDir, "workouts.json").writeText(
+            """[{"id":"w1","name":"Push","date":"2026-03-13T17:00:00.000Z","exercises":[]},""" +
+                """{"id":"w2","name":"Pull","date":"2026-03-12T17:00:00.000Z","bodyWeight":79.5,"exercises":[]}]""",
+        )
+        writeCurrent(currentWorkout(now.minusSeconds(600), completed = true).copy(bodyWeight = 0.0))
+        val c = container().also { it.awaitReady() }
+        assertEquals(listOf(0.0, 79.5), c.workouts.workouts.value.map { it.bodyWeight })
+        assertEquals(0.0, c.workouts.currentWorkout.value!!.bodyWeight, 0.0)
+
+        // Réécrites (fichiers de l'app, avec la configuration du stockage) : le 0 est écrit.
+        val written = AppJson.storage.encodeToString(ListSerializer(Workout.serializer()), c.workouts.workouts.value)
+        assertTrue(Json.parseToJsonElement(written).jsonArray.all { "bodyWeight" in it.jsonObject })
+    }
+
+    @Test
+    fun `le rappel de pesée enregistré est relu et remis en forme, absent c'est le défaut`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        File(dataDir, "preferences.json").writeText("""{"restSeconds":120,"theme":"dark"}""")
+        assertEquals(WeighInReminder.DEFAULT, container().also { it.awaitReady() }.preferences.preferences.value.weighInReminder)
+
+        File(dataDir, "preferences.json").writeText(
+            """{"restSeconds":120,"theme":"dark","weighInReminder":{"enabled":true,"hour":25,"minute":0,"days":[3,1,1,9]}}""",
+        )
+        val c = container().also { it.awaitReady() }
+        assertEquals(WeighInReminder(true, 7, 30, listOf(1, 3)), c.preferences.preferences.value.weighInReminder)
     }
 
     @Test

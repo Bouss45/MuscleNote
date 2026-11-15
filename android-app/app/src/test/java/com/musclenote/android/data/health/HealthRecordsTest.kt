@@ -166,6 +166,18 @@ class HealthRecordsTest {
     }
 
     @Test
+    fun `séance sans poids - la séance part, aucun poids n'est envoyé (ni 0 ni négatif)`() {
+        // 🔄 D38 (§ 15.13.1) : pesée passée au début de la séance.
+        for (bodyWeight in listOf(0.0, -2.5)) {
+            val records = HealthRecords.all(listOf(workout(bodyWeight = bodyWeight)), emptyList(), paris)
+            assertEquals(listOf(HealthRecords.sessionId("w1")), records.keys.toList())
+        }
+        // Le poids du jour reste celui d'une pesée, s'il y en a une.
+        val weighIn = BodyWeightEntry("2026-11-10T11:00:00.000Z", 78.2)
+        assertEquals(listOf(78.2), weights(listOf(workout(bodyWeight = 0.0)), listOf(weighIn)).map { it.kilograms })
+    }
+
+    @Test
     fun `le type se lit dans l'identifiant, anciens identifiants de poids compris`() {
         assertEquals(HealthRecordType.Session, HealthRecords.typeOf(HealthRecords.sessionId("weight-x")))
         assertEquals(HealthRecordType.Weight, HealthRecords.typeOf(HealthRecords.weightId(LocalDate.of(2026, 11, 10))))

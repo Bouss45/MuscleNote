@@ -15,6 +15,7 @@ import com.musclenote.android.health.AndroidHealthConnectGateway
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
+import com.musclenote.android.notifications.WeighInReminderScheduler
 import com.musclenote.android.notifications.WorkoutNotifier
 import com.musclenote.android.update.GitHubReleaseSource
 import com.musclenote.android.update.InstallSource
@@ -48,6 +49,8 @@ class MuscleNoteApplication : Application() {
             File(filesDir, "data"),
             restTimerEffects = RestTimerNotifier(this),
             supplementReminders = SupplementReminderScheduler(this, TimeSource.System),
+            // Rappel de pesée (§ 15.13.4) : même mécanisme d'alarmes exactes.
+            weighInReminders = WeighInReminderScheduler(this, TimeSource.System),
             currentVersion = BuildConfig.VERSION_NAME,
             releaseSource = GitHubReleaseSource(BuildConfig.VERSION_NAME),
             // Installée par Obtainium : c'est lui qui suit les Releases (§ 3.17).

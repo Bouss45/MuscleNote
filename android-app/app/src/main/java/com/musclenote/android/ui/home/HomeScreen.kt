@@ -62,6 +62,7 @@ import com.musclenote.android.ui.journal.SessionActionSheets
 import com.musclenote.android.ui.journal.SessionRow
 import com.musclenote.android.ui.journal.rememberSessionActions
 import com.musclenote.android.ui.workout.rememberLiveTimes
+import com.musclenote.android.ui.workout.rememberSessionWeight
 import java.time.ZoneId
 
 /**
@@ -191,7 +192,8 @@ private fun LiveHighlight(workout: Workout, rest: RestTimerState?, onResume: () 
         setsDone = done,
         setsTotal = total,
         progressStart = pluralStringResource(R.plurals.workout_subtitle_no_weight, total, done, total),
-        progressEnd = workout.bodyWeight.takeIf { it > 0 }?.let { stringResource(R.string.common_kg_value, formatNumber(it)) },
+        // Poids de la séance, sinon la dernière pesée connue ; rien sans aucun poids (§ 15.13.1).
+        progressEnd = rememberSessionWeight(workout)?.let { stringResource(R.string.common_kg_value, formatNumber(it)) },
     )
 }
 

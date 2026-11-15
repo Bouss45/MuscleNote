@@ -55,6 +55,15 @@ enum class AppChannel(
         alerting = true,
         lockscreenVisibility = Notification.VISIBILITY_PRIVATE,
     ),
+
+    /** Rappel de pesée (§ 15.13.4, 🔄 D38). */
+    WeighIn(
+        "weigh-in",
+        R.string.channel_weigh_in,
+        NotificationManager.IMPORTANCE_HIGH,
+        alerting = true,
+        lockscreenVisibility = Notification.VISIBILITY_PRIVATE,
+    ),
 }
 
 object NotificationChannels {

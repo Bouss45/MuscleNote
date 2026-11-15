@@ -8,6 +8,8 @@ import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORI
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
+import com.musclenote.android.data.model.Workout
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -150,6 +152,57 @@ class BackupV2Test {
         assertEquals(ThemeMode.System, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "system" }""").preferences!!.theme)
         assertEquals(ThemeMode.Dark, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark" }""").preferences!!.theme)
         assertEquals(ThemeMode.Light, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "light" }""").preferences!!.theme)
+    }
+
+    // ─── Pesée facultative et rappel de pesée (§ 15.13.5, 🔄 D38) ───────────────────
+
+    private fun reminderOf(json: String) =
+        readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark"$json }""").preferences!!.weighInReminder
+
+    @Test
+    fun `le rappel de pesée absent ou qui n'est pas un objet est le réglage par défaut`() {
+        assertEquals(WeighInReminder.DEFAULT, reminderOf(""))
+        assertEquals(WeighInReminder.DEFAULT, reminderOf(""", "weighInReminder": "7:30""""))
+        assertEquals(WeighInReminder.DEFAULT, reminderOf(""", "weighInReminder": null"""))
+        // Une sauvegarde v1 de l'app Expo n'en a pas.
+        assertEquals(WeighInReminder.DEFAULT, success(reader().read(resource("v1_sample.json"))).data.preferences!!.weighInReminder)
+    }
+
+    @Test
+    fun `le rappel de pesée est lu champ par champ, sans faire échouer l'import`() {
+        assertEquals(
+            WeighInReminder(true, 6, 45, listOf(1, 5)),
+            reminderOf(""", "weighInReminder": { "enabled": true, "hour": 6, "minute": 45, "days": [5, 1, 1, 9, "x"] }"""),
+        )
+        // enabled non booléen → false ; heure hors limites → 7 h 30 ; jours absents → tous ; [] → aucun.
+        assertEquals(WeighInReminder(false, 7, 30, listOf(1, 2, 3, 4, 5, 6, 7)), reminderOf(""", "weighInReminder": { "enabled": "oui", "hour": 24, "minute": 0 }"""))
+        assertEquals(WeighInReminder(true, 7, 30, emptyList()), reminderOf(""", "weighInReminder": { "enabled": true, "days": [] }"""))
+        assertEquals(WeighInReminder(true, 7, 30, listOf(1, 2, 3, 4, 5, 6, 7)), reminderOf(""", "weighInReminder": { "enabled": true, "days": "lun" }"""))
+    }
+
+    @Test
+    fun `l'export n'écrit le rappel de pesée que s'il diffère du défaut, avec ses quatre champs`() {
+        fun preferencesJson(preferences: Preferences) =
+            Json.parseToJsonElement(BackupWriter.write(BackupData(preferences = preferences), exportedAt)).jsonObject.getValue(BackupKeys.PREFERENCES).jsonObject
+        assertFalse("weighInReminder" in preferencesJson(Preferences.DEFAULT))
+        val custom = Preferences.DEFAULT.copy(weighInReminder = WeighInReminder(enabled = true))
+        val written = preferencesJson(custom).getValue("weighInReminder").jsonObject
+        assertEquals(listOf("enabled", "hour", "minute", "days"), written.keys.toList())
+        assertEquals(custom, success(reader().read(BackupWriter.write(BackupData(preferences = custom), exportedAt))).data.preferences)
+    }
+
+    @Test
+    fun `une séance sans poids garde bodyWeight 0 à l'export, un poids absent ou null se relit à 0`() {
+        val skipped = Workout(id = "w", name = "Push", date = "2026-03-01T10:00:00.000Z", bodyWeight = 0.0, exercises = emptyList())
+        val written = Json.parseToJsonElement(BackupWriter.write(BackupData(workouts = listOf(skipped)), exportedAt))
+            .jsonObject.getValue(BackupKeys.WORKOUTS).jsonArray[0].jsonObject
+        assertEquals(0.0, written.getValue("bodyWeight").jsonPrimitive.content.toDouble(), 0.0)
+        val workouts = readV2(
+            """"@gymtracker_workouts": [
+               { "id": "a", "name": "A", "date": "2026-03-01T10:00:00.000Z", "exercises": [] },
+               { "id": "b", "name": "B", "date": "2026-03-02T10:00:00.000Z", "bodyWeight": null, "exercises": [] } ]""",
+        ).workouts!!
+        assertEquals(listOf(0.0, 0.0), workouts.map { it.bodyWeight })
     }
 
     @Test

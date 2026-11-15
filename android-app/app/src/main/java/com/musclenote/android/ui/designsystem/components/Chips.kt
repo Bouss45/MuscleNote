@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,6 +17,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -85,7 +88,9 @@ fun StudioChip(
 
 /**
  * Puce de filtre ou de saisie rapide — `FilterChip` (DESIGN.md § 9.1) : sélectionnée en inverse
- * (700), sinon `surfaceControl` (400).
+ * (700), sinon `surfaceControl` (400). Choix unique par défaut (lue comme bouton radio) ;
+ * [multiSelect] = une puce d'un choix multiple (jours du rappel de pesée), lue comme case à cocher.
+ * [description] remplace le libellé pour TalkBack (« lundi » pour « lun. »).
  */
 @Composable
 fun FilterChip(
@@ -93,15 +98,23 @@ fun FilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    multiSelect: Boolean = false,
+    description: String? = null,
 ) {
     val colors = Studio.colors
+    val selection = if (multiSelect) {
+        Modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })
+    } else {
+        Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+    }
     ChipBox(
         background = if (selected) colors.inverse else colors.surfaceControl,
         horizontalPadding = ChipPadding,
         gap = 0.dp,
         modifier = modifier
+            .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier)
             .clip(Studio.shapes.control)
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
+            .then(selection),
     ) {
         Text(
             text,

@@ -26,11 +26,35 @@ private fun StartWorkoutTypePreview() = ScreenPreview {
     StartWorkoutForm(initialPreset = null, initialName = null, onStarted = {}, bottomInset = 24.dp)
 }
 
-/** Étape « Poids de corps », ouverte depuis l'Accueil avec Legs : dernier poids prérempli. */
+/**
+ * Étape « Poids de corps », ouverte depuis l'Accueil avec Legs (§ 15.13.2) : champ vide, la dernière
+ * pesée et son ancienneté en aide, « Passer ».
+ */
 @PhonePreviews
 @Composable
 private fun StartWorkoutWeightPreview() = ScreenPreview {
     StartWorkoutForm(initialPreset = PresetId.Legs, initialName = null, onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Weight)
+}
+
+/** Sans aucune pesée : « Ton poids aujourd'hui ? Facultatif. ». */
+@PhonePreviews
+@Composable
+private fun StartWorkoutWeightFirstPreview() = ScreenPreview(PreviewDataSet.Empty) {
+    StartWorkoutForm(initialPreset = PresetId.Push, initialName = null, onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Weight)
+}
+
+/** Déjà pesé aujourd'hui (§ 15.13.2) : pas de champ, le poids du jour en aide, « Commencer ». */
+@PhonePreviews
+@Composable
+private fun StartWorkoutWeighedTodayPreview() = ScreenPreview(PreviewDataSet.WeighedToday) {
+    StartWorkoutForm(initialPreset = PresetId.Legs, initialName = null, onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Weight)
+}
+
+/** Étape du type, déjà pesé aujourd'hui : « Suivant » devient « ✓ Commencer ». */
+@PhonePreviews
+@Composable
+private fun StartWorkoutTypeWeighedTodayPreview() = ScreenPreview(PreviewDataSet.WeighedToday) {
+    StartWorkoutForm(initialPreset = PresetId.Pull, initialName = null, onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Type)
 }
 
 /** Sélecteur de la séance en cours : développé couché et rowing déjà ajoutés, « + » des exercices perso. */

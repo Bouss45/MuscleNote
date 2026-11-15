@@ -191,7 +191,6 @@
     <string name="start_workout_custom_label">Personnalisé</string>
     <string name="start_workout_custom_placeholder">Ex: Épaules / Mollets</string>
     <string name="start_workout_next">Suivant</string>
-    <string name="start_workout_body_weight_subtitle">Ton poids aujourd\'hui ?</string>
     <string name="start_workout_start">Commencer</string>
     <string name="start_workout_weight_invalid">Saisis ton poids de corps</string>
 
@@ -649,4 +648,27 @@
         <item quantity="other">Records battus · %1$d</item>
     </plurals>
     <string name="summary_done">Terminer</string>
+
+    <!-- Pesée facultative et rappel de pesée (§ 15.13, D38) -->
+    <string name="start_workout_weight_optional">Ton poids aujourd\'hui ? Facultatif.</string>
+    <string name="start_workout_weight_last">Dernière pesée : %1$s kg, %2$s.</string>
+    <plurals name="common_days_ago">
+        <item quantity="one">il y a %1$d jour</item>
+        <item quantity="other">il y a %1$d jours</item>
+    </plurals>
+    <string name="start_workout_weight_or_skip">Saisis ton poids, ou touche « Passer ».</string>
+    <string name="start_workout_skip">Passer</string>
+    <string name="start_workout_weighed_today">Déjà pesé aujourd\'hui : %1$s kg.</string>
+    <string name="settings_section_reminders">Rappels</string>
+    <string name="weigh_in_reminder_title">Rappel de pesée</string>
+    <string name="weigh_in_reminder_off_subtitle">Pour penser à te peser</string>
+    <string name="weigh_in_reminder_help">Il ne sonne pas si tu t\'es déjà pesé ce jour-là.</string>
+    <string name="weigh_in_reminder_toggle">Me rappeler de me peser</string>
+    <string name="weigh_in_reminder_time">Heure</string>
+    <string name="weigh_in_reminder_days">Jours</string>
+    <string name="weigh_in_reminder_every_day">Tous les jours</string>
+    <string name="weigh_in_reminder_no_day">Aucun jour</string>
+    <string name="channel_weigh_in">Rappel de pesée</string>
+    <string name="weigh_in_notif_title">⚖️ Pesée du jour</string>
+    <string name="weigh_in_notif_body">Monte sur la balance, puis note ton poids.</string>
 </resources>

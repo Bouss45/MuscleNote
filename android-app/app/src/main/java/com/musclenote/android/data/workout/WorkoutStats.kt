@@ -34,7 +34,11 @@ data class Streak(val current: Int, val best: Int, val isAlive: Boolean, val las
 data class GymTime(val totalMinutes: Int, val averageMinutes: Int, val sessionCount: Int)
 
 /** Une séance de l'historique d'un exercice (§ 2.8), avec **seulement** ses séries validées. */
-data class ExerciseSession(val workoutId: String, val date: Instant, val bodyWeight: Double, val sets: List<WorkoutSet>) {
+/**
+ * Le poids de corps de la séance n'en fait pas partie : aucun calcul ne s'en sert (§ 15.13.1, 🔄 D38 —
+ * volume et 1RM se calculent sur la charge des séries).
+ */
+data class ExerciseSession(val workoutId: String, val date: Instant, val sets: List<WorkoutSet>) {
     val maxWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
     val maxReps: Int get() = sets.maxOfOrNull { it.reps } ?: 0
     val totalDuration: Double get() = sets.sumOf { it.duration ?: 0.0 }
@@ -230,6 +234,6 @@ object WorkoutStats {
             val sets = workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets.orEmpty().filter { it.completed }
             if (sets.isEmpty()) return@mapNotNull null
             val date = parseInstantOrNull(workout.date, zone) ?: return@mapNotNull null
-            ExerciseSession(workout.id, date, workout.bodyWeight, sets)
+            ExerciseSession(workout.id, date, sets)
         }
 }

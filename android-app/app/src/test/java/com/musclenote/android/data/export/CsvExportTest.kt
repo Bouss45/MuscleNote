@@ -77,6 +77,18 @@ class CsvExportTest {
     }
 
     @Test
+    fun `séance sans poids - le 0 et un poids négatif laissent la cellule vide, jamais 0`() {
+        // 🔄 D38 (§ 15.13.1) : pesée passée au début de la séance, ou poids absurde venu d'un fichier.
+        val skipped = push.copy(id = "w3", bodyWeight = 0.0)
+        val negative = push.copy(id = "w4", bodyWeight = -2.5)
+        for (format in listOf(CsvFormat.FRENCH, CsvFormat.ENGLISH)) {
+            val rows = lines(CsvExport.sessions(listOf(skipped, negative), texts, format, zone)!!).drop(1)
+            val separator = if (format == CsvFormat.FRENCH) ";" else ","
+            rows.forEach { row -> assertEquals("", row.split(separator)[4]) }
+        }
+    }
+
+    @Test
     fun `en anglais, virgule et point décimal`() {
         val csv = CsvExport.sessions(listOf(push), texts, CsvFormat.ENGLISH, zone)!!
         assertEquals("2026-03-14,00:05,Push,62,78.5,3,4,920", lines(csv)[1])
