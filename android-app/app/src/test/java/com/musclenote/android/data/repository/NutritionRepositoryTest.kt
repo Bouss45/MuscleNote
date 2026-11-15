@@ -1,8 +1,12 @@
 package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.model.BodyWeightEntry
+import com.musclenote.android.data.model.ProteinGoal
+import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.Supplement
+import com.musclenote.android.data.model.SupplementStock
+import com.musclenote.android.data.nutrition.StockRules
 import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.ReminderSchedule
 import com.musclenote.android.data.nutrition.SupplementReminders
@@ -14,6 +18,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -256,6 +261,80 @@ class NutritionRepositoryTest {
             assertTrue(supplement.intakes.isEmpty())
             repo.toggleTaken("s1")
             assertEquals(mapOf("2026-03-14" to 1), repo.supplements.value.single().intakes)
+        }
+    }
+
+    // ─── Protéines et stock (§ 15.16, 🔄 D42) ────────────────────────────────────────
+
+    @Test
+    fun `les protéines du jour et leur objectif s'enregistrent`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.addProtein(40)
+            repo.addProtein(72)
+            assertEquals(mapOf("2026-03-14" to 112), repo.tracker.value.proteinLog)
+            repo.setProteinToday(90)
+            repo.setProteinGoal(ProteinGoal(ProteinGoalMode.Fixed, perKg = 1.8, grams = 150))
+        }
+        coroutineScope {
+            val repo = repository()
+            assertEquals(mapOf("2026-03-14" to 90), repo.tracker.value.proteinLog)
+            assertEquals(ProteinGoal(ProteinGoalMode.Fixed, perKg = 1.8, grams = 150), repo.tracker.value.proteinGoal)
+            // Un réglage invalide est ramené aux bornes avant d'être enregistré.
+            repo.setProteinGoal(ProteinGoal(ProteinGoalMode.PerKg, perKg = 4.0))
+            assertEquals(ProteinGoal.DEFAULT, repo.tracker.value.proteinGoal)
+        }
+        assertFalse("objectif par défaut omis", "proteinGoal" in File(dataDir, "daily_tracker.json").readText())
+    }
+
+    @Test
+    fun `cocher enregistre les doses par jour et décompte le stock, sans toucher aux alarmes`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            val whey = repo.addSupplement("Whey", "30", "g", true, listOf(8 to 0))!!
+            val syncsBefore = reminders.syncs.size
+            repo.setDosesPerDay(whey.id, 2)
+            repo.setStock(whey.id, 25)
+            repo.toggleTaken(whey.id)
+            val supplement = repo.supplements.value.single()
+            assertEquals(mapOf("2026-03-14" to 2), supplement.intakes)
+            assertEquals(23, StockRules.status(supplement)!!.doses)
+            assertEquals(11, StockRules.status(supplement)!!.daysLeft)
+            // Une seule dose par jour désormais : la prise du jour suit.
+            repo.setDosesPerDay(whey.id, 1)
+            assertEquals(24, StockRules.status(repo.supplements.value.single())!!.doses)
+            repo.restock(whey.id, 30)
+            assertEquals(54, StockRules.status(repo.supplements.value.single())!!.doses)
+            repo.setLowStockDays(whey.id, 10)
+            assertEquals(syncsBefore, reminders.syncs.size)
+        }
+        coroutineScope {
+            val repo = repository()
+            val supplement = repo.supplements.value.single()
+            assertEquals(SupplementStock(doses = 54, day = "2026-03-14", dayIntake = 1), supplement.stock)
+            assertEquals(10, supplement.lowStockDays)
+            repo.clearStock(supplement.id)
+            assertNull(repo.supplements.value.single().stock)
+        }
+    }
+
+    @Test
+    fun `un ancien fichier se relit avec une dose par jour et sans stock`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        File(dataDir, "supplements.json").writeText(
+            """[{"id":"s1","name":"Oméga-3","dosage":"2","unit":"caps","reminderEnabled":false,"reminders":[]}]""",
+        )
+        File(dataDir, "daily_tracker.json").writeText(
+            """{"calorieGoal":2000,"waterGoal":2000,"calorieGoalHistory":{"0000-01-01":2000},"waterGoalHistory":{"0000-01-01":2000},"caloriesLog":{},"waterLog":{}}""",
+        )
+        coroutineScope {
+            val repo = repository()
+            val supplement = repo.supplements.value.single()
+            assertEquals(1, supplement.dosesPerDay)
+            assertNull(supplement.stock)
+            assertEquals(7, supplement.lowStockDays)
+            assertTrue(repo.tracker.value.proteinLog.isEmpty())
+            assertEquals(ProteinGoal.DEFAULT, repo.tracker.value.proteinGoal)
         }
     }
 }
