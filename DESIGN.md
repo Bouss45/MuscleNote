@@ -364,6 +364,28 @@ contenu, padding 14.
 données »). Dans une liste paresseuse, chaque ligne est un segment (`ListGroupSegment` à sa
 `GroupPosition` : seul, premier, milieu, dernier), arrondi en haut du premier et en bas du dernier.
 
+🔄 **Calendrier du mois** — `MonthCalendar` (D41, SPEC § 15.15.1, maquette `T2-Journal`). Le groupe
+du héros du Journal : un `ListGroup`, padding 12 en haut et sur les côtés.
+- En-tête : le mois (« Novembre 2026 », `titleItem`, retrait de 4, lu comme un titre) ; à droite les
+  boutons icône `chevron_left` / `chevron_right` (ton `Subtle`, cibles 48), inactifs (`textTertiary`)
+  au premier et au dernier mois.
+- 4 · initiales des jours du lundi au dimanche (`small` 600, `textSecondary`, centrées, décoratives)
+  · 6 · la grille : 7 colonnes égales, **rangées de 48** (cibles tactiles ; 38 sur la maquette), et
+  la hauteur de **6 rangées toujours réservée** (un mois de 4 ou 5 rangées ne fait pas sauter la
+  liste). Cases vides avant le 1er, rien du mois voisin.
+- Un jour, chiffre `emphasis` dans un rond de 36 : **séance** → rond plein `inverse`, chiffre
+  `onInverse` 700 ; **aujourd'hui** → anneau 1,5 `textSecondary`, chiffre 700 (avec une séance :
+  rond plein entouré d'un anneau de 44) ; **à venir** → chiffre `textSecondary`, inactif ; sinon
+  `textPrimary` 400. Pressé : `surfaceGroupPressed` (rond vide ou jour simple), `inverse` à 80 %
+  (rond plein). En grand texte, le chiffre rétrécit (`FitText`, marge de 6 dans le rond).
+- Résumé : sous un filet `separator` pleine largeur, `caption` `textSecondary`, padding 14 × 16
+  (« 6 séances en novembre »).
+- Changer de mois : les flèches (`standard`) ou un glissement horizontal sur la grille
+  (`HorizontalPager`, une page par mois, du plus ancien au plus récent).
+- Accessibilité : chaque jour est un bouton (rôle bouton, action « Voir la journée ») lu en toutes
+  lettres par sa description (« jeudi 12 novembre, 2 séances », « …, aujourd'hui, aucune séance »,
+  « …, à venir ») ; le chiffre et les initiales ne sont pas lus à part.
+
 **Section** (assemblage) — en-tête de section + lignes, posés sur le fond. Pas un composant :
 c'est la brique des gabarits hub et fiche. 🔄 v2 : **groupe titré** — étiquette (`SectionHeader`
 groupé), 8, `ListGroup` ; une phrase sous le groupe (info, message d'une opération) est en retrait
@@ -462,7 +484,10 @@ peut manquer quand le titre suffit (« Exercice introuvable »).
 **Bottom sheet** — `StudioBottomSheet`. `surfaceRaised`, coins du haut 20, sur `scrim` ; padding
 10 / 20 / 20 ; poignée 36 × 4 `surfacePressed` centrée ; titre `titleSection` + 6 + texte `body`
 `textSecondary` ; puis les actions (principal 56, texte 48), espacées de 14. Sert aux
-confirmations (« Terminer la séance ? ») et au gabarit formulaire.
+confirmations (« Terminer la séance ? ») et au gabarit formulaire. 🔄 Variante **groupée**
+(`grouped = true`, D41 : sheet « Journée » du Journal) : fond `background` (conteneur et
+`SheetSurface`), pour y poser des groupes titrés `surfaceRaised` comme sur un écran (étiquette, 8,
+`ListGroup`), espacés de 24 ; le contenu défile s'il dépasse.
 
 **Pavé numérique** — `NumericKeypad`. Dans une bottom sheet : `surfaceRaised`, padding 12,
 éléments espacés de 10.
@@ -639,7 +664,7 @@ n'a pas encore, cf. § 13) :
 | hub | sections → gabarit ouvert |
 |---|---|
 | Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → résumé (fiche, SPEC § 15.12), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
-| Journal | **Depuis le début** : totaux · **une section par semaine** : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub |
+| Journal | **Calendrier du mois** (groupe du héros) : un jour → sheet « Journée » (séances → résumé) (SPEC § 15.15) · **Depuis le début** : totaux · **une section par semaine** (« 2/3 », « 3/3 · validée ») : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) |
 | Progrès | **Poids de corps** (surface) : pesée → formulaire, rappel de pesée → formulaire (SPEC § 15.13.3) · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire · **Notifications** : notifications coupées → réglages du système ; rappel de pesée, un complément → formulaire (SPEC § 15.13.3) ; nouvelle version disponible → ligne à cocher (SPEC § 15.14.5) · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : version, vérifier maintenant, télécharger ou ouvrir Obtainium (SPEC § 15.14.5) ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
@@ -680,6 +705,7 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | écart titre d'écran → première étiquette (v2) | 40 (planche Tokens : « après le titre d'écran »), 32 (Paramètres) | 32 (`group`), comme l'écran dessiné ; 8 avant un groupe du héros (Journal, Nutrition) |
 | hauteur d'une ligne dans un groupe (v2) | 64 (planche Composants 1), 56 (lignes d'une seule ligne de Paramètres) | 56 sans sous-titre, 64 avec |
 | barre d'onglets (v2) | fond + filet (Accueil, Progrès v1), `surface.groupe` sans filet (Journal, Nutrition v2) | `surfaceRaised` sans filet partout (rôle « onglets » de la planche Tokens v2) |
+| rangées du calendrier du Journal (D41) | ronds de 36 espacés de 2 (38), flèches de 44, 10 avant le résumé | rangées de 48 (cibles tactiles), flèches de 48, résumé collé à la grille de 6 rangées réservées |
 
 Les mesures internes des composants (14 entre éléments d'une ligne, 6 sous une légende de héros,
 3 entre titre et sous-titre…) sont gardées telles quelles.
@@ -716,7 +742,9 @@ Décidé (14/11/2026, SPEC § 15.8) :
   des sections (ligne + bouton texte discret « Plus tard » / « Masquer »).
 - **Journal** : totaux, puis une section par semaine (titre « Cette semaine », « Semaine
   dernière », « Semaine du 26 oct. », compteur à droite) ; appui long sur une séance → sheet
-  d'actions ; « Modifier la date » en formulaire (bottom sheet, champs numériques).
+  d'actions ; « Modifier la date » en formulaire (bottom sheet, champs numériques). 🔄 D41 : le
+  calendrier du mois en tête (groupe du héros), toucher un jour → sheet « Journée » groupée ; le
+  compteur devient « 2/3 » (`textSecondary`) ou « 3/3 · validée » (`up`), jamais rouge.
 
 Décidé (14/11/2026, SPEC § 15.9) :
 
@@ -819,12 +847,13 @@ Décidé (15/11/2026, SPEC D40) :
 
 Hors périmètre pour l'instant :
 
-- **Données nouvelles** : calendrier du Journal, Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
+- **Données nouvelles** : Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part. Les
-  planches v2 en ajoutent : **calendrier du mois et objectif de séances** (« 3/3 · validée ») dans le
-  Journal, **protéines**, **stock des compléments** (« 12 jours ») et **moyenne sur 7 jours** dans
-  Nutrition — maquettes disponibles pour les futurs sujets (SPEC § 15.6).
+  planches v2 en ajoutent : **protéines**, **stock des compléments** (« 12 jours ») et **moyenne sur
+  7 jours** dans Nutrition, le **filtre par type de séance** et la mention « S45 et S46 validées »
+  du Journal — maquettes disponibles pour les futurs sujets (SPEC § 15.6). Le **calendrier du mois**
+  et les semaines « 3/3 · validée » du Journal sont réalisés (D41, SPEC § 15.15 ; objectif fixé à 3).
 
 Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
 
@@ -857,7 +886,8 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   `TemplatePiecePreviews`), les deux planches de composants recomposées à la taille de la
   maquette (`BoardPreviews`, 1400 × 1320 ; Composants 1 dans sa version v2 « Données et listes
   groupées ») et les gabarits remplis comme les écrans de la maquette (`TemplatePreviews`,
-  412 × 915, insets de la maquette ; le hub paresseux du Journal en listes groupées).
+  412 × 915, insets de la maquette ; le hub paresseux du Journal en listes groupées, avec son
+  calendrier). Hors planche : `MonthCalendarPreview` (`DataComponentPreviews`).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni

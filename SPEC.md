@@ -2194,8 +2194,21 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   JVM `GroupPositionTest`. Export de la maquette mis à jour (`design/claude-design/`). À vérifier
   **sur l'appareil** : thème clair (fond gris, groupes blancs, barre d'onglets), ligne pressée dans un
   groupe, défilement du Journal.
-- **Calendrier du Journal** (🔄 D41, § 15.15), branche `feat/calendrier` : spécifié, en cours
-  d'implémentation.
+- **Calendrier du Journal** (🔄 D41, § 15.15), branche `feat/calendrier` : règles pures
+  `data/journal/CalendarRules.kt` (grille du mois, jours à séance, mois accessibles, journée,
+  semaines « n/3 ») ; historique des prises `Supplement.intakes` (`NutritionRules.recordIntake`,
+  écrit par `NutritionRepository.toggleTaken` sans resynchroniser les alarmes, lu par
+  `BackupNormalizer`) ; composant `ui/designsystem/components/MonthCalendar.kt` (une page de
+  `HorizontalPager` par mois) et icône `ds_ic_chevron_left` ; `SheetSurface` / `StudioBottomSheet
+  (grouped = true)` ; `SectionHeader(trailingDescription)` ; écran `ui/journal/JournalScreen.kt`
+  (calendrier en `highlight`, `JournalCalendar.kt`), sheet `ui/journal/DaySheet.kt` (`SessionRow
+  (timeOfDay)`) ; `DateFormats.monthTitle` / `monthName` / `fullDate(day, today)` /
+  `fullDateInSentence`. Tests JVM `CalendarRulesTest`, `SupplementIntakesTest`,
+  `NutritionRepositoryTest`, `BackupV2Test`. Aperçus : `MonthCalendarPreview`, hub du Journal avec
+  son calendrier, sheet « Journée » (journée pleine, aujourd'hui, jour vide), écran Journal ;
+  historique des prises dans `PreviewData`. À vérifier **sur l'appareil** : glissement entre les
+  mois dans la liste, ouverture de la sheet et passage au résumé, TalkBack sur les jours, coche d'un
+  complément puis sa journée.
 
 ---
 
@@ -4445,9 +4458,9 @@ semaine (§ 15.8.4) reste sous le calendrier.
      ancienne à la plus récente : nom affiché (§ 3.1) ; sous-titre heure de début et durée, « 18:30 ·
      1 h 12 » (durée omise si nulle) ; à droite le volume, comme dans le Journal (§ 15.8.4).
      **Toucher → résumé** de la séance (§ 15.12) ; la sheet se ferme.
-  2. **« Poids »** — le poids de ce jour selon la règle de Progrès (§ 3.10, § 15.13.1) : la pesée du
-     jour, sous-titre « Pesée » ; sinon le poids saisi au début d'une séance de ce jour (la plus
-     récente avec un poids), sous-titre « Saisi au début de Push ».
+  2. **« Poids »** — le poids de ce jour selon la règle de Progrès (§ 3.10, § 15.13.1), à droite de
+     sa ligne : la pesée du jour, ligne « Pesée » ; sinon le poids saisi au début d'une séance de ce
+     jour (la plus récente avec un poids), ligne « Saisi au début de Push ».
   3. **« Compléments pris »** — une ligne par complément pris ce jour-là d'après son **historique des
      prises** (§ 15.15.4), dans l'ordre des compléments : nom ; sous-titre le dosage s'il est renseigné
      et, à partir de deux doses, « 2 doses ». Les prises antérieures à cette version n'ont pas
@@ -4528,8 +4541,8 @@ volume, de poids et de litres, les noms de séance, le dosage des compléments.
 | `journal_calendar_previous` / `_next` | Mois précédent / Mois suivant | Previous month / Next month |
 | `journal_calendar_month_sessions` (pluriel) | {{n}} séance en {{mois}} / {{n}} séances en {{mois}} | {{n}} workout in {{month}} / {{n}} workouts in {{month}} |
 | `journal_calendar_month_none` | Aucune séance en {{mois}} | No workouts in {{month}} |
-| `journal_calendar_day_sessions` (pluriel) | {{date}}, {{n}} séance / {{date}}, {{n}} séances | {{date}}, {{n}} workout / {{date}}, {{n}} workouts |
-| `journal_calendar_day_none` | {{date}}, aucune séance | {{date}}, no workout |
+| `journal_calendar_sessions` (pluriel) | {{n}} séance / {{n}} séances | {{n}} workout / {{n}} workouts |
+| `journal_calendar_no_session` | aucune séance | no workout |
 | `journal_calendar_today` | aujourd'hui | today |
 | `journal_calendar_upcoming` | à venir | upcoming |
 | `journal_calendar_open_day` | Voir la journée | Open the day |
@@ -4544,5 +4557,9 @@ volume, de poids et de litres, les noms de séance, le dosage des compléments.
 | `journal_day_empty` | Rien de noté ce jour-là. | Nothing logged that day. |
 | `journal_week_count` | {{n}}/{{objectif}} | {{n}}/{{goal}} |
 | `journal_week_validated` | {{n}}/{{objectif}} · validée | {{n}}/{{goal}} · done |
-| `journal_week_count_description` | {{n}} séances sur {{objectif}} | {{n}} workouts out of {{goal}} |
-| `journal_week_validated_description` | {{n}} séances sur {{objectif}}, semaine validée | {{n}} workouts out of {{goal}}, week done |
+| `journal_week_count_description` (pluriel) | {{n}} séances sur {{objectif}} | {{n}} workouts out of {{goal}} |
+| `journal_week_validated_description` (pluriel) | {{n}} séances sur {{objectif}}, semaine validée | {{n}} workouts out of {{goal}}, week done |
+
+Lecture d'un jour par TalkBack : la date en toutes lettres (« jeudi 12 novembre »), puis
+`journal_calendar_today` pour aujourd'hui, puis `journal_calendar_upcoming` (jour à venir),
+`journal_calendar_sessions` ou `journal_calendar_no_session`, séparés par des virgules.
