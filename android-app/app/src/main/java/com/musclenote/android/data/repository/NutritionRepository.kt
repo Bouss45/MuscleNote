@@ -99,7 +99,16 @@ class NutritionRepository(
 
     /** Coche ou décoche « pris aujourd'hui ». */
     suspend fun toggleTaken(supplementId: String) {
-        mutex.withLock { commitTaken(NutritionRules.toggleTaken(_taken.value, supplementId, todayKey())) }
+        mutex.withLock {
+            val today = todayKey()
+            val next = NutritionRules.toggleTaken(_taken.value, supplementId, today)
+            commitTaken(next)
+            // Historique des prises (§ 15.15.4, 🔄 D41) : la prise du jour suit la coche.
+            val taken = NutritionRules.isTaken(next, supplementId, today)
+            val list = _supplements.value
+            val updated = list.map { if (it.id == supplementId) it.copy(intakes = NutritionRules.recordIntake(it.intakes, today, taken)) else it }
+            if (updated != list) commitSupplementIntakes(updated)
+        }
     }
 
     /**
@@ -166,6 +175,12 @@ class NutritionRepository(
         _supplements.value = next
         supplementsDoc.save(next)
         reminders.sync(previous) { _supplements.value }
+    }
+
+    /** Historique des prises seul : les rappels ne changent pas, pas de resynchronisation des alarmes. */
+    private fun commitSupplementIntakes(next: List<Supplement>) {
+        _supplements.value = next
+        supplementsDoc.save(next)
     }
 
     private fun commitTaken(next: TakenRecord) {

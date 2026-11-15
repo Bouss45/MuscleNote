@@ -144,6 +144,16 @@ object NutritionRules {
     fun cleanTaken(taken: TakenRecord, supplementIds: Set<String>, today: String): TakenRecord =
         taken.filter { (id, day) -> id in supplementIds && day == today }
 
+    /**
+     * Historique des prises (§ 15.15.4, 🔄 D41) après avoir coché ([taken]) ou décoché le complément
+     * le jour [day] : une dose ce jour-là (un enregistrement existant est gardé, jamais doublé), ou
+     * plus de prise ce jour-là. Les autres jours ne bougent pas.
+     */
+    fun recordIntake(intakes: Map<String, Int>, day: String, taken: Boolean): Map<String, Int> = when {
+        taken -> if ((intakes[day] ?: 0) >= 1) intakes else intakes + (day to 1)
+        else -> intakes - day
+    }
+
     /** Compléments existants pris aujourd'hui (« 1/3 pris », § 15.10.1). */
     fun takenCount(supplements: List<Supplement>, taken: TakenRecord, today: String): Int =
         supplements.count { isTaken(taken, it.id, today) }
