@@ -271,6 +271,9 @@ Chaque composant n'utilise que des jetons ; il reçoit ses textes déjà format�
   (`captionStrong`, `textSecondary` ou couleur de la variation), sans chevron. TalkBack lit le titre
   dans sa casse d'origine, comme un titre. Les écrans non redessinés (Accueil, Progrès, fiches,
   résumé) gardent l'en-tête de 20.
+  🔄 Texte agrandi (D42) : l'étiquette garde ses mots entiers sur sa ligne tant qu'il reste à la mention
+  la place de son mot le plus long (au moins la moitié de la ligne) ; c'est la mention, alignée à
+  droite, qui passe à la ligne (« 1 sur 3 / pris »).
 
 **Rangée de stats** — `StatRow`. 2 à 4 valeurs sans fond, colonnes égales séparées de 16 :
 valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
