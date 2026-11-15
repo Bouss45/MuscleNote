@@ -2150,8 +2150,28 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   `ReminderScheduleTest`, `CsvExportTest`, `HealthRecordsTest`, `BackupV2Test`, `RepositoryLoadTest`. À vérifier **sur l'appareil** : sonnerie du rappel, toucher →
   « Nouvelle pesée », silence un jour déjà pesé, reprogrammation après un redémarrage, « Passer » et
   l'étape sans champ.
-- **Notification de mise à jour** (🔄 D39, § 15.14), branche `feat/notif-maj` : spécifiée, en cours
-  d'implémentation.
+- **Notification de mise à jour** (🔄 D39, § 15.14), branche `feat/notif-maj` : règles pures
+  `data/update/UpdateRules.kt` (`versionCode` d'un tag `v1.0.n`, comparaison, décision de notifier,
+  réglage par défaut, Obtainium à ouvrir, prochaine 18:00, première ligne des notes) ; dépôt
+  `data/repository/UpdateRepository.kt` (vérification quotidienne `dailyCheck`, « Vérifier
+  maintenant » `checkNow` sans notification, réglage, version ignorée, retrait au démarrage) derrière
+  `UpdateNotifications` et `UpdateCheckScheduler` ; tâche WorkManager `update/UpdateCheckWorker.kt`
+  (unique `update-check`, ponctuelle, reprogrammée par elle-même, contrainte réseau), notification
+  `notifications/UpdateNotifier.kt` (canal `updates`, id unique) et « Ignorer cette version »
+  `notifications/UpdateNotificationReceiver.kt` ; source d'installation et « Voir »
+  `update/InstallSource.kt` (`<queries>` Obtainium) ; `ACCESS_NETWORK_STATE` rendue ;
+  `BuildConfig.UPDATE_NOTIFICATIONS` faux en preview. La vérification au retour au premier plan est
+  retirée. Paramètres : section « Notifications » (`settings_section_notifications`, « Notifications
+  désactivées » déplacée, ligne à cocher `updateNotifyRow`), « À propos » refait (`updateRows`) ;
+  `SettingsRow` gagne la case. Tests `UpdateRulesTest` (tag et `versionCode`, autre schéma, réponses
+  valides et invalides, notes, notifier ou non, intermédiaire sautée, remplacement, retrait, source
+  d'installation, réglage par défaut, 18:00 et changements d'heure) et `UpdateRepositoryTest` (une
+  notification par version, échec sans rien enregistrer, version ignorée, intermédiaire sautée,
+  notification remplacée, affichage impossible retenté, « Vérifier maintenant » sans notification,
+  aucune requête automatique réglage coupé — Obtainium ou non —, programmation au démarrage et au
+  changement du réglage, preview, retrait au démarrage). À vérifier **sur l'appareil** : passage de
+  la tâche vers 18 h (et après un redémarrage), attente du réseau, « Voir » vers Obtainium et vers la
+  page de la Release, « Ignorer cette version », notification retirée après la mise à jour.
 
 ---
 
@@ -4173,9 +4193,10 @@ contacte GitHub que sur « Vérifier maintenant ». Paramètres dit toujours où
   la première ligne des notes ; l'APK est le premier fichier `.apk` (§ 3.17). **Tout le reste est un
   échec** : réponse absente (pas de réseau, délai), 404 (aucune Release), 403 / 429 (limite de
   l'API), JSON illisible, champ manquant, brouillon, préversion, tag sans nombre.
-- **Comparaison avec l'app installée** : un tag **`v1.0.n`** (exactement, `n` entier) donne le
-  `versionCode` de la Release, **`1000 + n`** (règle de `release.yml`, § 15.1) ; la Release est plus
-  récente si ce nombre dépasse le `versionCode` installé. Autre forme de tag (`v1.1.0`, `1.0.12`) :
+- **Comparaison avec l'app installée** : un tag **`v1.0.n`** (version `1.0.n` une fois le `v` retiré,
+  `n` entier) donne le `versionCode` de la Release, **`1000 + n`** (règle de `release.yml`, § 15.1) ;
+  la Release est plus récente si ce nombre dépasse le `versionCode` installé. Autre forme de tag
+  (`v1.1.0`, `v2.0.3`, `v1.0.12-beta`) :
   comparaison des nombres de la version contre le `versionName` installé (§ 3.17), pour ne rien
   rater si le schéma change. Build local (`versionCode` 1) : toute Release est plus récente.
 - **Entre deux Releases** (dernière notifiée, version ignorée) : nombres de la version (`1.0.13` >
