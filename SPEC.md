@@ -1822,7 +1822,8 @@ vérification finale (§ 13), D25 et D26 après la bascule, D27 à D29 avec le l
 l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progrès (§ 15.9), D35 avec
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
 (§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
-de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14).
+de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
+de la maquette v2 (DESIGN.md, § 15.6).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1865,6 +1866,7 @@ de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14).
 | D37 | Résumé de fin de séance | affiché après « Terminer la séance » (gabarit fiche) et consultable ensuite depuis le Journal ; chiffre héros = volume total, variation par rapport à la dernière séance du même programme (verte, rouge ou grise, rien la première fois) ; durée, nombre de séries, puis chaque exercice avec sa meilleure série et un repère si un record est battu (charge ou 1RM estimé, règles de records existantes) ; un seul bouton « Terminer », qui ramène à l'Accueil ; aucun changement du format JSON, tout est calculé | résumé à la place de la séance en cours dans la pile (au-dessus de l'Accueil), notification de séance retirée comme avant ; toucher une séance du Journal ou la « Dernière séance » de l'Accueil ouvre son résumé (l'éditeur reste dans l'appui long et dans ⋮) ; même programme = même clé de séance (§ 3.1), parmi les séances plus anciennes ; variation au kg ; records = record personnel (métrique de la fiche exercice : charge, reps au poids du corps, durée en cardio) et 1RM estimé, strictement supérieurs à ceux des séances plus anciennes — égalité ou première fois : pas de record ; « Records battus · n » en vert en tête de la liste (§ 3.3, 15.7.1, 15.8.1, 15.8.4, 15.12) |
 | D38 | Pesée facultative et rappel de pesée | au début de séance, pesée facultative : champ vide avec la dernière pesée (valeur et ancienneté), « Passer » qui n'enregistre aucune pesée, champ masqué si une pesée existe déjà aujourd'hui ; les calculs prennent la dernière pesée connue, ou ne s'affichent pas ; section « Rappels » de Paramètres (rappels de Nutrition et rappel de pesée), raccourci depuis la courbe de poids de Progrès ; rappel de pesée désactivé par défaut, 7 h 30, jours de la semaine, rien si déjà pesé ce jour-là (Health Connect compris si l'app le lit), toucher → saisie de la pesée au pavé, reprogrammé après un redémarrage comme les rappels de Nutrition ; poids rendu facultatif sans migration destructive, anciennes données relues telles quelles | « pesé ce jour-là » = la règle du poids d'un jour de Progrès (pesée, sinon séance avec un poids, séance en cours comprise) ; Health Connect n'est pas lu (D29, aucune permission de lecture) ; aide « Dernière pesée : 78,4 kg, il y a 3 jours. », « Passer » = séance à `bodyWeight` 0, « Commencer » exige un poids ; déjà pesé → l'étape n'a plus de champ, la séance démarre sans poids ; poids d'une séance = le sien, sinon la dernière pesée connue à son jour, affiché dans l'en-tête de la séance et la surface « En cours », jamais recopié (Progrès, Health Connect, CSV, sauvegarde inchangés) ; « Rappels » entre « Préférences » et « Données » : rappel de pesée puis une ligne par complément (sa sheet de Nutrition) ; bouton `notifications` sur la surface « Poids de corps » ; réglage dans les préférences (sauvegardé), alarme exacte à la prochaine occurrence d'un jour coché (heure locale murale, changements d'heure), relecture à la sonnerie, canal `weigh-in`, toucher → Progrès et « Nouvelle pesée » ; `bodyWeight` toujours écrit et lu absent = 0, `weighInReminder` facultatif omis au défaut ; aucune version, migration ni permission nouvelle (§ 2.3, 3.14, 4.1, 5.3, 7.1, 7.3, 15.7.1, 15.8.2, 15.9.2, 15.10.3, 15.11.1, 15.13) |
 | D39 | Notification de mise à jour | une requête par jour, vers 18 h, à l'API publique des Releases GitHub (dernière Release non préversion), réseau requis, aucune donnée envoyée ; notification « Nouvelle version disponible » désactivée par défaut si Obtainium a installé l'app (source d'installation), activée sinon, modifiable dans les deux cas ; une seule fois par version, seule la dernière notifiée (versions intermédiaires sautées), la nouvelle remplace celle affichée ; titre et première ligne des notes, actions « Voir » (Obtainium s'il a installé l'app, sinon la page de la Release) et « Ignorer cette version » ; section « Rappels » de Paramètres renommée « Notifications » (rappel de pesée, compléments, nouvelle version) ; ligne « Version x · à jour / y disponible » avec « Vérifier maintenant », même notification coupée ; rien dans la variante preview | tâche WorkManager unique `update-check` à la prochaine 18 h locale, reprogrammée à chaque passage, contrainte réseau `CONNECTED` (`ACCESS_NETWORK_STATE` gardée), pas de nouvel essai avant le lendemain ; elle remplace la vérification au premier plan de D25 et ne tourne que si la notification est activée, quelle que soit la source d'installation (réglage coupé : aucune requête automatique, seul « Vérifier maintenant » contacte GitHub ; l'annonce de l'Accueil n'apparaît alors qu'après une vérification manuelle) ; tag `v1.0.n` → versionCode `1000 + n` (règle de `release.yml`) comparé au versionCode installé, autre forme de tag → nombres de la version (D25) ; réglage `notifyEnabled` et `notifiedVersion` dans `update_check.json` (propre à l'appareil, hors sauvegarde ; absent = défaut selon la source d'installation, relue à chaque démarrage) ; notifiée si plus récente que l'installée et que la dernière notifiée, et pas ignorée ; enregistrée comme notifiée seulement si elle a pu s'afficher ; canal `updates` (DEFAULT), un seul identifiant de notification ; titre « MuscleNote 1.0.43 disponible », texte = premier élément de liste des notes de version (§ 15.1) ; toucher = « Voir » ; « Ignorer cette version » = « Plus tard » de l'Accueil (même version masquée) ; notification retirée au démarrage d'une version au moins aussi récente ; « Notifications désactivées » rejoint la section « Notifications » ; « À propos » : « Version 1.0.42 · à jour », « Vérifier maintenant », « Télécharger la 1.0.43 » ou « Ouvrir Obtainium » ; `BuildConfig.UPDATE_NOTIFICATIONS` faux en preview ; aucun composant nouveau (§ 1, 3.17, 7.1, 15.8.2, 15.10.3, 15.13.3, 15.14) |
+| D40 | Listes groupées (maquette « v2 listes groupées » du 15/11/2026) | appliquer les groupes, les titres de section et les espacements de la maquette à Journal, Paramètres et Nutrition tels qu'ils sont, sans coder les fonctions qu'elle dessine en plus (calendrier du mois et objectif de séances du Journal, protéines, stock des compléments et moyenne sur 7 jours de Nutrition), notées comme maquettes disponibles ; couleurs v2 pour toute l'app | jetons v2 (en clair fond #F2F2F0 et groupes blancs, en sombre groupes #1A1B1F, ligne pressée dans un groupe, filets plus nets), barre d'onglets sur la surface des groupes sans filet ; sur les trois écrans, étiquettes en capitales et groupes tonaux (rayon 20, sans bordure), marges de 16, 8 entre étiquette et groupe, 32 entre groupes ; Accueil, Progrès, fiches, séance et résumé inchangés hors couleurs ; ni donnée, ni texte, ni comportement nouveau ; non repris : icônes, interrupteur et section « Connexions » de Paramètres, case ronde de Nutrition, filtre du Journal (DESIGN.md § 2, 9.1, 10.1, 12, 13 ; § 15.6, 15.8.4, 15.10.1, 15.10.3) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2172,6 +2174,19 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   changement du réglage, preview, retrait au démarrage). À vérifier **sur l'appareil** : passage de
   la tâche vers 18 h (et après un redémarrage), attente du réseau, « Voir » vers Obtainium et vers la
   page de la Release, « Ignorer cette version », notification retirée après la mise à jour.
+- **Listes groupées** (🔄 D40, DESIGN.md « v2 listes groupées »), branche `feat/listes-groupees` :
+  jetons v2 dans `ui/designsystem/theme/StudioColors.kt` (nouveau `surfaceGroupPressed`) et
+  `StudioDimens.kt` (`screenGrouped`, `group`), fond de fenêtre et du splash clairs `#F2F2F0` ;
+  composant `ui/designsystem/components/ListGroup.kt` (`ListGroup`, `ListGroupSegment`,
+  `GroupPosition`, `LocalInListGroup`), `ListRow` dans un groupe (retrait, filet en retrait, 56 sans
+  sous-titre, ligne pressée), étiquette `SectionHeader(grouped = true)`, `HighlightSurface(grouped)`
+  pour `DailySurface`, barre d'onglets sans filet ; `HubTemplate` / `HubLazyTemplate(grouped = true)`
+  et `HubSections.group` / `groupBlock` ; écrans `ui/journal/JournalScreen.kt`,
+  `ui/settings/SettingsScreen.kt` (`SettingsSection`), `ui/nutrition/NutritionScreen.kt`. Aperçus :
+  groupes, étiquettes, rangée de stats groupée, planche Composants 1 v2, hub du Journal groupé ; test
+  JVM `GroupPositionTest`. Export de la maquette mis à jour (`design/claude-design/`). À vérifier
+  **sur l'appareil** : thème clair (fond gris, groupes blancs, barre d'onglets), ligne pressée dans un
+  groupe, défilement du Journal.
 
 ---
 
@@ -2344,7 +2359,9 @@ existantes, sans donnée nouvelle ni composant nouveau. **Pesée facultative et 
 nouveau dans les préférences, sans changement de version du format. **Notification de mise à jour**
 (🔄 D39, § 15.14) : la vérification des mises à jour passe en tâche quotidienne vers 18 h et prévient
 d'une nouvelle version par une notification ; « Rappels » devient « Notifications » ; aucun composant
-nouveau, rien dans la sauvegarde.
+nouveau, rien dans la sauvegarde. **Listes groupées** (🔄 D40) : la maquette « v2 listes groupées »
+appliquée à Journal, Paramètres et Nutrition (groupes, étiquettes, espacements) et ses couleurs à
+toute l'app ; un composant nouveau (`ListGroup`), aucune donnée ni fonction nouvelle.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2719,6 +2736,26 @@ cours : elle revient au changement suivant de la séance ou du repos.
   demanderait la permission `health.READ_WEIGHT` (D19, D29 : aujourd'hui aucune lecture) et de
   distinguer les poids écrits par MuscleNote : hors du périmètre actuel.
 
+**Maquettes disponibles** (🔄 D40) — la maquette Claude Design « v2 listes groupées » (15/11/2026,
+`design/claude-design/`) dessine des fonctions que l'app n'a pas ; elles ne sont pas codées et
+attendent leur propre sujet (décision, spécification, données) :
+
+- **Calendrier du mois** (`T2-Journal`) : en tête du Journal, le mois en grille du lundi au dimanche,
+  les jours avec une séance en pastille `inverse`, aujourd'hui cerclé, mois précédent / suivant ;
+  dessous « 6 séances en novembre » et les semaines validées.
+- **Objectif de séances par semaine** (`T2-Journal`) : « 3/3 · validée » à droite de chaque semaine
+  (en `up` une fois l'objectif atteint), à la place du simple compteur.
+- **Filtre du Journal par type de séance** (`T2-Journal`) : bouton `tune` dans la barre de titre.
+- **Protéines** (`T2-Nutrition`) : une ligne « Protéines · objectif 150 g » avec sa valeur et son
+  bouton +, dans le groupe « Aujourd'hui » à côté de l'eau ; donnée et objectif nouveaux.
+- **Stock des compléments** (`T2-Nutrition`, `T2-Stock`) : les jours restants à droite de chaque
+  complément (« 12 jours », en `down` quand il en reste peu), la saisie du stock en formulaire ;
+  lien « Gérer » sur l'étiquette « Compléments · 1 sur 3 pris ».
+- **Moyenne sur 7 jours** (`T2-Nutrition`) : groupe de stats « kcal par jour, eau, protéines », lien
+  « Tendances » (courbes de Nutrition).
+- Les planches plus anciennes dessinent aussi **Mes records** (`T2-Records`) et les **mensurations**
+  (`T2-Mensurations`).
+
 ### 15.7 Refonte « Studio épuré » : séance en cours (🔄 D32)
 
 Deuxième étape de la refonte décrite dans `DESIGN.md` : l'écran de séance en cours passe au
@@ -3002,6 +3039,9 @@ séance » le remplace).
   « N exercices » = ses exercices, ceux que le pré-remplissage reprendra (§ 3.1).
 
 #### 15.8.4 Journal
+
+> 🔄 D40 — **listes groupées** (DESIGN.md § 10.1) : « Depuis le début » est un groupe de stats sous
+> son étiquette, chaque semaine un groupe titré (compteur à droite) ; contenu et règles inchangés.
 
 Nouvel onglet, gabarit **hub** en liste paresseuse (l'historique peut compter des centaines de
 séances) :
@@ -3381,6 +3421,9 @@ données ne change pas** (§ 4, § 5), sauf la valeur par défaut du thème : au
 
 #### 15.10.1 Nutrition
 
+> 🔄 D40 — **listes groupées** (DESIGN.md § 10.1) : « Aujourd'hui » est le groupe du héros,
+> « Compléments » un groupe titré (« Nouveau complément » et l'info dessous) ; contenu inchangé.
+
 Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
 
 1. **Barre** : « Nutrition ».
@@ -3481,6 +3524,10 @@ système puisque le nom est du texte :
 ligne).
 
 #### 15.10.3 Paramètres
+
+> 🔄 D40 — **listes groupées** (DESIGN.md § 10.1) : « Mes données » en groupe de stats, 32 sous le
+> titre, puis chaque section en groupe titré ; l'info de « Données » sous son groupe ; réglages,
+> lignes et sheets inchangés.
 
 Remplace la disposition du § 2.12. **Hub de second niveau** (DESIGN.md § 10.1), ouvert par
 l'engrenage de l'Accueil, barre d'onglets gardée (Accueil sélectionné, § 15.8.1). Une liste groupée
