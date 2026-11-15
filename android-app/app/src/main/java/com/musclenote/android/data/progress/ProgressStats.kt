@@ -175,17 +175,27 @@ object ProgressStats {
      * qu'une série validée a une charge > 0 (le lest d'un exercice au poids du corps), reps max si
      * toutes sont à 0 kg. Sans historique : charge.
      */
-    fun exerciseMetric(isCardio: Boolean, history: List<ExerciseSession>): ExerciseMetric = when {
+    fun exerciseMetric(isCardio: Boolean, history: List<ExerciseSession>): ExerciseMetric =
+        metricOfSessions(isCardio, history.map { it.sets })
+
+    /**
+     * La règle de [exerciseMetric] sur les séries validées de chaque séance ([sessions]) : aussi pour
+     * les records du résumé de séance (§ 15.12.3), qui ne gardent que les séances plus anciennes.
+     */
+    fun metricOfSessions(isCardio: Boolean, sessions: List<List<WorkoutSet>>): ExerciseMetric = when {
         isCardio -> ExerciseMetric.Duration
-        history.isNotEmpty() && history.all { session -> session.sets.all { it.weight <= 0.0 } } -> ExerciseMetric.Reps
+        sessions.isNotEmpty() && sessions.all { sets -> sets.all { it.weight <= 0.0 } } -> ExerciseMetric.Reps
         else -> ExerciseMetric.Load
     }
 
     /** Valeur de [metric] pour une séance (ses séries sont déjà les séries validées). */
-    fun metricValue(session: ExerciseSession, metric: ExerciseMetric): Double = when (metric) {
-        ExerciseMetric.Load -> session.maxWeight
-        ExerciseMetric.Reps -> session.maxReps.toDouble()
-        ExerciseMetric.Duration -> session.totalDuration
+    fun metricValue(session: ExerciseSession, metric: ExerciseMetric): Double = metricValue(session.sets, metric)
+
+    /** Valeur de [metric] pour les séries validées [sets] d'une séance (0 sans série). */
+    fun metricValue(sets: List<WorkoutSet>, metric: ExerciseMetric): Double = when (metric) {
+        ExerciseMetric.Load -> sets.maxOfOrNull { it.weight } ?: 0.0
+        ExerciseMetric.Reps -> (sets.maxOfOrNull { it.reps } ?: 0).toDouble()
+        ExerciseMetric.Duration -> sets.sumOf { it.duration ?: 0.0 }
     }
 
     /**
