@@ -23,6 +23,7 @@ import com.musclenote.android.data.util.parseInstantOrNull
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.time.Instant
 import java.time.ZoneId
 
@@ -127,6 +128,7 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
                     unit = s["unit"].stringOrNull() ?: "g",
                     reminderEnabled = s["reminderEnabled"].booleanOrNull() ?: false,
                     reminders = s["reminders"].arrayOrNull().orEmpty().mapNotNull(::reminder),
+                    intakes = intakes(s["intakes"]),
                 )
             }
             .distinctBy { it.id }
@@ -136,6 +138,21 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         v.stringOrNull()?.let { return it }
         val n = v.numberOrNull() ?: return ""
         return if (n % 1.0 == 0.0 && kotlin.math.abs(n) < 1e15) n.toLong().toString() else n.toString()
+    }
+
+    /**
+     * Historique des prises (§ 15.15.4, 🔄 D41) : absent ou pas un objet → vide ; une entrée dont la
+     * clé n'est pas un jour valide ou dont la valeur n'est pas un entier ≥ 1 est écartée.
+     */
+    private fun intakes(v: JsonElement?): Map<String, Int> {
+        val o = v as? JsonObject ?: return emptyMap()
+        return o.mapNotNull { (day, doses) ->
+            if (!isDayKey(day)) return@mapNotNull null
+            val primitive = doses as? JsonPrimitive ?: return@mapNotNull null
+            if (primitive.isString) return@mapNotNull null
+            val n = primitive.content.toIntOrNull()?.takeIf { it >= 1 } ?: return@mapNotNull null
+            day to n
+        }.toMap()
     }
 
     /** Rappel inutilisable (heure ou minute hors bornes) → écarté. `notifId` n'existe plus. */

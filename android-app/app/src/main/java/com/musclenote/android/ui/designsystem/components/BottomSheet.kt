@@ -44,6 +44,8 @@ fun SheetHandle(modifier: Modifier = Modifier) {
 /**
  * Corps d'une bottom sheet (DESIGN.md § 9.2) : `surfaceRaised`, coins du haut 20, poignée,
  * contenu espacé de [spacing]. En bas : [bottomInset] (inset de navigation) + 4 au moins.
+ * [grouped] : sheet en listes groupées (« Journée », SPEC § 15.15.2) — fond `background`, pour y
+ * poser des groupes `surfaceRaised` (`ListGroup`), comme sur un écran.
  */
 @Composable
 fun SheetSurface(
@@ -51,12 +53,13 @@ fun SheetSurface(
     spacing: Dp = SheetGap,
     bottomPadding: Dp = Studio.spacing.screen,
     bottomInset: Dp = 0.dp,
+    grouped: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Column(
         modifier
             .fillMaxWidth()
-            .background(Studio.colors.surfaceRaised, Studio.shapes.sheet)
+            .background(if (grouped) Studio.colors.background else Studio.colors.surfaceRaised, Studio.shapes.sheet)
             .padding(
                 start = Studio.spacing.screen,
                 end = Studio.spacing.screen,
@@ -113,6 +116,7 @@ fun ConfirmSheetContent(
 /**
  * Bottom sheet modale — `StudioBottomSheet` : la `ModalBottomSheet` de Material aux couleurs du
  * design system (`scrim`, sans ombre ni poignée Material : [content] pose son [SheetSurface]).
+ * [grouped] : le conteneur prend le fond d'une sheet groupée (`SheetSurface(grouped = true)`).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -120,6 +124,7 @@ fun StudioBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+    grouped: Boolean = false,
     content: @Composable ColumnScope.(bottomInset: Dp) -> Unit,
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
@@ -128,7 +133,7 @@ fun StudioBottomSheet(
         modifier = modifier,
         sheetState = sheetState,
         shape = Studio.shapes.sheet,
-        containerColor = Studio.colors.surfaceRaised,
+        containerColor = if (grouped) Studio.colors.background else Studio.colors.surfaceRaised,
         contentColor = Studio.colors.textPrimary,
         tonalElevation = 0.dp,
         scrimColor = Studio.colors.scrim,

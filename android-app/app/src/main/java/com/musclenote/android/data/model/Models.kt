@@ -80,6 +80,12 @@ data class Supplement(
     val unit: String,
     val reminderEnabled: Boolean,
     val reminders: List<Reminder>,
+    /**
+     * Historique des prises (§ 15.15.4, 🔄 D41) : jour local (`"AAAA-MM-JJ"`) → nombre de doses
+     * (≥ 1), un seul enregistrement par jour. Facultatif, omis quand il est vide ; un ancien fichier
+     * sans ce champ se relit avec un historique vide.
+     */
+    val intakes: Map<String, Int> = emptyMap(),
 )
 
 /** `supplementId` → jour local (`"AAAA-MM-JJ"`) de la dernière prise. */

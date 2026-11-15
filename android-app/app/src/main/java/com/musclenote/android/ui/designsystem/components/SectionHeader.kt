@@ -32,7 +32,8 @@ private val GroupLabelHeight = 32.dp
  *
  * [grouped] (listes groupées, v2) : étiquette en capitales (`label`, texte secondaire) sur 32 de
  * haut, en retrait de 16 pour s'aligner sur le texte des lignes du groupe ; lien ou mention à droite
- * en casse normale (`captionStrong`), sans chevron. TalkBack lit le titre dans sa casse d'origine.
+ * en casse normale (`captionStrong`), sans chevron. TalkBack lit le titre dans sa casse d'origine,
+ * et la mention avec [trailingDescription] quand elle est abrégée (« 2/3 » → « 2 séances sur 3 »).
  */
 @Composable
 fun SectionHeader(
@@ -44,9 +45,10 @@ fun SectionHeader(
     trailingText: String? = null,
     trailingTrend: Trend = Trend.Neutral,
     grouped: Boolean = false,
+    trailingDescription: String? = null,
 ) {
     if (grouped) {
-        GroupLabel(title, modifier, subtitle, linkLabel, onLinkClick, trailingText, trailingTrend)
+        GroupLabel(title, modifier, subtitle, linkLabel, onLinkClick, trailingText, trailingTrend, trailingDescription)
         return
     }
     Row(
@@ -95,6 +97,7 @@ private fun GroupLabel(
     onLinkClick: (() -> Unit)?,
     trailingText: String?,
     trailingTrend: Trend,
+    trailingDescription: String?,
 ) {
     Row(
         modifier
@@ -130,6 +133,7 @@ private fun GroupLabel(
             }
             trailingText != null -> Text(
                 trailingText,
+                if (trailingDescription != null) Modifier.semantics { contentDescription = trailingDescription } else Modifier,
                 style = Studio.typography.captionStrong,
                 color = trailingTrend.color(),
             )

@@ -205,4 +205,57 @@ class NutritionRepositoryTest {
         clock = Instant.parse("2026-03-15T08:00:00Z")
         coroutineScope { assertTrue(repository().taken.value.isEmpty()) }
     }
+
+    // ─── Historique des prises (§ 15.15.4, 🔄 D41) ───────────────────────────────────────
+
+    @Test
+    fun `cocher garde la prise du jour dans l'historique du complément, décocher la retire`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            val crea = repo.addSupplement("Créatine", "5", "g", true, listOf(8 to 0))!!
+            val syncsBefore = reminders.syncs.size
+            repo.toggleTaken(crea.id)
+            assertEquals(mapOf("2026-03-14" to 1), repo.supplements.value.single().intakes)
+            // L'historique ne touche pas aux rappels : aucune resynchronisation des alarmes.
+            assertEquals(syncsBefore, reminders.syncs.size)
+            repo.toggleTaken(crea.id)
+            assertTrue(repo.supplements.value.single().intakes.isEmpty())
+            repo.toggleTaken(crea.id)
+        }
+        // Le lendemain : la prise de la veille est gardée, celle du jour s'ajoute.
+        clock = Instant.parse("2026-03-15T08:00:00Z")
+        coroutineScope {
+            val repo = repository()
+            assertEquals(mapOf("2026-03-14" to 1), repo.supplements.value.single().intakes)
+            repo.toggleTaken(repo.supplements.value.single().id)
+            assertEquals(mapOf("2026-03-14" to 1, "2026-03-15" to 1), repo.supplements.value.single().intakes)
+        }
+    }
+
+    @Test
+    fun `un jour sans prise n'ajoute rien à l'historique`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.addSupplement("Whey", "", "dose", false, emptyList())
+            assertTrue(repo.supplements.value.single().intakes.isEmpty())
+        }
+        val written = File(dataDir, "supplements.json").readText()
+        assertFalse("historique vide omis", "intakes" in written)
+    }
+
+    @Test
+    fun `un ancien fichier sans historique se relit tel quel`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        File(dataDir, "supplements.json").writeText(
+            """[{"id":"s1","name":"Oméga-3","dosage":"2","unit":"caps","reminderEnabled":true,"reminders":[{"id":"r1","hour":20,"minute":0}]}]""",
+        )
+        coroutineScope {
+            val repo = repository()
+            val supplement = repo.supplements.value.single()
+            assertEquals(Supplement("s1", "Oméga-3", "2", "caps", true, listOf(Reminder("r1", 20, 0))), supplement)
+            assertTrue(supplement.intakes.isEmpty())
+            repo.toggleTaken("s1")
+            assertEquals(mapOf("2026-03-14" to 1), repo.supplements.value.single().intakes)
+        }
+    }
 }

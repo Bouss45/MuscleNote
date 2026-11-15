@@ -5,11 +5,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
+import com.musclenote.android.data.journal.CalendarRules
 import com.musclenote.android.ui.designsystem.components.AlwaysPressedInteractionSource
+import com.musclenote.android.ui.designsystem.components.CalendarDay
+import com.musclenote.android.ui.designsystem.components.CalendarMonth
 import com.musclenote.android.ui.designsystem.components.ChipTone
 import com.musclenote.android.ui.designsystem.components.CurveHeightDense
 import com.musclenote.android.ui.designsystem.components.CurvePoint
@@ -20,6 +24,7 @@ import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.LiveHeroNumber
 import com.musclenote.android.ui.designsystem.components.MiniTrendCurve
+import com.musclenote.android.ui.designsystem.components.MonthCalendar
 import com.musclenote.android.ui.designsystem.components.PeriodSelector
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.SegmentedControl
@@ -28,6 +33,8 @@ import com.musclenote.android.ui.designsystem.components.StatRow
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.TrendCurve
+import java.time.LocalDate
+import java.time.YearMonth
 
 /*
  * Planche « Composants 1 · Données et listes groupées » (DESIGN.md § 9.1) : un aperçu par
@@ -338,4 +345,70 @@ private fun ListRowCheckPreview() = StudioComponentPreview {
     StateCaption("Puces de suggestion à toucher : hausse, même charge")
     StudioChip("+2,5 kg", tone = ChipTone.Up, onClick = {})
     StudioChip("Même charge", onClick = {})
+}
+
+/**
+ * Un mois d'exemple du calendrier : jours à séance [sessionDays], aujourd'hui [today] (les jours
+ * suivants à venir), résumé [summary].
+ */
+fun sampleCalendarMonth(month: YearMonth, title: String, sessionDays: Set<Int>, today: LocalDate, summary: String): CalendarMonth =
+    CalendarMonth(
+        title = title,
+        cells = CalendarRules.monthGrid(month).cells.map { date ->
+            date?.let {
+                CalendarDay(
+                    date = it,
+                    label = "${it.dayOfMonth}",
+                    hasSession = it.dayOfMonth in sessionDays,
+                    isToday = it == today,
+                    isUpcoming = it > today,
+                    description = "${it.dayOfMonth}",
+                )
+            }
+        },
+        summary = summary,
+    )
+
+/** Novembre 2026 de la maquette (`T2-Journal`) : séances les 2, 4, 5, 9, 11 et 12, aujourd'hui le 15. */
+val SampleCalendarNovember = sampleCalendarMonth(
+    YearMonth.of(2026, 11),
+    "Novembre 2026",
+    setOf(2, 4, 5, 9, 11, 12),
+    LocalDate.of(2026, 11, 15),
+    "6 séances en novembre",
+)
+
+/** Calendrier du mois (SPEC § 15.15.1) : une page par mois de [months], ouvert sur le dernier. */
+@Composable
+fun MonthCalendarSample(months: List<CalendarMonth> = listOf(SampleCalendarNovember)) {
+    val state = rememberPagerState(initialPage = months.lastIndex) { months.size }
+    MonthCalendar(
+        state = state,
+        month = { months[it] },
+        weekdayLabels = listOf("L", "M", "M", "J", "V", "S", "D"),
+        previousDescription = "Mois précédent",
+        nextDescription = "Mois suivant",
+        openDayLabel = "Voir la journée",
+        onDayClick = {},
+    )
+}
+
+/**
+ * Hors planche (SPEC § 15.15.1, 🔄 D41) : le mois de la maquette (séances, aujourd'hui cerclé,
+ * jours à venir, mois précédent accessible) ; aujourd'hui avec une séance, sans séance ce mois-là.
+ */
+@StudioComponentPreviews
+@Composable
+private fun MonthCalendarPreview() = StudioComponentPreview {
+    StateCaption("Mois courant : séances, aujourd'hui, jours à venir")
+    MonthCalendarSample(
+        listOf(
+            sampleCalendarMonth(YearMonth.of(2026, 10), "Octobre 2026", setOf(5, 7, 9), LocalDate.of(2026, 11, 15), "3 séances en octobre"),
+            SampleCalendarNovember,
+        ),
+    )
+    StateCaption("Aujourd'hui avec une séance ; premier mois, sur 4 rangées")
+    MonthCalendarSample(
+        listOf(sampleCalendarMonth(YearMonth.of(2027, 2), "Février 2027", setOf(10), LocalDate.of(2027, 2, 10), "1 séance en février")),
+    )
 }

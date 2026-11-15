@@ -61,6 +61,8 @@ import com.musclenote.android.ui.designsystem.templates.HubTemplate
 import com.musclenote.android.ui.designsystem.templates.LiveTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
+import java.time.LocalDate
+import java.time.YearMonth
 
 /*
  * Les quatre gabarits (DESIGN.md § 10), remplis comme les écrans de la maquette (Accueil, Progrès,
@@ -160,15 +162,22 @@ private fun HubTemplateProgresPreview() = StudioPreviewTheme {
     }
 }
 
-/** Hub en liste paresseuse et listes groupées (Journal, v2) : groupe des totaux, puis un groupe par semaine. */
+/**
+ * Hub en liste paresseuse et listes groupées (Journal, v2, `T2-Journal`) : calendrier du mois dans le
+ * groupe du héros (🔄 D41), groupe des totaux, puis un groupe par semaine avec « n/3 ».
+ */
 @StudioScreenPreviews
 @Composable
 private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
     val weeks = listOf(
-        "Cette semaine" to listOf(Triple("Pull", "mer. 11 nov. · 1 h 12", "6 840 kg"), Triple("Legs", "lun. 9 nov. · 1 h 31", "11 420 kg")),
+        "Cette semaine" to listOf(
+            Triple("Push", "jeu. 12 nov. · 1 h 14", "8 240 kg"),
+            Triple("Pull", "mer. 11 nov. · 1 h 12", "6 840 kg"),
+            Triple("Legs", "lun. 9 nov. · 1 h 31", "11 420 kg"),
+        ),
         "Semaine dernière" to listOf(
             Triple("Push", "jeu. 5 nov. · 1 h 18", "7 960 kg"),
-            Triple("Pull", "mar. 3 nov. · 1 h 05", "6 610 kg"),
+            Triple("Pull", "mer. 4 nov. · 1 h 05", "6 610 kg"),
             Triple("Legs", "lun. 2 nov. · 1 h 27", "11 180 kg"),
         ),
         "Semaine du 26 oct." to listOf(Triple("Push", "ven. 30 oct. · 1 h 15", "7 820 kg"), Triple("Cardio", "mer. 28 oct. · 40 min", "3 séries")),
@@ -178,6 +187,14 @@ private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
         navigation = { StudioNavigationBar(SampleNavItems, 1, {}, bottomInset = it) },
         insets = MockupInsets,
         grouped = true,
+        highlight = {
+            MonthCalendarSample(
+                listOf(
+                    sampleCalendarMonth(YearMonth.of(2026, 10), "Octobre 2026", setOf(28, 30), LocalDate.of(2026, 11, 15), "2 séances en octobre"),
+                    SampleCalendarNovember,
+                ),
+            )
+        },
     ) {
         groupBlock("totals", label = { SectionHeader("Depuis le début", grouped = true) }) {
             StatRow(
@@ -186,9 +203,17 @@ private fun HubLazyTemplateJournalPreview() = StudioPreviewTheme {
             )
         }
         weeks.forEach { (title, rows) ->
+            val validated = rows.size >= 3
             group(
                 key = title,
-                label = { SectionHeader(title, trailingText = "${rows.size} séances", grouped = true) },
+                label = {
+                    SectionHeader(
+                        title,
+                        trailingText = if (validated) "${rows.size}/3 · validée" else "${rows.size}/3",
+                        trailingTrend = if (validated) Trend.Up else Trend.Neutral,
+                        grouped = true,
+                    )
+                },
                 items = rows,
                 itemKey = { (name, subtitle, _) -> "$title-$name-$subtitle" },
             ) { (name, subtitle, value), position ->

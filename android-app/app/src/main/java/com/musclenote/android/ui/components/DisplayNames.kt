@@ -16,6 +16,7 @@ import java.math.RoundingMode
 import java.text.NumberFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -92,6 +93,11 @@ class DateFormats(private val locale: Locale, private val zone: ZoneId) {
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEdMMMyyyy"), locale)
     private val monthYearFormatter =
         DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMyyyy"), locale)
+    private val fullMonthYearFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "MMMMyyyy"), locale)
+    private val monthNameFormatter = DateTimeFormatter.ofPattern("LLLL", locale)
+    private val fullDateYearFormatter =
+        DateTimeFormatter.ofPattern(DateFormat.getBestDateTimePattern(locale, "EEEEdMMMMyyyy"), locale)
 
     /** Jour de semaine abrégé, jour, mois abrégé : « mar. 11 nov. », « Tue, Nov 11 ». */
     fun weekdayDayMonth(instant: Instant): String = weekdayDayMonthFormatter.format(instant.atZone(zone))
@@ -142,8 +148,22 @@ class DateFormats(private val locale: Locale, private val zone: ZoneId) {
     fun dayMonthYear(day: LocalDate): String = dayMonthYearFormatter.format(day)
 
     /** Date complète, majuscule en tête : « Samedi 14 novembre », « Saturday, November 14 » (Accueil). */
-    fun fullDate(day: LocalDate): String =
-        fullDateFormatter.format(day).replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
+    fun fullDate(day: LocalDate): String = fullDateFormatter.format(day).capitalized()
+
+    /** Date complète telle qu'elle se lit dans une phrase : « jeudi 12 novembre » (TalkBack, calendrier). */
+    fun fullDateInSentence(day: LocalDate): String = fullDateFormatter.format(day)
+
+    /** Date complète, avec l'année quand elle n'est pas celle de [today] (sheet « Journée », § 15.15.2). */
+    fun fullDate(day: LocalDate, today: LocalDate): String =
+        if (day.year == today.year) fullDate(day) else fullDateYearFormatter.format(day).capitalized()
+
+    /** Mois et année, majuscule en tête : « Novembre 2026 », « November 2026 » (calendrier, § 15.15.1). */
+    fun monthTitle(month: YearMonth): String = fullMonthYearFormatter.format(month).capitalized()
+
+    /** Nom du mois seul, tel qu'il s'écrit dans une phrase : « novembre », « November ». */
+    fun monthName(month: YearMonth): String = monthNameFormatter.format(month)
+
+    private fun String.capitalized(): String = replaceFirstChar { if (it.isLowerCase()) it.titlecase(locale) else it.toString() }
 }
 
 @Composable

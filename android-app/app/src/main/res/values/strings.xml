@@ -559,6 +559,44 @@
     <string name="journal_empty_message">Tes séances terminées s\'afficheront ici, semaine par semaine.</string>
     <string name="journal_empty_start">Démarrer une séance</string>
     <string name="journal_empty_resume">Reprendre la séance</string>
+    <!-- Calendrier du Journal (§ 15.15, 🔄 D41) -->
+    <string name="journal_calendar_previous">Mois précédent</string>
+    <string name="journal_calendar_next">Mois suivant</string>
+    <plurals name="journal_calendar_month_sessions">
+        <item quantity="one">%1$d séance en %2$s</item>
+        <item quantity="other">%1$d séances en %2$s</item>
+    </plurals>
+    <string name="journal_calendar_month_none">Aucune séance en %1$s</string>
+    <plurals name="journal_calendar_sessions">
+        <item quantity="one">%1$d séance</item>
+        <item quantity="other">%1$d séances</item>
+    </plurals>
+    <string name="journal_calendar_no_session">aucune séance</string>
+    <string name="journal_calendar_today">aujourd\'hui</string>
+    <string name="journal_calendar_upcoming">à venir</string>
+    <string name="journal_calendar_open_day">Voir la journée</string>
+    <string name="journal_day_sessions">Séances</string>
+    <string name="journal_day_weight">Poids</string>
+    <string name="journal_day_weigh_in">Pesée</string>
+    <string name="journal_day_weight_from_session">Saisi au début de %1$s</string>
+    <string name="journal_day_supplements">Compléments pris</string>
+    <plurals name="journal_day_doses">
+        <item quantity="one">%1$d dose</item>
+        <item quantity="other">%1$d doses</item>
+    </plurals>
+    <string name="journal_day_nutrition">Calories et eau</string>
+    <string name="journal_day_goal">objectif %1$s</string>
+    <string name="journal_day_empty">Rien de noté ce jour-là.</string>
+    <string name="journal_week_count">%1$d/%2$d</string>
+    <string name="journal_week_validated">%1$d/%2$d · validée</string>
+    <plurals name="journal_week_count_description">
+        <item quantity="one">%1$d séance sur %2$d</item>
+        <item quantity="other">%1$d séances sur %2$d</item>
+    </plurals>
+    <plurals name="journal_week_validated_description">
+        <item quantity="one">%1$d séance sur %2$d, semaine validée</item>
+        <item quantity="other">%1$d séances sur %2$d, semaine validée</item>
+    </plurals>
     <string name="duration_minutes">%1$d min</string>
     <string name="duration_hours">%1$d h</string>
     <string name="duration_hours_minutes">%1$d h %2$02d</string>
