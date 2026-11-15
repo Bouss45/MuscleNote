@@ -1,5 +1,6 @@
 package com.musclenote.android.ui.designsystem.components
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -142,10 +143,17 @@ private val MetricGap = 6.dp
 private val MetricCurveGap = 10.dp
 
 /**
+ * Bouton icône facultatif de l'en-tête d'une surface (DESIGN.md § 9.2) : [icon], son libellé TalkBack
+ * [description], [onClick].
+ */
+data class SurfaceAction(@param:DrawableRes val icon: Int, val description: String, val onClick: () -> Unit)
+
+/**
  * Surface « Mesure » — `MetricSurface` (hub Progrès, poids de corps) : légende et bouton d'ajout,
  * chiffre héros, variation, courbe compacte, puis une légende à gauche et à droite sous la courbe
  * ([footerStart] « 42 jours », [footerEnd] « 68 – 78,4 kg »). Sans valeur ([value] nul), la phrase
- * [emptyMessage] remplace le chiffre et la courbe.
+ * [emptyMessage] remplace le chiffre et la courbe. [secondaryAction] : un second bouton icône, avant
+ * l'ajout (le rappel de pesée, SPEC § 15.13.3).
  */
 @Composable
 fun MetricSurface(
@@ -163,10 +171,19 @@ fun MetricSurface(
     footerStart: String? = null,
     footerEnd: String? = null,
     emptyMessage: String? = null,
+    secondaryAction: SurfaceAction? = null,
 ) {
     HighlightSurface(modifier, spacing = MetricGap) {
         Row(Modifier.fillMaxWidth().heightIn(min = MetricHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
             Text(label, Modifier.weight(1f), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+            if (secondaryAction != null) {
+                StudioIconButton(
+                    secondaryAction.icon,
+                    contentDescription = secondaryAction.description,
+                    onClick = secondaryAction.onClick,
+                    size = ButtonSize.Small,
+                )
+            }
             StudioIconButton(
                 R.drawable.ds_ic_add,
                 contentDescription = addDescription,

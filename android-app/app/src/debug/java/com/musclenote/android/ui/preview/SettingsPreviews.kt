@@ -2,6 +2,7 @@ package com.musclenote.android.ui.preview
 
 import androidx.compose.runtime.Composable
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.ui.designsystem.StateCaption
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
@@ -13,6 +14,7 @@ import com.musclenote.android.ui.settings.LanguageSheetContent
 import com.musclenote.android.ui.settings.RestTimerSheetContent
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.settings.ThemeSheetContent
+import com.musclenote.android.ui.settings.WeighInReminderSheetContent
 
 /*
  * Paramètres (SPEC § 15.10.3) : la liste groupée avec les données de PreviewData (sauvegarde
@@ -31,6 +33,15 @@ private fun SettingsScreenPreview() = ScreenPreview { container ->
 @Composable
 private fun SettingsScreenPhonePreview() = ScreenPreview { container ->
     SettingsScreen(rememberBackupViewModel(container), onBack = {}, insets = PreviewTabInsets)
+}
+
+/** Rappel de pesée (§ 15.13.3) : activé, 07:30, en semaine ; puis désactivé, réglé par défaut. */
+@StudioComponentPreviews
+@Composable
+private fun WeighInReminderSheetPreview() = StudioComponentPreview {
+    WeighInReminderSheetContent(reminder = PreviewData.weighInReminder, onToggle = {}, onTime = { _, _ -> }, onToggleDay = {}, onClose = {})
+    StateCaption("Désactivé (réglage par défaut)")
+    WeighInReminderSheetContent(reminder = WeighInReminder.DEFAULT, onToggle = {}, onTime = { _, _ -> }, onToggleDay = {}, onClose = {})
 }
 
 /** Formulaires des préférences : thème (Sombre par défaut), langue, minuteur de repos. */

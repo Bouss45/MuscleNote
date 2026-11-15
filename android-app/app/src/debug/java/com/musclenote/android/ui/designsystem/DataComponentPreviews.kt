@@ -155,6 +155,17 @@ private fun ListRowPreview() = StudioComponentPreview { ListRowSamples() }
 @Composable
 private fun ChipPreview() = StudioComponentPreview { ChipSamples() }
 
+/** Hors maquette (SPEC § 15.13.3) : puces de filtre à choix multiple, jours du rappel de pesée (lues comme cases). */
+@OptIn(ExperimentalLayoutApi::class)
+@StudioComponentPreviews
+@Composable
+private fun FilterChipMultiPreview() = StudioComponentPreview {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf("lun." to true, "mar." to false, "mer." to true, "jeu." to false, "ven." to true, "sam." to false, "dim." to false)
+            .forEach { (day, selected) -> FilterChip(day, selected = selected, onClick = {}, multiSelect = true) }
+    }
+}
+
 @StudioComponentPreviews
 @Composable
 private fun TrendCurvePreview() = StudioComponentPreview { CurveSamples() }

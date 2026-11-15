@@ -54,7 +54,7 @@ import com.musclenote.android.ui.workout.rememberLiveTimes
 import kotlinx.coroutines.flow.Flow
 
 /** Écran demandé de l'extérieur de l'app (toucher d'une notification). */
-enum class ExternalDestination { Workout, Nutrition }
+enum class ExternalDestination { Workout, Nutrition, WeighIn }
 
 /**
  * Racine de l'interface (SPEC § 15.8.1) : quatre onglets (Accueil, Journal, Progrès, Nutrition) et
@@ -77,6 +77,8 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
     var startOpen by rememberSaveable { mutableStateOf(false) }
     var startPreset by rememberSaveable { mutableStateOf<String?>(null) }
     var startName by rememberSaveable { mutableStateOf<String?>(null) }
+    // Rappel de pesée touché (§ 15.13.4) : Progrès ouvre « Nouvelle pesée » une fois, puis l'oublie.
+    var pendingWeighIn by rememberSaveable { mutableStateOf(false) }
     fun openStart(preset: PresetId?, name: String?) {
         startPreset = preset?.id
         startName = name
@@ -95,13 +97,17 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
     LaunchedEffect(backupViewModel) {
         backupViewModel.showSettingsRequests.collect { navController.openSettings() }
     }
-    // Notification touchée : la séance en cours (une seule fois dans la pile), ou l'onglet Nutrition
-    // (rappel de complément, § 7.3).
+    // Notification touchée : la séance en cours (une seule fois dans la pile), l'onglet Nutrition
+    // (rappel de complément, § 7.3) ou Progrès sur « Nouvelle pesée » (rappel de pesée, § 15.13.4).
     LaunchedEffect(externalDestinations) {
         externalDestinations.collect { destination ->
             when (destination) {
                 ExternalDestination.Workout -> navController.openWorkout()
                 ExternalDestination.Nutrition -> navController.navigateToTab(TopLevelDestination.Nutrition)
+                ExternalDestination.WeighIn -> {
+                    pendingWeighIn = true
+                    navController.navigateToTab(TopLevelDestination.Progress)
+                }
             }
         }
     }
@@ -162,6 +168,8 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     onStartWorkout = { openStart(null, null) },
                     onOpenWorkout = { navController.openWorkout() },
                     onOpenNutrition = { navController.navigateToTab(TopLevelDestination.Nutrition) },
+                    openWeighIn = pendingWeighIn,
+                    onWeighInOpened = { pendingWeighIn = false },
                 )
             }
             composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }

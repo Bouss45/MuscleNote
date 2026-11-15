@@ -447,16 +447,20 @@ fun WorkoutScreen(
     }
 }
 
-/** En-tête en direct : nom, « 78,4 kg · 2 / 16 séries », chrono `m:ss` rafraîchi chaque seconde. */
+/**
+ * En-tête en direct : nom, « 78,4 kg · 2 / 16 séries » (poids de la séance, sinon la dernière pesée
+ * connue, omis sans aucun poids, § 15.13.1), chrono `m:ss` rafraîchi chaque seconde.
+ */
 @Composable
 private fun LiveSessionHeader(workout: Workout, completed: Int, total: Int, time: TimeSource, onCollapse: () -> Unit) {
+    val weight = rememberSessionWeight(workout)
     val start = remember(workout.date) { parseInstantOrNull(workout.date, time.zone())?.toEpochMilli() }
     val now = rememberSecondTicker(time)
     val elapsed = if (start == null) 0L else ((now - start) / 1_000L).coerceAtLeast(0L)
     LiveHeader(
         title = workoutDisplayName(workout),
-        subtitle = if (workout.bodyWeight > 0) {
-            pluralStringResource(R.plurals.workout_subtitle, total, formatNumber(workout.bodyWeight), completed, total)
+        subtitle = if (weight != null) {
+            pluralStringResource(R.plurals.workout_subtitle, total, formatNumber(weight), completed, total)
         } else {
             pluralStringResource(R.plurals.workout_subtitle_no_weight, total, completed, total)
         },

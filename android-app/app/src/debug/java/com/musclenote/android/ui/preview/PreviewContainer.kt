@@ -32,6 +32,9 @@ enum class PreviewDataSet {
 
     /** Première ouverture : aucune donnée. */
     Empty,
+
+    /** [Full] plus une pesée aujourd'hui (§ 15.13.2 : plus de champ de poids au démarrage). */
+    WeighedToday,
 }
 
 /**
@@ -52,7 +55,9 @@ private fun writePreviewData(dataDir: File, dataSet: PreviewDataSet) = runBlocki
         val files = DataFiles(dataDir, this, Dispatchers.IO)
         files.workouts.saveNow(PreviewData.workouts)
         files.exercises.saveNow(PreviewData.customExercises)
-        files.bodyWeights.saveNow(PreviewData.bodyWeights)
+        files.bodyWeights.saveNow(
+            if (dataSet == PreviewDataSet.WeighedToday) listOf(PreviewData.weighInToday) + PreviewData.bodyWeights else PreviewData.bodyWeights,
+        )
         files.supplements.saveNow(PreviewData.supplements)
         files.supplementsTaken.saveNow(PreviewData.taken)
         files.dailyTracker.saveNow(PreviewData.tracker)

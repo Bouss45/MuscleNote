@@ -36,6 +36,9 @@ object AppNotifications {
     /** Rappels de compléments : même id, une étiquette par complément. */
     const val ID_SUPPLEMENT = 2001
 
+    /** Rappel de pesée (§ 15.13.4) : une seule notification, la suivante la remplace. */
+    const val ID_WEIGH_IN = 2002
+
     /** Builder commun : canal, petite icône, couleur d'accent. */
     fun builder(context: Context, channel: AppChannel): NotificationCompat.Builder =
         NotificationCompat.Builder(context, channel.id)

@@ -24,6 +24,7 @@ import com.musclenote.android.ui.designsystem.components.SetProgress
 import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
+import com.musclenote.android.ui.designsystem.components.SurfaceAction
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.WeekBar
 import com.musclenote.android.ui.designsystem.components.WeekBars
@@ -105,10 +106,14 @@ private fun MetricSurfacePreview() = StudioComponentPreview {
     )
 }
 
-/** Hors maquette (SPEC § 15.9.2) : surface du poids de corps de Progrès, avec sa légende, puis sans poids. */
+/**
+ * Hors maquette (SPEC § 15.9.2, § 15.13.3) : surface du poids de corps de Progrès, avec sa légende et
+ * le bouton du rappel de pesée avant +, puis sans poids.
+ */
 @StudioComponentPreviews
 @Composable
 private fun MetricSurfaceFooterPreview() = StudioComponentPreview {
+    val reminder = SurfaceAction(R.drawable.ds_ic_notifications, "Rappel de pesée") {}
     MetricSurface(
         label = "Poids de corps · aujourd'hui",
         value = "78,4",
@@ -122,6 +127,7 @@ private fun MetricSurfaceFooterPreview() = StudioComponentPreview {
         deltaContext = "depuis le 12 févr.",
         footerStart = "42 jours",
         footerEnd = "68 – 78,4 kg",
+        secondaryAction = reminder,
     )
     StateCaption("Sans poids")
     MetricSurface(
@@ -133,6 +139,7 @@ private fun MetricSurfaceFooterPreview() = StudioComponentPreview {
         addDescription = "Ajouter une pesée",
         onAdd = {},
         emptyMessage = "Aucun poids enregistré. Ajoute une pesée, ou ton poids en démarrant une séance.",
+        secondaryAction = reminder,
     )
 }
 

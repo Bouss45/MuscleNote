@@ -5,6 +5,8 @@ import com.musclenote.android.data.backup.BackupWriter
 import com.musclenote.android.data.health.HealthRecords
 import com.musclenote.android.data.nutrition.ReminderRef
 import com.musclenote.android.data.nutrition.SupplementReminders
+import com.musclenote.android.data.nutrition.WeighInReminderRules
+import com.musclenote.android.data.nutrition.WeighInReminders
 import com.musclenote.android.data.repository.AutoBackupRepository
 import com.musclenote.android.data.repository.AutoBackupScheduler
 import com.musclenote.android.data.repository.BackupFolders
@@ -52,6 +54,8 @@ class AppContainer(
     ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     restTimerEffects: RestTimerEffects = RestTimerEffects.None,
     private val supplementReminders: SupplementReminders = SupplementReminders.None,
+    /** Rappel de pesée (§ 15.13.4) : même mécanisme que les rappels de compléments. */
+    private val weighInReminders: WeighInReminders = WeighInReminders.None,
     /** `versionName` de l'app installée, comparé à la dernière Release (§ 3.17). */
     currentVersion: String = "0",
     releaseSource: ReleaseSource = ReleaseSource.None,
@@ -80,7 +84,7 @@ class AppContainer(
 
     /** Jour local courant (§ 3.12) : minuit, retour au premier plan, changement de fuseau. */
     val currentDay = CurrentDay(time, appScope)
-    val preferences = PreferencesRepository(files.preferences, files.localPreferences)
+    val preferences = PreferencesRepository(files.preferences, files.localPreferences, weighInReminders)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
     val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
     val feedback = FeedbackRepository(files.feedback, time, feedbackSender)
@@ -112,8 +116,9 @@ class AppContainer(
         appScope.launch { health.sync() }
         // Notification de la séance en cours (§ 15.5), republiée après un redémarrage du téléphone.
         watchWorkoutNotification()
-        // Resynchronisation complète des rappels au démarrage (§ 7.3).
+        // Resynchronisation complète des rappels au démarrage (§ 7.3, § 15.13.4).
         supplementReminders.sync(emptyList()) { nutrition.supplements.value }
+        weighInReminders.sync { preferences.preferences.value.weighInReminder }
     }
 
     /** Attend la fin du chargement initial : rien ne doit être exporté ou importé avant. */
@@ -236,12 +241,25 @@ class AppContainer(
         awaitReady()
         currentDay.refresh()
         supplementReminders.sync(emptyList()) { nutrition.supplements.value }
+        weighInReminders.sync { preferences.preferences.value.weighInReminder }
     }
 
     /** Sonnerie d'un rappel de complément (récepteur, § 7.3). */
     suspend fun onSupplementReminderAlarm(ref: ReminderRef) {
         awaitReady()
         supplementReminders.onAlarm(ref) { nutrition.supplements.value }
+    }
+
+    /**
+     * Sonnerie du rappel de pesée (récepteur, § 15.13.4) : pas de notification si le jour n'est pas
+     * coché ou déjà pesé — pesée, séance terminée, ou la séance en cours avec un poids.
+     */
+    suspend fun onWeighInReminderAlarm() {
+        awaitReady()
+        weighInReminders.onAlarm(latest = { preferences.preferences.value.weighInReminder }) { reminder, day ->
+            val all = workouts.workouts.value + listOfNotNull(workouts.currentWorkout.value)
+            WeighInReminderRules.decide(reminder, day, all, nutrition.bodyWeights.value, time.zone())
+        }
     }
 
     /** « Passer » depuis la notification de séance (§ 7.2, § 15.5). */
@@ -281,6 +299,8 @@ class AppContainer(
         loadAll()
         // § 7.3 : les rappels qui existaient avant et n'existent plus sont annulés d'abord.
         supplementReminders.sync(previousSupplements) { nutrition.supplements.value }
+        // Le rappel de pesée vient des préférences importées (§ 15.13.5).
+        weighInReminders.sync { preferences.preferences.value.weighInReminder }
     }
 
     /** Export JSON v2 de l'état courant (§ 5.2) ; la séance en cours n'en fait pas partie. */
