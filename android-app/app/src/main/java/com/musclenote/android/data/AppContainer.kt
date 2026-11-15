@@ -19,6 +19,8 @@ import com.musclenote.android.data.repository.PreferencesRepository
 import com.musclenote.android.data.repository.ReleaseSource
 import com.musclenote.android.data.repository.RestTimerEffects
 import com.musclenote.android.data.repository.RestTimerRepository
+import com.musclenote.android.data.repository.UpdateCheckScheduler
+import com.musclenote.android.data.repository.UpdateNotifications
 import com.musclenote.android.data.repository.UpdateRepository
 import com.musclenote.android.data.repository.WorkoutRepository
 import com.musclenote.android.data.storage.DataFiles
@@ -56,14 +58,21 @@ class AppContainer(
     private val supplementReminders: SupplementReminders = SupplementReminders.None,
     /** Rappel de pesée (§ 15.13.4) : même mécanisme que les rappels de compléments. */
     private val weighInReminders: WeighInReminders = WeighInReminders.None,
-    /** `versionName` de l'app installée, comparé à la dernière Release (§ 3.17). */
+    /** `versionName` / `versionCode` de l'app installée, comparés à la dernière Release (§ 15.14.3). */
     currentVersion: String = "0",
+    currentVersionCode: Int = 0,
     releaseSource: ReleaseSource = ReleaseSource.None,
     /**
-     * Vérification des mises à jour active : app installée sans gestionnaire de mises à jour
-     * (Obtainium s'en charge sinon), § 3.17, 🔄 D25.
+     * App installée (ou mise à jour) par Obtainium (§ 3.17) : notification de mise à jour coupée par
+     * défaut (§ 15.14.1), pas d'annonce sur l'Accueil.
      */
-    val updateChecksEnabled: Boolean = false,
+    installedByObtainium: Boolean = false,
+    /** Notification et vérification quotidienne possibles : faux dans la variante preview (§ 15.14.1). */
+    updateNotificationsAvailable: Boolean = false,
+    /** Notification « MuscleNote {version} disponible » (§ 15.14.4). */
+    updateNotifications: UpdateNotifications = UpdateNotifications.None,
+    /** Tâche de la vérification quotidienne vers 18 h (§ 15.14.2). */
+    updateCheckScheduler: UpdateCheckScheduler = UpdateCheckScheduler.None,
     /** Webhook de l'envoi d'un avis (§ 14) ; `null` = pas d'URL au build, section masquée. */
     feedbackSender: FeedbackSender? = null,
     /** Dossier de la sauvegarde automatique (§ 15.2) : Storage Access Framework sur l'appareil. */
@@ -86,7 +95,17 @@ class AppContainer(
     val currentDay = CurrentDay(time, appScope)
     val preferences = PreferencesRepository(files.preferences, files.localPreferences, weighInReminders)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
-    val updates = UpdateRepository(files.updateCheck, time, currentVersion, releaseSource)
+    val updates = UpdateRepository(
+        files.updateCheck,
+        time,
+        currentVersion,
+        releaseSource,
+        currentVersionCode = currentVersionCode,
+        installedByObtainium = installedByObtainium,
+        notificationsAvailable = updateNotificationsAvailable,
+        notifications = updateNotifications,
+        scheduler = updateCheckScheduler,
+    )
     val feedback = FeedbackRepository(files.feedback, time, feedbackSender)
 
     /** Sauvegarde automatique quotidienne (§ 15.2) : même contenu que « Exporter mes données ». */
@@ -103,6 +122,9 @@ class AppContainer(
     private val initialLoad: Deferred<Unit> = appScope.async {
         if (files.meta.read() == null) files.meta.saveNow(StorageMeta(StorageMeta.CURRENT_SCHEMA_VERSION))
         val finalized = loadAll()
+        // Notification d'une version désormais installée retirée, vérification quotidienne
+        // programmée seulement si « Nouvelle version disponible » est activé (§ 15.14.2).
+        updates.onAppStart()
         // Réglages propres à l'appareil, jamais remplacés par un import : lus une seule fois.
         autoBackup.load()
         autoBackup.ensureScheduled()
@@ -136,8 +158,8 @@ class AppContainer(
 
     /**
      * Retour de l'app au premier plan (`ON_START`) : contrôle des séances de plus de 24 h (§ 3.4) ;
-     * une séance finalisée ou abandonnée arrête le repos en cours. Puis vérification des mises à
-     * jour si elle est due (§ 3.17).
+     * une séance finalisée ou abandonnée arrête le repos en cours. Les mises à jour ne sont plus
+     * vérifiées ici (🔄 D39 : tâche quotidienne, § 15.14.2).
      */
     fun onAppForeground() {
         currentDay.refresh()
@@ -153,13 +175,12 @@ class AppContainer(
                 health.sync()
             }
         }
-        // Au plus une fois par jour, et seulement sans gestionnaire de mises à jour (§ 3.17).
-        if (updateChecksEnabled) {
-            appScope.launch {
-                awaitReady()
-                updates.checkIfDue()
-            }
-        }
+    }
+
+    /** Tâche de 18 h (§ 15.14.2) : vérification quotidienne et, s'il y a lieu, notification. */
+    suspend fun runDailyUpdateCheck() {
+        awaitReady()
+        updates.dailyCheck()
     }
 
     /**

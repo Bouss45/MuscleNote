@@ -45,7 +45,15 @@ enum class PreviewDataSet {
 fun previewContainer(context: Context, dataSet: PreviewDataSet): AppContainer {
     val dir = Files.createTempDirectory(context.cacheDir.toPath(), "preview-").toFile()
     if (dataSet != PreviewDataSet.Empty) writePreviewData(File(dir, "data"), dataSet)
-    val container = AppContainer(File(dir, "data"), time = PreviewTime, ioDispatcher = Dispatchers.IO, currentVersion = "1.0.5")
+    // Notification de mise à jour possible (ligne de Paramètres), sans tâche ni notification réelles.
+    val container = AppContainer(
+        File(dir, "data"),
+        time = PreviewTime,
+        ioDispatcher = Dispatchers.IO,
+        currentVersion = "1.0.5",
+        currentVersionCode = 1005,
+        updateNotificationsAvailable = true,
+    )
     runBlocking { container.awaitReady() }
     return container
 }
@@ -64,6 +72,7 @@ private fun writePreviewData(dataDir: File, dataSet: PreviewDataSet) = runBlocki
         files.preferences.saveNow(PreviewData.preferences)
         files.localPreferences.saveNow(PreviewData.localPreferences)
         files.autoBackup.saveNow(PreviewData.autoBackup)
+        files.updateCheck.saveNow(PreviewData.updateCheck)
         if (dataSet == PreviewDataSet.WithCurrentWorkout) {
             files.currentWorkout.saveNow(PreviewData.currentWorkout)
             files.restTimer.saveNow(PreviewData.restTimer)

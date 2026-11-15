@@ -2,7 +2,6 @@ package com.musclenote.android.ui.preview
 
 import com.musclenote.android.data.backup.AutoBackupState
 import com.musclenote.android.data.model.BodyWeightEntry
-import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.LocalPreferences
@@ -13,9 +12,11 @@ import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.ThemeMode
+import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.update.UpdateCheckState
 import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.util.formatInstant
 import java.time.Instant
@@ -211,6 +212,14 @@ object PreviewData {
         folderUri = "content://com.android.externalstorage.documents/tree/primary%3ADocuments%2FMuscleNote",
         folderName = "MuscleNote",
         lastSuccessAt = at(today, 9, 12).toEpochMilli(),
+    )
+
+    /** Mises à jour (§ 15.14) : vérifiées ce matin, l'app installée est la dernière version. */
+    val updateCheck = UpdateCheckState(
+        checkedAt = at(today, 8, 12).toEpochMilli(),
+        latestVersion = "1.0.5",
+        pageUrl = "https://github.com/Bouss45/MuscleNote/releases/tag/v1.0.5",
+        apkUrl = "https://github.com/Bouss45/MuscleNote/releases/download/v1.0.5/MuscleNote-v1.0.5.apk",
     )
 }
 

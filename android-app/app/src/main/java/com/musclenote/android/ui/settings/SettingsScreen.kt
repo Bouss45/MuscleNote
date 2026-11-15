@@ -58,11 +58,12 @@ enum class SettingsSheet { Language, Theme, RestTimer, WeighInReminder, AutoBack
 
 /**
  * Paramètres (SPEC § 15.10.3, 🔄 D35) : hub de second niveau, ouvert par l'engrenage de l'Accueil.
- * Mes données ; « Préférences » (langue, thème, minuteur de repos, notifications coupées) ;
- * « Rappels » (rappel de pesée, puis les rappels de chaque complément, § 15.13.3, 🔄 D38) ;
- * « Données » (sauvegarde automatique § 15.2, export JSON v2 et CSV, import avec confirmation § 5.4,
- * Health Connect § 15.3 s'il est disponible) ; « À propos » (mises à jour § 3.17, rapport de plantage
- * § 10.9, avis § 14 si l'URL du webhook a été fournie au build). Chaque réglage s'ouvre en formulaire
+ * Mes données ; « Préférences » (langue, thème, minuteur de repos) ; « Notifications »
+ * (notifications coupées, rappel de pesée, rappels de chaque complément, § 15.13.3, 🔄 D38, et
+ * nouvelle version disponible, § 15.14.5, 🔄 D39) ; « Données » (sauvegarde automatique § 15.2,
+ * export JSON v2 et CSV, import avec confirmation § 5.4, Health Connect § 15.3 s'il est disponible) ;
+ * « À propos » (version et vérification § 15.14.5, rapport de plantage § 10.9, avis § 14 si l'URL du
+ * webhook a été fournie au build). Chaque réglage s'ouvre en formulaire
  * (bottom sheet) ou lance son action.
  */
 @Composable
@@ -142,6 +143,13 @@ fun SettingsScreen(
                 add(SettingsRow("language", stringResource(R.string.settings_language_title), value = languageLabel(currentAppLanguage())) { sheet = SettingsSheet.Language })
                 add(SettingsRow("theme", stringResource(R.string.settings_theme_title), value = themeLabel(preferences.theme)) { sheet = SettingsSheet.Theme })
                 add(SettingsRow("rest", stringResource(R.string.settings_rest_timer_title), value = restDurationLabel(preferences.restSeconds)) { sheet = SettingsSheet.RestTimer })
+            },
+        )
+
+        // 🔄 D39 : « Rappels » devient « Notifications » (§ 15.14.5).
+        SettingsSection(
+            stringResource(R.string.settings_section_notifications),
+            buildList {
                 if (!notificationsEnabled) {
                     add(
                         SettingsRow(
@@ -152,14 +160,9 @@ fun SettingsScreen(
                         ) { openNotificationSettings(context) },
                     )
                 }
-            },
-        )
-
-        SettingsSection(
-            stringResource(R.string.settings_section_reminders),
-            buildList {
                 add(weighInReminderRow { sheet = SettingsSheet.WeighInReminder })
                 addAll(supplementReminderRows { supplementId = it })
+                updateNotifyRow()?.let(::add)
             },
         )
 
@@ -282,8 +285,9 @@ fun SettingsScreen(
 }
 
 /**
- * Une ligne de Paramètres : titre, sous-titre (état), valeur à droite ou chevron ; [onClick] nul =
- * ligne inactive (opération en cours, mises à jour gérées par Obtainium).
+ * Une ligne de Paramètres : titre, sous-titre (état), valeur à droite, chevron ou case à cocher
+ * ([checked], toute la ligne la bascule : « Nouvelle version disponible ») ; [onClick] nul = ligne
+ * inactive (opération en cours) ou d'information (version installée).
  */
 internal data class SettingsRow(
     val key: String,
@@ -291,6 +295,7 @@ internal data class SettingsRow(
     val subtitle: String? = null,
     val value: String? = null,
     val chevron: Boolean = false,
+    val checked: Boolean? = null,
     val onClick: (() -> Unit)? = null,
 )
 
@@ -306,6 +311,7 @@ internal fun SettingsSection(title: String, rows: List<SettingsRow>, footer: @Co
                     title = row.title,
                     subtitle = row.subtitle,
                     trailing = when {
+                        row.checked != null -> ListRowTrailing.Check(row.checked)
                         row.value != null -> ListRowTrailing.Value(row.value)
                         row.chevron -> ListRowTrailing.Chevron
                         else -> null

@@ -75,7 +75,6 @@
     <string name="settings_crash_title">Crash report</string>
     <string name="settings_crash_desc">Last crash on %1$s</string>
     <string name="settings_crash_share">Share</string>
-    <string name="settings_update_title">Updates</string>
     <string name="settings_update_failed">Couldn\'t check: no connection?</string>
 
     <!-- Envoi d'un avis (§ 14) -->
@@ -454,12 +453,24 @@
     <string name="health_last_label">Last sent</string>
     <string name="health_written_label">Written</string>
     <string name="health_sending">Sending…</string>
-    <string name="settings_update_subtitle_managed">Managed by Obtainium</string>
-    <string name="settings_update_subtitle_never">Not checked yet</string>
-    <string name="settings_update_subtitle_up_to_date">Up to date · checked %1$s</string>
-    <string name="settings_update_subtitle_available">%1$s is available</string>
     <string name="settings_update_subtitle_checking">Checking…</string>
     <string name="settings_update_download">Download %1$s</string>
+    <!-- Update notification (§ 15.14, D39) -->
+    <string name="update_notify_title">New version available</string>
+    <string name="update_notify_subtitle">Every day around 6 pm</string>
+    <string name="update_notify_subtitle_obtainium">Obtainium already lets you know</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_version_up_to_date">Version %1$s · up to date</string>
+    <string name="settings_version_available">Version %1$s · %2$s available</string>
+    <string name="settings_version_checked">Checked %1$s</string>
+    <string name="settings_version_never">Not checked yet</string>
+    <string name="settings_update_check_now">Check now</string>
+    <string name="settings_update_open_obtainium">Open Obtainium</string>
+    <string name="channel_updates">Updates</string>
+    <string name="update_notif_title">MuscleNote %1$s available</string>
+    <string name="update_notif_body_default">A new version of MuscleNote is ready.</string>
+    <string name="update_notif_view">View</string>
+    <string name="update_notif_ignore">Skip this version</string>
     <string name="feedback_row_title">Send feedback</string>
     <string name="feedback_row_subtitle">An idea, a bug?</string>
     <string name="feedback_sending">Sending…</string>
@@ -657,7 +668,7 @@
     <string name="start_workout_weight_or_skip">Enter your weight, or tap “Skip”.</string>
     <string name="start_workout_skip">Skip</string>
     <string name="start_workout_weighed_today">Already weighed today: %1$s kg.</string>
-    <string name="settings_section_reminders">Reminders</string>
+    <string name="settings_section_notifications">Notifications</string>
     <string name="weigh_in_reminder_title">Weigh-in reminder</string>
     <string name="weigh_in_reminder_off_subtitle">So you remember to weigh in</string>
     <string name="weigh_in_reminder_help">It stays silent if you\'ve already weighed in that day.</string>

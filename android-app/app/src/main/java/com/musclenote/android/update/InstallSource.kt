@@ -1,30 +1,36 @@
 package com.musclenote.android.update
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.util.Log
+import com.musclenote.android.data.update.LatestRelease
+import com.musclenote.android.data.update.UpdateRules
 
 /**
- * Qui a installé l'app (SPEC § 3.17, 🔄 D25) : la vérification des mises à jour intégrée ne sert
- * que si aucun gestionnaire de mises à jour ne s'en charge. Relu à chaque démarrage : une app
- * installée à la main puis mise à jour par Obtainium cesse de vérifier d'elle-même.
+ * Qui a installé l'app (SPEC § 3.17, § 15.14.1) : installée par Obtainium, la notification de mise à
+ * jour est coupée par défaut et « Voir » ouvre Obtainium. Relu à chaque démarrage : une app
+ * installée à la main puis mise à jour par Obtainium change de défaut. Règles dans [UpdateRules].
  */
 object InstallSource {
     private const val TAG = "InstallSource"
 
-    /**
-     * Gestionnaires qui suivent les Releases : Obtainium (versions GitHub et F-Droid), et le Play
-     * Store, nom qu'Obtainium peut emprunter quand il installe par Shizuku (l'app n'y est pas).
-     */
-    private val UPDATE_MANAGERS = setOf(
-        "dev.imranr.obtainium",
-        "dev.imranr.obtainium.fdroid",
-        "com.android.vending",
-    )
+    /** `true` si Obtainium (ou le nom du Play Store qu'il emprunte) a installé l'app. */
+    fun isInstalledByObtainium(context: Context): Boolean = UpdateRules.isInstalledByObtainium(installers(context))
 
-    /** `true` si un gestionnaire de mises à jour a installé (ou fait installer) l'app. */
-    fun isManagedByUpdater(context: Context): Boolean = installers(context).any { it in UPDATE_MANAGERS }
+    /**
+     * « Voir » une mise à jour (§ 15.14.4) : Obtainium s'il a installé l'app et qu'il s'ouvre, sinon la
+     * page de la Release dans le navigateur.
+     */
+    fun viewUpdateIntent(context: Context, release: LatestRelease): Intent =
+        obtainiumLaunchIntent(context) ?: Intent(Intent.ACTION_VIEW, Uri.parse(release.pageUrl))
+
+    /** Écran d'accueil d'Obtainium (paquets déclarés dans `<queries>`), `null` s'il n'est pas là. */
+    fun obtainiumLaunchIntent(context: Context): Intent? =
+        UpdateRules.obtainiumPackagesToOpen(installers(context))
+            .firstNotNullOfOrNull { context.packageManager.getLaunchIntentForPackage(it) }
 
     /** App d'installation et app à l'origine de l'installation (Android 11+), si connues. */
     private fun installers(context: Context): List<String> {
