@@ -24,6 +24,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
@@ -70,7 +72,8 @@ sealed interface ListRowTrailing {
 
     /**
      * Case à cocher (celle de la ligne de série). Sans [onToggle], toute la ligne la bascule
-     * (échauffement de la séance en cours, lignes à cocher d'une sheet). Avec [onToggle], la case
+     * (échauffement de la séance en cours, lignes à cocher d'une sheet) ; sans `onClick` de la ligne
+     * non plus, elle est lue cochée (ou non) et inactive (exercice déjà dans la séance). Avec [onToggle], la case
      * seule (cible 48) la bascule, lue [toggleLabel] par TalkBack, et le reste de la ligne garde son
      * `onClick` (complément : la case = « pris aujourd'hui », la ligne ouvre ses rappels).
      */
@@ -114,7 +117,26 @@ fun ListRow(
             .bottomDivider(Studio.colors.separator, show = showDivider && !pressed)
             .then(
                 when {
+                    // Case sans action (exercice déjà dans la séance) : lue cochée et inactive.
+                    onClick == null && trailing is ListRowTrailing.Check && trailing.onToggle == null -> Modifier.toggleable(
+                        value = trailing.checked,
+                        enabled = false,
+                        role = Role.Checkbox,
+                        onValueChange = {},
+                    )
                     onClick == null -> Modifier
+                    // Ligne à cocher avec un appui long (exercice perso du sélecteur : modifier, supprimer).
+                    trailing is ListRowTrailing.Check && trailing.onToggle == null && onLongClick != null -> Modifier
+                        .semantics { toggleableState = ToggleableState(trailing.checked) }
+                        .combinedClickable(
+                            interactionSource = source,
+                            indication = null,
+                            role = Role.Checkbox,
+                            onClickLabel = onClickLabel,
+                            onLongClickLabel = onLongClickLabel,
+                            onLongClick = onLongClick,
+                            onClick = onClick,
+                        )
                     trailing is ListRowTrailing.Check && trailing.onToggle == null -> Modifier.toggleable(
                         value = trailing.checked,
                         interactionSource = source,
@@ -156,14 +178,12 @@ fun ListRow(
             Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(if (tags.isEmpty()) 3.dp else Studio.spacing.xs),
         ) {
-            Text(title, style = Studio.typography.bodyLine, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = Studio.typography.bodyLine)
             if (subtitle != null) {
                 Text(
                     subtitle,
                     style = Studio.typography.caption,
                     color = Studio.colors.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
             }
             if (tags.isNotEmpty()) {

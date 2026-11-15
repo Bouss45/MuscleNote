@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Text
@@ -121,7 +122,7 @@ private fun ChipBox(
 ) {
     Row(
         modifier
-            .height(ChipHeight)
+            .heightIn(min = ChipHeight)
             .background(background, Studio.shapes.control)
             .padding(horizontal = horizontalPadding),
         verticalAlignment = Alignment.CenterVertically,

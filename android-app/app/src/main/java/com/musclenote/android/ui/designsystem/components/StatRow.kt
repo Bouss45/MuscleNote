@@ -25,7 +25,7 @@ fun StatRow(stats: List<Stat>, modifier: Modifier = Modifier) {
         stats.forEach { stat ->
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
                 RollingText(stat.value, style = Studio.typography.numberMedium, color = Studio.colors.textPrimary)
-                Text(stat.label, style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+                Text(stat.label, style = Studio.typography.caption, color = Studio.colors.textSecondary)
             }
         }
     }

@@ -5,7 +5,6 @@ import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.ui.designsystem.StateCaption
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
-import com.musclenote.android.ui.designsystem.theme.StudioTheme
 import com.musclenote.android.ui.settings.AppLanguage
 import com.musclenote.android.ui.settings.AutoBackupSheetContent
 import com.musclenote.android.ui.settings.FeedbackSheetContent
@@ -14,7 +13,6 @@ import com.musclenote.android.ui.settings.LanguageSheetContent
 import com.musclenote.android.ui.settings.RestTimerSheetContent
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.settings.ThemeSheetContent
-import com.musclenote.android.ui.theme.MuscleNoteTheme
 
 /*
  * Paramètres (SPEC § 15.10.3) : la liste groupée avec les données de PreviewData (sauvegarde
@@ -25,18 +23,14 @@ import com.musclenote.android.ui.theme.MuscleNoteTheme
 @TallScreenPreviews
 @Composable
 private fun SettingsScreenPreview() = ScreenPreview { container ->
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        SettingsScreen(rememberBackupViewModel(container), onBack = {}, insets = PreviewTabInsets)
-    }
+    SettingsScreen(rememberBackupViewModel(container), onBack = {}, insets = PreviewTabInsets)
 }
 
 /** Ce qu'un téléphone montre de Paramètres. */
 @PhonePreviews
 @Composable
 private fun SettingsScreenPhonePreview() = ScreenPreview { container ->
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        SettingsScreen(rememberBackupViewModel(container), onBack = {}, insets = PreviewTabInsets)
-    }
+    SettingsScreen(rememberBackupViewModel(container), onBack = {}, insets = PreviewTabInsets)
 }
 
 /** Formulaires des préférences : thème (Sombre par défaut), langue, minuteur de repos. */

@@ -27,7 +27,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
@@ -43,6 +42,7 @@ import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StatRow
+import com.musclenote.android.ui.designsystem.components.StatusMessage
 import com.musclenote.android.ui.designsystem.templates.HubTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.templates.tabScreenInsets
@@ -193,7 +193,7 @@ fun SettingsScreen(
         ) {
             state.status?.let { status ->
                 Spacer(Modifier.height(Studio.spacing.s))
-                StatusText(status.message())
+                StatusMessage(status.message())
             }
             Spacer(Modifier.height(Studio.spacing.s))
             Text(stringResource(R.string.settings_info), style = Studio.typography.caption, color = Studio.colors.textSecondary)
@@ -303,15 +303,6 @@ internal fun SettingsSection(title: String, rows: List<SettingsRow>, footer: @Co
         }
         footer()
     }
-}
-
-/**
- * Message de succès ou d'erreur (sauvegarde, Health Connect, avis) : phrase en `textPrimary` 600,
- * sans couleur (DESIGN.md § 1 : vert = progression, rouge = baisse).
- */
-@Composable
-internal fun StatusText(message: String, modifier: Modifier = Modifier) {
-    Text(message, modifier, style = Studio.typography.body.copy(fontWeight = FontWeight.SemiBold), color = Studio.colors.textPrimary)
 }
 
 /** Fichiers CSV partagés ensemble (`ACTION_SEND_MULTIPLE`, `text/csv`, § 8). */

@@ -4,6 +4,7 @@ import androidx.annotation.DrawableRes
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,17 +15,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
@@ -69,7 +74,7 @@ fun NumericKeypad(
         KeyRow {
             DigitKey('7', onDigit); DigitKey('8', onDigit); DigitKey('9', onDigit)
             Key(Studio.colors.surfacePressed, onDelete, Modifier.weight(1f), deleteDescription) {
-                StudioIcon(R.drawable.ds_ic_backspace, contentDescription = null, tint = Studio.colors.textPrimary)
+                StudioIcon(R.drawable.ds_ic_backspace, contentDescription = deleteDescription, tint = Studio.colors.textPrimary)
             }
         }
         KeyRow {
@@ -82,7 +87,7 @@ fun NumericKeypad(
                     if (actionIcon != null) {
                         StudioIcon(actionIcon, contentDescription = null, size = ActionIconSize, tint = Studio.colors.onInverse)
                     }
-                    Text(actionLabel, style = Studio.typography.action, color = Studio.colors.onInverse, maxLines = 1)
+                    Text(actionLabel, style = Studio.typography.action, color = Studio.colors.onInverse, textAlign = TextAlign.Center)
                 }
             }
         }
@@ -122,7 +127,7 @@ private fun Key(
     val background by animateColorAsState(if (pressed) pressedColor else color, Studio.motion.fast.spec(), label = "key")
     Box(
         modifier
-            .height(KeyHeight)
+            .heightIn(min = KeyHeight)
             .background(background, Studio.shapes.control)
             .clickable(
                 interactionSource = source,
@@ -154,8 +159,11 @@ fun KeypadHeader(
         modifier.fillMaxWidth().padding(start = Studio.spacing.xxs),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        SegmentedControl(options, selectedIndex, onSelect, compact = true)
-        Spacer(Modifier.weight(1f))
+        // Les boutons gardent leurs 48 : le segmenté prend le reste et défile s'il est trop large
+        // (quatre champs du cardio, texte à 200 %).
+        Box(Modifier.weight(1f)) {
+            SegmentedControl(options, selectedIndex, onSelect, Modifier.clip(Studio.shapes.control).horizontalScroll(rememberScrollState()), compact = true)
+        }
         if (onDelete != null) {
             StudioIconButton(
                 R.drawable.ds_ic_delete,

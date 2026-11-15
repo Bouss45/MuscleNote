@@ -35,13 +35,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -65,6 +61,7 @@ import com.musclenote.android.ui.designsystem.components.ButtonVariant
 import com.musclenote.android.ui.designsystem.components.FilterChip
 import com.musclenote.android.ui.designsystem.components.FormHeroField
 import com.musclenote.android.ui.designsystem.components.InfoRow
+import com.musclenote.android.ui.designsystem.components.LabeledField
 import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.NumericKeypad
@@ -73,6 +70,7 @@ import com.musclenote.android.ui.designsystem.components.SheetTitle
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioTextField
+import com.musclenote.android.ui.designsystem.components.statusHelp
 import com.musclenote.android.ui.designsystem.templates.FormSheetTemplate
 import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.progress.DailyKind
@@ -184,7 +182,7 @@ private fun AmountForm(
     val goalLabel = if (calories) amount(goal) else waterGoalText(goal)
     FormSheetTemplate(
         title = stringResource(if (calories) R.string.progress_tab_calories else R.string.progress_tab_water),
-        help = if (invalid) errorText(stringResource(R.string.nutrition_entry_invalid))
+        help = if (invalid) statusHelp(stringResource(R.string.nutrition_entry_invalid))
         else AnnotatedString(stringResource(R.string.nutrition_entry_help, amount(current), goalLabel)),
         bottomInset = bottomInset,
         field = { FormHeroField(text, unit = if (calories) "kcal" else "ml") },
@@ -250,7 +248,7 @@ private fun GoalForm(kind: DailyKind, goal: Int, onSave: (Int) -> Unit, bottomIn
 
     FormSheetTemplate(
         title = stringResource(if (calories) R.string.nutrition_calorie_goal_title else R.string.nutrition_water_goal_title),
-        help = if (invalid) errorText(stringResource(R.string.nutrition_goal_invalid))
+        help = if (invalid) statusHelp(stringResource(R.string.nutrition_goal_invalid))
         else AnnotatedString(stringResource(R.string.nutrition_goal_help)),
         bottomInset = bottomInset,
         field = { FormHeroField(text, unit = if (calories) "kcal" else "L") },
@@ -293,13 +291,6 @@ private fun EntryKeypad(
         actionIcon = R.drawable.ds_ic_check,
         decimalSeparator = separator,
     )
-}
-
-/** Phrase d'aide devenue erreur : en `textPrimary` 600, sans couleur (§ 15.10.3, comme la pesée). */
-@Composable
-private fun errorText(message: String): AnnotatedString {
-    val color = Studio.colors.textPrimary
-    return buildAnnotatedString { withStyle(SpanStyle(color = color, fontWeight = FontWeight.SemiBold)) { append(message) } }
 }
 
 // ─── Compléments (§ 15.10.2) ──────────────────────────────────────────────────────────
@@ -529,14 +520,6 @@ private fun RemindersEditor(
 }
 
 /** Libellé (`caption`, texte secondaire) au-dessus d'un champ, comme les champs de « Modifier la date ». */
-@Composable
-private fun LabeledField(label: String, content: @Composable () -> Unit) {
-    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
-        Text(label, style = Studio.typography.caption, color = Studio.colors.textSecondary)
-        content()
-    }
-}
-
 /**
  * « Heure du rappel » (🔄 D7) : `TimePicker` Material 3 en dialogue, 24 h ou 12 h selon le système,
  * toute minute, aux couleurs du design system (heure ou minute en saisie sur `liveDim`).

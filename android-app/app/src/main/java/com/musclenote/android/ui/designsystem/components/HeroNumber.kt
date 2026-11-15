@@ -31,7 +31,7 @@ fun HeroNumber(
 ) {
     Column(modifier, verticalArrangement = Arrangement.spacedBy(HeroGap)) {
         if (label != null) {
-            Text(label, style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+            Text(label, style = Studio.typography.caption, color = Studio.colors.textSecondary)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(HeroGap)) {
             RollingText(

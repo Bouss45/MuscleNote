@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -31,13 +32,11 @@ fun ScreenTitleBar(
     modifier: Modifier = Modifier,
     action: (@Composable () -> Unit)? = null,
 ) {
-    Row(modifier.fillMaxWidth().height(HubTitleHeight), verticalAlignment = Alignment.CenterVertically) {
+    Row(modifier.fillMaxWidth().heightIn(min = HubTitleHeight), verticalAlignment = Alignment.CenterVertically) {
         Text(
             title,
             modifier = Modifier.weight(1f).semantics { heading() },
             style = Studio.typography.titleScreen,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         if (action != null) Row(Modifier.bleed(end = IconButtonBleed)) { action() }
     }
@@ -51,8 +50,8 @@ fun DateTitleBar(
     onSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(modifier.fillMaxWidth().height(BarHeight), verticalAlignment = Alignment.CenterVertically) {
-        Text(date, Modifier.weight(1f), style = Studio.typography.emphasis, color = Studio.colors.textSecondary, maxLines = 1)
+    Row(modifier.fillMaxWidth().heightIn(min = BarHeight), verticalAlignment = Alignment.CenterVertically) {
+        Text(date, Modifier.weight(1f), style = Studio.typography.emphasis, color = Studio.colors.textSecondary)
         StudioIconButton(
             R.drawable.ds_ic_settings,
             contentDescription = settingsDescription,
@@ -116,14 +115,14 @@ fun LiveHeader(
     collapseDescription: String = stringResource(R.string.ds_collapse_session),
 ) {
     Row(
-        modifier.fillMaxWidth().bleed(start = IconButtonBleed).height(BarHeight),
+        modifier.fillMaxWidth().bleed(start = IconButtonBleed).heightIn(min = BarHeight),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xxs),
     ) {
         StudioIconButton(R.drawable.ds_ic_keyboard_arrow_down, collapseDescription, onCollapse)
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = Studio.typography.titleItem, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(subtitle, style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+            Text(title, style = Studio.typography.titleItem, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            Text(subtitle, style = Studio.typography.caption, color = Studio.colors.textSecondary)
         }
         RollingText(elapsed, style = Studio.typography.numberMedium, color = Studio.colors.liveText)
     }
@@ -131,12 +130,13 @@ fun LiveHeader(
 
 /**
  * En-tête d'un bloc exercice — `ExerciseBlockHeader` (DESIGN.md § 9.3) : titre `titleBlock`,
- * boutons fiche et options, puis la rangée de puces (précédent, suggestion).
+ * boutons fiche (absent sans [onOpenDetails] : éditeur d'une séance terminée) et options, puis la
+ * rangée de puces (précédent, suggestion, groupe).
  */
 @Composable
 fun ExerciseBlockHeader(
     title: String,
-    onOpenDetails: () -> Unit,
+    onOpenDetails: (() -> Unit)?,
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
     detailsDescription: String = stringResource(R.string.ds_exercise_details),
@@ -144,7 +144,7 @@ fun ExerciseBlockHeader(
     chips: @Composable RowScope.() -> Unit = {},
 ) {
     Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
-        Row(Modifier.fillMaxWidth().bleed(end = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(Modifier.fillMaxWidth().bleed(end = IconButtonBleed), verticalAlignment = Alignment.CenterVertically) {
             Text(
                 title,
                 modifier = Modifier.weight(1f).semantics { heading() },
@@ -152,7 +152,9 @@ fun ExerciseBlockHeader(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            StudioIconButton(R.drawable.ds_ic_monitoring, detailsDescription, onOpenDetails, size = ButtonSize.Small)
+            if (onOpenDetails != null) {
+                StudioIconButton(R.drawable.ds_ic_monitoring, detailsDescription, onOpenDetails, size = ButtonSize.Small)
+            }
             StudioIconButton(R.drawable.ds_ic_more_vert, moreDescription, onMore, size = ButtonSize.Small)
         }
         Row(horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs), content = chips)

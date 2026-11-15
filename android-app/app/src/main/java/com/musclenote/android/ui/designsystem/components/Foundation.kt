@@ -16,9 +16,12 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
@@ -39,6 +42,7 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -114,7 +118,7 @@ fun Delta(
 ) {
     val style = when (size) {
         DeltaSize.Hero, DeltaSize.Line -> Studio.typography.emphasis
-        DeltaSize.Row -> Studio.typography.caption.copy(fontWeight = FontWeight.SemiBold)
+        DeltaSize.Row -> Studio.typography.captionStrong
     }
     val secondary = Studio.colors.textSecondary
     val text = buildAnnotatedString {
@@ -123,7 +127,7 @@ fun Delta(
             withStyle(SpanStyle(color = secondary, fontWeight = FontWeight.Normal)) { append(" $context") }
         }
     }
-    Text(text, modifier = modifier, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Text(text, modifier = modifier, style = style)
 }
 
 /** Texte en capitales dans la langue de l'app (étiquettes « EN COURS », « REPOS »…). */
@@ -145,7 +149,7 @@ fun LiveLabel(text: String, modifier: Modifier = Modifier) {
         horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp),
     ) {
         LiveDot()
-        Text(text.uppercaseForDisplay(), style = Studio.typography.label, color = Studio.colors.liveText, maxLines = 1)
+        Text(text.uppercaseForDisplay(), style = Studio.typography.label, color = Studio.colors.liveText)
     }
 }
 
@@ -166,6 +170,34 @@ fun RollingText(
     modifier: Modifier = Modifier,
     animate: Boolean = true,
 ) {
+    BoxWithConstraints(modifier) {
+        // Plus large que sa place (texte à 200 %, colonne étroite) : le chiffre rétrécit, jusqu'à 60 %.
+        // Remesuré à chaque pas : au-delà de 100 %, Android agrandit les grands textes moins que les
+        // petits, une réduction en sp ne réduit donc pas la largeur d'autant.
+        val measurer = rememberTextMeasurer()
+        val maxWidth = constraints.maxWidth
+        val bounded = constraints.hasBoundedWidth
+        val fitted = remember(text, style, maxWidth, bounded) {
+            var size = style.fontSize
+            val min = style.fontSize * FIT_TEXT_MIN_SCALE
+            var current = style
+            if (bounded) {
+                repeat(FIT_STEPS) {
+                    val width = measurer.measure(text, current.copy(lineHeight = TextUnit.Unspecified)).size.width
+                    if (width <= maxWidth || size.value <= min.value) return@remember current
+                    val next = size * (maxWidth.toFloat() / width).coerceAtMost(FIT_STEP_MAX)
+                    size = if (next.value < min.value) min else next
+                    current = style.copy(fontSize = size)
+                }
+            }
+            current
+        }
+        RollingGlyphs(text, fitted, color, animate, measurer)
+    }
+}
+
+@Composable
+private fun RollingGlyphs(text: String, style: TextStyle, color: Color, animate: Boolean, measurer: TextMeasurer) {
     val density = LocalDensity.current
     val lineBox = with(density) {
         when {
@@ -175,11 +207,9 @@ fun RollingText(
         }
     }
     val glyphStyle = style.copy(lineHeight = TextUnit.Unspecified)
-    val measurer = rememberTextMeasurer()
     val baseline = remember(text, glyphStyle) { measurer.measure(text, glyphStyle).firstBaseline }
     val millis = Studio.motion.numberChangeMillis
     Layout(
-        modifier = modifier,
         content = {
             AnimatedContent(
                 targetState = text,
@@ -261,4 +291,27 @@ class AlwaysPressedInteractionSource : MutableInteractionSource {
 /** Texte annoté : [parts] concaténés, chacun avec son style. */
 internal fun annotated(vararg parts: Pair<String, SpanStyle>): AnnotatedString = buildAnnotatedString {
     parts.forEach { (text, style) -> withStyle(style) { append(text) } }
+}
+
+/** Plus petite taille d'un [FitText] ou d'un [RollingText], en part de sa taille normale. */
+private const val FIT_TEXT_MIN_SCALE = 0.6f
+
+/** Ajustement d'un [RollingText] : au plus 8 mesures, chacune réduisant d'au moins 3 %. */
+private const val FIT_STEPS = 8
+private const val FIT_STEP_MAX = 0.97f
+
+/**
+ * Un mot qui doit tenir sur une ligne dans une colonne étroite (libellé d'onglet, en-tête de
+ * colonne) : avec un grand texte du système (200 %), la police rétrécit jusqu'à 60 % de sa taille
+ * plutôt que de couper le mot.
+ */
+@Composable
+internal fun FitText(text: String, style: TextStyle, color: Color, modifier: Modifier = Modifier) {
+    BasicText(
+        text,
+        modifier,
+        style = style.copy(color = color),
+        maxLines = 1,
+        autoSize = TextAutoSize.StepBased(minFontSize = style.fontSize * FIT_TEXT_MIN_SCALE, maxFontSize = style.fontSize),
+    )
 }

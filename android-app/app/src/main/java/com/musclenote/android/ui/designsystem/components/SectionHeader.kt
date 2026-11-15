@@ -40,7 +40,7 @@ fun SectionHeader(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            Text(title, style = Studio.typography.titleSection, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = Studio.typography.titleSection)
             if (subtitle != null) {
                 Text(subtitle, style = Studio.typography.caption, color = Studio.colors.textSecondary)
             }
@@ -49,12 +49,12 @@ fun SectionHeader(
         when {
             linkLabel != null -> Row(
                 Modifier
-                    .height(SectionHeaderHeight)
+                    .heightIn(min = SectionHeaderHeight)
                     .clickable(enabled = onLinkClick != null, role = Role.Button) { onLinkClick?.invoke() },
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                Text(linkLabel, style = linkStyle, color = Studio.colors.textSecondary, maxLines = 1)
+                Text(linkLabel, style = linkStyle, color = Studio.colors.textSecondary)
                 StudioIcon(
                     R.drawable.ds_ic_chevron_right,
                     contentDescription = null,
@@ -66,7 +66,6 @@ fun SectionHeader(
                 trailingText,
                 style = linkStyle,
                 color = trailingTrend.color(),
-                maxLines = 1,
             )
         }
     }

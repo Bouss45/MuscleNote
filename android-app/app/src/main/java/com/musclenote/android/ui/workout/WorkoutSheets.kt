@@ -24,6 +24,7 @@ import com.musclenote.android.ui.designsystem.components.SheetTitle
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioTextField
+import com.musclenote.android.ui.designsystem.theme.Studio
 
 /** Un exercice de l'échauffement (§ 2.4). */
 internal class WarmupItem(@StringRes val label: Int, @StringRes val detail: Int)
@@ -83,29 +84,33 @@ internal fun WarmupSheetContent(done: Int, onToggle: (Int) -> Unit, onClose: () 
 }
 
 /**
- * Options d'un exercice (menu ⋮, § 15.7.1) : note enregistrée à chaque frappe, « Retirer de la
- * séance » (confirmation à part).
+ * Options d'un exercice (menu ⋮, § 15.7.1) : note enregistrée à chaque frappe ([onNoteChange] ;
+ * absente dans l'éditeur d'une séance terminée, § 2.9), « Retirer de la séance » (confirmation à
+ * part).
  */
 @Composable
 internal fun ExerciseOptionsSheetContent(
     name: String,
     note: String,
-    onNoteChange: (String) -> Unit,
+    onNoteChange: ((String) -> Unit)?,
     onRemove: () -> Unit,
     onClose: () -> Unit,
     bottomInset: Dp,
+    subtitle: String? = null,
 ) {
     var text by rememberSaveable { mutableStateOf(note) }
     SheetSurface(Modifier.imePadding(), bottomInset = bottomInset) {
-        SheetTitle(name, null)
-        StudioTextField(
-            value = text,
-            onValueChange = {
-                text = it
-                onNoteChange(it)
-            },
-            placeholder = stringResource(R.string.exercise_card_note_placeholder),
-        )
+        SheetTitle(name, subtitle?.let { AnnotatedString(it) }, messageStyle = Studio.typography.body)
+        if (onNoteChange != null) {
+            StudioTextField(
+                value = text,
+                onValueChange = {
+                    text = it
+                    onNoteChange(it)
+                },
+                placeholder = stringResource(R.string.exercise_card_note_placeholder),
+            )
+        }
         StudioButton(stringResource(R.string.workout_exercise_remove), onRemove, Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
         StudioButton(stringResource(R.string.ds_close), onClose, Modifier.fillMaxWidth(), variant = ButtonVariant.Text)
     }

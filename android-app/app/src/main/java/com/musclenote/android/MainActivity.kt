@@ -28,8 +28,8 @@ import com.musclenote.android.ui.ExternalDestination
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.MuscleNoteApp
 import com.musclenote.android.ui.settings.BackupViewModel
-import com.musclenote.android.ui.theme.MuscleNoteTheme
-import com.musclenote.android.ui.theme.SystemNightMode
+import com.musclenote.android.ui.designsystem.theme.StudioTheme
+import com.musclenote.android.ui.designsystem.theme.SystemNightMode
 
 /**
  * Activité unique. AppCompatActivity (et non ComponentActivity) pour la langue par
@@ -66,7 +66,7 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val preferences by app.container.preferences.preferences.collectAsStateWithLifecycle()
             val preferencesLoaded by app.container.preferences.loaded.collectAsStateWithLifecycle()
-            // Choix Système / Clair / Sombre (🔄 D10), appliqué tout de suite à l'interface.
+            // Choix Sombre / Clair / Système (🔄 D10, D35), appliqué tout de suite à l'interface.
             val darkTheme = when (preferences.theme) {
                 ThemeMode.System -> isSystemInDarkTheme()
                 ThemeMode.Light -> false
@@ -86,7 +86,7 @@ class MainActivity : AppCompatActivity() {
                 onDispose {}
             }
             CompositionLocalProvider(LocalAppContainer provides app.container) {
-                MuscleNoteTheme(darkTheme = darkTheme) {
+                StudioTheme(darkTheme = darkTheme) {
                     MuscleNoteApp(backupViewModel, externalDestinationFlow)
                 }
             }

@@ -58,7 +58,8 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
  * Séance en cours (SPEC § 15.7, 🔄 D32) au gabarit « en direct » : en-tête fixe (réduire, nom,
  * séries, chrono) et progression ; échauffement ; un bloc par exercice (colonne « Préc. »,
  * suggestion de charge, lignes de série, repos, « + Série »), réordonnable par appui long ; en bas,
- * le pavé numérique pendant une saisie, sinon « Terminer la séance ».
+ * le pavé numérique pendant une saisie, sinon « Terminer la séance ». « Ajouter un exercice » ouvre
+ * le sélecteur en bottom sheet (§ 15.11.2).
  *
  * [onBack] revient à l'Accueil (la séance reste en cours) ; [onFinished] aussi, une fois la séance
  * terminée ou abandonnée. [onOpenHistory] ouvre l'historique d'un exercice (§ 2.8).
@@ -68,7 +69,6 @@ import sh.calvin.reorderable.rememberReorderableLazyListState
 @Composable
 fun WorkoutScreen(
     onBack: () -> Unit,
-    onAddExercise: () -> Unit,
     onOpenHistory: (exerciseId: String) -> Unit,
     onFinished: () -> Unit,
     initialEntry: EntryTarget? = null,
@@ -118,6 +118,8 @@ fun WorkoutScreen(
     var deleteSetOf by rememberSaveable { mutableStateOf<String?>(null) }
     var deleteSetId by rememberSaveable { mutableStateOf<String?>(null) }
     var finishOpen by rememberSaveable { mutableStateOf(false) }
+    var pickerOpen by rememberSaveable { mutableStateOf(false) }
+    val onAddExercise = { pickerOpen = true }
 
     // Pendant un glisser-déposer, l'ordre vit ici ; il part au dépôt au relâchement (§ 2.4).
     var dragOrder by remember { mutableStateOf<List<String>?>(null) }
@@ -326,6 +328,22 @@ fun WorkoutScreen(
                 )
             }
         }
+    }
+
+    if (pickerOpen) {
+        val available = remember(customExercises) { exerciseDefinitions(customExercises).filterNot { it.archived } }
+        ExercisePickerSheet(
+            title = stringResource(R.string.workout_add_exercise),
+            definitions = available,
+            addedIds = workout.exercises.mapTo(HashSet()) { it.exerciseId },
+            onAdd = { definition -> container.launchMutation { repository.addExerciseToWorkout(definition.id) } },
+            onDismiss = { pickerOpen = false },
+            custom = CustomExerciseActions(
+                create = { name, group -> container.launchMutation { repository.addCustomExercise(name, group) } },
+                update = { id, name, group -> container.launchMutation { repository.updateCustomExercise(id, name, group) } },
+                delete = { id -> container.launchMutation { repository.deleteCustomExercise(id) } },
+            ),
+        )
     }
 
     if (warmupOpen) {

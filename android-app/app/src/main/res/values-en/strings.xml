@@ -188,15 +188,13 @@
     <string name="start_workout_group_other">Other</string>
     <string name="start_workout_custom_label">Custom</string>
     <string name="start_workout_custom_placeholder">E.g. Shoulders / Calves</string>
-    <string name="start_workout_custom_empty">Custom name...</string>
     <string name="start_workout_next">Next</string>
     <string name="start_workout_body_weight_subtitle">Your weight today?</string>
     <string name="start_workout_start">Start</string>
+    <string name="start_workout_weight_invalid">Enter your body weight</string>
 
     <!-- Workout in progress (§ 2.4 – 2.6) -->
     <string name="workout_no_active">No active workout</string>
-    <string name="workout_in_progress">Workout in progress</string>
-    <string name="workout_sets_progress">%1$d/%2$d sets</string>
     <string name="workout_add_exercise">Add an exercise</string>
     <string name="workout_empty_exercises">Add exercises to get started</string>
     <string name="workout_finish">Finish workout</string>
@@ -218,7 +216,6 @@
     <string name="workout_warmup_squat_label">Bodyweight squats</string>
     <string name="workout_warmup_squat_detail">15 slow reps</string>
     <string name="exercise_card_note_placeholder">Add a note…</string>
-    <string name="exercise_card_add_set">Add a set</string>
     <string name="exercise_card_remove_confirm">Remove “%1$s” from this session?</string>
     <string name="exercise_card_remove">Remove</string>
 
@@ -249,6 +246,10 @@
     <string name="workout_suggest_same_reps">Same reps</string>
     <string name="workout_suggest_apply">Apply suggestion: %1$s</string>
     <string name="workout_add_set_row">Set</string>
+    <string name="workout_set_value_description">Set %1$d, %2$s: %3$s</string>
+    <string name="workout_add_set_to">Add a set: %1$s</string>
+    <string name="workout_exercise_details_for">Details: %1$s</string>
+    <string name="workout_exercise_options_for">Options: %1$s</string>
     <string name="workout_set_check">Complete set %1$d</string>
     <string name="workout_set_checked">Set %1$d completed</string>
     <string name="workout_rest_total">of %1$s</string>
@@ -272,13 +273,16 @@
     <string name="workout_no_active_message">Start a session from Home.</string>
 
     <!-- Exercise picker (§ 2.7) -->
-    <string name="exercise_picker_title">Exercises</string>
     <string name="exercise_picker_search_placeholder">Search for an exercise...</string>
     <string name="exercise_picker_new_exercise">New exercise</string>
     <string name="exercise_picker_name_placeholder">Exercise name</string>
     <string name="exercise_picker_edit_exercise">Edit exercise</string>
     <string name="exercise_picker_delete_confirm">Delete %1$s?</string>
     <string name="exercise_picker_delete_hint">If you\'ve already used it, it stays visible in your past sessions.</string>
+    <string name="exercise_picker_delete_exercise">Delete exercise</string>
+    <string name="exercise_picker_actions">Edit or delete</string>
+    <string name="exercise_picker_name_label">Name</string>
+    <string name="exercise_picker_group_label">Muscle group</string>
 
     <!-- Charts (§ 2.13) -->
 
@@ -289,11 +293,12 @@
     <string name="edit_workout_not_found">Workout not found</string>
     <string name="edit_workout_header_label">Edit workout</string>
     <string name="edit_workout_no_exercise_found">No exercise found</string>
-    <string name="edit_workout_empty_exercises">No exercises — tap the button above to add one</string>
     <string name="edit_workout_discard_title">Discard changes?</string>
     <string name="edit_workout_discard">Discard</string>
     <string name="edit_workout_keep_editing">Keep editing</string>
     <string name="edit_workout_rename">Rename session</string>
+    <string name="edit_workout_empty_message">Add this session\'s exercises.</string>
+    <string name="edit_workout_discard_message">Your changes to this session won\'t be saved.</string>
     <!-- Notification channels (§ 7.1) -->
     <string name="channel_workout_ongoing">Workout in progress</string>
     <string name="channel_rest_timer">Rest timer</string>

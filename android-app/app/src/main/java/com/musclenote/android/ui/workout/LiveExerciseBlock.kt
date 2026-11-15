@@ -74,7 +74,14 @@ internal fun LiveExerciseBlock(
     val (firstField, secondField) = fields[0] to fields[1]
     val target = entry.target?.takeIf { it.exerciseId == exercise.exerciseId }
     Column(modifier.fillMaxWidth()) {
-        ExerciseBlockHeader(name, onOpenDetails, onMore, modifier = headerModifier) {
+        ExerciseBlockHeader(
+            name,
+            onOpenDetails,
+            onMore,
+            modifier = headerModifier,
+            detailsDescription = stringResource(R.string.workout_exercise_details_for, name),
+            moreDescription = stringResource(R.string.workout_exercise_options_for, name),
+        ) {
             if (referenceDate != null) {
                 val description = stringResource(R.string.workout_last_time, referenceDate)
                 StudioChip(
@@ -152,11 +159,17 @@ internal fun LiveExerciseBlock(
                     onPreviousClick = previous?.let { { onPreviousClick(set, it) } },
                     previousClickLabel = stringResource(R.string.workout_previous_copy, previousLabel),
                     showDivider = !isLast || restAnchor == set.id,
+                    weightDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(firstField), display(firstField)),
+                    repsDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(secondField), display(secondField)),
                 )
                 if (restAnchor == set.id) rest()
             }
         }
-        AddSetRow(stringResource(R.string.workout_add_set_row), onAddSet)
+        AddSetRow(
+            stringResource(R.string.workout_add_set_row),
+            onAddSet,
+            description = stringResource(R.string.workout_add_set_to, name),
+        )
     }
 }
 

@@ -12,12 +12,10 @@ import com.musclenote.android.ui.designsystem.StateCaption
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
-import com.musclenote.android.ui.designsystem.theme.StudioTheme
 import com.musclenote.android.ui.exercise.ExerciseFicheContent
 import com.musclenote.android.ui.exercise.ExerciseFicheScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.progress.WeighInForm
-import com.musclenote.android.ui.theme.MuscleNoteTheme
 import java.time.LocalTime
 
 /*
@@ -53,89 +51,73 @@ private fun benchHistory(weeks: Int, weeksBefore: Long = 0, load: (Int) -> Doubl
 @PhonePreviews
 @Composable
 private fun ExerciseFicheScreenPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ExerciseFicheScreen(exerciseId = "bench", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
-    }
+    ExerciseFicheScreen(exerciseId = "bench", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
 }
 
 /** Fiche en baisse : charge qui recule de 102,5 à 86,25 kg en douze semaines (variation rouge). */
 @PhonePreviews
 @Composable
 private fun ExerciseFicheFallingPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ExerciseFicheContent(
-            definition = bench,
-            history = benchHistory(weeks = 12) { n -> 100.0 - (n / 2) * 1.25 + if (n % 3 == 0) 2.5 else 0.0 },
-            today = PreviewData.today,
-            zone = PreviewData.zone,
-            onBack = {},
-            onEditWorkout = {},
-            insets = MockupInsets,
-        )
-    }
+    ExerciseFicheContent(
+        definition = bench,
+        history = benchHistory(weeks = 12) { n -> 100.0 - (n / 2) * 1.25 + if (n % 3 == 0) 2.5 else 0.0 },
+        today = PreviewData.today,
+        zone = PreviewData.zone,
+        onBack = {},
+        onEditWorkout = {},
+        insets = MockupInsets,
+    )
 }
 
 /** Période vide : dernière séance il y a trois mois, « 1M » choisi. */
 @PhonePreviews
 @Composable
 private fun ExerciseFicheEmptyPeriodPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ExerciseFicheContent(
-            definition = bench,
-            history = benchHistory(weeks = 6, weeksBefore = 13) { n -> 80.0 + n * 1.25 },
-            today = PreviewData.today,
-            zone = PreviewData.zone,
-            onBack = {},
-            onEditWorkout = {},
-            insets = MockupInsets,
-            initialPeriod = ChartPeriod.OneMonth,
-        )
-    }
+    ExerciseFicheContent(
+        definition = bench,
+        history = benchHistory(weeks = 6, weeksBefore = 13) { n -> 80.0 + n * 1.25 },
+        today = PreviewData.today,
+        zone = PreviewData.zone,
+        onBack = {},
+        onEditWorkout = {},
+        insets = MockupInsets,
+        initialPeriod = ChartPeriod.OneMonth,
+    )
 }
 
 /** Exercice au poids du corps (tractions de PreviewData, toutes à 0 kg) : reps max par séance. */
 @PhonePreviews
 @Composable
 private fun ExerciseFicheBodyweightPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ExerciseFicheScreen(exerciseId = "pullup", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
-    }
+    ExerciseFicheScreen(exerciseId = "pullup", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
 }
 
 /** Exercice jamais fait : état vide sous le titre. */
 @PhonePreviews
 @Composable
 private fun ExerciseFicheNoSessionPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ExerciseFicheScreen(exerciseId = "dips", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
-    }
+    ExerciseFicheScreen(exerciseId = "dips", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
 }
 
 /** Onglet Progrès en entier (sans la barre d'onglets) : poids, exercices, calories et eau, pesées. */
 @ScreenPreviews
 @Composable
 private fun ProgressScreenPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
-    }
+    ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
 }
 
 /** Ce qu'un téléphone montre de l'onglet Progrès. */
 @PhonePreviews
 @Composable
 private fun ProgressScreenPhonePreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
-    }
+    ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
 }
 
 /** Progrès sans aucune donnée : surface sans poids, états vides. */
 @PhonePreviews
 @Composable
 private fun ProgressScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
-    }
+    ProgressScreen(onOpenExercise = {}, onStartWorkout = {}, onOpenWorkout = {}, onOpenNutrition = {}, insets = PreviewTabInsets)
 }
 
 /** « Nouvelle pesée » : partie du dernier poids, au pavé ; puis après un poids refusé. */

@@ -11,6 +11,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,7 +37,6 @@ import com.musclenote.android.ui.designsystem.components.NavItem
 import com.musclenote.android.ui.designsystem.components.StudioNavigationBar
 import com.musclenote.android.ui.designsystem.templates.systemScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
-import com.musclenote.android.ui.designsystem.theme.StudioTheme
 import com.musclenote.android.ui.exercise.ExerciseFicheScreen
 import com.musclenote.android.ui.home.HomeScreen
 import com.musclenote.android.ui.journal.JournalScreen
@@ -44,10 +46,8 @@ import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.progress.ProgressScreen
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.ui.settings.SettingsScreen
-import com.musclenote.android.ui.theme.MuscleNoteTheme
 import com.musclenote.android.ui.workout.EditWorkoutScreen
-import com.musclenote.android.ui.workout.ExercisePickerScreen
-import com.musclenote.android.ui.workout.StartWorkoutScreen
+import com.musclenote.android.ui.workout.StartWorkoutSheet
 import com.musclenote.android.ui.workout.WorkoutScreen
 import com.musclenote.android.ui.workout.rememberLiveTimes
 import kotlinx.coroutines.flow.Flow
@@ -59,9 +59,10 @@ enum class ExternalDestination { Workout, Nutrition }
  * Racine de l'interface (SPEC § 15.8.1) : quatre onglets (Accueil, Journal, Progrès, Nutrition) et
  * Paramètres, ouvert par l'engrenage de l'Accueil, avec la barre d'onglets du design system et,
  * pendant une séance, la mini-barre (sauf sur l'Accueil, dont la surface « En cours » tient lieu).
- * Les écrans plein écran (séance, démarrage, sélecteur, historique, éditeur) n'ont ni l'une ni
- * l'autre. Transitions en fondu, suivies par le geste de retour prédictif. Chaque écran dessine son
- * propre en-tête sous la barre d'état (edge-to-edge).
+ * Les écrans plein écran (séance, fiche exercice, éditeur) n'ont ni l'une ni l'autre. « Démarrer une
+ * séance » est une bottom sheet posée sur l'écran qui l'ouvre (§ 15.11.1). Transitions en fondu,
+ * suivies par le geste de retour prédictif. Chaque écran dessine son propre en-tête sous la barre
+ * d'état (edge-to-edge). Le thème (`StudioTheme`) est posé par `MainActivity`.
  */
 @Composable
 fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<ExternalDestination>) {
@@ -71,7 +72,15 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
     val currentDestination = backStackEntry?.destination
     val currentWorkout by container.workouts.currentWorkout.collectAsStateWithLifecycle()
     val restTimer by container.restTimer.state.collectAsStateWithLifecycle()
-    val darkTheme = MuscleNoteTheme.colors.isDark
+    // « Démarrer une séance » (§ 15.11.1) : ouverte, et avec quel type (choisi sur l'Accueil).
+    var startOpen by rememberSaveable { mutableStateOf(false) }
+    var startPreset by rememberSaveable { mutableStateOf<String?>(null) }
+    var startName by rememberSaveable { mutableStateOf<String?>(null) }
+    fun openStart(preset: PresetId?, name: String?) {
+        startPreset = preset?.id
+        startName = name
+        startOpen = true
+    }
 
     // Paramètres est une page de second niveau de l'Accueil : son onglet reste sélectionné.
     val selectedTab = when {
@@ -98,26 +107,24 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
 
     val motion = Studio.motion
     Scaffold(
-        containerColor = MuscleNoteTheme.colors.background,
+        containerColor = Studio.colors.background,
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (selectedTab != null) {
-                StudioTheme(darkTheme = darkTheme) {
-                    AppBottomBar(
-                        selected = selectedTab,
-                        workout = currentWorkout.takeUnless { onHome },
-                        rest = restTimer,
-                        onSelect = { tab ->
-                            // Depuis Paramètres, l'onglet Accueil (sélectionné) ramène à l'Accueil.
-                            if (tab == TopLevelDestination.Home && currentDestination?.route == Routes.SETTINGS) {
-                                navController.popBackStack()
-                            } else {
-                                navController.navigateToTab(tab)
-                            }
-                        },
-                        onResume = { navController.openWorkout() },
-                    )
-                }
+                AppBottomBar(
+                    selected = selectedTab,
+                    workout = currentWorkout.takeUnless { onHome },
+                    rest = restTimer,
+                    onSelect = { tab ->
+                        // Depuis Paramètres, l'onglet Accueil (sélectionné) ramène à l'Accueil.
+                        if (tab == TopLevelDestination.Home && currentDestination?.route == Routes.SETTINGS) {
+                            navController.popBackStack()
+                        } else {
+                            navController.navigateToTab(tab)
+                        }
+                    },
+                    onResume = { navController.openWorkout() },
+                )
             }
         },
     ) { innerPadding ->
@@ -131,100 +138,53 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
             popExitTransition = { fadeOut(motion.standard.spec()) },
         ) {
             composable(TopLevelDestination.Home.route) {
-                StudioTheme(darkTheme = darkTheme) {
-                    HomeScreen(
-                        onOpenSettings = { navController.openSettings() },
-                        onStartWorkout = { preset, name -> navController.openStartWorkout(preset, name) },
-                        onOpenWorkout = { navController.openWorkout() },
-                        onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
-                        onOpenJournal = { navController.navigateToTab(TopLevelDestination.Journal) },
-                    )
-                }
-            }
-            composable(TopLevelDestination.Journal.route) {
-                StudioTheme(darkTheme = darkTheme) {
-                    JournalScreen(
-                        onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
-                        onStartWorkout = { navController.openStartWorkout(null, null) },
-                        onOpenWorkout = { navController.openWorkout() },
-                    )
-                }
-            }
-            composable(TopLevelDestination.Progress.route) {
-                StudioTheme(darkTheme = darkTheme) {
-                    ProgressScreen(
-                        onOpenExercise = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
-                        onStartWorkout = { navController.openStartWorkout(null, null) },
-                        onOpenWorkout = { navController.openWorkout() },
-                        onOpenNutrition = { navController.navigateToTab(TopLevelDestination.Nutrition) },
-                    )
-                }
-            }
-            composable(TopLevelDestination.Nutrition.route) {
-                StudioTheme(darkTheme = darkTheme) { NutritionScreen() }
-            }
-            composable(Routes.SETTINGS) {
-                // Hub de second niveau de l'Accueil (§ 15.10.3) : ← y ramène.
-                StudioTheme(darkTheme = darkTheme) {
-                    SettingsScreen(backupViewModel, onBack = { navController.popBackStack() })
-                }
-            }
-
-            composable(
-                Routes.START_WORKOUT,
-                arguments = listOf(
-                    navArgument(Routes.ARG_PRESET) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                    navArgument(Routes.ARG_NAME) {
-                        type = NavType.StringType
-                        nullable = true
-                        defaultValue = null
-                    },
-                ),
-            ) { entry ->
-                StartWorkoutScreen(
-                    onClose = { navController.popBackStack() },
-                    // « Commencer » remplace cet écran par la séance en cours (§ 2.3).
-                    onStarted = {
-                        navController.navigate(Routes.WORKOUT) {
-                            popUpTo(Routes.START_WORKOUT) { inclusive = true }
-                            launchSingleTop = true
-                        }
-                    },
-                    initialPreset = entry.arguments?.getString(Routes.ARG_PRESET)?.let { PresetId.fromId(it) },
-                    initialName = entry.arguments?.getString(Routes.ARG_NAME),
+                HomeScreen(
+                    onOpenSettings = { navController.openSettings() },
+                    onStartWorkout = ::openStart,
+                    onOpenWorkout = { navController.openWorkout() },
+                    onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
+                    onOpenJournal = { navController.navigateToTab(TopLevelDestination.Journal) },
                 )
             }
-            composable(Routes.WORKOUT) {
-                // Écran migré au design system « Studio épuré » (DESIGN.md), au thème choisi dans l'app.
-                StudioTheme(darkTheme = darkTheme) {
-                    WorkoutScreen(
-                        // « Réduire » : retour à l'écran d'où la séance a été ouverte (§ 15.8.1).
-                        onBack = { if (!navController.popBackStack()) navController.navigateToTab(TopLevelDestination.Home) },
-                        onAddExercise = { navController.navigate(Routes.EXERCISE_PICKER) { launchSingleTop = true } },
-                        onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
-                        onFinished = { navController.backToHome() },
-                    )
-                }
+            composable(TopLevelDestination.Journal.route) {
+                JournalScreen(
+                    onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
+                    onStartWorkout = { openStart(null, null) },
+                    onOpenWorkout = { navController.openWorkout() },
+                )
             }
-            composable(Routes.EXERCISE_PICKER) {
-                ExercisePickerScreen(onClose = { navController.popBackStack() })
+            composable(TopLevelDestination.Progress.route) {
+                ProgressScreen(
+                    onOpenExercise = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
+                    onStartWorkout = { openStart(null, null) },
+                    onOpenWorkout = { navController.openWorkout() },
+                    onOpenNutrition = { navController.navigateToTab(TopLevelDestination.Nutrition) },
+                )
+            }
+            composable(TopLevelDestination.Nutrition.route) { NutritionScreen() }
+            composable(Routes.SETTINGS) {
+                // Hub de second niveau de l'Accueil (§ 15.10.3) : ← y ramène.
+                SettingsScreen(backupViewModel, onBack = { navController.popBackStack() })
+            }
+
+            composable(Routes.WORKOUT) {
+                WorkoutScreen(
+                    // « Réduire » : retour à l'écran d'où la séance a été ouverte (§ 15.8.1).
+                    onBack = { if (!navController.popBackStack()) navController.navigateToTab(TopLevelDestination.Home) },
+                    onOpenHistory = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
+                    onFinished = { navController.backToHome() },
+                )
             }
             composable(
                 Routes.EXERCISE_HISTORY,
                 arguments = listOf(navArgument(Routes.ARG_EXERCISE_ID) { type = NavType.StringType }),
             ) { entry ->
-                // Fiche exercice (§ 15.9.1), migrée au design system.
-                StudioTheme(darkTheme = darkTheme) {
-                    ExerciseFicheScreen(
-                        exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
-                        onBack = { navController.popBackStack() },
-                        onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
-                    )
-                }
+                // Fiche exercice (§ 15.9.1).
+                ExerciseFicheScreen(
+                    exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
+                    onBack = { navController.popBackStack() },
+                    onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
+                )
             }
             composable(
                 Routes.EDIT_WORKOUT,
@@ -236,6 +196,18 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                 )
             }
         }
+    }
+
+    if (startOpen) {
+        StartWorkoutSheet(
+            initialPreset = startPreset?.let { PresetId.fromId(it) },
+            initialName = startName,
+            onDismiss = { startOpen = false },
+            onStarted = {
+                startOpen = false
+                navController.openWorkout()
+            },
+        )
     }
 }
 
@@ -284,16 +256,11 @@ private fun SessionMiniBar(workout: Workout, rest: RestTimerState?, onResume: ()
 }
 
 /**
- * Ouvre la séance en cours (§ 15.8.1) : si elle est déjà dans la pile (sous l'historique d'un
- * exercice ou le sélecteur), on y revient ; sinon elle s'ouvre par-dessus l'écran affiché.
+ * Ouvre la séance en cours (§ 15.8.1) : si elle est déjà dans la pile (sous la fiche d'un
+ * exercice), on y revient ; sinon elle s'ouvre par-dessus l'écran affiché.
  */
 private fun NavHostController.openWorkout() {
     if (!popBackStack(Routes.WORKOUT, inclusive = false)) navigate(Routes.WORKOUT) { launchSingleTop = true }
-}
-
-/** « Démarrer une séance » : à l'étape 1, ou à l'étape du poids avec un type (§ 15.8.2). */
-private fun NavHostController.openStartWorkout(preset: PresetId?, name: String?) {
-    navigate(Routes.startWorkout(preset, name)) { launchSingleTop = true }
 }
 
 /** Paramètres au-dessus de l'Accueil (page de second niveau de l'Accueil). */

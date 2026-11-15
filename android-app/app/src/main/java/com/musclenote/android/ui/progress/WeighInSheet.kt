@@ -12,10 +12,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import com.musclenote.android.R
 import com.musclenote.android.data.nutrition.BodyWeightRules
@@ -35,8 +31,8 @@ import com.musclenote.android.ui.designsystem.components.InfoRow
 import com.musclenote.android.ui.designsystem.components.NumericKeypad
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
+import com.musclenote.android.ui.designsystem.components.statusHelp
 import com.musclenote.android.ui.designsystem.templates.FormSheetTemplate
-import com.musclenote.android.ui.designsystem.theme.Studio
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -113,11 +109,10 @@ internal fun WeighInForm(
     val separator = SetEntryRules.decimalSeparator(locale)
     val stepLabel = "0${separator}1"
     val error = stringResource(R.string.body_weight_invalid_entry)
-    val errorColor = Studio.colors.textPrimary
     FormSheetTemplate(
         title = stringResource(R.string.body_weight_new_entry),
         help = when {
-            invalid -> buildAnnotatedString { withStyle(SpanStyle(color = errorColor, fontWeight = FontWeight.SemiBold)) { append(error) } }
+            invalid -> statusHelp(error)
             lastWeight != null -> AnnotatedString(
                 stringResource(R.string.weigh_in_help_last, formatNumber(lastWeight.value), dates.shortDay(lastWeight.day, today)),
             )

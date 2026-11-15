@@ -105,10 +105,14 @@ data class StudioTypography(
     val emphasis: TextStyle = text(15, 600),
     /** 14 · 400 — puces, segmenté, lien, phrase d'aide d'un formulaire, ligne de texte courte. */
     val body: TextStyle = text(14, 400),
+    /** 14 · 600 — message de succès ou d'erreur, sans couleur (sauvegarde, avis, saisie refusée). */
+    val bodyStrong: TextStyle = text(14, 600),
     /** 14 · 400 · interligne 1,45 — paragraphe : texte de sheet de confirmation, d'état vide. */
     val paragraph: TextStyle = text(14, 400, lineHeight = 1.45.em),
     /** 13 · 400 — légendes. */
     val caption: TextStyle = text(13, 400),
+    /** 13 · 600 — légende appuyée : variation d'une ligne, compteur arrivé à sa limite. */
+    val captionStrong: TextStyle = text(13, 600),
     /** 12 · 700 · capitales +12 % — « EN COURS », « REPOS » (le composant met en capitales). */
     val label: TextStyle = text(12, 700, letterSpacing = 0.12.em),
     /** 12 · 400 — onglets, axes de courbe, petites légendes. */

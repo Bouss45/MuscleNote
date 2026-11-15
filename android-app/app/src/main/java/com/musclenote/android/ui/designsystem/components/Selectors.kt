@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.selection.selectable
@@ -31,6 +32,7 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.designsystem.theme.Studio
@@ -60,7 +62,7 @@ fun PeriodSelector(
             val layout = remember { mutableStateOf<TextLayoutResult?>(null) }
             Box(
                 Modifier
-                    .height(PeriodItemHeight)
+                    .heightIn(min = PeriodItemHeight)
                     .widthIn(min = PeriodItemMinWidth)
                     .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) })
                     .then(
@@ -115,11 +117,15 @@ fun SegmentedControl(
     modifier: Modifier = Modifier,
     compact: Boolean = false,
 ) {
+    // Le toucher prend toute la hauteur du conteneur (48, DESIGN.md § 1) ; l'option choisie se
+    // dessine en retrait, 40 de haut (36 en compact).
+    val pillHeight = if (compact) CompactSegmentHeight else SegmentHeight
+    val touch = Studio.spacing.touch
     Row(
         modifier
             .then(if (compact) Modifier else Modifier.fillMaxWidth())
             .background(Studio.colors.surfaceControl, Studio.shapes.control)
-            .padding(SegmentInset)
+            .padding(horizontal = SegmentInset)
             .selectableGroup(),
         horizontalArrangement = Arrangement.spacedBy(SegmentInset),
     ) {
@@ -132,21 +138,28 @@ fun SegmentedControl(
             )
             Box(
                 Modifier
-                    .then(if (compact) Modifier.padding(horizontal = 0.dp) else Modifier.weight(1f))
-                    .height(if (compact) CompactSegmentHeight else SegmentHeight)
-                    .background(background, SegmentShape)
+                    .then(if (compact) Modifier else Modifier.weight(1f))
+                    .heightIn(min = touch)
                     .clip(SegmentShape)
                     .selectable(selected = selected, role = Role.Tab, onClick = { onSelect(index) })
-                    .then(if (compact) Modifier.padding(horizontal = CompactSegmentPadding) else Modifier),
+                    .padding(vertical = (touch - pillHeight) / 2),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(
-                    label,
-                    style = Studio.typography.body.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold),
-                    color = if (selected) Studio.colors.textPrimary else Studio.colors.textSecondary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                Box(
+                    Modifier
+                        .then(if (compact) Modifier else Modifier.fillMaxWidth())
+                        .heightIn(min = pillHeight)
+                        .background(background, SegmentShape)
+                        .then(if (compact) Modifier.padding(horizontal = CompactSegmentPadding) else Modifier),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        label,
+                        style = Studio.typography.body.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold),
+                        color = if (selected) Studio.colors.textPrimary else Studio.colors.textSecondary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
             }
         }
     }

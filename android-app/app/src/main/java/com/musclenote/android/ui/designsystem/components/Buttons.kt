@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Text
@@ -21,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -90,7 +92,7 @@ fun StudioButton(
     val style = if (size == ButtonSize.Large) Studio.typography.action else Studio.typography.actionSmall
     Row(
         modifier
-            .height(height)
+            .heightIn(min = height)
             .alpha(alpha)
             .background(background, Studio.shapes.control)
             .clickable(
@@ -105,13 +107,13 @@ fun StudioButton(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) StudioIcon(icon, contentDescription = null, size = ButtonIconSize, tint = content)
-        Text(text, style = style, color = content, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, style = style, color = content, textAlign = TextAlign.Center)
     }
 }
 
 /**
- * Bouton icône — `StudioIconButton` (DESIGN.md § 9.2) : rond, 48 (44 en petit), icône 24 ;
- * pressé sur `surfaceControl`.
+ * Bouton icône — `StudioIconButton` (DESIGN.md § 9.2) : rond, 48 (44 en petit, dans une cible
+ * tactile de 48), icône 24 ; pressé sur `surfaceControl`.
  */
 @Composable
 fun StudioIconButton(
@@ -137,13 +139,21 @@ fun StudioIconButton(
         tone == ButtonTone.Subtle -> colors.textSecondary
         else -> colors.textPrimary
     }
+    // Cible tactile de 48 au moins (DESIGN.md § 1), même pour le petit bouton de 44 : le cercle pressé
+    // garde sa taille, la zone qui reçoit le toucher l'entoure.
     Box(
         modifier
-            .size(if (size == ButtonSize.Small) ButtonSize.Small.height else ButtonSize.Medium.height)
-            .background(background, Studio.shapes.full)
+            .size(Studio.spacing.touch)
             .clickable(interactionSource = source, indication = null, enabled = enabled, role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        StudioIcon(icon, contentDescription = contentDescription, tint = tint)
+        Box(
+            Modifier
+                .size(if (size == ButtonSize.Small) ButtonSize.Small.height else ButtonSize.Medium.height)
+                .background(background, Studio.shapes.full),
+            contentAlignment = Alignment.Center,
+        ) {
+            StudioIcon(icon, contentDescription = contentDescription, tint = tint)
+        }
     }
 }

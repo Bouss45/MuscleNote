@@ -40,6 +40,7 @@ import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.SheetSurface
 import com.musclenote.android.ui.designsystem.components.SheetTitle
+import com.musclenote.android.ui.designsystem.components.StatusMessage
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.theme.Studio
@@ -170,14 +171,14 @@ internal fun HealthConnectSheetContent(bottomInset: Dp = 0.dp) {
                 )
             }
         }
-        if (!state.enabled && denied) StatusText(stringResource(R.string.health_denied))
+        if (!state.enabled && denied) StatusMessage(stringResource(R.string.health_denied))
         if (state.enabled) {
             val missingSessions = HealthRecordType.Session !in granted
             val missingWeight = HealthRecordType.Weight !in granted
             if (missingSessions || missingWeight) {
                 Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.xxs)) {
-                    if (missingSessions) StatusText(stringResource(R.string.health_missing_sessions))
-                    if (missingWeight) StatusText(stringResource(R.string.health_missing_weight))
+                    if (missingSessions) StatusMessage(stringResource(R.string.health_missing_sessions))
+                    if (missingWeight) StatusMessage(stringResource(R.string.health_missing_weight))
                 }
                 StudioButton(
                     stringResource(R.string.health_allow),
@@ -192,7 +193,7 @@ internal fun HealthConnectSheetContent(bottomInset: Dp = 0.dp) {
             state.lastError?.let { error ->
                 val detail = healthErrorText(state.lastErrorType, error)
                 val at = state.lastErrorAt
-                StatusText(if (at == null) detail else stringResource(R.string.health_failed, rememberDateTime(at, locale, zone), detail))
+                StatusMessage(if (at == null) detail else stringResource(R.string.health_failed, rememberDateTime(at, locale, zone), detail))
             }
             StudioButton(
                 stringResource(if (syncing) R.string.health_sending else R.string.health_send_history),
@@ -223,9 +224,9 @@ internal fun HealthConnectSheetContent(bottomInset: Dp = 0.dp) {
                         if (HealthRecordType.Session in result.notGranted) add(stringResource(R.string.health_missing_sessions))
                         if (HealthRecordType.Weight in result.notGranted) add(stringResource(R.string.health_missing_weight))
                     }
-                    StatusText(lines.joinToString("\n"))
+                    StatusMessage(lines.joinToString("\n"))
                 }
-                is HealthHistoryResult.Failed -> StatusText(stringResource(R.string.health_unavailable, result.detail))
+                is HealthHistoryResult.Failed -> StatusMessage(stringResource(R.string.health_unavailable, result.detail))
                 null -> Unit
             }
         }

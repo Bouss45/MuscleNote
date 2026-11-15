@@ -23,12 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import com.musclenote.android.R
 import com.musclenote.android.data.journal.JournalRules
@@ -51,6 +47,7 @@ import com.musclenote.android.ui.designsystem.components.SheetTitle
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioTextField
+import com.musclenote.android.ui.designsystem.components.statusHelp
 import com.musclenote.android.ui.designsystem.templates.FormSheetTemplate
 import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.workout.ConfirmSheet
@@ -286,11 +283,10 @@ internal fun WorkoutDateForm(
 
     val name = workoutDisplayName(workout)
     val error = stringResource(R.string.date_invalid)
-    val errorColor = Studio.colors.textPrimary
     FormSheetTemplate(
         title = stringResource(R.string.home_edit_date),
         help = if (invalid) {
-            buildAnnotatedString { withStyle(SpanStyle(color = errorColor, fontWeight = FontWeight.SemiBold)) { append(error) } }
+            statusHelp(error)
         } else {
             AnnotatedString(name)
         },

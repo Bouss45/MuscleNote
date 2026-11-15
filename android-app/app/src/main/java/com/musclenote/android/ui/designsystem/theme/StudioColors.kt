@@ -77,7 +77,8 @@ val StudioLightColors = StudioColors(
     textTertiary = Color(0xFF85888E),
     inverse = Color(0xFF121315),
     onInverse = Color(0xFFFFFFFF),
-    live = Color(0xFFFFC93D),
+    // Or foncé en clair : le jaune de la marque ne ferait que 1,1 à 1,5:1 sur les fonds clairs.
+    live = Color(0xFF9E7100),
     liveText = Color(0xFF7A5900),
     liveDim = Color(0xFFFFF0C2),
     onLive = Color(0xFF17140A),

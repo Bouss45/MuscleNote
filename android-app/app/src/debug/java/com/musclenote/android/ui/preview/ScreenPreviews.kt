@@ -12,12 +12,8 @@ import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.ui.settings.BackupViewModel
 import com.musclenote.android.data.workout.SetEntryField
-import com.musclenote.android.ui.designsystem.theme.StudioTheme
-import com.musclenote.android.ui.theme.MuscleNoteTheme
 import com.musclenote.android.ui.workout.EditWorkoutScreen
 import com.musclenote.android.ui.workout.EntryTarget
-import com.musclenote.android.ui.workout.ExercisePickerScreen
-import com.musclenote.android.ui.workout.StartWorkoutScreen
 import com.musclenote.android.ui.workout.WorkoutScreen
 import kotlinx.coroutines.flow.emptyFlow
 
@@ -44,21 +40,21 @@ private fun AppPreview() = ScreenPreview { container ->
 @PhonePreviews
 @Composable
 private fun HomeScreenPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
+    PreviewHomeScreen()
 }
 
 /** Accueil pendant une séance : surface « En cours » avec le chrono et le repos. */
 @PhonePreviews
 @Composable
 private fun HomeScreenLivePreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
+    PreviewHomeScreen()
 }
 
 /** Première ouverture : aucune séance, « Nouvelle séance » et transfert depuis l'ancienne app. */
 @PhonePreviews
 @Composable
 private fun HomeScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { PreviewHomeScreen() }
+    PreviewHomeScreen()
 }
 
 @Composable
@@ -75,18 +71,14 @@ private fun PreviewHomeScreen() = HomeScreen(
 @ScreenPreviews
 @Composable
 private fun JournalScreenPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
-    }
+    JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
 }
 
 /** Journal sans séance terminée : état vide. */
 @PhonePreviews
 @Composable
 private fun JournalScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
-    }
+    JournalScreen(onEditWorkout = {}, onStartWorkout = {}, onOpenWorkout = {}, insets = PreviewTabInsets)
 }
 
 /** Écran d'onglet sans la barre d'onglets : l'inset de la barre d'état de la maquette seul. */
@@ -96,9 +88,7 @@ internal val PreviewTabInsets = ScreenInsets(top = 40.dp, bottom = 0.dp)
 @ScreenPreviews
 @Composable
 private fun WorkoutScreenPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        WorkoutScreen(onBack = {}, onAddExercise = {}, onOpenHistory = {}, onFinished = {})
-    }
+    WorkoutScreen(onBack = {}, onOpenHistory = {}, onFinished = {})
 }
 
 /**
@@ -108,33 +98,34 @@ private fun WorkoutScreenPreview() = ScreenPreview(PreviewDataSet.WithCurrentWor
 @PhonePreviews
 @Composable
 private fun WorkoutScreenKeypadPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) {
-        WorkoutScreen(
-            onBack = {},
-            onAddExercise = {},
-            onOpenHistory = {},
-            onFinished = {},
-            initialEntry = EntryTarget("bench", "cur-bench-3", SetEntryField.Weight),
-        )
-    }
+    WorkoutScreen(
+        onBack = {},
+        onOpenHistory = {},
+        onFinished = {},
+        initialEntry = EntryTarget("bench", "cur-bench-3", SetEntryField.Weight),
+    )
 }
 
-@PhonePreviews
-@Composable
-private fun StartWorkoutScreenPreview() = ScreenPreview {
-    StartWorkoutScreen(onClose = {}, onStarted = {})
-}
-
-@PhonePreviews
-@Composable
-private fun ExercisePickerScreenPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
-    ExercisePickerScreen(onClose = {})
-}
-
+/** Éditeur d'une séance terminée (§ 15.11.3) : type, poids de corps, exercices et séries, « Enregistrer ». */
 @ScreenPreviews
 @Composable
 private fun EditWorkoutScreenPreview() = ScreenPreview {
-    EditWorkoutScreen(workoutId = PreviewData.workouts.first { it.name == "Push" }.id, onClose = {})
+    EditWorkoutScreen(workoutId = PreviewData.workouts.first { it.name == "Push" }.id, onClose = {}, insets = PreviewFicheInsets)
 }
 
+/** Éditeur, pavé ouvert sur la charge de la 2e série du premier exercice. */
+@PhonePreviews
+@Composable
+private fun EditWorkoutScreenKeypadPreview() = ScreenPreview {
+    val workout = PreviewData.workouts.first { it.name == "Push" }
+    val exercise = workout.exercises.first()
+    EditWorkoutScreen(
+        workoutId = workout.id,
+        onClose = {},
+        insets = PreviewFicheInsets,
+        initialEntry = EntryTarget(exercise.exerciseId, exercise.sets[1].id, SetEntryField.Weight),
+    )
+}
 
+/** Écran plein (fiche) : insets de la maquette, 40 en haut et 24 en bas. */
+internal val PreviewFicheInsets = ScreenInsets(top = 40.dp, bottom = 24.dp)

@@ -6,7 +6,6 @@ import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.ui.designsystem.StateCaption
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
-import com.musclenote.android.ui.designsystem.theme.StudioTheme
 import com.musclenote.android.ui.nutrition.DailyDay
 import com.musclenote.android.ui.nutrition.DailyEntryForm
 import com.musclenote.android.ui.nutrition.NewSupplementForm
@@ -14,7 +13,6 @@ import com.musclenote.android.ui.nutrition.NutritionScreen
 import com.musclenote.android.ui.nutrition.SupplementSheetContent
 import com.musclenote.android.ui.nutrition.TodaySurface
 import com.musclenote.android.ui.progress.DailyKind
-import com.musclenote.android.ui.theme.MuscleNoteTheme
 
 /*
  * Onglet Nutrition (SPEC § 15.10) : le hub avec les données de PreviewData (1 850 kcal sur 2 600,
@@ -25,21 +23,21 @@ import com.musclenote.android.ui.theme.MuscleNoteTheme
 @ScreenPreviews
 @Composable
 private fun NutritionScreenPreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { NutritionScreen(insets = PreviewTabInsets) }
+    NutritionScreen(insets = PreviewTabInsets)
 }
 
 /** Ce qu'un téléphone montre de l'onglet Nutrition. */
 @PhonePreviews
 @Composable
 private fun NutritionScreenPhonePreview() = ScreenPreview {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { NutritionScreen(insets = PreviewTabInsets) }
+    NutritionScreen(insets = PreviewTabInsets)
 }
 
 /** Première ouverture : rien de saisi aujourd'hui, aucun complément. */
 @PhonePreviews
 @Composable
 private fun NutritionScreenEmptyPreview() = ScreenPreview(PreviewDataSet.Empty) {
-    StudioTheme(darkTheme = MuscleNoteTheme.colors.isDark) { NutritionScreen(insets = PreviewTabInsets) }
+    NutritionScreen(insets = PreviewTabInsets)
 }
 
 /** Surface « Aujourd'hui » : sous l'objectif (gris), dans l'objectif (vert). */

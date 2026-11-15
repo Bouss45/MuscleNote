@@ -251,7 +251,8 @@ fun FicheTemplate(
  * pour une fiche dont les lignes peuvent se compter par centaines (fiche exercice). Le haut — barre,
  * titre, héros, courbe, période, stats — est un élément ; les sections viennent de
  * [HubSections.section], la première 40 sous ce haut. Sans [hero] (fiche sans donnée), les sections
- * suivent le titre.
+ * suivent le titre. [bottomAction] : fixe en bas (barre d'action, ou pavé numérique d'une saisie),
+ * il reçoit l'inset du bas.
  */
 @Composable
 fun FicheLazyTemplate(
@@ -262,46 +263,50 @@ fun FicheLazyTemplate(
     curve: (@Composable () -> Unit)? = null,
     period: (@Composable () -> Unit)? = null,
     stats: (@Composable () -> Unit)? = null,
+    bottomAction: (@Composable (bottomInset: Dp) -> Unit)? = null,
     insets: ScreenInsets = systemScreenInsets(),
     listState: LazyListState = rememberLazyListState(),
     sections: HubSections.() -> Unit = {},
 ) {
     val spacing = Studio.spacing
-    LazyColumn(
-        state = listState,
-        modifier = modifier.fillMaxSize().background(Studio.colors.background),
-        contentPadding = PaddingValues(
-            start = spacing.screen,
-            end = spacing.screen,
-            top = insets.top,
-            bottom = insets.bottom + spacing.section,
-        ),
-    ) {
-        item(key = "fiche-top", contentType = "fiche-top") {
-            Column {
-                topBar()
-                Spacer(Modifier.height(spacing.xxs))
-                titleBlock()
-                if (hero != null) {
-                    Spacer(Modifier.height(spacing.hero))
-                    hero()
-                }
-                if (curve != null) {
-                    Spacer(Modifier.height(spacing.screen))
-                    curve()
-                }
-                if (period != null) {
+    Column(modifier.fillMaxSize().background(Studio.colors.background)) {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+            contentPadding = PaddingValues(
+                start = spacing.screen,
+                end = spacing.screen,
+                top = insets.top,
+                bottom = if (bottomAction == null) insets.bottom + spacing.section else spacing.section,
+            ),
+        ) {
+            item(key = "fiche-top", contentType = "fiche-top") {
+                Column {
+                    topBar()
                     Spacer(Modifier.height(spacing.xxs))
-                    period()
+                    titleBlock()
+                    if (hero != null) {
+                        Spacer(Modifier.height(spacing.hero))
+                        hero()
+                    }
+                    if (curve != null) {
+                        Spacer(Modifier.height(spacing.screen))
+                        curve()
+                    }
+                    if (period != null) {
+                        Spacer(Modifier.height(spacing.xxs))
+                        period()
+                    }
+                    if (stats != null) {
+                        Spacer(Modifier.height(if (curve != null || period != null) spacing.l else spacing.hero))
+                        stats()
+                    }
+                    Spacer(Modifier.height(if (hero != null) spacing.section else spacing.hero))
                 }
-                if (stats != null) {
-                    Spacer(Modifier.height(if (curve != null || period != null) spacing.l else spacing.hero))
-                    stats()
-                }
-                Spacer(Modifier.height(if (hero != null) spacing.section else spacing.hero))
             }
+            HubSections(this, spacing.section).sections()
         }
-        HubSections(this, spacing.section).sections()
+        bottomAction?.invoke(insets.bottom)
     }
 }
 

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
@@ -65,9 +67,15 @@ fun LiveSessionCard(
     progressEnd: String? = null,
 ) {
     HighlightSurface(modifier) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // Le nom, au plus la moitié de la ligne, passe à la ligne s'il le faut (texte à 200 %).
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             LiveLabel(liveLabel, Modifier.weight(1f))
-            Text(sessionName, style = Studio.typography.emphasis.copy(fontWeight = FontWeight.Bold), maxLines = 1)
+            Text(
+                sessionName,
+                Modifier.weight(1f, fill = false).padding(start = Studio.spacing.s),
+                style = Studio.typography.emphasis.copy(fontWeight = FontWeight.Bold),
+                textAlign = TextAlign.End,
+            )
         }
         Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
             RollingText(elapsed, style = Studio.typography.numberHero, color = Studio.colors.liveText)
@@ -80,7 +88,6 @@ fun LiveSessionCard(
                         (restDetail?.let { " · $it" } ?: "") to secondary,
                     ),
                     style = Studio.typography.body,
-                    maxLines = 1,
                 )
             }
         }
@@ -116,7 +123,7 @@ fun NextSessionCard(
     HighlightSurface(modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.xxs)) {
             Text(caption, style = Studio.typography.caption, color = Studio.colors.textSecondary)
-            Text(title, style = Studio.typography.titleScreen.copy(lineHeight = Studio.typography.numberMedium.lineHeight), maxLines = 1)
+            Text(title, style = Studio.typography.titleScreen.copy(lineHeight = Studio.typography.numberMedium.lineHeight))
             Text(detail, style = Studio.typography.caption, color = Studio.colors.textSecondary)
         }
         if (types.isNotEmpty()) {
@@ -158,14 +165,14 @@ fun MetricSurface(
     emptyMessage: String? = null,
 ) {
     HighlightSurface(modifier, spacing = MetricGap) {
-        Row(Modifier.fillMaxWidth().height(MetricHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
-            Text(label, Modifier.weight(1f), style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+        Row(Modifier.fillMaxWidth().heightIn(min = MetricHeaderHeight), verticalAlignment = Alignment.CenterVertically) {
+            Text(label, Modifier.weight(1f), style = Studio.typography.caption, color = Studio.colors.textSecondary)
             StudioIconButton(
                 R.drawable.ds_ic_add,
                 contentDescription = addDescription,
                 onClick = onAdd,
                 size = ButtonSize.Small,
-                modifier = Modifier.bleed(end = 10.dp),
+                modifier = Modifier.bleed(end = IconButtonBleed),
             )
         }
         if (value == null) {
@@ -181,8 +188,8 @@ fun MetricSurface(
         }
         if (footerStart != null || footerEnd != null) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(footerStart.orEmpty(), style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
-                Text(footerEnd.orEmpty(), style = Studio.typography.caption, color = Studio.colors.textSecondary, maxLines = 1)
+                Text(footerStart.orEmpty(), Modifier.weight(1f, fill = false), style = Studio.typography.caption, color = Studio.colors.textSecondary)
+                Text(footerEnd.orEmpty(), Modifier.weight(1f, fill = false), style = Studio.typography.caption, color = Studio.colors.textSecondary, textAlign = TextAlign.End)
             }
         }
     }

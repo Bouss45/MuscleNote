@@ -190,15 +190,13 @@
     <string name="start_workout_group_other">Autre</string>
     <string name="start_workout_custom_label">Personnalisé</string>
     <string name="start_workout_custom_placeholder">Ex: Épaules / Mollets</string>
-    <string name="start_workout_custom_empty">Nom personnalisé...</string>
     <string name="start_workout_next">Suivant</string>
     <string name="start_workout_body_weight_subtitle">Ton poids aujourd\'hui ?</string>
     <string name="start_workout_start">Commencer</string>
+    <string name="start_workout_weight_invalid">Saisis ton poids de corps</string>
 
     <!-- Séance en cours (§ 2.4 – 2.6) -->
     <string name="workout_no_active">Aucune séance active</string>
-    <string name="workout_in_progress">Séance en cours</string>
-    <string name="workout_sets_progress">%1$d/%2$d séries</string>
     <string name="workout_add_exercise">Ajouter un exercice</string>
     <string name="workout_empty_exercises">Ajoute des exercices pour commencer</string>
     <string name="workout_finish">Terminer la séance</string>
@@ -220,7 +218,6 @@
     <string name="workout_warmup_squat_label">Squats à vide</string>
     <string name="workout_warmup_squat_detail">15 reps lents</string>
     <string name="exercise_card_note_placeholder">Ajouter une note…</string>
-    <string name="exercise_card_add_set">Ajouter une série</string>
     <string name="exercise_card_remove_confirm">Retirer « %1$s » de la séance ?</string>
     <string name="exercise_card_remove">Retirer</string>
 
@@ -251,6 +248,10 @@
     <string name="workout_suggest_same_reps">Mêmes reps</string>
     <string name="workout_suggest_apply">Appliquer la suggestion : %1$s</string>
     <string name="workout_add_set_row">Série</string>
+    <string name="workout_set_value_description">Série %1$d, %2$s : %3$s</string>
+    <string name="workout_add_set_to">Ajouter une série : %1$s</string>
+    <string name="workout_exercise_details_for">Fiche : %1$s</string>
+    <string name="workout_exercise_options_for">Options : %1$s</string>
     <string name="workout_set_check">Valider la série %1$d</string>
     <string name="workout_set_checked">Série %1$d validée</string>
     <string name="workout_rest_total">sur %1$s</string>
@@ -274,13 +275,16 @@
     <string name="workout_no_active_message">Démarre une séance depuis l\'Accueil.</string>
 
     <!-- Sélecteur d'exercices (§ 2.7) -->
-    <string name="exercise_picker_title">Exercices</string>
     <string name="exercise_picker_search_placeholder">Chercher un exercice...</string>
     <string name="exercise_picker_new_exercise">Nouvel exercice</string>
     <string name="exercise_picker_name_placeholder">Nom de l\'exercice</string>
     <string name="exercise_picker_edit_exercise">Modifier l\'exercice</string>
     <string name="exercise_picker_delete_confirm">Supprimer « %1$s » ?</string>
     <string name="exercise_picker_delete_hint">S\'il a déjà été utilisé, il restera visible dans tes séances passées.</string>
+    <string name="exercise_picker_delete_exercise">Supprimer l\'exercice</string>
+    <string name="exercise_picker_actions">Modifier ou supprimer</string>
+    <string name="exercise_picker_name_label">Nom</string>
+    <string name="exercise_picker_group_label">Groupe musculaire</string>
 
     <!-- Graphiques (§ 2.13) -->
 
@@ -291,11 +295,12 @@
     <string name="edit_workout_not_found">Séance introuvable</string>
     <string name="edit_workout_header_label">Modifier la séance</string>
     <string name="edit_workout_no_exercise_found">Aucun exercice trouvé</string>
-    <string name="edit_workout_empty_exercises">Aucun exercice — appuie sur le bouton ci-dessus pour en ajouter</string>
     <string name="edit_workout_discard_title">Abandonner les modifications ?</string>
     <string name="edit_workout_discard">Abandonner</string>
     <string name="edit_workout_keep_editing">Continuer l\'édition</string>
     <string name="edit_workout_rename">Renommer la séance</string>
+    <string name="edit_workout_empty_message">Ajoute les exercices de cette séance.</string>
+    <string name="edit_workout_discard_message">Tes changements sur cette séance ne seront pas enregistrés.</string>
     <!-- Canaux de notification (§ 7.1) -->
     <string name="channel_workout_ongoing">Séance en cours</string>
     <string name="channel_rest_timer">Timer de repos</string>

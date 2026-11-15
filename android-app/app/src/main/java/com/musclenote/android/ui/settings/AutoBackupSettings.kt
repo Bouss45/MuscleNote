@@ -28,6 +28,7 @@ import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.SheetSurface
 import com.musclenote.android.ui.designsystem.components.SheetTitle
+import com.musclenote.android.ui.designsystem.components.StatusMessage
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.theme.Studio
@@ -155,8 +156,8 @@ internal fun AutoBackupSheetContent(bottomInset: Dp = 0.dp) {
         if (state.enabled) {
             val failedAt = state.lastFailureAt
             when {
-                state.failure == AutoBackupFailure.Folder -> StatusText(stringResource(R.string.settings_auto_backup_folder_lost))
-                state.failure == AutoBackupFailure.Write && failedAt != null -> StatusText(
+                state.failure == AutoBackupFailure.Folder -> StatusMessage(stringResource(R.string.settings_auto_backup_folder_lost))
+                state.failure == AutoBackupFailure.Write && failedAt != null -> StatusMessage(
                     stringResource(R.string.settings_auto_backup_failed, rememberDateTime(failedAt, locale, zone), state.failureDetail.orEmpty()),
                 )
             }

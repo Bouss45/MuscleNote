@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
@@ -43,6 +42,7 @@ import com.musclenote.android.ui.components.rememberHaptics
 import com.musclenote.android.ui.designsystem.components.FilterChip
 import com.musclenote.android.ui.designsystem.components.SheetSurface
 import com.musclenote.android.ui.designsystem.components.SheetTitle
+import com.musclenote.android.ui.designsystem.components.StatusMessage
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioTextField
@@ -143,7 +143,7 @@ internal fun FeedbackSheetContent(bottomInset: Dp = 0.dp) {
             Text(
                 stringResource(R.string.feedback_counter, formatInteger(count.toDouble()), formatInteger(FeedbackRules.MESSAGE_MAX.toDouble())),
                 modifier = Modifier.fillMaxWidth(),
-                style = Studio.typography.caption.copy(fontWeight = if (full) FontWeight.SemiBold else FontWeight.Normal),
+                style = if (full) Studio.typography.captionStrong else Studio.typography.caption,
                 color = if (full) Studio.colors.textPrimary else Studio.colors.textSecondary,
                 textAlign = TextAlign.End,
             )
@@ -201,7 +201,7 @@ internal fun FeedbackSheetContent(bottomInset: Dp = 0.dp) {
         )
 
         result?.let { outcome ->
-            StatusText(
+            StatusMessage(
                 when (outcome) {
                     FeedbackOutcome.Sent -> stringResource(R.string.feedback_success)
                     FeedbackOutcome.NoConnection -> stringResource(R.string.feedback_error_network)

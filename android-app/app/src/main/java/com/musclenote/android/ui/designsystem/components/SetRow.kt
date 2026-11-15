@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,7 +26,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -46,51 +49,60 @@ private val CaretHeight = 26.dp
 private val CheckBorder = 2.dp
 private const val CheckPopFrom = 0.85f
 
+/** La colonne « Préc. » s'élargit avec le texte du système, jusqu'à 1,5 fois (texte à 200 %). */
+private const val PREVIOUS_MAX_SCALE = 1.5f
+
 /** État d'une ligne de série (DESIGN.md § 9.2). */
 enum class SetRowState { Todo, Editing, Done, DoneRecord }
 
 /** Champ d'une série : charge ou répétitions. */
 enum class SetField { Weight, Reps }
 
-/** Colonnes d'une ligne de série : n° 22 · « Préc. » 60 · kg · reps · case 48, espacées de 8. */
+/**
+ * Colonnes d'une ligne de série : n° 22 · « Préc. » 60 · kg · reps · case 48, espacées de 8. Sans
+ * [previous] (éditeur d'une séance terminée), la colonne « Préc. » disparaît.
+ */
 @Composable
 private fun SetColumns(
     modifier: Modifier,
     index: @Composable () -> Unit,
-    previous: @Composable () -> Unit,
+    previous: (@Composable () -> Unit)?,
     weight: @Composable RowScope.() -> Unit,
     reps: @Composable RowScope.() -> Unit,
     check: @Composable () -> Unit,
 ) {
+    val previousWidth = PreviousColumn * LocalDensity.current.fontScale.coerceIn(1f, PREVIOUS_MAX_SCALE)
     Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(ColumnGap), verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.width(IndexColumn)) { index() }
-        Box(Modifier.width(PreviousColumn)) { previous() }
+        if (previous != null) Box(Modifier.width(previousWidth)) { previous() }
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { weight() }
         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { reps() }
         Box(Modifier.width(CheckSize)) { check() }
     }
 }
 
-/** En-tête des colonnes de séries (# · PRÉC. · KG · REPS), `columnHeader` en capitales. */
+/**
+ * En-tête des colonnes de séries (# · PRÉC. · KG · REPS), `columnHeader` en capitales ; sans
+ * [previousLabel], pas de colonne « Préc. ».
+ */
 @Composable
 fun SetTableHeader(
     indexLabel: String,
-    previousLabel: String,
+    previousLabel: String?,
     weightLabel: String,
     repsLabel: String,
     modifier: Modifier = Modifier,
 ) {
     @Composable
-    fun Header(text: String) = Text(
+    fun Header(text: String) = FitText(
         text.uppercaseForDisplay(),
         style = Studio.typography.columnHeader,
         color = Studio.colors.textSecondary,
-        maxLines = 1,
     )
     SetColumns(
         modifier,
         index = { Header(indexLabel) },
-        previous = { Header(previousLabel) },
+        previous = previousLabel?.let { { Header(it) } },
         weight = { Header(weightLabel) },
         reps = { Header(repsLabel) },
         check = {},
@@ -102,12 +114,13 @@ fun SetTableHeader(
  * `textTertiary`), validée, validée avec record ; en saisie, le champ [editingField] est sur
  * `liveDim` avec un curseur — une série validée peut être en saisie ([SetRowState.Editing] =
  * série à faire en saisie sur la charge). « Préc. » se touche pour recopier la série précédente
- * ([onPreviousClick]). La case anime sa validation avec `Studio.motion.expressive`.
+ * ([onPreviousClick]) ; sans [previous], la colonne disparaît (éditeur d'une séance terminée). La
+ * case anime sa validation avec `Studio.motion.expressive`.
  */
 @Composable
 fun SetRow(
     index: String,
-    previous: String,
+    previous: String?,
     weight: String,
     reps: String,
     state: SetRowState,
@@ -120,13 +133,15 @@ fun SetRow(
     previousClickLabel: String? = null,
     recordLabel: String? = null,
     showDivider: Boolean = true,
+    weightDescription: String? = null,
+    repsDescription: String? = null,
 ) {
     val colors = Studio.colors
     val done = state == SetRowState.Done || state == SetRowState.DoneRecord
     val activeField = editingField ?: SetField.Weight.takeIf { state == SetRowState.Editing }
     val editing = activeField != null
     SetColumns(
-        modifier.height(SetRowHeight).bottomDivider(colors.separator, showDivider),
+        modifier.heightIn(min = SetRowHeight).bottomDivider(colors.separator, showDivider),
         index = {
             Text(
                 index,
@@ -134,29 +149,29 @@ fun SetRow(
                 color = if (editing) colors.textPrimary else colors.textSecondary,
             )
         },
-        previous = {
-            Text(
-                previous,
-                modifier = if (onPreviousClick != null) {
-                    Modifier
-                        .fillMaxWidth()
-                        .height(SetRowHeight)
-                        .wrapContentHeight(Alignment.CenterVertically)
-                        .clickable(onClickLabel = previousClickLabel, role = Role.Button, onClick = onPreviousClick)
-                } else {
-                    Modifier
-                },
-                style = Studio.typography.caption,
-                color = colors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+        previous = previous?.let { previousText ->
+            {
+                FitText(
+                    previousText,
+                    modifier = if (onPreviousClick != null) {
+                        Modifier
+                            .fillMaxWidth()
+                            .heightIn(min = SetRowHeight)
+                            .wrapContentHeight(Alignment.CenterVertically)
+                            .clickable(onClickLabel = previousClickLabel, role = Role.Button, onClick = onPreviousClick)
+                    } else {
+                        Modifier
+                    },
+                    style = Studio.typography.caption,
+                    color = colors.textSecondary,
+                )
+            }
         },
         weight = {
-            SetValue(weight, done, activeField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } })
+            SetValue(weight, done, activeField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } }, weightDescription)
         },
         reps = {
-            SetValue(reps, done, activeField == SetField.Reps, onFieldClick?.let { { it(SetField.Reps) } })
+            SetValue(reps, done, activeField == SetField.Reps, onFieldClick?.let { { it(SetField.Reps) } }, repsDescription)
             if (state == SetRowState.DoneRecord && recordLabel != null) {
                 Text(
                     recordLabel,
@@ -172,21 +187,23 @@ fun SetRow(
 }
 
 @Composable
-private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (() -> Unit)?) {
+private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (() -> Unit)?, description: String?) {
     val colors = Studio.colors
-    val click = if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier
+    // TalkBack lit « Série 3, kg : 82,5 » plutôt que « 82,5 » seul.
+    val label = if (description != null) Modifier.semantics { contentDescription = description } else Modifier
+    val click = (if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier).then(label)
     if (active) {
         Row(
             Modifier
                 .bleed(start = FieldBleed)
                 .fillMaxWidth()
-                .height(FieldHeight)
+                .heightIn(min = FieldHeight)
                 .background(colors.liveDim, Studio.shapes.control)
                 .then(click)
                 .padding(start = FieldBleed),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(value, style = Studio.typography.numberMedium, color = colors.textPrimary, maxLines = 1)
+            FitText(value, style = Studio.typography.numberMedium, color = colors.textPrimary, modifier = Modifier.weight(1f, fill = false))
             Box(
                 Modifier
                     .padding(start = 2.dp)
@@ -195,12 +212,13 @@ private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (()
             )
         }
     } else {
-        Text(
+        // Un chiffre ne passe jamais à la ligne : il rétrécit plutôt (texte à 200 %).
+        FitText(
             value,
             modifier = if (onClick != null) {
                 Modifier
                     .fillMaxWidth()
-                    .height(SetRowHeight)
+                    .heightIn(min = SetRowHeight)
                     .wrapContentHeight(Alignment.CenterVertically)
                     .then(click)
             } else {
@@ -208,7 +226,6 @@ private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (()
             },
             style = Studio.typography.numberMedium.copy(fontWeight = if (done) FontWeight.Bold else FontWeight.SemiBold),
             color = if (done) colors.textPrimary else colors.textTertiary,
-            maxLines = 1,
         )
     }
 }
@@ -274,19 +291,27 @@ fun AddSetRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource? = null,
+    description: String? = null,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed = source.pressed()
     Row(
         modifier
             .fillMaxWidth()
-            .height(AddRowHeight)
+            .heightIn(min = AddRowHeight)
             .pressedBackground(pressed, Studio.colors.surfaceRaised, AddRowPressBleed, AddRowPressRadius)
-            .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick),
+            .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = onClick)
+            .then(if (description != null) Modifier.semantics { contentDescription = description } else Modifier),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(AddRowIconGap),
     ) {
         StudioIcon(R.drawable.ds_ic_add, contentDescription = null, size = IconSize.Row, tint = Studio.colors.textSecondary)
-        Text(label, style = Studio.typography.actionSmall, color = Studio.colors.textPrimary, maxLines = 1)
+        // Avec [description] (« Ajouter une série : Squat »), TalkBack lit elle seule.
+        Text(
+            label,
+            if (description != null) Modifier.clearAndSetSemantics {} else Modifier,
+            style = Studio.typography.actionSmall,
+            color = Studio.colors.textPrimary,
+        )
     }
 }

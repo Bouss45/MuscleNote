@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -57,7 +58,7 @@ fun StudioNavigationBar(
             .background(Studio.colors.background)
             .topDivider()
             .padding(top = NavTop, bottom = bottomInset)
-            .height(NavItemsHeight)
+            .heightIn(min = NavItemsHeight)
             .selectableGroup(),
     ) {
         items.forEachIndexed { index, item ->
@@ -77,11 +78,10 @@ fun StudioNavigationBar(
                 verticalArrangement = Arrangement.spacedBy(NavIconGap),
             ) {
                 StudioIcon(if (selected) item.selectedIcon else item.icon, contentDescription = null, tint = color)
-                Text(
+                FitText(
                     item.label,
                     style = Studio.typography.small.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium),
                     color = color,
-                    maxLines = 1,
                 )
             }
         }
@@ -118,7 +118,7 @@ fun MiniSessionBar(
     Row(
         modifier
             .fillMaxWidth()
-            .height(MiniBarHeight)
+            .heightIn(min = MiniBarHeight)
             .background(Studio.colors.surfaceRaised, Studio.shapes.control)
             .clickable(role = Role.Button, onClick = onResume)
             .padding(start = MiniBarStart, end = MiniBarEnd),
@@ -134,8 +134,6 @@ fun MiniSessionBar(
             ),
             modifier = Modifier.weight(1f),
             style = Studio.typography.actionSmall,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
         )
         StudioButton(actionLabel, onResume, variant = ButtonVariant.Text, size = ButtonSize.Small)
     }
