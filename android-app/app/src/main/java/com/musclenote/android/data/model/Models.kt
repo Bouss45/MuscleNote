@@ -1,5 +1,7 @@
 package com.musclenote.android.data.model
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -38,14 +40,19 @@ data class WorkoutExercise(
 )
 
 /** Séance. `date` = début de séance, instant ISO 8601 UTC avec millisecondes. */
+@OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class Workout(
     val id: String,
     val name: String,
     val preset: PresetId? = null,
     val date: String,
-    /** kg ; 0 = inconnu. */
-    val bodyWeight: Double,
+    /**
+     * kg ; 0 = non saisi (pesée passée au début de la séance, ou jour déjà pesé, § 15.13). Lu absent
+     * comme 0 mais **toujours écrit** : les versions précédentes de l'app l'exigent (🔄 D38).
+     */
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val bodyWeight: Double = 0.0,
     val exercises: List<WorkoutExercise>,
     /** Absent si en cours ou auto-finalisée (§ 3.4). */
     val durationMinutes: Int? = null,
@@ -122,10 +129,34 @@ enum class ThemeMode {
     @SerialName("dark") Dark,
 }
 
+/**
+ * Rappel de pesée (§ 15.13.3, 🔄 D38) : activé ou non, heure locale, jours ISO (1 = lundi … 7 =
+ * dimanche). Tous les champs sont écrits quand le rappel l'est (il est omis au défaut).
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class WeighInReminder(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val enabled: Boolean = false,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val hour: Int = DEFAULT_HOUR,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val minute: Int = DEFAULT_MINUTE,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val days: List<Int> = ALL_DAYS,
+) {
+    companion object {
+        const val DEFAULT_HOUR = 7
+        const val DEFAULT_MINUTE = 30
+        val ALL_DAYS: List<Int> = (1..7).toList()
+
+        /** Désactivé, 07:30, tous les jours. */
+        val DEFAULT = WeighInReminder()
+    }
+}
+
 @Serializable
 data class Preferences(
     val restSeconds: Int,
     val theme: ThemeMode,
+    /** Omis quand il vaut [WeighInReminder.DEFAULT] (§ 15.13.5). */
+    val weighInReminder: WeighInReminder = WeighInReminder.DEFAULT,
 ) {
     companion object {
         const val DEFAULT_REST_SECONDS = 180

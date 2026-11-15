@@ -1,6 +1,7 @@
 package com.musclenote.android.data.nutrition
 
 import com.musclenote.android.data.model.Supplement
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalTime
 import java.time.ZoneId
@@ -29,6 +30,26 @@ object ReminderSchedule {
         val today = now.atZone(zone).toLocalDate()
         val candidate = ZonedDateTime.of(today, time, zone)
         return if (candidate.toInstant().isAfter(now)) candidate else ZonedDateTime.of(today.plusDays(1), time, zone)
+    }
+
+    /**
+     * Prochaine occurrence de `hour:minute`, heure locale de [zone], strictement après [now], un jour
+     * de [days] (rappel de pesée, § 15.13.4) : le premier jour coché, aujourd'hui compris, où cette
+     * heure est encore à venir ; `null` sans jour coché. Changements d'heure résolus comme dans
+     * [nextOccurrence].
+     */
+    fun nextOccurrence(hour: Int, minute: Int, days: Set<DayOfWeek>, now: Instant, zone: ZoneId): ZonedDateTime? {
+        if (days.isEmpty()) return null
+        val time = LocalTime.of(hour, minute)
+        val today = now.atZone(zone).toLocalDate()
+        // Huit jours : le seul jour coché, déjà passé aujourd'hui, revient dans 7 jours.
+        for (offset in 0L..7L) {
+            val date = today.plusDays(offset)
+            if (date.dayOfWeek !in days) continue
+            val candidate = ZonedDateTime.of(date, time, zone)
+            if (candidate.toInstant().isAfter(now)) return candidate
+        }
+        return null
     }
 
     /** Alarmes qui doivent exister : chaque rappel d'un complément dont `reminderEnabled` est vrai. */

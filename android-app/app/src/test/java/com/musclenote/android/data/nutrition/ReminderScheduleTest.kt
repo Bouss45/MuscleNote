@@ -5,6 +5,13 @@ import com.musclenote.android.data.model.Supplement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
+import java.time.DayOfWeek
+import java.time.DayOfWeek.FRIDAY
+import java.time.DayOfWeek.MONDAY
+import java.time.DayOfWeek.SATURDAY
+import java.time.DayOfWeek.SUNDAY
+import java.time.DayOfWeek.WEDNESDAY
+import java.time.Duration
 import java.time.Instant
 import java.time.ZoneId
 
@@ -66,6 +73,74 @@ class ReminderScheduleTest {
     fun `passage à l'heure d'hiver, 8 h reste 8 h à la montre`() {
         // Samedi 24, 9 h (UTC+2) : prochain 8 h = dimanche 25, 8 h heure d'hiver = 7 h UTC (24 h + 1 h plus tard).
         assertEquals(Instant.parse("2026-10-25T07:00:00Z"), next(8, 0, "2026-10-24T07:00:00Z"))
+    }
+
+    // ─── Jours de la semaine (rappel de pesée, § 15.13.4, 🔄 D38) ──────────────────────
+    // Samedi 14 mars 2026 ; samedi 28 mars veille du passage à l'heure d'été ; samedi 24 octobre
+    // veille du passage à l'heure d'hiver.
+
+    private val everyDay = DayOfWeek.entries.toSet()
+
+    private fun nextOn(days: Set<DayOfWeek>, hour: Int, minute: Int, now: String): Instant? =
+        ReminderSchedule.nextOccurrence(hour, minute, days, Instant.parse(now), paris)?.toInstant()
+
+    @Test
+    fun `jours cochés - aujourd'hui si l'heure est à venir`() {
+        // Samedi 14 mars, 7 h (UTC+1) : 7 h 30 aujourd'hui.
+        assertEquals(Instant.parse("2026-03-14T06:30:00Z"), nextOn(setOf(SATURDAY), 7, 30, "2026-03-14T06:00:00Z"))
+    }
+
+    @Test
+    fun `jours cochés - un jour non coché est sauté jusqu'au prochain jour coché`() {
+        // Samedi → lundi 16 mars.
+        assertEquals(Instant.parse("2026-03-16T06:30:00Z"), nextOn(setOf(MONDAY, WEDNESDAY), 7, 30, "2026-03-14T06:00:00Z"))
+        // Lundi 16 à 8 h : 7 h 30 est passé → mercredi 18.
+        assertEquals(Instant.parse("2026-03-18T06:30:00Z"), nextOn(setOf(MONDAY, WEDNESDAY), 7, 30, "2026-03-16T07:00:00Z"))
+    }
+
+    @Test
+    fun `jours cochés - heure passée le seul jour coché donne la semaine suivante`() {
+        assertEquals(Instant.parse("2026-03-21T06:30:00Z"), nextOn(setOf(SATURDAY), 7, 30, "2026-03-14T08:00:00Z"))
+    }
+
+    @Test
+    fun `jours cochés - exactement maintenant donne l'occurrence suivante`() {
+        assertEquals(Instant.parse("2026-03-15T06:30:00Z"), nextOn(everyDay, 7, 30, "2026-03-14T06:30:00Z"))
+        assertEquals(Instant.parse("2026-03-20T06:30:00Z"), nextOn(setOf(FRIDAY), 7, 30, "2026-03-14T06:30:00Z"))
+    }
+
+    @Test
+    fun `aucun jour coché - aucune alarme`() {
+        assertNull(nextOn(emptySet(), 7, 30, "2026-03-14T06:00:00Z"))
+    }
+
+    @Test
+    fun `passage à l'heure d'été - 7 h 30 reste 7 h 30 à la montre, 23 h réelles après la sonnerie de la veille`() {
+        val ring = Instant.parse("2026-03-28T06:30:00Z") // samedi 7 h 30 (UTC+1)
+        val next = nextOn(everyDay, 7, 30, ring.toString())!!
+        assertEquals(Instant.parse("2026-03-29T05:30:00Z"), next) // dimanche 7 h 30 (UTC+2)
+        assertEquals(Duration.ofHours(23), Duration.between(ring, next))
+    }
+
+    @Test
+    fun `passage à l'heure d'été - une heure inexistante est décalée après le saut`() {
+        // Dimanche 29 mars, 2 h 30 n'existe pas → 3 h 30 heure d'été.
+        assertEquals(Instant.parse("2026-03-29T01:30:00Z"), nextOn(setOf(SUNDAY), 2, 30, "2026-03-28T12:00:00Z"))
+    }
+
+    @Test
+    fun `passage à l'heure d'hiver - 7 h 30 reste 7 h 30 à la montre, 25 h réelles après la sonnerie de la veille`() {
+        val ring = Instant.parse("2026-10-24T05:30:00Z") // samedi 7 h 30 (UTC+2)
+        val next = nextOn(everyDay, 7, 30, ring.toString())!!
+        assertEquals(Instant.parse("2026-10-25T06:30:00Z"), next) // dimanche 7 h 30 (UTC+1)
+        assertEquals(Duration.ofHours(25), Duration.between(ring, next))
+    }
+
+    @Test
+    fun `passage à l'heure d'hiver - une heure ambiguë prend sa première occurrence`() {
+        assertEquals(Instant.parse("2026-10-25T00:30:00Z"), nextOn(setOf(SUNDAY), 2, 30, "2026-10-24T12:00:00Z"))
+        // Juste après la première 2 h 30 : pas une deuxième fois le même jour, le dimanche suivant.
+        assertEquals(Instant.parse("2026-11-01T01:30:00Z"), nextOn(setOf(SUNDAY), 2, 30, "2026-10-25T00:45:00Z"))
     }
 
     // ─── Alarmes attendues ────────────────────────────────────────────────────────────
