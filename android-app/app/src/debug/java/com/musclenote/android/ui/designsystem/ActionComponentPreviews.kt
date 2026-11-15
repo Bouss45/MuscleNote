@@ -250,6 +250,17 @@ private fun NumericKeypadPreview() = StudioComponentPreview { KeypadSample() }
 private fun NavigationPreview() = StudioComponentPreview { MiniBarAndNavSample() }
 
 /** Hors maquette (séance en cours, § 15.7) : série validée en saisie sur les reps, « Préc. » à toucher. */
+/** Hors planche : bouton icône plein (🔄 D42, boutons + du groupe « Aujourd'hui »), normal, pressé, inactif. */
+@StudioComponentPreviews
+@Composable
+private fun IconButtonFilledPreview() = StudioComponentPreview {
+    Row(horizontalArrangement = Arrangement.spacedBy(Studio.spacing.m)) {
+        StudioIconButton(R.drawable.ds_ic_add, "Ajouter", {}, filled = true)
+        StudioIconButton(R.drawable.ds_ic_add, "Ajouter", {}, filled = true, interactionSource = AlwaysPressedInteractionSource())
+        StudioIconButton(R.drawable.ds_ic_add, "Ajouter", {}, filled = true, enabled = false)
+    }
+}
+
 @StudioComponentPreviews
 @Composable
 private fun SetRowEditingDonePreview() = StudioComponentPreview {

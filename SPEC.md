@@ -832,6 +832,11 @@ l'accueil (`Xt`), en tonnes au dixième dans Progrès.
   enregistre aussi la prise du jour dans le complément (`{ jour: doses }`, une dose), la décocher la
   retire ; **un seul enregistrement par complément et par jour**. « Pris aujourd'hui » se lit
   toujours dans `taken`, inchangé ; l'historique sert à la sheet « Journée » (§ 15.15.2).
+  🔄 D42 : la coche enregistre les **doses par jour** du complément (1 par défaut, § 15.16.4), et
+  l'historique décompte le **stock** (§ 15.16.4).
+- 🔄 D42 — **protéines** (§ 15.16.1) : `proteinLog` indexé par jour local comme les calories, grammes
+  entiers, `addProtein(v)` / `setProtein(v)` bornés à ≥ 0 ; objectif **non daté**, calculé chaque jour
+  depuis la dernière pesée connue (g par kg) ou valeur fixe.
 - Le « jour courant » est un `StateFlow` recalculé à minuit (timer jusqu'au prochain minuit
   local) et à chaque retour au premier plan ; changement de fuseau
   (`ACTION_TIMEZONE_CHANGED`) → recalcul.
@@ -973,6 +978,9 @@ saisis/affichés, pas la présence des champs.
 | `reminderEnabled` | boolean | req. | interrupteur global |
 | `reminders` | `Reminder[]` | req. | conservés même si désactivés |
 | `intakes` (🔄 D41) | objet | opt. | historique des prises : `{ "AAAA-MM-JJ": doses }`, un enregistrement par jour local, doses ≥ 1 ; omis s'il est vide (§ 15.15.4) |
+| `dosesPerDay` (🔄 D42) | entier | opt. | doses comptées par une coche « pris aujourd'hui », 1 à 20 ; omis à 1 (§ 15.16.8) |
+| `stock` (🔄 D42) | objet | opt. | stock suivi : `{ doses, day, dayIntake? }` — doses comptées le jour local `day`, après `dayIntake` doses prises ce jour-là ; absent = stock non suivi (§ 15.16.8) |
+| `lowStockDays` (🔄 D42) | entier | opt. | seuil du stock bas, en jours, 0 à 99 ; omis à 7 (§ 15.16.8) |
 
 **`Reminder`** : `id` string req. ; `hour` 0–23 req. ; `minute` 0–59 req.
 (🔄 D7 — le champ Expo `notifId` est supprimé ; les alarmes sont identifiées par
@@ -989,6 +997,8 @@ saisis/affichés, pas la présence des champs.
 | `waterGoalHistory` | `{ "AAAA-MM-JJ": entier }` | ml | `{ "0000-01-01": 2000 }` — 🔄 D15 |
 | `caloriesLog` | `{ "AAAA-MM-JJ": entier }` | kcal | `{}` |
 | `waterLog` | `{ "AAAA-MM-JJ": entier }` | ml | `{}` |
+| `proteinLog` (🔄 D42, opt.) | `{ "AAAA-MM-JJ": entier }` | g | `{}`, omis s'il est vide (§ 15.16.8) |
+| `proteinGoal` (🔄 D42, opt.) | `{ mode: "perKg" \| "fixed", perKg, grams? }` | g/kg, g | `{ "mode": "perKg", "perKg": 1.6 }`, omis au défaut (§ 15.16.8) |
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
@@ -1227,7 +1237,10 @@ l'app Expo), on ajoute `history[aujourd'hui] = calorieGoal` (idem eau) ; histori
 d'objectif absent ou vide → `{ "0000-01-01": objectif courant }` ; entrées `taken` de
 compléments inconnus retirées. 🔄 D38 : `weighInReminder` des préférences lu selon le § 15.13.5
 (absent ou invalide → rappel désactivé à 07:30, tous les jours). 🔄 D41 : `intakes` d'un complément
-lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écartées).
+lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écartées). 🔄 D42 : `dosesPerDay`,
+`stock` et `lowStockDays` d'un complément, `proteinLog` et `proteinGoal` du tracker lus selon le
+§ 15.16.8 (absents → 1 dose par jour, stock non suivi, seuil de 7 jours, aucune protéine, objectif de
+1,6 g par kg ; valeurs invalides → ces défauts).
 
 ### 5.4 Déroulé d'un import
 
@@ -1829,7 +1842,8 @@ l'Accueil, le Journal et le logo (§ 15.8), D34 avec la fiche exercice et Progr�
 Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finitions de la refonte
 (§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
 de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
-de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15).
+de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15), D42 avec les
+protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1874,6 +1888,7 @@ de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15
 | D39 | Notification de mise à jour | une requête par jour, vers 18 h, à l'API publique des Releases GitHub (dernière Release non préversion), réseau requis, aucune donnée envoyée ; notification « Nouvelle version disponible » désactivée par défaut si Obtainium a installé l'app (source d'installation), activée sinon, modifiable dans les deux cas ; une seule fois par version, seule la dernière notifiée (versions intermédiaires sautées), la nouvelle remplace celle affichée ; titre et première ligne des notes, actions « Voir » (Obtainium s'il a installé l'app, sinon la page de la Release) et « Ignorer cette version » ; section « Rappels » de Paramètres renommée « Notifications » (rappel de pesée, compléments, nouvelle version) ; ligne « Version x · à jour / y disponible » avec « Vérifier maintenant », même notification coupée ; rien dans la variante preview | tâche WorkManager unique `update-check` à la prochaine 18 h locale, reprogrammée à chaque passage, contrainte réseau `CONNECTED` (`ACCESS_NETWORK_STATE` gardée), pas de nouvel essai avant le lendemain ; elle remplace la vérification au premier plan de D25 et ne tourne que si la notification est activée, quelle que soit la source d'installation (réglage coupé : aucune requête automatique, seul « Vérifier maintenant » contacte GitHub ; l'annonce de l'Accueil n'apparaît alors qu'après une vérification manuelle) ; tag `v1.0.n` → versionCode `1000 + n` (règle de `release.yml`) comparé au versionCode installé, autre forme de tag → nombres de la version (D25) ; réglage `notifyEnabled` et `notifiedVersion` dans `update_check.json` (propre à l'appareil, hors sauvegarde ; absent = défaut selon la source d'installation, relue à chaque démarrage) ; notifiée si plus récente que l'installée et que la dernière notifiée, et pas ignorée ; enregistrée comme notifiée seulement si elle a pu s'afficher ; canal `updates` (DEFAULT), un seul identifiant de notification ; titre « MuscleNote 1.0.43 disponible », texte = premier élément de liste des notes de version (§ 15.1) ; toucher = « Voir » ; « Ignorer cette version » = « Plus tard » de l'Accueil (même version masquée) ; notification retirée au démarrage d'une version au moins aussi récente ; « Notifications désactivées » rejoint la section « Notifications » ; « À propos » : « Version 1.0.42 · à jour », « Vérifier maintenant », « Télécharger la 1.0.43 » ou « Ouvrir Obtainium » ; `BuildConfig.UPDATE_NOTIFICATIONS` faux en preview ; aucun composant nouveau (§ 1, 3.17, 7.1, 15.8.2, 15.10.3, 15.13.3, 15.14) |
 | D40 | Listes groupées (maquette « v2 listes groupées » du 15/11/2026) | appliquer les groupes, les titres de section et les espacements de la maquette à Journal, Paramètres et Nutrition tels qu'ils sont, sans coder les fonctions qu'elle dessine en plus (calendrier du mois et objectif de séances du Journal, protéines, stock des compléments et moyenne sur 7 jours de Nutrition), notées comme maquettes disponibles ; couleurs v2 pour toute l'app | jetons v2 (en clair fond #F2F2F0 et groupes blancs, en sombre groupes #1A1B1F, ligne pressée dans un groupe, filets plus nets), barre d'onglets sur la surface des groupes sans filet ; sur les trois écrans, étiquettes en capitales et groupes tonaux (rayon 20, sans bordure), marges de 16, 8 entre étiquette et groupe, 32 entre groupes ; Accueil, Progrès, fiches, séance et résumé inchangés hors couleurs ; ni donnée, ni texte, ni comportement nouveau ; non repris : icônes, interrupteur et section « Connexions » de Paramètres, case ronde de Nutrition, filtre du Journal (DESIGN.md § 2, 9.1, 10.1, 12, 13 ; § 15.6, 15.8.4, 15.10.1, 15.10.3) |
 | D41 | Calendrier du Journal | en haut du Journal, le calendrier du mois de la maquette : semaine du lundi, flèches et glissement pour changer de mois, jour avec séance = rond plein, aujourd'hui = rond vide, résumé des séances du mois sous la grille ; toucher un jour ouvre une sheet « Journée » en listes groupées (séances → détail, pesée, compléments pris, calories et eau ; sections vides masquées ; jour sans rien = message court) ; historique des prises de compléments gardé désormais (date et nombre de doses par complément, champ facultatif, un enregistrement par complément et par jour, sans migration), affiché pour tous les jours à partir de cette version ; pas de réglage d'objectif : le Journal reprend la règle de la série de l'Accueil (validée à 3 séances), « 3/3 · validée » en vert, sinon gris, jamais rouge ; liste par semaine inchangée ; seules les données existantes ; chaque jour lu par TalkBack | composant `MonthCalendar` dans le groupe du héros du Journal (absent quand le Journal est vide), mois accessibles de la plus ancienne donnée au mois courant, 6 rangées réservées, rangées de 48 (cibles tactiles) ; jour d'une séance = jour local de son début (une séance commencée avant minuit reste sur la veille) ; `Supplement.intakes` `{ jour: doses }`, une dose par coche aujourd'hui, retirée en décochant, `taken` inchangé, ancien fichier relu avec un historique vide, une coche d'aujourd'hui antérieure à la mise à jour compte pour une dose ; poids du jour = règle de Progrès (pesée, sinon poids saisi au début d'une séance) ; sheet groupée (fond `background`, groupes `surfaceRaised`) ; compteur des semaines « n/3 » avec `WorkoutStats.VALIDATED_WEEK_SESSIONS` ; objectif réglable (Accueil et Journal ensemble) noté en piste (§ 3.6, 3.12, 4.1, 5.3, 15.6, 15.8.4, 15.15) |
+| D42 | Protéines, stock des compléments et moyenne sur 7 jours (maquette `T2-Nutrition`) | objectif de protéines calculé à partir de la dernière pesée (grammes par kg, réglable de 1,2 à 2,2, 1,6 par défaut) ou valeur fixe saisie au pavé ; sans aucune pesée, valeur fixe uniquement ; ligne « Protéines » comme sur la maquette (« 112 g », « objectif 150 g »), en gris, puis en vert une fois l'objectif atteint ; **eau et protéines identiques, comme sur la maquette** : deux lignes, chacune avec son bouton + (ajout au pavé), le toucher de la ligne ouvre son détail ; protéines du jour dans la sheet « Journée », à côté des calories et de l'eau ; stock des compléments en doses, saisi au pavé, décompté à partir de l'historique des prises ; jours restants = stock / doses par jour, affichés comme sur la maquette, en rouge au seuil ou en dessous (7 jours par défaut, réglable par complément) ; « Racheté » ajoute des doses ; sans stock saisi, rien ne s'affiche ; doses par jour = réglage du complément ; « Moyenne sur 7 jours » (calories, eau, protéines) comme sur la maquette, sur les seuls jours avec des données, sans aujourd'hui ; champs facultatifs, sans migration, anciennes données relues telles quelles ; Progrès, export CSV et notification de stock bas en pistes | groupe du héros de la maquette : légende « Aujourd'hui · calories » et bouton + plein des calories, chiffre héros, état et piste inchangés, puis les lignes « Eau » et « Protéines » (valeur grise puis verte avec « objectif … atteint », jamais la couleur seule ; bouton + → saisie en « Ajouter » ; ligne → détail : aujourd'hui → « Total du jour », objectif, moyenne sur 7 jours, « Ajouter ») ; rangée de stats et boutons « Calories » / « Eau » retirés, « 1 sur 3 pris » à droite de l'étiquette « Compléments » ; protéines saisies comme les calories (grammes entiers, pas ±5 g) ; dernière pesée = dernière pesée connue du § 15.13.1 (pesée, sinon poids saisi au début d'une séance, séance en cours comprise) ; objectif = poids × facteur arrondi au gramme (demi vers le haut, calcul exact), non daté (il ne vaut que pour le jour même) ; « par kg » sans poids connu → la valeur fixe, sinon pas d'objectif ; doses par jour de 1 à 20, 1 par défaut, une coche enregistre ce nombre de doses dans l'historique (au lieu d'une) ; stock = doses comptées un jour donné moins les doses prises depuis, jamais sous 0 ; jours restants = partie entière, rouges dès qu'ils sont ≤ au seuil (« à 7 jours »), sans notification ; « Racheté » et « Stock bas » seulement quand le stock est suivi, « Ne plus suivre le stock » dans son formulaire ; moyenne de J − 7 à J − 1 par mesure, jours à 0 exclus, « — » pour une mesure sans jour, groupe masqué sans aucune donnée ; pas de lien « Tendances » ; section « Calories et eau » de la « Journée » renommée « Nutrition », protéines sans objectif (non daté), comptées pour les mois accessibles ; variantes de composants : `StudioIconButton` plein, `ListRowTrailing.ValueAction`, valeur avant la case de `ListRowTrailing.Check`, `DailySurface` redessinée (§ 3.12, 4.1, 5.3, 15.6, 15.10.1, 15.15.2, 15.15.4, 15.16) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1923,7 +1938,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 513 tests JVM (42 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 620 tests JVM (48 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2209,6 +2224,29 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   historique des prises dans `PreviewData`. À vérifier **sur l'appareil** : glissement entre les
   mois dans la liste, ouverture de la sheet et passage au résumé, TalkBack sur les jours, coche d'un
   complément puis sa journée.
+- **Protéines, stock des compléments et moyenne sur 7 jours** (🔄 D42, § 15.16), branche
+  `feat/proteines-stock` : modèle `ProteinGoal` / `ProteinGoalMode`, `DailyTracker.proteinLog` /
+  `proteinGoal`, `Supplement.dosesPerDay` / `stock` (`SupplementStock`) / `lowStockDays` (facultatifs,
+  omis au défaut, lus par `BackupNormalizer`) ; règles pures `data/nutrition/ProteinRules.kt` (objectif
+  par kg exact, valeur fixe, dernière pesée connue, formulaire), `data/nutrition/StockRules.kt` (stock
+  restant, rachat, jours restants, stock bas, doses par jour), `NutritionRules` (protéines du jour,
+  `recordIntake(doses)`, `weekAverages`, formats du pavé) ; `NutritionRepository` (protéines, objectif,
+  stock et doses sans resynchroniser les alarmes) ; `CalendarRules.DayJournal.proteinGrams`. Écran
+  `ui/nutrition/NutritionScreen.kt` (groupe « Aujourd'hui » de la maquette, jours de stock, moyenne
+  sur 7 jours) et `NutritionSheets.kt` (`MeasureSheet` : saisie, détail, objectif ; objectif de
+  protéines ; sheet d'un complément par étapes : doses par jour, stock, « Ajouter du stock », stock
+  bas) ; sheet « Journée » (`ui/journal/DaySheet.kt`, section « Nutrition »). Design system :
+  `StudioIconButton(filled)`, `ListRowTrailing.ValueAction`, valeur avant la case de
+  `ListRowTrailing.Check`, `DailySurface` redessinée, `highlightedHelp`. Tests JVM `ProteinRulesTest`,
+  `SupplementStockTest`, `NutritionAveragesTest`, `BackupV2Test`, `CalendarRulesTest`,
+  `NutritionRepositoryTest`. Aperçus : onglet Nutrition (stocks et protéines dans `PreviewData`),
+  groupe « Aujourd'hui », saisie et objectif des protéines (avec et sans pesée), détail de l'eau et des
+  protéines, sheet d'un complément (stock suivi, stock bas, non suivi), « Ajouter du stock »,
+  « Stock », `IconButtonFilledPreview`, `ListRowCheckPreview`, `DailySurfacePreview`. À vérifier **sur
+  l'appareil** : boutons + et toucher des lignes Eau et Protéines, retour entre détail, saisie et
+  objectif, coche d'un complément à 2 doses par jour puis son stock, « Racheté » et le seuil ouvert
+  depuis lui, TalkBack sur les jours de stock et sur « 1 sur 3 pris », texte agrandi dans le groupe
+  « Aujourd'hui ».
 
 ---
 
@@ -2386,7 +2424,12 @@ appliquée à Journal, Paramètres et Nutrition (groupes, étiquettes, espacemen
 toute l'app ; un composant nouveau (`ListGroup`), aucune donnée ni fonction nouvelle. **Calendrier
 du Journal** (🔄 D41, § 15.15) : le mois en tête du Journal, une sheet « Journée » qui rassemble les
 données d'un jour, les semaines validées comme sur l'Accueil ; l'historique des prises de compléments
-s'ajoute au format (champ facultatif) ; un composant nouveau (`MonthCalendar`).
+s'ajoute au format (champ facultatif) ; un composant nouveau (`MonthCalendar`). **Protéines, stock des
+compléments et moyenne sur 7 jours** (🔄 D42, § 15.16) : trois fonctions de la maquette Nutrition,
+avec des champs facultatifs dans le tracker et les compléments, le groupe « Aujourd'hui » de la
+maquette (lignes « Eau » et « Protéines ») et les protéines dans la sheet « Journée » ; aucun
+composant nouveau, des variantes (`StudioIconButton` plein, valeurs de fin de `ListRow`,
+`DailySurface`).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2765,6 +2808,11 @@ cours : elle revient au changement suivant de la séance ou du repos.
   « Cette semaine », barres des 8 semaines et compteurs « n/3 » du Journal suivraient le même nombre.
   Il demanderait un réglage sauvegardé et de décider si un changement d'objectif réécrit les séries
   passées (record compris).
+- **Protéines dans Progrès et l'export CSV** (🔄 D42) : une courbe dans Progrès à côté des calories et
+  de l'eau, une colonne « Protéines (g) » dans `musclenote_nutrition_*.csv` (§ 8). Un objectif de
+  protéines daté serait alors à décider (aujourd'hui il ne vaut que pour le jour même, § 15.16.1).
+- **Prévenir quand le stock est bas** (🔄 D42) : une notification quand un complément passe sous son
+  seuil (§ 15.16.4) ; aujourd'hui, seul le rouge de sa ligne le signale.
 
 **Maquettes disponibles** (🔄 D40) — la maquette Claude Design « v2 listes groupées » (15/11/2026,
 `design/claude-design/`) dessine des fonctions que l'app n'a pas ; elles ne sont pas codées et
@@ -2774,14 +2822,12 @@ attendent leur propre sujet (décision, spécification, données) :
   avec la règle fixe de 3 séances ; restent la mention « S45 et S46 validées » du résumé du mois et
   l'objectif réglable (piste ci-dessus).
 - **Filtre du Journal par type de séance** (`T2-Journal`) : bouton `tune` dans la barre de titre.
-- **Protéines** (`T2-Nutrition`) : une ligne « Protéines · objectif 150 g » avec sa valeur et son
-  bouton +, dans le groupe « Aujourd'hui » à côté de l'eau ; donnée et objectif nouveaux.
-- **Stock des compléments** (`T2-Nutrition`, `T2-Stock`) : les jours restants à droite de chaque
-  complément (« 12 jours », en `down` quand il en reste peu), la saisie du stock en formulaire ;
-  lien « Gérer » sur l'étiquette « Compléments · 1 sur 3 pris ». Plusieurs doses par jour
-  (« 2 doses · prise à 07:40 ») : l'historique des prises (🔄 D41) compte déjà les doses.
-- **Moyenne sur 7 jours** (`T2-Nutrition`) : groupe de stats « kcal par jour, eau, protéines », lien
-  « Tendances » (courbes de Nutrition).
+- ~~Protéines~~, ~~stock des compléments~~ et ~~moyenne sur 7 jours~~ (`T2-Nutrition`, `T2-Stock`) :
+  réalisés par 🔄 D42 (§ 15.16), avec le groupe du héros de la maquette (lignes « Eau » et
+  « Protéines », boutons +) et « 1 sur 3 pris » à droite de l'étiquette « Compléments » ; restent le
+  lien « Gérer », l'heure de la prise en sous-titre (« prise à 07:40 »), la case ronde à gauche (D40),
+  les puces de saisie rapide du stock (« +250 g ») et le lien « Tendances » (courbes de Nutrition,
+  déplacées depuis Progrès).
 - Les planches plus anciennes dessinent aussi **Mes records** (`T2-Records`) et les **mensurations**
   (`T2-Mensurations`).
 
@@ -3446,7 +3492,7 @@ gabarit formulaire (§ 10.4) ; **Paramètres** (§ 2.12) devient une liste group
 niveau) dont chaque réglage s'ouvre en formulaire, avec les mêmes réglages qu'aujourd'hui. Seul
 changement de réglage : le **thème** propose Sombre, Clair, Système, **Sombre par défaut**
 (§ 15.10.4). **Hors périmètre** : objectif de protéines et stock des compléments (fonctionnalités
-prévues après), section « Tendances » de Nutrition (les courbes de calories et d'eau restent dans
+prévues après ; 🔄 D42, § 15.16), section « Tendances » de Nutrition (les courbes de calories et d'eau restent dans
 Progrès, § 15.9.2). Export, sauvegarde automatique, Health Connect et envoi d'avis gardent leurs
 règles (§ 5, § 8, § 14, § 15.2, § 15.3) ; les notifications (§ 7) ne changent pas. Le **format des
 données ne change pas** (§ 4, § 5), sauf la valeur par défaut du thème : aucune migration.
@@ -3455,6 +3501,12 @@ données ne change pas** (§ 4, § 5), sauf la valeur par défaut du thème : au
 
 > 🔄 D40 — **listes groupées** (DESIGN.md § 10.1) : « Aujourd'hui » est le groupe du héros,
 > « Compléments » un groupe titré (« Nouveau complément » et l'info dessous) ; contenu inchangé.
+>
+> 🔄 D42 — le groupe du héros prend la forme de la maquette (§ 15.16.2) : bouton + des calories à côté
+> de la légende, puis les lignes **« Eau »** et **« Protéines »**, chacune avec son bouton + ; plus de
+> rangée de stats ni de boutons « Calories » / « Eau » ; « 1 sur 3 pris » passe à droite de
+> l'étiquette « Compléments ». Chaque complément montre ses **jours de stock** avant sa case
+> (§ 15.16.4) ; le groupe **« Moyenne sur 7 jours »** suit les compléments (§ 15.16.6).
 
 Remplace la disposition du § 2.11. Gabarit **hub**, de haut en bas :
 
@@ -4467,7 +4519,8 @@ semaine (§ 15.8.4) reste sous le calendrier.
      d'historique : la section est alors masquée. Seule exception, **aujourd'hui** : un complément
      coché « pris aujourd'hui » (`taken`, § 3.12) compte au moins pour une dose, même coché avant la
      mise à jour. Un complément supprimé emporte son historique.
-  4. **« Calories et eau »** — « Calories » « 1 850 kcal », sous-titre « objectif 2 600 kcal » ;
+  4. **« Calories et eau »** (🔄 D42 : **« Nutrition »**, avec les protéines du jour, § 15.16.7) —
+     « Calories » « 1 850 kcal », sous-titre « objectif 2 600 kcal » ;
      « Eau » « 1,5 L », sous-titre « objectif 2,5 L » ; objectifs en vigueur **ce jour-là** (objectifs
      datés, § 3.12). Une ligne seulement si sa valeur est supérieure à 0.
 - **Jour sans rien** : la phrase « Rien de noté ce jour-là. » à la place des sections.
@@ -4493,7 +4546,8 @@ semaine (§ 15.8.4) reste sous le calendrier.
   taille reste bornée (un complément pris chaque jour ajoute une quinzaine d'octets par jour, environ
   5 ko par an). **Omis** quand il est vide.
 - **Écriture** : cocher « pris aujourd'hui » écrit `intakes[aujourd'hui] = 1` (l'app ne compte pas
-  encore plusieurs doses ; le nombre est prêt pour la piste du § 15.6) ; décocher retire
+  encore plusieurs doses ; le nombre est prêt pour la piste du § 15.6 ; 🔄 D42 : la coche écrit les
+  **doses par jour** du complément, § 15.16.4) ; décocher retire
   `intakes[aujourd'hui]`. `taken` (`supplements_taken.json`, § 3.12) est écrit comme avant et reste la
   source de « pris aujourd'hui ».
 - **Lecture** (fichier `supplements.json` ou import, `@gymtracker_supplements` de la sauvegarde v2) :
@@ -4563,3 +4617,318 @@ volume, de poids et de litres, les noms de séance, le dosage des compléments.
 Lecture d'un jour par TalkBack : la date en toutes lettres (« jeudi 12 novembre »), puis
 `journal_calendar_today` pour aujourd'hui, puis `journal_calendar_upcoming` (jour à venir),
 `journal_calendar_sessions` ou `journal_calendar_no_session`, séparés par des virgules.
+
+### 15.16 Protéines, stock des compléments et moyenne sur 7 jours (🔄 D42)
+
+Trois fonctions que la maquette `T2-Nutrition` (planche « Listes groupées », DESIGN.md) dessine et que
+l'app n'avait pas (§ 15.6) : un **objectif de protéines** qui suit le poids de corps, le **stock** de
+chaque complément décompté à chaque prise, et la **moyenne sur 7 jours** des calories, de l'eau et des
+protéines. Le groupe « Aujourd'hui » prend la forme de la maquette : l'**eau** et les **protéines** y
+sont deux lignes identiques, chacune avec son bouton +. Les protéines du jour rejoignent la sheet
+« Journée » du Journal. Tout est fait des gabarits (hub groupé, formulaires au pavé, DESIGN.md § 10.1,
+§ 10.4) et des composants existants. Le format gagne des **champs facultatifs** (§ 15.16.8) : ni
+nouvelle version, ni migration ; une sauvegarde ou un fichier d'avant cette version se relit tel quel
+(aucune protéine, objectif de 1,6 g par kg, une dose par jour, stock non suivi).
+
+Ordre du hub Nutrition (§ 15.10.1) : barre ; groupe du héros « Aujourd'hui » (§ 15.16.2) ;
+« Compléments » ; « Moyenne sur 7 jours » (§ 15.16.6).
+
+#### 15.16.1 Protéines
+
+- **Donnée** : grammes de protéines par jour local (`proteinLog`, § 15.16.8), entiers ≥ 0, saisis
+  comme les calories (§ 15.16.3).
+- **Objectif** (réglage `proteinGoal`), deux modes :
+  - **par kg de poids** (par défaut) : facteur de **1,2 à 2,2 g par kg**, au dixième, **1,6** par
+    défaut ; objectif = poids × facteur, **arrondi au gramme** (demi vers le haut : 82,5 kg × 1,8 =
+    148,5 → 149 g ; 78,4 kg × 1,6 = 125,44 → 125 g), calculé exactement (poids au centième × facteur
+    au dixième, en millièmes de gramme entiers), sans erreur d'arrondi ;
+  - **valeur fixe** : grammes entiers > 0, saisis au pavé.
+- **Poids utilisé** : la **dernière pesée connue** aujourd'hui (§ 15.13.1) — la pesée manuelle, sinon
+  le poids saisi au début d'une séance (séance en cours comprise), le jour le plus récent l'emportant.
+  Une nouvelle pesée change l'objectif tout de suite.
+- **Sans aucune pesée** : valeur fixe uniquement. Le mode « par kg » n'est pas proposé dans le
+  formulaire ; s'il était choisi (pesées supprimées depuis), l'objectif est la valeur fixe si elle a
+  été saisie, sinon **pas d'objectif**.
+- **Non daté** : contrairement aux calories et à l'eau (🔄 D15), l'objectif de protéines n'a pas
+  d'historique ; il ne vaut que pour le jour même. Changer de mode ou de valeur vaut aussitôt.
+- **Atteint** ssi il y a un objectif et grammes du jour ≥ objectif.
+
+#### 15.16.2 Groupe « Aujourd'hui »
+
+Remplace le point 2 du § 15.10.1 (surface « Aujourd'hui »), comme sur la maquette :
+
+- **En-tête** : légende « Aujourd'hui · calories » ; à droite le **bouton +** (bouton icône plein, rond
+  de 40 `surfaceControl` dans une cible de 48) « Ajouter des calories » → formulaire Calories en
+  « Ajouter » (§ 15.10.2, inchangé).
+- **Chiffre héros** (kcal du jour), **état** par rapport à l'objectif et **piste** : inchangés (D35).
+- La rangée de stats et les deux boutons « Calories » / « Eau » disparaissent : l'eau devient une
+  ligne ; le compte des compléments pris passe à droite de l'étiquette « Compléments », « 1 sur 3
+  pris » (s'il y a au moins un complément ; TalkBack : « 1 complément sur 3 pris aujourd'hui »).
+- Sous la piste, un filet en retrait puis **deux lignes identiques**, « Eau » puis « Protéines »
+  (`ListRow` dans le groupe) :
+  - titre « Eau » / « Protéines » ; sous-titre « objectif 2,5 L » / « objectif 150 g », une fois
+    l'objectif atteint « objectif 2,5 L atteint » / « objectif 150 g atteint » (le mot accompagne la
+    couleur, DESIGN.md § 1), protéines sans objectif « Pas d'objectif » ;
+  - à droite la valeur du jour, « 1,5 L » (« 750 ml » sous 1 000 ml, au dixième de litre au-delà,
+    § 2.11) / « 112 g », en **gris** (`textSecondary`) tant que l'objectif n'est pas atteint (ou sans
+    objectif), en **vert** (`up`) une fois atteint (eau : ml ≥ objectif du jour, § 15.10.5 ;
+    protéines : § 15.16.1) ;
+  - puis le **bouton +** (le même que celui des calories) « Ajouter de l'eau » / « Ajouter des
+    protéines » → formulaire de saisie en « Ajouter » (§ 15.16.3) ;
+  - **toucher le reste de la ligne** → son **détail** (§ 15.16.3).
+
+#### 15.16.3 Formulaires et détails
+
+Bottom sheets (gabarit formulaire, DESIGN.md § 10.4) ; retour ou voile : fermée sans rien enregistrer.
+
+**Protéines** (bouton + de la ligne) — le formulaire des calories (§ 15.10.2) en grammes :
+- titre « Protéines » ; aide « Aujourd'hui : 112 g sur 150 g. », sans objectif « Aujourd'hui : 112 g. » ;
+- puces « Ajouter » (choisie à l'ouverture) / « Total du jour » ; champ héros en **g** (« Ajouter » :
+  vide ; « Total du jour » : les grammes du jour, champ neuf) ;
+- lignes d'information « Nouveau total » « 142 g » (en « Ajouter ») et « Objectif quotidien » « 150 g »
+  (« À définir » sans objectif), chevron → formulaire d'objectif ;
+- pavé : grammes **entiers**, 4 chiffres au plus, pas **−5** / **+5** ; « ✓ Ajouter » ou
+  « ✓ Enregistrer » ; mêmes validations que les calories (« Ajouter » > 0, « Total du jour » champ non
+  vide, 0 remet le jour à zéro ; sinon « Saisis une quantité » et vibration d'erreur), résultat borné
+  à ≥ 0 ; la sheet se ferme (vibration de succès).
+
+**Eau** (bouton + de la ligne) : le formulaire Eau du § 15.10.2, inchangé, ouvert en « Ajouter ».
+
+**Objectif de protéines** (« Objectif quotidien ») : la même sheet passe à ce formulaire ; retour → la
+saisie.
+- titre « Objectif de protéines » ;
+- **au moins un poids connu** : puces « Par kg » / « Valeur fixe », la puce du mode enregistré choisie
+  à l'ouverture ;
+  - « Par kg » : aide « Avec ta dernière pesée : 78,4 kg. » ; champ héros prérempli avec le facteur
+    (« 1,6 », unité « g/kg », neuf), séparateur décimal de la langue, une décimale (3 caractères au
+    plus) ; pas **−0,1** / **+0,1**, bornés à 1,2 et 2,2 ; ligne d'information « Objectif » « 125 g »
+    recalculée à chaque touche (« — » si le facteur est hors bornes) ; « ✓ Enregistrer » : facteur
+    entre 1,2 et 2,2 → mode « par kg » avec ce facteur, sinon « Choisis entre 1,2 et 2,2 g par kg » et
+    vibration d'erreur ;
+  - « Valeur fixe » : aide « Le même objectif chaque jour. » ; champ héros en g, prérempli avec la
+    valeur fixe enregistrée, sinon l'objectif par kg du jour (neuf) ; entiers, 4 chiffres, pas
+    **−10** / **+10** ; « ✓ Enregistrer » : valeur > 0 → mode « valeur fixe », sinon « Saisis un
+    objectif supérieur à 0 » ;
+- **aucun poids connu** : pas de puces ; aide « Sans pesée, l'objectif est une valeur fixe. » ; le
+  formulaire « Valeur fixe » seul.
+- Changer de puce garde le facteur et la valeur fixe enregistrés ; seul « ✓ Enregistrer » change le
+  mode. Enregistré → retour à l'étape d'où l'objectif a été ouvert.
+
+**Détail de l'eau / des protéines** (toucher la ligne) — sheet de lignes d'information, comme celle d'un
+complément :
+- titre « Eau » / « Protéines » ; aide « Aujourd'hui : 1,5 L sur 2,5 L. » (« Aujourd'hui : 112 g. »
+  sans objectif) ;
+- ligne d'information « Aujourd'hui » « 1,5 L » / « 112 g », chevron → formulaire de saisie en
+  « Total du jour » (pour corriger le total) ;
+- ligne d'information « Objectif quotidien » : « 2,5 L » ; protéines « 125 g · 1,6 g/kg » en mode par
+  kg, « 150 g » en valeur fixe, « À définir » sans objectif ; chevron → formulaire d'objectif ;
+- ligne d'information « Moyenne sur 7 jours » « 2,1 L » / « 138 g » (§ 15.16.6 ; « — » sans jour),
+  sans chevron ;
+- bouton principal « Ajouter » (icône `add`) → formulaire de saisie en « Ajouter » ;
+- bouton texte « Fermer ».
+- Un formulaire ouvert depuis le détail y revient au retour ; une saisie enregistrée ferme la sheet,
+  un objectif enregistré revient au détail.
+
+#### 15.16.4 Stock des compléments
+
+- **Doses par jour** (réglage nouveau du complément, `dosesPerDay`) : entier de **1 à 20**, **1 par
+  défaut**. Cocher « pris aujourd'hui » enregistre ce nombre de doses ce jour-là dans l'historique des
+  prises (§ 15.15.4, qui en enregistrait une). Changer les doses par jour alors que le complément est
+  coché aujourd'hui met à jour la prise du jour ; les jours passés gardent la leur.
+- **Stock** (facultatif, `stock`), en **doses** : saisi au pavé (§ 15.16.5). Le stock restant
+  aujourd'hui = les doses saisies, moins les doses prises **depuis** la saisie, d'après l'historique
+  des prises : celles des jours suivant le jour de la saisie, et celles de ce jour-là ajoutées après la
+  saisie (une dose déjà prise au moment de la saisie n'est pas retirée une seconde fois ; la décocher
+  ensuite la remet dans le stock). **Jamais sous 0** : une prise sur un stock vide le laisse à 0.
+- **« Racheté »** : ajoute des doses au stock restant (0 compris) ; le nouveau stock repart de ce
+  jour-là (§ 15.16.8).
+- **Jours restants** = partie entière de `stock restant / doses par jour` (25 doses à 2 par jour →
+  « 12 jours » ; 1 dose à 2 par jour → « 0 jour ») ; doses par jour ≤ 0 (fichier retouché) → pas de
+  jours, le stock s'affiche en doses (« 24 doses »), jamais en rouge.
+- **Stock bas** : jours restants **≤ au seuil** du complément (`lowStockDays`, **7 jours** par défaut,
+  0 à 99) → en **rouge** (`down`) ; « à 7 jours » = rouge dès qu'il en reste 7. Pas de notification
+  (piste, § 15.6).
+- **Ligne du complément** (§ 15.10.1) : avec un stock suivi, les jours restants à droite, **avant la
+  case** « pris aujourd'hui », comme sur la maquette (« 12 jours », « 4 jours » en rouge) ; TalkBack
+  lit « Stock : 12 jours » ou « Stock bas : 4 jours ». **Sans stock saisi, rien ne s'affiche** (la
+  ligne est celle d'avant). Le sous-titre gagne « 2 doses par jour » à partir de deux doses :
+  « 5 g par prise · 2 doses par jour · Rappel à 08:00 ».
+- **Sheet du complément** (§ 15.10.2), entre les rappels et « Supprimer le complément » :
+  - ligne d'information « Doses par jour » « 1 », chevron → formulaire ;
+  - ligne d'information « Stock » : « Non suivi », ou « 24 doses · 12 jours », chevron → formulaire ;
+  - stock suivi seulement : ligne d'information « Stock bas » « à 7 jours », chevron → formulaire ; puis
+    le bouton texte **« Racheté »** (icône `add`) → formulaire « Ajouter du stock ».
+- Supprimer un complément emporte son stock ; l'export CSV ne change pas.
+
+#### 15.16.5 Formulaires du stock
+
+La sheet du complément passe au formulaire touché (comme l'objectif des calories) ; retour → l'étape
+d'où il a été ouvert (la sheet du complément, ou « Ajouter du stock » pour le seuil ouvert depuis
+lui) ; « ✓ Enregistrer » ou « ✓ Ajouter » enregistre, vibre et revient à cette étape. Saisies au
+pavé, entiers, champ prérempli neuf.
+
+- **Stock** : titre « Stock » ; aide « Doses qu'il te reste aujourd'hui. » ; champ héros en « doses »,
+  prérempli avec le stock restant (vide s'il n'est pas suivi) ; 4 chiffres, pas **−10** / **+10** ;
+  ligne d'information « Jours restants » « 12 jours » (« — » champ vide), recalculée à chaque touche ;
+  stock suivi : bouton texte discret « Ne plus suivre le stock » (retire le stock et revient à la
+  sheet) ; « ✓ Enregistrer » : champ non vide (0 compris) → stock = cette valeur aujourd'hui, sinon
+  « Saisis une quantité ».
+- **Ajouter du stock** (« Racheté », d'après `T2-Stock`) : titre « Ajouter du stock » ; aide
+  « Créatine · il reste 8 doses, soit 4 jours. », les jours en `down` quand le stock est bas
+  (DESIGN.md § 10.4) ; champ héros vide en « doses ajoutées » ; 4 chiffres, pas **−10** / **+10** ;
+  lignes d'information « Nouveau stock » « 38 doses · 19 jours » (recalculée) et « Stock bas » « à 7
+  jours » (chevron → formulaire du seuil) ; « ✓ Ajouter » : valeur > 0, sinon « Saisis une quantité ».
+  Les puces de saisie rapide de la maquette (« +250 g ») ne sont pas reprises.
+- **Stock bas** : titre « Stock bas » ; aide « En rouge quand il reste ce nombre de jours ou moins. » ;
+  champ héros en « jours », prérempli (7) ; 2 chiffres, pas **−1** / **+1** ; « ✓ Enregistrer » : champ
+  non vide, 0 à 99, sinon « Saisis un nombre de jours entre 0 et 99 ».
+- **Doses par jour** : titre « Doses par jour » ; aide « Cocher « pris aujourd'hui » compte ces
+  doses. » ; champ héros en « doses », prérempli ; 2 chiffres, pas **−1** / **+1** ; « ✓ Enregistrer » :
+  1 à 20, sinon « Saisis entre 1 et 20 doses ».
+
+#### 15.16.6 Moyenne sur 7 jours
+
+- **Groupe titré** « Moyenne sur 7 jours », après « Compléments » : un `ListGroup` contenant une
+  rangée de stats (padding 16), comme « Depuis le début » du Journal :
+  - « 2 410 » / « kcal par jour » ;
+  - « 2,1 L » / « d'eau » (« 750 ml » sous 1 000 ml, au dixième de litre au-delà, comme la ligne
+    « Eau ») ;
+  - « 138 g » / « de protéines ».
+- **Fenêtre** : les **7 jours avant aujourd'hui** (de J − 7 à J − 1, jours locaux) ; la journée en
+  cours n'y entre pas, elle tirerait la moyenne vers le bas jusqu'au soir.
+- **Seulement les jours avec des données**, mesure par mesure : la moyenne des calories porte sur les
+  jours de la fenêtre où les calories sont > 0, de même pour l'eau et les protéines ; un jour à 0
+  (remis à zéro) ne compte pas. Arrondi à l'unité (demi vers le haut) : kcal, ml, g.
+- Une mesure **sans aucun jour** dans la fenêtre → « — ». **Aucune** des trois → le groupe est masqué.
+- La même moyenne figure dans le détail de l'eau et des protéines (§ 15.16.3).
+- Pas de lien « Tendances » (pas d'écran de courbes dans Nutrition, § 15.6).
+
+#### 15.16.7 Sheet « Journée »
+
+- La section « Calories et eau » de la sheet « Journée » (§ 15.15.2, point 4) devient **« Nutrition »**
+  et gagne, après l'eau, la ligne **« Protéines »** « 112 g » quand les protéines de ce jour-là sont
+  > 0. **Sans sous-titre** : l'objectif de protéines n'est pas daté (§ 15.16.1), celui d'un jour passé
+  n'est pas connu. Les calories et l'eau gardent leur objectif du jour.
+- La section est masquée quand les trois valeurs sont nulles ; un jour avec des protéines seulement
+  n'est plus un « jour sans rien ».
+- **Mois accessibles** du calendrier (§ 15.15.1) : des protéines notées comptent comme une donnée.
+
+#### 15.16.8 Format des données
+
+Champs facultatifs, **omis quand ils valent leur défaut** ; les versions précédentes de l'app les
+ignorent (et les perdent si elles réécrivent le fichier), comme `intakes` (§ 15.15.4). Lus dans le
+fichier (`daily_tracker.json`, `supplements.json`) comme à l'import (`@gymtracker_daily_tracker`,
+`@gymtracker_supplements` de la sauvegarde v2) ; une valeur invalide ne fait jamais refuser l'import.
+
+- **`DailyTracker.proteinLog`** : `{ "AAAA-MM-JJ": grammes }`, comme `caloriesLog` (entiers ≥ 0 par jour
+  valide ; le reste écarté) ; absent → vide.
+- **`DailyTracker.proteinGoal`** : `{ "mode": "perKg", "perKg": 1.6 }` (défaut, omis) ou
+  `{ "mode": "fixed", "perKg": 1.6, "grams": 150 }`. Lecture : absent ou pas un objet → le défaut ;
+  `mode` inconnu → `perKg` ; `perKg` hors de 1,2 – 2,2 ou pas un nombre → 1,6, sinon arrondi au
+  dixième ; `grams` pas un entier > 0 → absent ; `mode` `fixed` sans `grams` → `perKg`.
+- **`Supplement.dosesPerDay`** : entier ; absent, pas un entier ou hors de 1 – 20 → 1.
+- **`Supplement.stock`** : `{ "doses": 24, "day": "2026-11-12", "dayIntake": 1 }` — `doses` comptées le
+  jour local `day`, après `dayIntake` doses prises ce jour-là (omis à 0). Stock restant aujourd'hui =
+  `max(0, doses − (intakes[day] − dayIntake) − Σ intakes[d > day])`. Saisir le stock ou « Racheté »
+  le réécrit : `{ doses: v (ou restant + ajout), day: aujourd'hui, dayIntake: intakes[aujourd'hui] }`.
+  Lecture : pas un objet, `doses` pas un entier ≥ 0 ou `day` pas un jour valide → stock non suivi ;
+  `dayIntake` pas un entier ≥ 0 → 0.
+- **`Supplement.lowStockDays`** : entier ; absent, pas un entier ou hors de 0 – 99 → 7.
+
+#### 15.16.9 Règles (pures, testées en JVM)
+
+- **Objectif de protéines** : par kg avec la dernière pesée connue (pesée, sinon poids d'une séance,
+  séance en cours comprise ; le jour le plus récent), **arrondi** (125,44 → 125, 148,5 → 149, valeurs
+  exactes sans erreur de virgule flottante), facteur aux bornes ; **pas de pesée** (valeur fixe, ou pas
+  d'objectif ; mode « par kg » non proposé) ; valeur fixe ; formulaire (facteur hors bornes refusé, pas
+  bornés à 1,2 et 2,2).
+- **Objectif atteint ou non** : sous l'objectif, exactement l'objectif, au-dessus, pas d'objectif ;
+  même règle pour l'eau.
+- **Protéines du jour** : ajouter, total du jour, jamais sous 0.
+- **Stock** : stock restant après des prises (jours suivants, prise du jour faite avant et après la
+  saisie, prise décochée) et après « Racheté » ; **jamais négatif** (prises au-delà du stock, rachat
+  depuis 0) ; doses par jour enregistrées par la coche et mises à jour le jour même.
+- **Jours restants** : division entière, **0 dose par jour** (pas de jours), seuil (en dessous, égal,
+  au-dessus, seuil 0), stock non suivi.
+- **Moyenne sur 7 jours** : fenêtre de J − 7 à J − 1 (aujourd'hui et le 8e jour exclus), **jours vides
+  ou à 0 exclus**, mesure sans jour (« — »), aucune donnée (groupe masqué), arrondi.
+- **Journée** : protéines du jour (affichées si > 0), jour avec des protéines seulement, mois
+  accessibles.
+- **Lecture** : anciens fichiers sans les nouveaux champs relus tels quels, valeurs invalides, champs
+  omis au défaut.
+
+#### 15.16.10 Design system
+
+Aucun composant nouveau ; des variantes de composants existants, décrites dans DESIGN.md avec leurs
+aperçus :
+- **`StudioIconButton`** plein (`filled`) : rond de 40 `surfaceControl` (pressé `surfacePressed`), icône
+  22 `textPrimary`, dans une cible de 48 — les boutons + du groupe « Aujourd'hui » ;
+- **`ListRowTrailing.ValueAction`** : la valeur (colorée par sa tendance) puis ce bouton plein, qui a
+  sa propre action et son libellé TalkBack ; le reste de la ligne garde son toucher (eau, protéines) ;
+- **`ListRowTrailing.Check`** : une **valeur** facultative avant la case (`bodyLineStrong`, `down` pour
+  un stock bas), avec sa description TalkBack ;
+- **`DailySurface`** redessinée comme la maquette : légende et bouton + plein, chiffre héros, état,
+  piste, puis des lignes (`ListRow` en disposition de groupe) après un filet en retrait ; plus de
+  rangée de stats ni de paire de boutons ;
+- **`highlightedHelp`** : la phrase d'aide d'un formulaire dont la donnée clé prend sa couleur
+  (« soit **4 jours** » en `down`, DESIGN.md § 10.4), à côté de `statusHelp`.
+- Le reste : `ListRow` (valeur colorée `valueTrend`), `ListGroup` + `StatRow`, `SectionHeader` groupé
+  (mention à droite), `FormSheetTemplate`, `FormHeroField`, `InfoRow`, `FilterChip`, `NumericKeypad`,
+  `SheetSurface`, `StudioButton`.
+
+#### 15.16.11 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; repris : « Aujourd'hui », « Eau », « Ajouter », « Total du jour »,
+« Nouveau total », « Objectif quotidien », « Saisis une quantité », « Saisis un objectif supérieur à
+0 », « Fermer », `journal_day_goal` (« objectif {{valeur}} »), `journal_day_doses` (« {{n}} dose(s) »),
+les formats de kcal, ml et litres. Devenues inutiles et retirées : `nutrition_water_of`,
+`nutrition_water_reached`, `nutrition_supplements_taken_label`.
+
+| clé | FR | EN |
+|---|---|---|
+| `nutrition_today_calories` | Aujourd'hui · calories | Today · calories |
+| `nutrition_calories_add` / `_water_add` / `_protein_add` (accessibilité) | Ajouter des calories / Ajouter de l'eau / Ajouter des protéines | Add calories / Add water / Add protein |
+| `nutrition_detail_open` (accessibilité) | Voir le détail | Open details |
+| `nutrition_goal_reached` | objectif {{valeur}} atteint | {{value}} goal reached |
+| `nutrition_supplements_taken_count` | {{n}} sur {{total}} pris | {{n}} of {{total}} taken |
+| `nutrition_supplements_taken_description` (pluriel, accessibilité) | {{n}} complément sur {{total}} pris aujourd'hui / {{n}} compléments sur {{total}} pris aujourd'hui | {{n}} of {{total}} supplement taken today / {{n}} of {{total}} supplements taken today |
+| `nutrition_protein` | Protéines | Protein |
+| `nutrition_grams_value` | {{valeur}} g | {{value}} g |
+| `nutrition_protein_no_goal` | Pas d'objectif | No goal |
+| `nutrition_entry_help_no_goal` | Aujourd'hui : {{valeur}}. | Today: {{value}}. |
+| `nutrition_goal_undefined` | À définir | Not set |
+| `nutrition_protein_goal_title` | Objectif de protéines | Protein goal |
+| `nutrition_protein_mode_per_kg` / `_mode_fixed` | Par kg / Valeur fixe | Per kg / Fixed amount |
+| `nutrition_protein_per_kg_help` | Avec ta dernière pesée : {{poids}} kg. | With your last weigh-in: {{weight}} kg. |
+| `nutrition_protein_fixed_help` | Le même objectif chaque jour. | The same goal every day. |
+| `nutrition_protein_no_weight_help` | Sans pesée, l'objectif est une valeur fixe. | Without a weigh-in, the goal is a fixed amount. |
+| `nutrition_protein_goal_label` | Objectif | Goal |
+| `nutrition_protein_goal_per_kg_value` | {{objectif}} · {{facteur}} g/kg | {{goal}} · {{factor}} g/kg |
+| `nutrition_protein_per_kg_invalid` | Choisis entre 1,2 et 2,2 g par kg | Choose between 1.2 and 2.2 g per kg |
+| `nutrition_average_title` | Moyenne sur 7 jours | 7-day average |
+| `nutrition_average_kcal` / `_water` / `_protein` | kcal par jour / d'eau / de protéines | kcal a day / water / protein |
+| `nutrition_stock` | Stock | Stock |
+| `nutrition_stock_untracked` | Non suivi | Not tracked |
+| `nutrition_stock_days` (pluriel) | {{n}} jour / {{n}} jours | {{n}} day / {{n}} days |
+| `nutrition_stock_value` | {{doses}} · {{jours}} | {{doses}} · {{days}} |
+| `nutrition_stock_description` / `_low_description` (accessibilité) | Stock : {{jours}} / Stock bas : {{jours}} | Stock: {{days}} / Low stock: {{days}} |
+| `nutrition_doses_per_day` | Doses par jour | Doses per day |
+| `nutrition_doses_per_day_subtitle` (pluriel) | {{n}} dose par jour / {{n}} doses par jour | {{n}} dose a day / {{n}} doses a day |
+| `nutrition_doses_per_day_help` | Cocher « pris aujourd'hui » compte ces doses. | Ticking “taken today” counts these doses. |
+| `nutrition_doses_per_day_invalid` | Saisis entre 1 et 20 doses | Enter between 1 and 20 doses |
+| `nutrition_doses_unit` | doses | doses |
+| `nutrition_stock_help` | Doses qu'il te reste aujourd'hui. | Doses you have left today. |
+| `nutrition_stock_days_left` | Jours restants | Days left |
+| `nutrition_stock_stop` | Ne plus suivre le stock | Stop tracking stock |
+| `nutrition_stock_low` | Stock bas | Low stock |
+| `nutrition_stock_low_value` | à {{jours}} | at {{days}} |
+| `nutrition_stock_low_help` | En rouge quand il reste ce nombre de jours ou moins. | Shown in red with this many days left or fewer. |
+| `nutrition_stock_low_invalid` | Saisis un nombre de jours entre 0 et 99 | Enter a number of days between 0 and 99 |
+| `nutrition_days_unit` | jours | days |
+| `nutrition_restocked` | Racheté | Restocked |
+| `nutrition_restock_title` | Ajouter du stock | Add stock |
+| `nutrition_restock_help` | {{nom}} · il reste {{doses}}, soit {{jours}}. | {{name}} · {{doses}} left, that's {{days}}. |
+| `nutrition_restock_help_doses` (sans doses par jour valables) | {{nom}} · il reste {{doses}}. | {{name}} · {{doses}} left. |
+| `nutrition_restock_unit` | doses ajoutées | doses added |
+| `nutrition_new_stock` | Nouveau stock | New stock |
+| `journal_day_nutrition` (modifiée) | Nutrition | Nutrition |

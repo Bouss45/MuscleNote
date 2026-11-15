@@ -7,7 +7,10 @@ import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORIGIN
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.ProteinGoal
+import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Supplement
+import com.musclenote.android.data.model.SupplementStock
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
@@ -319,5 +322,92 @@ class BackupV2Test {
         assertFalse("intakes" in written[0].jsonObject)
         assertTrue("intakes" in written[1].jsonObject)
         assertEquals(listOf(plain, withHistory), success(reader().read(text)).data.supplements)
+    }
+
+    // ─── Protéines et stock (§ 15.16.8, 🔄 D42) ──────────────────────────────────────
+
+    private fun supplementOf(json: String) =
+        readV2(
+            """"@gymtracker_supplements": [ { "id": "s1", "name": "Créatine", "dosage": "5", "unit": "g",
+               "reminderEnabled": false, "reminders": []$json } ]""",
+        ).supplements!!.single()
+
+    @Test
+    fun `les protéines et leur objectif sont lus`() {
+        val tracker = readV2(
+            trackerJson(
+                """"proteinLog": { "2026-11-14": 140, "2026-11-15": 112.4, "hier": 50, "2026-11-13": -20, "2026-02-30": 10 },
+                   "proteinGoal": { "mode": "fixed", "perKg": 1.8, "grams": 150 }""",
+            ),
+        ).dailyTracker!!
+        assertEquals(mapOf("2026-11-13" to 0, "2026-11-14" to 140, "2026-11-15" to 112), tracker.proteinLog)
+        assertEquals(ProteinGoal(ProteinGoalMode.Fixed, perKg = 1.8, grams = 150), tracker.proteinGoal)
+    }
+
+    @Test
+    fun `un objectif de protéines absent ou invalide revient au défaut`() {
+        fun goalOf(json: String) = readV2(trackerJson(json)).dailyTracker!!.proteinGoal
+        assertEquals(ProteinGoal.DEFAULT, goalOf(""""calorieGoal": 2000"""))
+        assertEquals(ProteinGoal.DEFAULT, goalOf(""""proteinGoal": 150"""))
+        assertEquals(ProteinGoal.DEFAULT, goalOf(""""proteinGoal": { "mode": "auto", "perKg": 9 }"""))
+        assertEquals(ProteinGoal(ProteinGoalMode.PerKg, perKg = 1.7), goalOf(""""proteinGoal": { "perKg": 1.66 }"""))
+        // Valeur fixe sans grammes valables : le mode par kg, avec son facteur.
+        assertEquals(ProteinGoal(ProteinGoalMode.PerKg, perKg = 2.0), goalOf(""""proteinGoal": { "mode": "fixed", "perKg": 2.0, "grams": 0 }"""))
+        assertEquals(ProteinGoal(ProteinGoalMode.PerKg, perKg = 1.6, grams = 120), goalOf(""""proteinGoal": { "mode": "perKg", "grams": 120 }"""))
+        // Une sauvegarde d'avant (ou v1 de l'app Expo) n'a ni protéines ni objectif.
+        val v1 = success(reader().read(resource("v1_sample.json"))).data.dailyTracker!!
+        assertTrue(v1.proteinLog.isEmpty())
+        assertEquals(ProteinGoal.DEFAULT, v1.proteinGoal)
+    }
+
+    @Test
+    fun `le stock, les doses par jour et le seuil d'un complément sont lus`() {
+        val supplement = supplementOf(
+            """, "intakes": { "2026-11-14": 2 }, "dosesPerDay": 2, "lowStockDays": 10,
+               "stock": { "doses": 24, "day": "2026-11-12", "dayIntake": 1 }""",
+        )
+        assertEquals(2, supplement.dosesPerDay)
+        assertEquals(10, supplement.lowStockDays)
+        assertEquals(SupplementStock(doses = 24, day = "2026-11-12", dayIntake = 1), supplement.stock)
+    }
+
+    @Test
+    fun `un ancien complément, ou des valeurs invalides, prennent les défauts`() {
+        val old = supplementOf("")
+        assertEquals(Supplement.DEFAULT_DOSES_PER_DAY, old.dosesPerDay)
+        assertEquals(Supplement.DEFAULT_LOW_STOCK_DAYS, old.lowStockDays)
+        assertNull(old.stock)
+        val invalid = supplementOf(""", "dosesPerDay": 0, "lowStockDays": 120""")
+        assertEquals(1, invalid.dosesPerDay)
+        assertEquals(7, invalid.lowStockDays)
+        assertEquals(1, supplementOf(""", "dosesPerDay": 21""").dosesPerDay)
+        assertEquals(1, supplementOf(""", "dosesPerDay": "2"""").dosesPerDay)
+        assertNull(supplementOf(""", "stock": 24""").stock)
+        assertNull(supplementOf(""", "stock": { "doses": -1, "day": "2026-11-12" }""").stock)
+        assertNull(supplementOf(""", "stock": { "doses": 24, "day": "hier" }""").stock)
+        assertNull(supplementOf(""", "stock": { "day": "2026-11-12" }""").stock)
+        assertEquals(SupplementStock(24, "2026-11-12"), supplementOf(""", "stock": { "doses": 24, "day": "2026-11-12", "dayIntake": -3 }""").stock)
+    }
+
+    @Test
+    fun `l'export omet les champs nouveaux à leur défaut et les relit à l'identique`() {
+        val plain = Supplement("s1", "Créatine", "5", "g", false, emptyList())
+        val tracked = plain.copy(id = "s2", dosesPerDay = 2, lowStockDays = 10, stock = SupplementStock(24, "2026-11-12", dayIntake = 1))
+        val tracker = DailyTracker.DEFAULT.copy(proteinLog = mapOf("2026-11-14" to 140), proteinGoal = ProteinGoal(ProteinGoalMode.Fixed, 1.8, 150))
+        val text = BackupWriter.write(BackupData(supplements = listOf(plain, tracked), dailyTracker = tracker), exportedAt)
+        val root = Json.parseToJsonElement(text).jsonObject
+        val written = root.getValue(BackupKeys.SUPPLEMENTS).jsonArray
+        for (key in listOf("dosesPerDay", "lowStockDays", "stock")) {
+            assertFalse(key, key in written[0].jsonObject)
+            assertTrue(key, key in written[1].jsonObject)
+        }
+        val defaultTracker = Json.parseToJsonElement(BackupWriter.write(BackupData(dailyTracker = DailyTracker.DEFAULT), exportedAt))
+            .jsonObject.getValue(BackupKeys.DAILY_TRACKER).jsonObject
+        assertFalse("proteinLog" in defaultTracker)
+        assertFalse("proteinGoal" in defaultTracker)
+        val reread = success(reader().read(text)).data
+        assertEquals(listOf(plain, tracked), reread.supplements)
+        assertEquals(tracker.proteinLog, reread.dailyTracker!!.proteinLog)
+        assertEquals(tracker.proteinGoal, reread.dailyTracker!!.proteinGoal)
     }
 }

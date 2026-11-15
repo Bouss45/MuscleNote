@@ -328,7 +328,10 @@ private fun ListRowCurvePreview() = StudioComponentPreview {
     }
 }
 
-/** Hors maquette : ligne à cocher (échauffement, § 15.7.1) et case séparée (complément, § 15.10.1). */
+/**
+ * Hors maquette : ligne à cocher (échauffement, § 15.7.1), case séparée (complément, § 15.10.1), valeur
+ * avant la case et valeur suivie d'un bouton + plein (🔄 D42, § 15.16).
+ */
 @StudioComponentPreviews
 @Composable
 private fun ListRowCheckPreview() = StudioComponentPreview {
@@ -342,6 +345,39 @@ private fun ListRowCheckPreview() = StudioComponentPreview {
         onClick = {},
         showDivider = false,
     )
+    StateCaption("Valeur avant la case : jours de stock, stock bas en rouge (§ 15.16.4)")
+    ListRow(
+        "Protéine whey",
+        subtitle = "30 g par prise · 2 doses par jour",
+        trailing = ListRowTrailing.Check(true, onToggle = {}, toggleLabel = "Pris aujourd'hui", value = "12 jours", valueDescription = "Stock : 12 jours"),
+        onClick = {},
+    )
+    ListRow(
+        "Créatine",
+        subtitle = "5 g par prise · Rappel à 08:00",
+        trailing = ListRowTrailing.Check(
+            false, onToggle = {}, toggleLabel = "Pris aujourd'hui",
+            value = "4 jours", valueTrend = Trend.Down, valueDescription = "Stock bas : 4 jours",
+        ),
+        onClick = {},
+        showDivider = false,
+    )
+    StateCaption("Valeur et bouton + plein : eau, protéines (§ 15.16.2)")
+    ListGroup {
+        ListRow(
+            "Eau",
+            subtitle = "objectif 2,5 L",
+            trailing = ListRowTrailing.ValueAction("1,5 L", R.drawable.ds_ic_add, "Ajouter de l'eau", {}, valueTrend = Trend.Neutral),
+            onClick = {},
+        )
+        ListRow(
+            "Protéines",
+            subtitle = "objectif 150 g atteint",
+            trailing = ListRowTrailing.ValueAction("152 g", R.drawable.ds_ic_add, "Ajouter des protéines", {}, valueTrend = Trend.Up),
+            onClick = {},
+            showDivider = false,
+        )
+    }
     StateCaption("Puces de suggestion à toucher : hausse, même charge")
     StudioChip("+2,5 kg", tone = ChipTone.Up, onClick = {})
     StudioChip("Même charge", onClick = {})

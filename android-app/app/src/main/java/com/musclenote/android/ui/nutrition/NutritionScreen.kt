@@ -9,19 +9,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.model.DailyTracker
+import com.musclenote.android.data.model.ProteinGoal
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.TakenRecord
 import com.musclenote.android.data.nutrition.CalorieTone
 import com.musclenote.android.data.nutrition.EntryMode
+import com.musclenote.android.data.nutrition.NutritionAverages
 import com.musclenote.android.data.nutrition.NutritionRules
+import com.musclenote.android.data.nutrition.ProteinRules
 import com.musclenote.android.data.nutrition.ReminderSummary
+import com.musclenote.android.data.nutrition.StockRules
+import com.musclenote.android.data.nutrition.StockStatus
 import com.musclenote.android.data.util.dayKey
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.formatInteger
@@ -38,20 +45,23 @@ import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.Stat
+import com.musclenote.android.ui.designsystem.components.StatRow
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.templates.HubTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.templates.tabScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
-import com.musclenote.android.ui.progress.DailyKind
 import com.musclenote.android.ui.workout.ConfirmSheet
 
+/** Ce que la sheet d'une mesure montre à l'ouverture : la saisie (bouton +) ou le détail (la ligne). */
+enum class MeasureSheetStart { Add, Detail }
+
 /**
- * Onglet Nutrition (SPEC § 15.10.1, 🔄 D35), gabarit hub : surface « Aujourd'hui » (calories du jour,
- * état par rapport à l'objectif, eau, compléments pris, saisies Calories et Eau au pavé), puis
- * « Compléments » (case « pris aujourd'hui », toucher → sheet des rappels). Le jour affiché est le
- * jour courant de l'app (§ 3.12) : il change à minuit et au retour au premier plan.
+ * Onglet Nutrition (SPEC § 15.10.1, § 15.16, 🔄 D35, D42), gabarit hub groupé : groupe « Aujourd'hui »
+ * (calories du jour et leur bouton +, puis les lignes Eau et Protéines, chacune avec son bouton +),
+ * « Compléments » (case « pris aujourd'hui », jours de stock, toucher → sheet), « Moyenne sur 7 jours ».
+ * Le jour affiché est le jour courant de l'app (§ 3.12) : il change à minuit et au retour au premier plan.
  */
 @Composable
 fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScreenInsets()) {
@@ -60,10 +70,16 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
     val tracker by nutrition.tracker.collectAsStateWithLifecycle()
     val supplements by nutrition.supplements.collectAsStateWithLifecycle()
     val taken by nutrition.taken.collectAsStateWithLifecycle()
-    val todayKey = dayKey(rememberToday())
+    val weighIns by nutrition.bodyWeights.collectAsStateWithLifecycle()
+    val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
+    val current by container.workouts.currentWorkout.collectAsStateWithLifecycle()
+    val today = rememberToday()
+    val todayKey = dayKey(today)
+    val zone = container.time.zone()
     val haptics = rememberHaptics()
 
-    var entry by rememberSaveable { mutableStateOf<DailyKind?>(null) }
+    var sheet by rememberSaveable { mutableStateOf<NutritionMeasure?>(null) }
+    var sheetStart by rememberSaveable { mutableStateOf(MeasureSheetStart.Add) }
     var creating by rememberSaveable { mutableStateOf(false) }
     var openId by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -71,7 +87,16 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
     // refus n'empêche rien (les rappels ne sonneront simplement pas).
     val requestNotificationPermission = rememberNotificationPermissionRequest()
 
-    val day = DailyDay.of(tracker, todayKey)
+    // § 15.16.1 : l'objectif de protéines suit la dernière pesée connue (séance en cours comprise).
+    val latestWeight = remember(today, workouts, current, weighIns, zone) { ProteinRules.latestWeight(today, workouts, current, weighIns, zone) }
+    val averages = remember(tracker, today) { NutritionRules.weekAverages(tracker, today) }
+    val day = DailyDay.of(tracker, todayKey, latestWeight)
+
+    fun open(measure: NutritionMeasure, start: MeasureSheetStart) {
+        sheetStart = start
+        sheet = measure
+    }
+
     // 🔄 D40 : listes groupées (DESIGN.md § 10.1) ; « Aujourd'hui » est le groupe du héros.
     HubTemplate(
         modifier = modifier,
@@ -79,10 +104,8 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
         highlight = {
             TodaySurface(
                 day = day,
-                takenCount = NutritionRules.takenCount(supplements, taken, todayKey),
-                supplementCount = supplements.size,
-                onCalories = { entry = DailyKind.Calories },
-                onWater = { entry = DailyKind.Water },
+                onAdd = { measure -> open(measure, MeasureSheetStart.Add) },
+                onDetail = { measure -> open(measure, MeasureSheetStart.Detail) },
             )
         },
         insets = insets,
@@ -99,28 +122,35 @@ fun NutritionScreen(modifier: Modifier = Modifier, insets: ScreenInsets = tabScr
             onOpen = { openId = it },
             onCreate = { creating = true },
         )
+        if (!averages.isEmpty) AveragesSection(averages)
     }
 
-    entry?.let { kind ->
-        DailyEntrySheet(
-            kind = kind,
-            current = if (kind == DailyKind.Calories) day.kcal else day.ml,
-            goal = if (kind == DailyKind.Calories) day.calorieGoal else day.waterGoal,
-            onDismiss = { entry = null },
+    sheet?.let { measure ->
+        MeasureSheet(
+            measure = measure,
+            day = day.of(measure, averages),
+            start = sheetStart,
+            onDismiss = { sheet = null },
             onSave = { mode, value ->
-                entry = null
+                sheet = null
                 container.launchMutation {
-                    when (kind) {
-                        DailyKind.Calories -> if (mode == EntryMode.Add) nutrition.addCalories(value) else nutrition.setCaloriesToday(value)
-                        DailyKind.Water -> if (mode == EntryMode.Add) nutrition.addWater(value) else nutrition.setWaterToday(value)
+                    when (measure) {
+                        NutritionMeasure.Calories -> if (mode == EntryMode.Add) nutrition.addCalories(value) else nutrition.setCaloriesToday(value)
+                        NutritionMeasure.Water -> if (mode == EntryMode.Add) nutrition.addWater(value) else nutrition.setWaterToday(value)
+                        NutritionMeasure.Protein -> if (mode == EntryMode.Add) nutrition.addProtein(value) else nutrition.setProteinToday(value)
                     }
                 }
             },
             onSaveGoal = { goal ->
                 container.launchMutation {
-                    if (kind == DailyKind.Calories) nutrition.setCalorieGoal(goal) else nutrition.setWaterGoal(goal)
+                    when (measure) {
+                        NutritionMeasure.Calories -> nutrition.setCalorieGoal(goal)
+                        NutritionMeasure.Water -> nutrition.setWaterGoal(goal)
+                        NutritionMeasure.Protein -> Unit
+                    }
                 }
             },
+            onSaveProteinGoal = { goal -> container.launchMutation { nutrition.setProteinGoal(goal) } },
         )
     }
 
@@ -157,27 +187,37 @@ fun SupplementSheetHost(openId: String?, onClose: () -> Unit) {
         SupplementSheet(
             supplement = supplement,
             onDismiss = onClose,
-            onRemindersEnabled = { enabled ->
-                haptics.light()
-                if (enabled) requestNotificationPermission()
-                container.launchMutation { nutrition.setRemindersEnabled(id, enabled) }
-            },
-            onAddReminder = {
-                haptics.light()
-                requestNotificationPermission()
-                container.launchMutation { nutrition.addReminder(id) }
-            },
-            onUpdateReminder = { reminderId, hour, minute ->
-                container.launchMutation { nutrition.updateReminder(id, reminderId, hour, minute) }
-            },
-            onRemoveReminder = { reminderId ->
-                haptics.light()
-                container.launchMutation { nutrition.removeReminder(id, reminderId) }
-            },
-            onDelete = {
-                onClose()
-                deletingId = id
-            },
+            actions = SupplementActions(
+                onRemindersEnabled = { enabled ->
+                    haptics.light()
+                    if (enabled) requestNotificationPermission()
+                    container.launchMutation { nutrition.setRemindersEnabled(id, enabled) }
+                },
+                onAddReminder = {
+                    haptics.light()
+                    requestNotificationPermission()
+                    container.launchMutation { nutrition.addReminder(id) }
+                },
+                onUpdateReminder = { reminderId, hour, minute ->
+                    container.launchMutation { nutrition.updateReminder(id, reminderId, hour, minute) }
+                },
+                onRemoveReminder = { reminderId ->
+                    haptics.light()
+                    container.launchMutation { nutrition.removeReminder(id, reminderId) }
+                },
+                onSetDosesPerDay = { doses -> container.launchMutation { nutrition.setDosesPerDay(id, doses) } },
+                onSetStock = { doses -> container.launchMutation { nutrition.setStock(id, doses) } },
+                onRestock = { added -> container.launchMutation { nutrition.restock(id, added) } },
+                onClearStock = {
+                    haptics.light()
+                    container.launchMutation { nutrition.clearStock(id) }
+                },
+                onSetLowStockDays = { days -> container.launchMutation { nutrition.setLowStockDays(id, days) } },
+                onDelete = {
+                    onClose()
+                    deletingId = id
+                },
+            ),
         )
     }
 
@@ -197,14 +237,42 @@ fun SupplementSheetHost(openId: String?, onClose: () -> Unit) {
     }
 }
 
-/** Calories et eau du jour [key], avec les objectifs en vigueur ce jour-là (§ 3.12). */
-internal data class DailyDay(val kcal: Int, val calorieGoal: Int, val ml: Int, val waterGoal: Int) {
+/**
+ * Calories, eau et protéines du jour [key] (§ 3.12, § 15.16.1) : objectifs des calories et de l'eau
+ * en vigueur ce jour-là ; objectif de protéines du jour (`null` : pas d'objectif), avec le réglage et
+ * le poids d'où il vient.
+ */
+internal data class DailyDay(
+    val kcal: Int,
+    val calorieGoal: Int,
+    val ml: Int,
+    val waterGoal: Int,
+    val grams: Int = 0,
+    val proteinGoal: ProteinGoal = ProteinGoal.DEFAULT,
+    val latestWeight: Double? = null,
+) {
+    /** Objectif de protéines du jour (§ 15.16.1). */
+    val proteinTarget = ProteinRules.target(proteinGoal, latestWeight)
+
+    /** Ce que la sheet de [measure] montre (saisie, objectif, moyenne sur 7 jours de [averages]). */
+    fun of(measure: NutritionMeasure, averages: NutritionAverages): MeasureDay = when (measure) {
+        NutritionMeasure.Calories -> MeasureDay(measure, kcal, calorieGoal, averages.kcal)
+        NutritionMeasure.Water -> MeasureDay(measure, ml, waterGoal, averages.waterMl)
+        NutritionMeasure.Protein -> MeasureDay(
+            measure, grams, proteinTarget?.grams, averages.proteinGrams,
+            proteinGoal = proteinGoal, latestWeight = latestWeight, proteinPerKg = proteinTarget?.perKg,
+        )
+    }
+
     companion object {
-        fun of(tracker: DailyTracker, key: String) = DailyDay(
+        fun of(tracker: DailyTracker, key: String, latestWeight: Double? = null) = DailyDay(
             kcal = tracker.caloriesLog[key] ?: 0,
             calorieGoal = DailyTracker.goalFor(tracker.calorieGoalHistory, key) ?: tracker.calorieGoal,
             ml = tracker.waterLog[key] ?: 0,
             waterGoal = DailyTracker.goalFor(tracker.waterGoalHistory, key) ?: tracker.waterGoal,
+            grams = tracker.proteinLog[key] ?: 0,
+            proteinGoal = tracker.proteinGoal,
+            latestWeight = latestWeight,
         )
     }
 }
@@ -219,18 +287,22 @@ internal fun waterText(ml: Int): String =
 @Composable
 internal fun waterGoalText(ml: Int): String = stringResource(R.string.common_liters_value, formatOneDecimal(ml / 1000.0))
 
+/** Protéines : « 112 g ». */
+@Composable
+internal fun gramsText(grams: Int): String = stringResource(R.string.nutrition_grams_value, formatInteger(grams.toDouble()))
+
 /**
- * Surface « Aujourd'hui » (§ 15.10.1, point 2) : kcal du jour en chiffre héros et l'état en mots —
- * « encore 950 kcal » (gris), « dans l'objectif » (vert), « +320 kcal » (rouge) — selon le ratio
- * non plafonné de D15 ; piste ; eau et compléments pris ; Calories et Eau.
+ * Groupe « Aujourd'hui » (§ 15.16.2, 🔄 D42, comme sur la maquette) : kcal du jour en chiffre héros et
+ * l'état en mots — « encore 950 kcal » (gris), « dans l'objectif » (vert), « +320 kcal » (rouge) — selon
+ * le ratio non plafonné de D15, le bouton + des calories et la piste ; puis les lignes Eau et
+ * Protéines : objectif en sous-titre, valeur grise puis verte une fois l'objectif atteint, bouton + →
+ * [onAdd], ligne → [onDetail].
  */
 @Composable
 internal fun TodaySurface(
     day: DailyDay,
-    takenCount: Int,
-    supplementCount: Int,
-    onCalories: () -> Unit,
-    onWater: () -> Unit,
+    onAdd: (NutritionMeasure) -> Unit,
+    onDetail: (NutritionMeasure) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val status = NutritionRules.calorieStatus(day.kcal, day.calorieGoal)
@@ -250,36 +322,86 @@ internal fun TodaySurface(
             stringResource(R.string.nutrition_goal_over, goal),
         )
     }
-    val water = Stat(
-        waterText(day.ml),
-        if (NutritionRules.waterReached(day.ml, day.waterGoal)) stringResource(R.string.nutrition_water_reached)
-        else stringResource(R.string.nutrition_water_of, waterGoalText(day.waterGoal)),
-    )
-    val stats = buildList {
-        add(water)
-        if (supplementCount > 0) add(Stat("$takenCount/$supplementCount", stringResource(R.string.nutrition_supplements_taken_label)))
-    }
+    val detailLabel = stringResource(R.string.nutrition_detail_open)
     DailySurface(
-        label = stringResource(R.string.nutrition_today),
+        label = stringResource(R.string.nutrition_today_calories),
         value = formatInteger(day.kcal.toDouble()),
         unit = "kcal",
         progress = status.progress,
-        stats = stats,
-        firstAction = stringResource(R.string.progress_tab_calories),
-        onFirstAction = onCalories,
-        secondAction = stringResource(R.string.progress_tab_water),
-        onSecondAction = onWater,
+        addDescription = stringResource(R.string.nutrition_calories_add),
+        onAdd = { onAdd(NutritionMeasure.Calories) },
         modifier = modifier,
         status = text,
         statusTrend = trend,
         statusContext = context,
+    ) {
+        MeasureRow(
+            title = stringResource(R.string.progress_tab_water),
+            value = waterText(day.ml),
+            goal = waterGoalText(day.waterGoal),
+            reached = NutritionRules.waterReached(day.ml, day.waterGoal),
+            addDescription = stringResource(R.string.nutrition_water_add),
+            onAdd = { onAdd(NutritionMeasure.Water) },
+            onDetail = { onDetail(NutritionMeasure.Water) },
+            detailLabel = detailLabel,
+            showDivider = true,
+        )
+        val target = day.proteinTarget?.grams
+        MeasureRow(
+            title = stringResource(R.string.nutrition_protein),
+            value = gramsText(day.grams),
+            goal = target?.let { gramsText(it) },
+            reached = ProteinRules.reached(day.grams, target),
+            addDescription = stringResource(R.string.nutrition_protein_add),
+            onAdd = { onAdd(NutritionMeasure.Protein) },
+            onDetail = { onDetail(NutritionMeasure.Protein) },
+            detailLabel = detailLabel,
+            showDivider = false,
+        )
+    }
+}
+
+/**
+ * Ligne Eau ou Protéines du groupe « Aujourd'hui » : sous-titre « objectif 2,5 L » (« … atteint », ou
+ * « Pas d'objectif » sans [goal]) ; valeur grise, verte une fois [reached] ; bouton + plein.
+ */
+@Composable
+private fun MeasureRow(
+    title: String,
+    value: String,
+    goal: String?,
+    reached: Boolean,
+    addDescription: String,
+    onAdd: () -> Unit,
+    onDetail: () -> Unit,
+    detailLabel: String,
+    showDivider: Boolean,
+) {
+    ListRow(
+        title = title,
+        subtitle = when {
+            goal == null -> stringResource(R.string.nutrition_protein_no_goal)
+            reached -> stringResource(R.string.nutrition_goal_reached, goal)
+            else -> stringResource(R.string.journal_day_goal, goal)
+        },
+        trailing = ListRowTrailing.ValueAction(
+            value = value,
+            icon = R.drawable.ds_ic_add,
+            actionDescription = addDescription,
+            onAction = onAdd,
+            valueTrend = if (reached) Trend.Up else Trend.Neutral,
+        ),
+        showDivider = showDivider,
+        onClick = onDetail,
+        onClickLabel = detailLabel,
     )
 }
 
 /**
- * Section « Compléments » (§ 15.10.1, point 3) : une ligne par complément (dosage et rappels en
- * sous-titre, case « pris aujourd'hui » à droite, toucher → sheet), « Nouveau complément » ; état vide
- * sans complément ; rappel que les rappels sont des notifications locales.
+ * Section « Compléments » (§ 15.10.1, point 3 ; 🔄 D42) : « 1 sur 3 pris » à droite de l'étiquette, une
+ * ligne par complément (dosage, doses par jour et rappels en sous-titre ; jours de stock puis case
+ * « pris aujourd'hui » à droite, toucher → sheet), « Nouveau complément » ; état vide sans complément ;
+ * rappel que les rappels sont des notifications locales.
  */
 @Composable
 internal fun SupplementsSection(
@@ -291,8 +413,14 @@ internal fun SupplementsSection(
     onCreate: () -> Unit,
 ) {
     Column(Modifier.fillMaxWidth()) {
-        // Le compte des compléments pris est déjà sur la surface « Aujourd'hui ».
-        SectionHeader(stringResource(R.string.nutrition_supplements), grouped = true)
+        val takenCount = NutritionRules.takenCount(supplements, taken, todayKey)
+        SectionHeader(
+            stringResource(R.string.nutrition_supplements),
+            grouped = true,
+            trailingText = if (supplements.isEmpty()) null else stringResource(R.string.nutrition_supplements_taken_count, takenCount, supplements.size),
+            trailingDescription = if (supplements.isEmpty()) null
+            else pluralStringResource(R.plurals.nutrition_supplements_taken_description, supplements.size, takenCount, supplements.size),
+        )
         Spacer(Modifier.height(Studio.spacing.xs))
         if (supplements.isEmpty()) {
             EmptyState(
@@ -308,6 +436,13 @@ internal fun SupplementsSection(
         val openLabel = stringResource(R.string.nutrition_supplement_options)
         ListGroup {
             supplements.forEachIndexed { index, supplement ->
+                val stock = StockRules.status(supplement)
+                val days = stock?.let { stockShortText(it) }
+                val daysDescription = if (stock != null && days != null) {
+                    stringResource(if (stock.low) R.string.nutrition_stock_low_description else R.string.nutrition_stock_description, days)
+                } else {
+                    null
+                }
                 ListRow(
                     title = supplement.name,
                     subtitle = supplementSubtitle(supplement),
@@ -315,6 +450,9 @@ internal fun SupplementsSection(
                         checked = NutritionRules.isTaken(taken, supplement.id, todayKey),
                         onToggle = { onToggleTaken(supplement.id) },
                         toggleLabel = toggleLabel,
+                        value = days,
+                        valueTrend = if (stock?.low == true) Trend.Down else null,
+                        valueDescription = daysDescription,
                     ),
                     showDivider = index < supplements.lastIndex,
                     onClick = { onOpen(supplement.id) },
@@ -342,11 +480,44 @@ internal fun SupplementsSection(
     }
 }
 
-/** « 5 g par prise · Rappel à 08:00 » ; dosage omis s'il est vide (🔄 D15). */
+/**
+ * Groupe « Moyenne sur 7 jours » (§ 15.16.6, 🔄 D42) : kcal, eau et protéines moyennes des 7 jours avant
+ * aujourd'hui, chacune sur ses jours notés ; « — » pour une mesure sans jour.
+ */
+@Composable
+internal fun AveragesSection(averages: NutritionAverages) {
+    Column(Modifier.fillMaxWidth()) {
+        SectionHeader(stringResource(R.string.nutrition_average_title), grouped = true)
+        Spacer(Modifier.height(Studio.spacing.xs))
+        ListGroup {
+            StatRow(
+                modifier = Modifier.padding(Studio.spacing.m),
+                stats = listOf(
+                    Stat(averages.kcal?.let { formatInteger(it.toDouble()) } ?: NO_VALUE, stringResource(R.string.nutrition_average_kcal)),
+                    Stat(averages.waterMl?.let { waterText(it) } ?: NO_VALUE, stringResource(R.string.nutrition_average_water)),
+                    Stat(averages.proteinGrams?.let { gramsText(it) } ?: NO_VALUE, stringResource(R.string.nutrition_average_protein)),
+                ),
+            )
+        }
+    }
+}
+
+/** Valeur absente d'une stat (« — »). */
+internal const val NO_VALUE = "—"
+
+/** Jours de stock d'une ligne (« 12 jours ») ; en doses (« 24 doses ») sans doses par jour valables. */
+@Composable
+internal fun stockShortText(stock: StockStatus): String {
+    val days = stock.daysLeft ?: return pluralStringResource(R.plurals.journal_day_doses, stock.doses, stock.doses)
+    return pluralStringResource(R.plurals.nutrition_stock_days, days, days)
+}
+
+/** « 5 g par prise · 2 doses par jour · Rappel à 08:00 » ; dosage omis s'il est vide (🔄 D15). */
 @Composable
 private fun supplementSubtitle(supplement: Supplement): String {
     val dosage = supplement.dosage.takeIf { it.isNotBlank() }?.let { stringResource(R.string.nutrition_per_intake, it, supplement.unit) }
-    return listOfNotNull(dosage, reminderSummaryText(supplement)).joinToString(" · ")
+    val doses = supplement.dosesPerDay.takeIf { it >= 2 }?.let { pluralStringResource(R.plurals.nutrition_doses_per_day_subtitle, it, it) }
+    return listOfNotNull(dosage, doses, reminderSummaryText(supplement)).joinToString(" · ")
 }
 
 /** Résumé des rappels (§ 2.11) : « Pas de rappel », « Rappels activés », « Rappel à 08:00 », « 3 rappels ». */

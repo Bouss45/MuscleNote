@@ -2,10 +2,13 @@ package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
+import com.musclenote.android.data.model.ProteinGoal
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.TakenRecord
 import com.musclenote.android.data.nutrition.BodyWeightRules
 import com.musclenote.android.data.nutrition.NutritionRules
+import com.musclenote.android.data.nutrition.ProteinRules
+import com.musclenote.android.data.nutrition.StockRules
 import com.musclenote.android.data.nutrition.SupplementReminders
 import com.musclenote.android.data.storage.JsonDocument
 import com.musclenote.android.data.util.TimeSource
@@ -84,6 +87,15 @@ class NutritionRepository(
     /** Objectif d'eau (ml) à partir d'aujourd'hui ; ≤ 0 ignoré. */
     suspend fun setWaterGoal(ml: Int) = updateTracker { NutritionRules.setWaterGoal(it, todayKey(), ml) }
 
+    /** Protéines du jour += [grams] (🔄 D42, § 15.16.3), résultat ≥ 0. */
+    suspend fun addProtein(grams: Int) = updateTracker { NutritionRules.addProtein(it, todayKey(), grams) }
+
+    /** « Total du jour » des protéines : valeur du jour = [grams], ≥ 0. */
+    suspend fun setProteinToday(grams: Int) = updateTracker { NutritionRules.setProtein(it, todayKey(), grams) }
+
+    /** Objectif de protéines (non daté, § 15.16.1), ramené aux règles avant d'être enregistré. */
+    suspend fun setProteinGoal(goal: ProteinGoal) = updateTracker { it.copy(proteinGoal = ProteinRules.normalized(goal)) }
+
     private suspend fun updateTracker(transform: (DailyTracker) -> DailyTracker) {
         mutex.withLock {
             val current = _tracker.value
@@ -103,11 +115,14 @@ class NutritionRepository(
             val today = todayKey()
             val next = NutritionRules.toggleTaken(_taken.value, supplementId, today)
             commitTaken(next)
-            // Historique des prises (§ 15.15.4, 🔄 D41) : la prise du jour suit la coche.
+            // Historique des prises (§ 15.15.4, 🔄 D41) : la prise du jour suit la coche, avec les doses par
+            // jour du complément (🔄 D42) ; le stock se décompte de l'historique.
             val taken = NutritionRules.isTaken(next, supplementId, today)
             val list = _supplements.value
-            val updated = list.map { if (it.id == supplementId) it.copy(intakes = NutritionRules.recordIntake(it.intakes, today, taken)) else it }
-            if (updated != list) commitSupplementIntakes(updated)
+            val updated = list.map {
+                if (it.id == supplementId) it.copy(intakes = NutritionRules.recordIntake(it.intakes, today, taken, it.dosesPerDay)) else it
+            }
+            if (updated != list) commitSupplementData(updated)
         }
     }
 
@@ -161,6 +176,32 @@ class NutritionRepository(
     suspend fun removeReminder(supplementId: String, reminderId: String) =
         updateSupplement(supplementId) { supplement -> supplement.copy(reminders = supplement.reminders.filterNot { it.id == reminderId }) }
 
+    // ─── Stock et doses par jour (§ 15.16.4, 🔄 D42) : sans effet sur les alarmes ─────────────
+
+    /** Stock saisi aujourd'hui, en doses (0 compris). */
+    suspend fun setStock(supplementId: String, doses: Int) = updateSupplementData(supplementId) { StockRules.setStock(it, doses, todayKey()) }
+
+    /** « Racheté » : [added] doses de plus. */
+    suspend fun restock(supplementId: String, added: Int) = updateSupplementData(supplementId) { StockRules.restock(it, added, todayKey()) }
+
+    /** « Ne plus suivre le stock ». */
+    suspend fun clearStock(supplementId: String) = updateSupplementData(supplementId, StockRules::clearStock)
+
+    /** Seuil du stock bas, en jours. */
+    suspend fun setLowStockDays(supplementId: String, days: Int) = updateSupplementData(supplementId) { StockRules.setLowStockDays(it, days) }
+
+    /** Doses par jour ; la prise d'aujourd'hui suit si le complément est coché. */
+    suspend fun setDosesPerDay(supplementId: String, doses: Int) =
+        updateSupplementData(supplementId) { StockRules.setDosesPerDay(it, doses, todayKey()) }
+
+    private suspend fun updateSupplementData(supplementId: String, transform: (Supplement) -> Supplement) {
+        mutex.withLock {
+            val list = _supplements.value
+            val next = list.map { if (it.id == supplementId) transform(it) else it }
+            if (next != list) commitSupplementData(next)
+        }
+    }
+
     private suspend fun updateSupplement(supplementId: String, transform: (Supplement) -> Supplement) {
         mutex.withLock {
             val list = _supplements.value
@@ -177,8 +218,11 @@ class NutritionRepository(
         reminders.sync(previous) { _supplements.value }
     }
 
-    /** Historique des prises seul : les rappels ne changent pas, pas de resynchronisation des alarmes. */
-    private fun commitSupplementIntakes(next: List<Supplement>) {
+    /**
+     * Historique des prises, stock ou doses par jour : les rappels ne changent pas, pas de
+     * resynchronisation des alarmes.
+     */
+    private fun commitSupplementData(next: List<Supplement>) {
         _supplements.value = next
         supplementsDoc.save(next)
     }

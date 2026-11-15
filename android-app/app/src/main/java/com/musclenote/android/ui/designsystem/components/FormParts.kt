@@ -164,3 +164,21 @@ fun statusHelp(message: String): AnnotatedString {
     val style = Studio.typography.bodyStrong.toSpanStyle().copy(color = Studio.colors.textPrimary)
     return buildAnnotatedString { withStyle(style) { append(message) } }
 }
+
+/**
+ * Phrase d'aide d'un formulaire dont la donnée clé prend sa couleur (DESIGN.md § 10.4 : « soit
+ * **4 jours** » en `down`, 🔄 D42) : [highlight], une partie de [message], en 600 et colorée par [trend]
+ * ([Trend.Neutral] : en `textPrimary`). Sans [highlight] dans [message], la phrase reste neutre.
+ */
+@Composable
+fun highlightedHelp(message: String, highlight: String, trend: Trend): AnnotatedString {
+    val start = message.indexOf(highlight)
+    if (start < 0 || highlight.isEmpty()) return AnnotatedString(message)
+    val color = if (trend == Trend.Neutral) Studio.colors.textPrimary else trend.color()
+    val style = Studio.typography.bodyStrong.toSpanStyle().copy(color = color)
+    return buildAnnotatedString {
+        append(message.substring(0, start))
+        withStyle(style) { append(highlight) }
+        append(message.substring(start + highlight.length))
+    }
+}

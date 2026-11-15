@@ -20,7 +20,8 @@ import java.time.ZoneId
 
 /**
  * Calendrier du Journal (SPEC § 15.15, 🔄 D41) : grille du mois, jours à séance, mois accessibles,
- * journée d'un jour (séances, poids, compléments pris, calories et eau), semaines validées.
+ * journée d'un jour (séances, poids, compléments pris, calories, eau et protéines — 🔄 D42), semaines
+ * validées.
  */
 class CalendarRulesTest {
 
@@ -254,6 +255,24 @@ class CalendarRulesTest {
         assertEquals(0, journal.calories)
         assertEquals(0, journal.waterMl)
         assertTrue(journal.isEmpty)
+    }
+
+    @Test
+    fun `les protéines du jour sont dans la journée`() {
+        val tracker = emptyTracker.copy(caloriesLog = mapOf("2026-11-12" to 1850), proteinLog = mapOf("2026-11-12" to 112, "2026-11-13" to 0))
+        assertEquals(112, day("2026-11-12", tracker = tracker).proteinGrams)
+        assertEquals(0, day("2026-11-13", tracker = tracker).proteinGrams)
+        assertTrue("des protéines à 0 ne font pas une journée", day("2026-11-13", tracker = tracker).isEmpty)
+    }
+
+    @Test
+    fun `un jour avec des protéines seulement n'est pas vide, et compte pour les mois accessibles`() {
+        val tracker = emptyTracker.copy(proteinLog = mapOf("2026-10-02" to 140))
+        val journal = day("2026-10-02", tracker = tracker)
+        assertEquals(0, journal.calories)
+        assertEquals(0, journal.waterMl)
+        assertFalse(journal.isEmpty)
+        assertEquals(YearMonth.of(2026, 10), CalendarRules.firstMonth(emptyList(), emptyList(), tracker, emptyList(), zone, today))
     }
 
     // ─── Semaines validées ────────────────────────────────────────────────────────

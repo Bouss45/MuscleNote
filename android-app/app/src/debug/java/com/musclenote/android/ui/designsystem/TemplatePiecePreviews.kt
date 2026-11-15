@@ -15,13 +15,14 @@ import com.musclenote.android.ui.designsystem.components.FicheTitle
 import com.musclenote.android.ui.designsystem.components.FicheTopBar
 import com.musclenote.android.ui.designsystem.components.FormHeroField
 import com.musclenote.android.ui.designsystem.components.InfoRow
+import com.musclenote.android.ui.designsystem.components.ListRow
+import com.musclenote.android.ui.designsystem.components.ListRowTrailing
 import com.musclenote.android.ui.designsystem.components.LiveHeader
 import com.musclenote.android.ui.designsystem.components.LiveTrack
 import com.musclenote.android.ui.designsystem.components.MetricSurface
 import com.musclenote.android.ui.designsystem.components.ProgressTrack
 import com.musclenote.android.ui.designsystem.components.ScreenTitleBar
 import com.musclenote.android.ui.designsystem.components.SetProgress
-import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StudioChip
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
 import com.musclenote.android.ui.designsystem.components.SurfaceAction
@@ -164,22 +165,36 @@ private fun BottomActionBarPreview() = StudioComponentPreview {
     BottomActionBar("Nouvelle mesure", {}, icon = R.drawable.ds_ic_add)
 }
 
-/** Hors maquette : surface « Aujourd'hui » du hub Nutrition (SPEC § 15.10.1), dans l'objectif. */
+/**
+ * Surface « Aujourd'hui » du hub Nutrition (SPEC § 15.16.2, maquette `T2-Nutrition`) : calories et leur
+ * bouton +, puis les lignes Eau (objectif atteint, en vert) et Protéines (en gris), chacune avec son +.
+ */
 @StudioComponentPreviews
 @Composable
 private fun DailySurfacePreview() = StudioComponentPreview {
     DailySurface(
-        label = "Aujourd'hui",
+        label = "Aujourd'hui · calories",
         value = "2 700",
         unit = "kcal",
         progress = 0.96f,
-        stats = listOf(Stat("1,5 L", "eau · sur 2,5 L"), Stat("2/3", "compléments pris")),
-        firstAction = "Calories",
-        onFirstAction = {},
-        secondAction = "Eau",
-        onSecondAction = {},
+        addDescription = "Ajouter des calories",
+        onAdd = {},
         status = "dans l'objectif",
         statusTrend = Trend.Up,
         statusContext = "· 2 800 kcal",
-    )
+    ) {
+        ListRow(
+            "Eau",
+            subtitle = "objectif 2,5 L atteint",
+            trailing = ListRowTrailing.ValueAction("2,6 L", R.drawable.ds_ic_add, "Ajouter de l'eau", {}, valueTrend = Trend.Up),
+            onClick = {},
+        )
+        ListRow(
+            "Protéines",
+            subtitle = "objectif 150 g",
+            trailing = ListRowTrailing.ValueAction("112 g", R.drawable.ds_ic_add, "Ajouter des protéines", {}, valueTrend = Trend.Neutral),
+            onClick = {},
+            showDivider = false,
+        )
+    }
 }

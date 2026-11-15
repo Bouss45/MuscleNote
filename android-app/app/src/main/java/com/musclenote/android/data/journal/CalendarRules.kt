@@ -35,7 +35,8 @@ data class SupplementIntake(val supplement: Supplement, val doses: Int)
 
 /**
  * Ce qui a été noté le jour [day] (sheet « Journée », § 15.15.2) ; chaque partie vide est masquée.
- * [calories] / [waterMl] : 0 = rien noté ; objectifs en vigueur ce jour-là.
+ * [calories] / [waterMl] / [proteinGrams] : 0 = rien noté ; objectifs des calories et de l'eau en
+ * vigueur ce jour-là (celui des protéines n'est pas daté, 🔄 D42).
  */
 data class DayJournal(
     val day: LocalDate,
@@ -46,9 +47,10 @@ data class DayJournal(
     val calorieGoal: Int,
     val waterMl: Int,
     val waterGoal: Int,
+    val proteinGrams: Int = 0,
 ) {
     val isEmpty: Boolean
-        get() = sessions.isEmpty() && weight == null && supplements.isEmpty() && calories <= 0 && waterMl <= 0
+        get() = sessions.isEmpty() && weight == null && supplements.isEmpty() && calories <= 0 && waterMl <= 0 && proteinGrams <= 0
 }
 
 /** Compteur d'une semaine du Journal : séances sur la règle de la série de l'Accueil (§ 3.6). */
@@ -89,8 +91,8 @@ object CalendarRules {
         counts.entries.sumOf { (day, count) -> if (YearMonth.from(day) == month) count else 0 }
 
     /**
-     * Premier mois accessible : celui de la plus ancienne donnée (séance terminée, pesée, calories ou
-     * eau notées, prise de complément), jamais après le mois de [today] ; sans donnée, ce mois-là.
+     * Premier mois accessible : celui de la plus ancienne donnée (séance terminée, pesée, calories, eau
+     * ou protéines notées, prise de complément), jamais après le mois de [today] ; sans donnée, ce mois-là.
      */
     fun firstMonth(
         workouts: List<Workout>,
@@ -103,7 +105,7 @@ object CalendarRules {
         val days = sequence {
             workouts.forEach { startDay(it, zone)?.let { day -> yield(day) } }
             weighIns.forEach { entry -> parseInstantOrNull(entry.date, zone)?.let { yield(it.atZone(zone).toLocalDate()) } }
-            (tracker.caloriesLog.entries + tracker.waterLog.entries).forEach { (key, value) ->
+            (tracker.caloriesLog.entries + tracker.waterLog.entries + tracker.proteinLog.entries).forEach { (key, value) ->
                 if (value > 0 && isDayKey(key)) yield(LocalDate.parse(key))
             }
             supplements.forEach { s -> s.intakes.keys.forEach { key -> if (isDayKey(key)) yield(LocalDate.parse(key)) } }
@@ -121,7 +123,7 @@ object CalendarRules {
      * Journée du [day] : séances terminées commencées ce jour-là (de la plus ancienne à la plus
      * récente), poids du jour (pesée, sinon poids saisi au début d'une séance de ce jour), compléments
      * pris d'après leur historique — aujourd'hui, une coche « pris » sans historique compte pour une
-     * dose —, calories et eau avec les objectifs en vigueur ce jour-là.
+     * dose —, calories et eau avec les objectifs en vigueur ce jour-là, protéines (🔄 D42).
      */
     fun dayJournal(
         day: LocalDate,
@@ -153,6 +155,7 @@ object CalendarRules {
             calorieGoal = DailyTracker.goalFor(tracker.calorieGoalHistory, key) ?: tracker.calorieGoal,
             waterMl = (tracker.waterLog[key] ?: 0).coerceAtLeast(0),
             waterGoal = DailyTracker.goalFor(tracker.waterGoalHistory, key) ?: tracker.waterGoal,
+            proteinGrams = (tracker.proteinLog[key] ?: 0).coerceAtLeast(0),
         )
     }
 

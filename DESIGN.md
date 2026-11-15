@@ -271,6 +271,9 @@ Chaque composant n'utilise que des jetons ; il reçoit ses textes déjà format�
   (`captionStrong`, `textSecondary` ou couleur de la variation), sans chevron. TalkBack lit le titre
   dans sa casse d'origine, comme un titre. Les écrans non redessinés (Accueil, Progrès, fiches,
   résumé) gardent l'en-tête de 20.
+  🔄 Texte agrandi (D42) : l'étiquette garde ses mots entiers sur sa ligne tant qu'il reste à la mention
+  la place de son mot le plus long (au moins la moitié de la ligne) ; c'est la mention, alignée à
+  droite, qui passe à la ligne (« 1 sur 3 / pris »).
 
 **Rangée de stats** — `StatRow`. 2 à 4 valeurs sans fond, colonnes égales séparées de 16 :
 valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
@@ -293,7 +296,16 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   son toucher : complément de Nutrition (case = « pris aujourd'hui », ligne → ses rappels). **Sans
   action** (ni `onClick` ni `onToggle`), la case est lue cochée ou non **et désactivée** (exercice
   déjà dans la séance, sélecteur) ; avec un **appui long**, la ligne à cocher le garde (exercice
-  perso du sélecteur : modifier, supprimer).
+  perso du sélecteur : modifier, supprimer). 🔄 **Valeur avant la case** (D42, SPEC § 15.16.4) : une
+  valeur `bodyLineStrong`, 14 avant la case, colorée par sa tendance et lue par sa description
+  TalkBack — les jours de stock d'un complément (« 12 jours », « 4 jours » en `down` pour un stock
+  bas, « Stock bas : 4 jours »).
+- 🔄 Fin **valeur et bouton plein** (`ListRowTrailing.ValueAction`, D42, SPEC § 15.16.2) : la valeur
+  (`bodyLineStrong`, `textSecondary` tant que l'objectif n'est pas atteint, `up` une fois atteint, le
+  sous-titre le dit en mots) puis, 12 plus loin, le bouton icône plein `add` (rond de 40, cible 48,
+  qui déborde de 8 pour que son rond s'arrête à 12 du bord du groupe) ; le bouton a sa propre action et
+  son libellé TalkBack (« Ajouter de l'eau »), le reste de la ligne garde son toucher (le détail) —
+  lignes Eau et Protéines de Nutrition.
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
 - 🔄 **Dans un groupe** (`ListGroup`, v2) : retrait de 16 de chaque côté (12 avant un chevron) ;
   filet en retrait, du début du texte (après la pastille d'icône s'il y en a une) jusqu'au bord
@@ -402,6 +414,9 @@ de 16, 8 plus bas.
 | texte | 48 | transparent / `textPrimary`, `action` | `surfaceRaised` | `textTertiary` |
 | icône | 48, rond | transparent, icône 24 `textPrimary` | `surfaceControl` | `textTertiary` |
 
+- 🔄 Bouton icône **plein** (`filled`, D42, maquette `T2-Nutrition`) : rond de 40 `surfaceControl`,
+  pressé `surfacePressed`, icône 22 `textPrimary`, inactif en `textTertiary`, dans une cible de 48 —
+  les boutons + du groupe « Aujourd'hui » de Nutrition (calories, eau, protéines).
 - Taille **moyenne** (48, `actionSmall`) pour les rangées de boutons (repos) et l'état vide ;
   **petite** (44) pour la mini-barre et les icônes en ligne (bloc exercice, pavé). Un bouton icône
   petit garde une cible de 48 : son cercle de 44 est posé dans une zone de toucher de 48.
@@ -425,11 +440,15 @@ padding 20, éléments espacés de 14 ; 🔄 v2, groupe du héros d'un hub group
   (`titleScreen`) ; légende (« Dernière fois il y a 7 jours · 5 exercices ») ; puces de filtre
   (types, « Autre… »), sur plusieurs lignes si les noms sont longs, aucune rangée sans type ;
   bouton principal « Démarrer ».
-- **Aujourd'hui** (`DailySurface`, hub Nutrition) : légende « Aujourd'hui » ; chiffre héros (kcal du
-  jour) + unité ; état par rapport à l'objectif en variation (« encore 950 kcal » gris, « dans
-  l'objectif » `up`, « +320 kcal » `down`) suivi de son contexte ; piste de progression
-  (`ProgressTrack`) ; rangée de stats (eau, compléments pris) ; deux boutons secondaires moyens de
-  largeurs égales, icône `add` (« Calories », « Eau »).
+- **Aujourd'hui** (`DailySurface`, hub Nutrition) — 🔄 D42, comme la maquette `T2-Nutrition` : le
+  groupe du héros (`surfaceRaised`, rayon 20, qui découpe ses lignes), retrait de 16, 12 en haut et 20
+  sous la piste ; en-tête de 48 : légende « Aujourd'hui · calories » (`caption` `textSecondary`) et, à
+  droite, le bouton icône plein `add` (« Ajouter des calories », déborde de 8) ; 6 ; chiffre héros
+  (kcal du jour) + unité, état par rapport à l'objectif en variation (« encore 950 kcal » gris, « dans
+  l'objectif » `up`, « +320 kcal » `down`) suivi de son contexte ; 14 ; piste de progression
+  (`ProgressTrack`) ; puis un filet `separator` en retrait de 16 et des **lignes** (`ListRow` en
+  disposition de groupe) : Eau et Protéines, valeur et bouton plein. La rangée de stats et la paire de
+  boutons « Calories » / « Eau » d'avant D42 sont retirées.
 - **Mesure** (`MetricSurface`, hub Progrès) : légende + bouton icône `add`, précédé au besoin d'un
   second bouton icône (`secondaryAction`, `SurfaceAction` : `notifications` « Rappel de pesée »,
   SPEC § 15.13.3) ; chiffre héros + unité ;
@@ -558,6 +577,9 @@ font partie du design system au même titre.
   complément, nouvel exercice, type de séance).
 - **Message d'état** — `StatusMessage` : une phrase de succès ou d'erreur en `bodyStrong`
   `textPrimary`, sans couleur ; `statusHelp` la donne en aide d'un formulaire (saisie refusée).
+  🔄 `highlightedHelp` (D42) : une phrase d'aide dont la donnée clé passe en `bodyStrong` et prend sa
+  couleur (« Créatine · il reste 8 doses, soit **4 jours**. », jours en `down` pour un stock bas,
+  § 10.4).
 - **Point et étiquette en direct** — `LiveDot` (8, `live`) et `LiveLabel` (point + 8 + `label`
   `liveText`).
 - **Variation** — `Delta` : texte signé coloré selon le sens (hausse / baisse / neutre), avec son
@@ -666,7 +688,7 @@ n'a pas encore, cf. § 13) :
 | Accueil | **Séance** (surface) : reprendre → en direct, ou démarrer (type suggéré) → « Démarrer une séance » · **Dernière séance** : 1 ligne → résumé (fiche, SPEC § 15.12), « Tout voir » → Journal · **Cette semaine** : séances / 3, série, record, 8 semaines (SPEC § 15.8.2) |
 | Journal | **Calendrier du mois** (groupe du héros) : un jour → sheet « Journée » (séances → résumé) (SPEC § 15.15) · **Depuis le début** : totaux · **une section par semaine** (« 2/3 », « 3/3 · validée ») : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) |
 | Progrès | **Poids de corps** (surface) : pesée → formulaire, rappel de pesée → formulaire (SPEC § 15.13.3) · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
-| Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
+| Nutrition | **Aujourd'hui** (groupe du héros) : calories + → formulaire ; lignes Eau et Protéines : + → formulaire, ligne → détail (formulaire : aujourd'hui, objectif, moyenne) (SPEC § 15.16.2) · **Compléments** (« 1 sur 3 pris ») : pris aujourd'hui (case), jours de stock, ligne → formulaire (rappels, doses par jour, stock, « Racheté », stock bas, suppression), nouveau complément → formulaire (SPEC § 15.10.1, § 15.16.4) · **Moyenne sur 7 jours** : kcal, eau, protéines (SPEC § 15.16.6) · plus tard : **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire · **Notifications** : notifications coupées → réglages du système ; rappel de pesée, un complément → formulaire (SPEC § 15.13.3) ; nouvelle version disponible → ligne à cocher (SPEC § 15.14.5) · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : version, vérifier maintenant, télécharger ou ouvrir Obtainium (SPEC § 15.14.5) ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
 
 Correspondance avec les écrans d'avant la refonte (SPEC § 2) — **toute migrée** (étape 5b, SPEC
@@ -706,6 +728,10 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | hauteur d'une ligne dans un groupe (v2) | 64 (planche Composants 1), 56 (lignes d'une seule ligne de Paramètres) | 56 sans sous-titre, 64 avec |
 | barre d'onglets (v2) | fond + filet (Accueil, Progrès v1), `surface.groupe` sans filet (Journal, Nutrition v2) | `surfaceRaised` sans filet partout (rôle « onglets » de la planche Tokens v2) |
 | rangées du calendrier du Journal (D41) | ronds de 36 espacés de 2 (38), flèches de 44, 10 avant le résumé | rangées de 48 (cibles tactiles), flèches de 48, résumé collé à la grille de 6 rangées réservées |
+| groupe « Aujourd'hui » de Nutrition (D42) | en-tête de 36 avec un bouton de 40 et 16 au-dessus ; « 1 840 / 2 600 kcal » et « Encore 760 kcal pour l'objectif » | en-tête de 48 (cible du bouton) et 12 au-dessus, le rond tombe à la même place ; chiffre héros et état de D35 (« encore 760 kcal » sur 2 600) |
+| compteur des compléments pris (D42) | dans l'étiquette, « COMPLÉMENTS · 1 SUR 3 PRIS », lien « Gérer » à droite | mention à droite de l'étiquette, « 1 sur 3 pris » ; pas de lien « Gérer » (chaque ligne ouvre sa sheet) |
+| jours de stock d'un complément (D42) | « 12 jours » en 15 · 600, case ronde à gauche | valeur `bodyLineStrong` avant la case 48, à droite (D40) |
+| « Ajouter du stock » (D42, `T2-Stock`) | grammes (« 500 g ajoutés »), puces +100 g … +1 kg, « Me prévenir · à 7 jours » | doses (« doses ajoutées »), sans puces, « Stock bas · à 7 jours » (pas de notification) |
 
 Les mesures internes des composants (14 entre éléments d'une ligne, 6 sous une légende de héros,
 3 entre titre et sous-titre…) sont gardées telles quelles.
@@ -845,15 +871,28 @@ Décidé (15/11/2026, SPEC D40) :
   dans Nutrition, la case ronde à gauche (la case 48 reste à droite) ; dans le Journal, le filtre par
   type de séance.
 
+Décidé (15/11/2026, SPEC D42) :
+
+- **Protéines, stock et moyenne sur 7 jours** (Nutrition) : aucun composant nouveau. Le groupe
+  « Aujourd'hui » prend la forme de la maquette (bouton + plein des calories à côté de la légende,
+  lignes Eau et Protéines identiques, valeur grise puis verte avec « objectif … atteint », bouton +
+  plein → saisie, ligne → détail en sheet de lignes d'information) ; les jours de stock avant la case
+  d'un complément, en `down` au seuil ; « Moyenne sur 7 jours » en groupe de stats ; la sheet d'un
+  complément gagne « Doses par jour », « Stock », « Stock bas » (`InfoRow`) et « Racheté » (bouton
+  texte), chacun vers un formulaire au pavé. Variantes : `StudioIconButton(filled)`,
+  `ListRowTrailing.ValueAction`, valeur de `ListRowTrailing.Check`, `DailySurface` redessinée,
+  `highlightedHelp`.
+
 Hors périmètre pour l'instant :
 
-- **Données nouvelles** : Mes records, mensurations, photos, protéines, stock des compléments, objectif de poids
+- **Données nouvelles** : Mes records, mensurations, photos, objectif de poids
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part. Les
-  planches v2 en ajoutent : **protéines**, **stock des compléments** (« 12 jours ») et **moyenne sur
-  7 jours** dans Nutrition, le **filtre par type de séance** et la mention « S45 et S46 validées »
-  du Journal — maquettes disponibles pour les futurs sujets (SPEC § 15.6). Le **calendrier du mois**
-  et les semaines « 3/3 · validée » du Journal sont réalisés (D41, SPEC § 15.15 ; objectif fixé à 3).
+  planches v2 en ajoutent : le **filtre par type de séance** et la mention « S45 et S46 validées » du
+  Journal, le lien « Tendances » de Nutrition — maquettes disponibles pour les futurs sujets (SPEC
+  § 15.6). Le **calendrier du mois** et les semaines « 3/3 · validée » du Journal sont réalisés (D41,
+  SPEC § 15.15 ; objectif fixé à 3), comme les **protéines**, le **stock des compléments** et la
+  **moyenne sur 7 jours** de Nutrition (D42, SPEC § 15.16).
 
 Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
 
@@ -887,7 +926,10 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   maquette (`BoardPreviews`, 1400 × 1320 ; Composants 1 dans sa version v2 « Données et listes
   groupées ») et les gabarits remplis comme les écrans de la maquette (`TemplatePreviews`,
   412 × 915, insets de la maquette ; le hub paresseux du Journal en listes groupées, avec son
-  calendrier). Hors planche : `MonthCalendarPreview` (`DataComponentPreviews`).
+  calendrier). Hors planche : `MonthCalendarPreview` (`DataComponentPreviews`) ; 🔄 D42 :
+  `IconButtonFilledPreview` (`ActionComponentPreviews`), les fins de ligne « valeur avant la case » et
+  « valeur et bouton plein » dans `ListRowCheckPreview`, `DailySurfacePreview` redessinée
+  (`TemplatePiecePreviews`).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni

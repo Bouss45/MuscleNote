@@ -37,13 +37,15 @@ import com.musclenote.android.ui.designsystem.components.SheetTitle
 import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.nutrition.gramsText
 import com.musclenote.android.ui.nutrition.waterGoalText
 import com.musclenote.android.ui.nutrition.waterText
 import java.time.LocalDate
 
 /**
  * Sheet « Journée » (SPEC § 15.15.2, 🔄 D41) : ce qui a été noté le [day], en listes groupées —
- * séances (toucher → [onOpenSession], la sheet se ferme), poids, compléments pris, calories et eau ;
+ * séances (toucher → [onOpenSession], la sheet se ferme), poids, compléments pris, calories, eau et
+ * protéines (🔄 D42) ;
  * les sections vides sont masquées, un jour sans rien n'a qu'une phrase. Lecture seule.
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -124,14 +126,15 @@ internal fun DaySheetContent(
                 }
             }
         }
-        if (journal.calories > 0 || journal.waterMl > 0) {
+        // 🔄 D42 : la section « Nutrition » gagne les protéines du jour (§ 15.16.7).
+        if (journal.calories > 0 || journal.waterMl > 0 || journal.proteinGrams > 0) {
             DaySection(stringResource(R.string.journal_day_nutrition)) {
                 if (journal.calories > 0) {
                     ListRow(
                         title = stringResource(R.string.progress_tab_calories),
                         subtitle = stringResource(R.string.nutrition_goal_only, formatInteger(journal.calorieGoal.toDouble())),
                         trailing = ListRowTrailing.Value(stringResource(R.string.common_kcal_value, formatInteger(journal.calories.toDouble()))),
-                        showDivider = journal.waterMl > 0,
+                        showDivider = journal.waterMl > 0 || journal.proteinGrams > 0,
                     )
                 }
                 if (journal.waterMl > 0) {
@@ -139,6 +142,14 @@ internal fun DaySheetContent(
                         title = stringResource(R.string.progress_tab_water),
                         subtitle = stringResource(R.string.journal_day_goal, waterGoalText(journal.waterGoal)),
                         trailing = ListRowTrailing.Value(waterText(journal.waterMl)),
+                        showDivider = journal.proteinGrams > 0,
+                    )
+                }
+                if (journal.proteinGrams > 0) {
+                    // Sans objectif : celui des protéines n'est pas daté (§ 15.16.1).
+                    ListRow(
+                        title = stringResource(R.string.nutrition_protein),
+                        trailing = ListRowTrailing.Value(gramsText(journal.proteinGrams)),
                         showDivider = false,
                     )
                 }
