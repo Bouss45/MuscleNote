@@ -86,6 +86,30 @@ data class Supplement(
      * sans ce champ se relit avec un historique vide.
      */
     val intakes: Map<String, Int> = emptyMap(),
+    /**
+     * Doses comptées par une coche « pris aujourd'hui » (§ 15.16.4, 🔄 D42), 1 à 20 ; omis à 1.
+     */
+    val dosesPerDay: Int = DEFAULT_DOSES_PER_DAY,
+    /** Stock suivi (§ 15.16.8, 🔄 D42) ; absent = stock non suivi. */
+    val stock: SupplementStock? = null,
+    /** Seuil du stock bas, en jours restants (§ 15.16.4, 🔄 D42), 0 à 99 ; omis à 7. */
+    val lowStockDays: Int = DEFAULT_LOW_STOCK_DAYS,
+) {
+    companion object {
+        const val DEFAULT_DOSES_PER_DAY = 1
+        const val DEFAULT_LOW_STOCK_DAYS = 7
+    }
+}
+
+/**
+ * Stock d'un complément (§ 15.16.8, 🔄 D42) : [doses] comptées le jour local [day], après [dayIntake]
+ * doses déjà prises ce jour-là (omis à 0). Le stock restant se déduit de l'historique des prises.
+ */
+@Serializable
+data class SupplementStock(
+    val doses: Int,
+    val day: String,
+    val dayIntake: Int = 0,
 )
 
 /** `supplementId` → jour local (`"AAAA-MM-JJ"`) de la dernière prise. */
@@ -105,6 +129,10 @@ data class DailyTracker(
     val caloriesLog: Map<String, Int>,
     /** ml. */
     val waterLog: Map<String, Int>,
+    /** Protéines du jour, en grammes (§ 15.16.1, 🔄 D42) ; omis s'il est vide. */
+    val proteinLog: Map<String, Int> = emptyMap(),
+    /** Objectif de protéines, non daté (§ 15.16.1, 🔄 D42) ; omis au défaut. */
+    val proteinGoal: ProteinGoal = ProteinGoal.DEFAULT,
 ) {
     companion object {
         const val DEFAULT_CALORIE_GOAL = 2000
@@ -125,6 +153,38 @@ data class DailyTracker(
         /** Objectif en vigueur le jour [day] : valeur de la plus grande clé ≤ [day]. */
         fun goalFor(history: Map<String, Int>, day: String): Int? =
             history.entries.filter { it.key <= day }.maxByOrNull { it.key }?.value
+    }
+}
+
+/** Mode de l'objectif de protéines (§ 15.16.1, 🔄 D42). */
+@Serializable
+enum class ProteinGoalMode {
+    /** Poids de la dernière pesée connue × [ProteinGoal.perKg]. */
+    @SerialName("perKg") PerKg,
+
+    /** [ProteinGoal.grams], chaque jour. */
+    @SerialName("fixed") Fixed,
+}
+
+/**
+ * Objectif de protéines (§ 15.16.1, 🔄 D42) : le [mode], le facteur [perKg] (g par kg, 1,2 à 2,2) et
+ * la valeur fixe [grams] (absente tant qu'elle n'a pas été saisie). Le mode et le facteur sont écrits
+ * avec l'objectif (il est omis au défaut : par kg, 1,6).
+ */
+@OptIn(ExperimentalSerializationApi::class)
+@Serializable
+data class ProteinGoal(
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val mode: ProteinGoalMode = ProteinGoalMode.PerKg,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS) val perKg: Double = DEFAULT_PER_KG,
+    val grams: Int? = null,
+) {
+    companion object {
+        const val DEFAULT_PER_KG = 1.6
+        const val MIN_PER_KG = 1.2
+        const val MAX_PER_KG = 2.2
+
+        /** Par kg, 1,6. */
+        val DEFAULT = ProteinGoal()
     }
 }
 

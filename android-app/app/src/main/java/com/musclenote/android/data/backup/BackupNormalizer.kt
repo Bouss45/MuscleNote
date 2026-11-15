@@ -7,14 +7,19 @@ import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.ProteinGoal
+import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.Supplement
+import com.musclenote.android.data.model.SupplementStock
 import com.musclenote.android.data.model.TakenRecord
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.nutrition.ProteinRules
+import com.musclenote.android.data.nutrition.StockRules
 import com.musclenote.android.data.nutrition.WeighInReminderRules
 import com.musclenote.android.data.util.dayKey
 import com.musclenote.android.data.util.formatInstant
@@ -129,6 +134,9 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
                     reminderEnabled = s["reminderEnabled"].booleanOrNull() ?: false,
                     reminders = s["reminders"].arrayOrNull().orEmpty().mapNotNull(::reminder),
                     intakes = intakes(s["intakes"]),
+                    dosesPerDay = StockRules.normalizedDosesPerDay(s["dosesPerDay"].intOrNull()),
+                    stock = stock(s["stock"]),
+                    lowStockDays = StockRules.normalizedLowStockDays(s["lowStockDays"].intOrNull()),
                 )
             }
             .distinctBy { it.id }
@@ -153,6 +161,17 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
             val n = primitive.content.toIntOrNull()?.takeIf { it >= 1 } ?: return@mapNotNull null
             day to n
         }.toMap()
+    }
+
+    /**
+     * Stock d'un complément (§ 15.16.8, 🔄 D42) : pas un objet, `doses` pas un entier ≥ 0 ou `day` pas un
+     * jour valide → stock non suivi ; `dayIntake` pas un entier ≥ 0 → 0.
+     */
+    private fun stock(v: JsonElement?): SupplementStock? {
+        val o = v.objectOrNull() ?: return null
+        val doses = o["doses"].intOrNull()?.takeIf { it >= 0 } ?: return null
+        val day = o["day"].stringOrNull()?.takeIf(::isDayKey) ?: return null
+        return SupplementStock(doses, day, dayIntake = o["dayIntake"].intOrNull()?.takeIf { it >= 0 } ?: 0)
     }
 
     /** Rappel inutilisable (heure ou minute hors bornes) → écarté. `notifId` n'existe plus. */
@@ -192,6 +211,23 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
             waterGoalHistory = goalHistory(waterHistory, waterGoal),
             caloriesLog = dayIntMap(t["caloriesLog"]).mapValues { (_, v) -> v.coerceAtLeast(0) },
             waterLog = dayIntMap(t["waterLog"]).mapValues { (_, v) -> v.coerceAtLeast(0) },
+            proteinLog = dayIntMap(t["proteinLog"]).mapValues { (_, v) -> v.coerceAtLeast(0) },
+            proteinGoal = proteinGoal(t["proteinGoal"]),
+        )
+    }
+
+    /**
+     * Objectif de protéines (§ 15.16.8, 🔄 D42) : absent ou pas un objet → par kg, 1,6 ; mode inconnu →
+     * par kg ; facteur hors 1,2 – 2,2 → 1,6 ; valeur fixe pas un entier > 0 → absente.
+     */
+    private fun proteinGoal(v: JsonElement?): ProteinGoal {
+        val o = v.objectOrNull() ?: return ProteinGoal.DEFAULT
+        return ProteinRules.normalized(
+            ProteinGoal(
+                mode = if (o["mode"].stringOrNull() == "fixed") ProteinGoalMode.Fixed else ProteinGoalMode.PerKg,
+                perKg = o["perKg"].numberOrNull() ?: ProteinGoal.DEFAULT_PER_KG,
+                grams = o["grams"].intOrNull(),
+            ),
         )
     }
 
