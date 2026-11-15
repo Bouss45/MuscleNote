@@ -66,7 +66,7 @@ Code : `ui/designsystem/` (§ 14).
 | `textTertiary` | texte.tertiaire | `#6F737A` | `#85888E` | valeurs pré-remplies, désactivé, semaine non validée — **chiffres de 24 sp et plus seulement** |
 | `inverse` | inverse | `#F3F3F1` | `#121315` | bouton principal, case de série validée, puce de filtre sélectionnée |
 | `onInverse` | — | `#0F1012` | `#FFFFFF` | texte et icône sur `inverse` |
-| `live` | direct | `#FFC93D` | `#FFC93D` | aplat : point « en cours », barre de repos |
+| `live` | direct | `#FFC93D` | `#9E7100` | aplat : point « en cours », barre de repos (or foncé en clair, cf. contrastes) |
 | `liveText` | direct.texte | `#FFC93D` | `#7A5900` | chrono, repos, curseur de saisie, étiquette « En cours » |
 | `liveDim` | direct.attenue | `#332C14` | `#FFF0C2` | fond du champ en saisie, fond de la puce « en cours » |
 | `onLive` | — | `#17140A` | `#17140A` | texte posé sur un aplat `live` (aucun usage dans la maquette, réservé) |
@@ -90,6 +90,14 @@ Code : `ui/designsystem/` (§ 14).
 **Contrastes sur fond** (maquette) : texte 17,1:1 · secondaire 7,7:1 · direct 12,4:1 (en clair,
 `liveText` 6,5:1) · hausse 10,2:1 / 5,4:1 · baisse 6,8:1 / 5,5:1. Tertiaire 4,0:1 / 3,6:1, d'où
 sa limite aux chiffres de 24 sp et plus.
+
+**Vérifiés sur toutes les paires utilisées** (SPEC § 15.11.4), sombre / clair : tout texte ≥ 4,5:1
+sur son fond (au plus bas : secondaire sur `surfacePressed` 4,75 / 4,52, `up` sur `upDim` 7,6 /
+4,8, `down` sur `downDim` 5,7 / 4,6) ; tertiaire ≥ 3:1 sur le fond et les surfaces (bord de case,
+chiffres pré-remplis) ; seul le texte d'un bouton **désactivé** (tertiaire sur `surfaceControl`,
+2,9:1) est en dessous, comme l'admet WCAG pour un contrôle inactif. En clair, l'aplat `live` de la
+maquette (`#FFC93D`) ne faisait que 1,1 à 1,5:1 sur les fonds clairs : il passe à `#9E7100`
+(≥ 3:1 partout, élément non textuel) ; le logo garde le jaune de la marque.
 
 Les couleurs de groupes musculaires de l'app actuelle (SPEC D23) disparaissent : les groupes
 s'affichent en texte (puces de filtre neutres).
@@ -125,8 +133,10 @@ Archivo (largeur 100) et **Archivo condensée (largeur 75)**.
 | `actionSmall` | — | 15 · 700 | bouton 48 dp, mini-barre |
 | `emphasis` | — | 15 · 600 | variation sous un héros, date de l'Accueil, sélecteur de période (sélection 800) |
 | `body` | — | 14 · 400 | puces (700 si colorée), segmenté (600 / 700), lien « Tout voir » (600), phrase d'aide d'un formulaire |
+| `bodyStrong` | — | 14 · 600 | message de succès ou d'erreur, sans couleur (`StatusMessage`, `statusHelp`) |
 | `paragraph` | — | 14 · 400 · 1,45 | texte d'une sheet de confirmation, d'un état vide |
-| `caption` | texte.legende | 13 · 400 | légendes, sous-titres de ligne, variation de ligne (600), mini-puce |
+| `caption` | texte.legende | 13 · 400 | légendes, sous-titres de ligne, mini-puce |
+| `captionStrong` | — | 13 · 600 | variation d'une ligne, compteur arrivé à sa limite |
 | `label` | etiquette | 12 · 700 · capitales · +12 % | « En cours », « Repos » |
 | `small` | — | 12 · 400 | libellés d'onglets (500 / 700), axes de courbe (400 / 700), légende des semaines |
 | `columnHeader` | — | 11 · 700 · capitales · +12 % | en-têtes de colonnes des séries (#, Préc., Kg, Reps) |
@@ -137,6 +147,14 @@ sont appliquées par le composant, jamais par l'écran.
 **Interligne inférieur à la police** (0,85 des grands chiffres) : appliqué comme en CSS, boîte de
 la hauteur de l'interligne et glyphes centrés qui débordent (`RollingText`) ; Compose seul ne
 descend pas sous la hauteur de la police.
+
+**Texte agrandi** (taille de police du système jusqu'à 200 %) : rien n'est coupé. Les hauteurs
+des composants sont des **minimums** (ils grandissent avec leur texte) ; titres, sous-titres,
+légendes, libellés de boutons et messages **passent à la ligne** ; un **chiffre ne passe jamais à la
+ligne** : `RollingText` et les valeurs de série rétrécissent jusqu'à 60 % pour tenir dans leur
+colonne. Les mots seuls d'une colonne étroite (libellés d'onglets, en-têtes de colonnes) rétrécissent
+de même (`FitText`). Android agrandit moins les grands textes que les petits (mise à l'échelle non
+linéaire, Android 14+) : les chiffres héros changent peu.
 
 ## 4. Espacements
 
@@ -196,7 +214,9 @@ En direct : **aucune animation en boucle** (le chrono change de valeur, il ne pu
 
 **Material Symbols Rounded**, 24 dp, graisse 400, contour ; **plein** (FILL 1) seulement pour
 l'onglet sélectionné. Vector drawables `res/drawable/ds_ic_<nom>.xml` (`ds_ic_<nom>_filled.xml`
-pour la version pleine), à côté des icônes Outlined actuelles le temps de la migration.
+pour la version pleine). Les icônes Outlined de l'ancien thème sont retirées ; hors Compose
+restent `ic_check`, `ic_replay_30`, `ic_forward_30`, `ic_skip_next` (actions de la notification
+de séance), `ic_notification` et les couches du logo.
 
 Tailles : 24 (défaut), 22 (pastille de ligne, coche du pavé, chevron d'une ligne d'information),
 20 (chevron d'un lien « Tout voir »), 18 (dans une puce), 28 (état vide).
@@ -240,7 +260,8 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 **Ligne de liste** — `ListRow`. Hauteur 64 (72 avec mini-puces), éléments espacés de 14, filet
 `separator` 1 en bas (aucun sous la dernière ligne d'une section).
 - Début (optionnel) : pastille 40 ronde `surfaceControl` avec une icône 22 `textPrimary`.
-- Centre : titre `bodyLine` + 3 + sous-titre `caption` `textSecondary` (optionnel) ; ou titre + 8
+- Centre : titre `bodyLine` + 3 + sous-titre `caption` `textSecondary` (optionnel ; l'un et
+  l'autre passent à la ligne plutôt que d'être coupés) ; ou titre + 8
   + rangée de **mini-puces** (`caption` sur `surfaceControl`, rayon 8, padding 3 × 8, espacées de 4).
 - Fin, au choix : valeur `bodyLineStrong` ; valeur + 3 + variation (`caption` 600, `up` / `down`,
   ou « Record » en `up`) ; **mini-courbe + valeur et variation** (`ListRowTrailing.CurveValue`,
@@ -250,7 +271,10 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   la séance en cours, lignes à cocher d'une sheet (rappels, sauvegarde quotidienne, Health Connect ;
   sans filet, le filet d'une sheet étant celui des `InfoRow`). Avec sa **propre action**
   (`onToggle` + libellé TalkBack), la case seule (cible 48) bascule et le reste de la ligne garde
-  son toucher : complément de Nutrition (case = « pris aujourd'hui », ligne → ses rappels).
+  son toucher : complément de Nutrition (case = « pris aujourd'hui », ligne → ses rappels). **Sans
+  action** (ni `onClick` ni `onToggle`), la case est lue cochée ou non **et désactivée** (exercice
+  déjà dans la séance, sélecteur) ; avec un **appui long**, la ligne à cocher le garde (exercice
+  perso du sélecteur : modifier, supprimer).
 - États : normal ; **pressé** (fond `surfaceRaised`, rayon 12, déborde de 12 de chaque côté).
 - **Appui long** optionnel (`onLongClick` + libellé d'accessibilité) : les actions secondaires
   d'une ligne, dans une bottom sheet (séance du Journal et « Dernière séance » de l'Accueil :
@@ -270,7 +294,9 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 | filtre non sélectionné | `surfaceControl` | `textPrimary` | — | 400 |
 
 Espace icône–texte : 6 (4 pour les flèches). Les puces de filtre et de saisie rapide sont
-cliquables (cible 48) ; les autres sont informatives, sauf la **puce de suggestion de charge** du
+cliquables (cible 48 : Compose agrandit la zone de toucher d'une puce de 32 jusqu'à 48, ou jusqu'à
+la puce voisine — 40 entre deux rangées espacées de 8) ; les autres sont informatives, sauf la
+**puce de suggestion de charge** du
 bloc exercice : elle applique la suggestion au toucher (`StudioChip(onClick)`, hausse « +2,5 kg »
 ou neutre « Même charge »).
 
@@ -301,7 +327,9 @@ TalkBack lit une description par option (« 3 mois », « Tout l'historique »),
 **Contrôle segmenté** — `SegmentedControl`. 2 à 4 options. Conteneur `surfaceControl`, rayon 12,
 retrait 4, options espacées de 4. Option : hauteur 40, rayon 9, largeurs égales ; sélectionnée
 `surfacePressed` + `body` 700 `textPrimary`, sinon transparente + `body` 600 `textSecondary`.
-Variante **compacte** (en-tête du pavé) : hauteur 36, largeur au contenu, padding 14.
+Chaque option se touche sur toute la hauteur du conteneur (**48**), l'option choisie dessinée en
+retrait. Variante **compacte** (en-tête du pavé) : option de 36 (conteneur 48), largeur au
+contenu, padding 14.
 
 **Section** (assemblage) — en-tête de section + lignes, posés sur le fond. Pas un composant :
 c'est la brique des gabarits hub et fiche.
@@ -318,7 +346,10 @@ c'est la brique des gabarits hub et fiche.
 | icône | 48, rond | transparent, icône 24 `textPrimary` | `surfaceControl` | `textTertiary` |
 
 - Taille **moyenne** (48, `actionSmall`) pour les rangées de boutons (repos) et l'état vide ;
-  **petite** (44) pour la mini-barre et les icônes en ligne (bloc exercice, pavé).
+  **petite** (44) pour la mini-barre et les icônes en ligne (bloc exercice, pavé). Un bouton icône
+  petit garde une cible de 48 : son cercle de 44 est posé dans une zone de toucher de 48.
+- Les hauteurs sont des minimums : un libellé trop long pour sa largeur (texte à 200 %) passe à la
+  ligne, centré.
 - Marge latérale : 4 pour un bouton plein (texte centré, souvent dans une colonne étroite), 12
   pour un bouton texte ou petit, 20 pour un bouton à la largeur de son texte (état vide).
 - Icône de tête optionnelle (22, 8 avant le texte), ex. « + Nouvelle mesure ».
@@ -355,6 +386,11 @@ padding 20, éléments espacés de 14. Variantes de la maquette :
   valeur se touche pour ouvrir le pavé sur ce champ (toute la hauteur de la ligne).
 - Une série **validée** peut aussi être en saisie (`editingField`) : case validée, champ actif en
   `liveDim`, l'autre valeur en 700 `textPrimary`.
+- **Sans « Préc. »** (`previous = null`, éditeur d'une séance terminée) : la colonne disparaît, de
+  la ligne comme de l'en-tête.
+- **Texte agrandi** : la colonne « Préc. » s'élargit avec la police (jusqu'à 1,5 fois), les valeurs
+  rétrécissent plutôt que de passer à la ligne. **TalkBack** : chaque valeur se lit avec sa série et
+  sa colonne (`weightDescription` / `repsDescription`, « Série 3, Kg : 82,5 »).
 
 | état | valeurs | case |
 |---|---|---|
@@ -368,7 +404,8 @@ La validation anime la case avec `expressive`.
 **Ligne « + Série »** — `AddSetRow`. Sous la dernière série de chaque bloc exercice, **toujours
 visible** : ajouter une série est fréquent en séance, ce n'est pas une option de menu. Hauteur 48,
 alignée sur la colonne des numéros : icône `add` 22 `textSecondary`, 6, libellé `actionSmall`
-`textPrimary` (« Série »). Pressée : fond `surfaceRaised` qui déborde de 12, rayon 12.
+`textPrimary` (« Série »). Pressée : fond `surfaceRaised` qui déborde de 12, rayon 12. Lue par
+TalkBack avec son exercice (`description` : « Ajouter une série : Squat »).
 
 **Bandeau de repos** — `RestBanner`. Entre deux séries, **sans fond** : padding 12 en haut, 14 en
 bas, filet en bas, éléments espacés de 10.
@@ -393,10 +430,11 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire.
 éléments espacés de 10.
 - En-tête (optionnel) : segmenté compact (« Kg · série 3 » / « Reps ») et, à droite, boutons icône
   44 en `textSecondary` : `delete` « Supprimer la série » (optionnel, séance en cours) puis
-  `keyboard_hide` « Fermer le pavé ».
+  `keyboard_hide` « Fermer le pavé ». Le segmenté prend la place restante et défile s'il est trop
+  large (quatre champs du cardio, texte à 200 %) : les boutons gardent leur cible de 48.
 - Grille de 4 colonnes espacées de 6, touches de 52, rayon 12 : chiffres 1–9, « , », 0 sur
   `surfaceControl` (`numberKey`) ; colonne de droite : pas − et + (`surfacePressed`, `action` en
-  17 → 16, ex. « −2,5 » / « +2,5 », « −50 » / « +50 ») et effacer (`surfacePressed`, `backspace`) ;
+  17 → 16, ex. « −2,5 » / « +2,5 », « −50 » / « +50 ») et effacer (`surfacePressed`, `backspace`, lue « Effacer ») ;
   touche principale sur deux colonnes (`inverse` / `onInverse`, `action`, icône `check` 22
   optionnelle) qui reprend l'action de l'écran (« Valider la série », « Ajouter »).
 - Pas configurables : ±2,5 kg, ±1 rep, ±50 g…
@@ -441,7 +479,9 @@ font partie du design system au même titre.
   8 dessous (« 8 dernières semaines · 3 séances = semaine validée »).
 - **Bloc exercice** — `ExerciseBlockHeader` : titre `titleBlock` + boutons icône petits
   (`monitoring` → fiche, `more_vert`) ; 8 ; puces (précédent : neutre `history` « 3 × 8 ·
-  80 kg » ; suggestion : hausse « +2,5 kg ») ; 16 ; en-tête des séries.
+  80 kg » ; suggestion : hausse « +2,5 kg ») ; 16 ; en-tête des séries. Sans bouton fiche dans
+  l'éditeur d'une séance terminée (puce neutre du groupe à la place des puces) ; les deux boutons
+  nomment l'exercice pour TalkBack (« Fiche : Squat », « Options : Squat »).
 - **Barre d'action** — `BottomActionBar` : sur le fond, padding 12 / 20, inset de navigation en
   bas ; un bouton principal pleine largeur (icône de tête possible).
 - **Champ héros de formulaire** — `FormHeroField` : hauteur 76, padding 16, rayon 12, fond
@@ -449,6 +489,12 @@ font partie du design system au même titre.
   `textSecondary`), espacés de 10.
 - **Ligne d'information** — `InfoRow` : hauteur 52, libellé `bodyLine`, valeur `bodyLineStrong`
   (+ chevron 22 `textSecondary` si elle s'ouvre) ; filet `surfaceControl` (posée sur une sheet).
+  La valeur prend au plus la moitié de la ligne et passe à la ligne au besoin.
+- **Champ sous son libellé** — `LabeledField` : libellé `caption` `textSecondary`, 8, puis le
+  contenu (`StudioTextField`, puces de filtre) ; les formulaires longs en sont faits (nouveau
+  complément, nouvel exercice, type de séance).
+- **Message d'état** — `StatusMessage` : une phrase de succès ou d'erreur en `bodyStrong`
+  `textPrimary`, sans couleur ; `statusHelp` la donne en aide d'un formulaire (saisie refusée).
 - **Point et étiquette en direct** — `LiveDot` (8, `live`) et `LiveLabel` (point + 8 + `label`
   `liveText`).
 - **Variation** — `Delta` : texte signé coloré selon le sens (hausse / baisse / neutre), avec son
@@ -496,7 +542,8 @@ Un sujet, un chiffre héros : fiche exercice, résumé de séance, poids, mensur
 Variante **paresseuse** (`FicheLazyTemplate`) : même disposition, le haut (barre → stats) en un
 élément puis les sections en éléments paresseux (`HubSections`), pour une fiche dont les lignes se
 comptent par centaines (fiche exercice). Sans chiffre héros (aucune donnée), les sections suivent le
-titre à `hero` (32).
+titre à `hero` (32). Une action fixe en bas est possible (`bottomAction`) : « Enregistrer » de
+l'éditeur d'une séance terminée, remplacé par le pavé numérique pendant une saisie.
 
 ### 10.3 En direct
 
@@ -551,19 +598,21 @@ n'a pas encore, cf. § 13) :
 | Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
 | Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
 
-Correspondance avec les écrans actuels (SPEC § 2), pour la migration :
+Correspondance avec les écrans d'avant la refonte (SPEC § 2) — **toute migrée** (étape 5b, SPEC
+§ 15.11) :
 
-| écran actuel | gabarit |
+| écran d'avant | gabarit |
 |---|---|
 | Accueil (§ 2.2) | hub Accueil |
-| Démarrer une séance (§ 2.3) | surface « Prochaine séance » de l'Accueil ; « Autre… » → formulaire |
+| Démarrer une séance (§ 2.3) | surface « Prochaine séance » de l'Accueil ; formulaire en bottom sheet (type, puis poids au pavé) |
 | Séance en cours (§ 2.4 – 2.6) | en direct |
-| Sélecteur d'exercices (§ 2.7) | formulaire (liste d'options avec recherche) |
+| Sélecteur d'exercices (§ 2.7) | formulaire : bottom sheet haute, liste d'options à cocher avec recherche |
 | Historique d'un exercice (§ 2.8) | fiche exercice |
-| Éditer une séance terminée (§ 2.9) | fiche (résumé) + formulaires |
-| Progrès (§ 2.10) | hub Progrès ; poids → fiche ; pesée → formulaire |
-| Nutrition (§ 2.11) | hub Nutrition ; saisies → formulaires ; Calories / Eau → Tendances (fiche) |
+| Éditer une séance terminée (§ 2.9) | fiche (paresseuse, « Enregistrer » en bas) + formulaires (type, poids, sélecteur) |
+| Progrès (§ 2.10) | hub Progrès ; pesée → formulaire |
+| Nutrition (§ 2.11) | hub Nutrition ; saisies → formulaires |
 | Paramètres (§ 2.12) | hub Paramètres, ouvert depuis l'Accueil |
+| Politique de confidentialité Health Connect (§ 15.3) | fiche (titre et paragraphes) |
 
 ## 12. Écarts de la maquette, tranchés
 
@@ -663,6 +712,25 @@ Décidé (14/11/2026, SPEC § 15.10) :
 - **Messages de succès et d'erreur** : une phrase en `textPrimary` 600, sans couleur (pas d'encart
   coloré) ; le rouge reste à la baisse.
 
+Décidé (15/11/2026, SPEC § 15.11) :
+
+- **Démarrer une séance** : un formulaire en bottom sheet à deux étapes, « Type de séance »
+  (préréglages en puces de filtre sous le libellé de leur groupe, nom perso en `StudioTextField`,
+  « Suivant ») puis « Poids de corps » (champ héros, puces 55 … 100 sur une rangée défilante, ligne
+  d'information « Type de séance » qui revient à l'étape 1, pavé, « ✓ Commencer »). Posé sur
+  l'écran qui l'ouvre ; plus d'écran plein.
+- **Recherche d'exercice** (question ouverte, tranchée) : le sélecteur est une bottom sheet haute
+  (92 %) : titre et bouton **+** « Nouvel exercice », recherche, puces de groupe défilantes, une
+  `ListRow` à cocher par exercice (sous-titre = groupe ; cochée et inactive s'il est déjà dans la
+  séance). Les actions d'un exercice perso (modifier, supprimer) passent par l'appui long ; la sheet
+  change d'étape (formulaire, actions, confirmation) plutôt que d'empiler les sheets.
+- **Éditeur d'une séance terminée** : fiche paresseuse ; « Type de séance » et « Poids de corps »
+  en lignes qui ouvrent un formulaire ; un bloc par exercice comme en séance, sans « Préc. » ni
+  repos ; « Enregistrer » en barre d'action, le pavé à sa place pendant une saisie ; abandon des
+  modifications confirmé en bottom sheet.
+- **Accessibilité** : les règles du § 3 (texte agrandi), du § 9 (cibles de 48, libellés TalkBack)
+  et l'aplat `live` foncé en clair (§ 2).
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : calendrier du Journal, résumé de fin de séance avec records,
@@ -670,23 +738,23 @@ Hors périmètre pour l'instant :
   (prise de masse / sèche). La maquette les dessine pour prouver que le système tient (« 3
   fonctionnalités, zéro nouveau composant ») ; les ajouter est une décision produit à part.
 
-Ouvert :
-
-- **Recherche d'exercice** : à composer avec les gabarits et composants existants au moment de sa
-  migration.
+Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
 
 ## 14. Code
 
 - `ui/designsystem/theme/` : `StudioTheme` (palettes, `CompositionLocal`s, correspondance avec
   `MaterialTheme` pour que les composants Material encore utilisés prennent la palette),
   `StudioColors`, `StudioTypography` (familles Archivo et Archivo condensée), `StudioSpacing`,
-  `StudioShapes`, `StudioMotion`. Un écran migré est posé dans `StudioTheme(darkTheme = …)` au
-  thème choisi dans l'app (route de navigation, `ui/MuscleNoteApp.kt`). Accès : `Studio.colors.live`, `Studio.typography.numberHero`,
-  `Studio.spacing.screen`, `Studio.shapes.control`, `Studio.motion.fast`.
+  `StudioShapes`, `StudioMotion`, et `SystemNightMode` (le thème choisi transmis au système pour le
+  splash). L'app entière est posée une fois dans `StudioTheme(darkTheme = …)` au thème choisi, par
+  `MainActivity` (et l'écran de politique de Health Connect par son activité). Accès :
+  `Studio.colors.live`, `Studio.typography.numberHero`, `Studio.spacing.screen`,
+  `Studio.shapes.control`, `Studio.motion.fast`.
 - `ui/designsystem/components/` : les composants du § 9 (`Foundation.kt` : icône, variation,
   point et étiquette en direct, chiffre qui défile ; puis un fichier par composant ou famille ;
   `TextField.kt` pour le champ texte ; `TrendCurve.kt` pour les trois courbes et
-  `CurveGeometry.kt`, leur géométrie pure, testée en JVM).
+  `CurveGeometry.kt`, leur géométrie pure, testée en JVM ; `FitText`, dans `Foundation.kt`, pour un
+  mot qui doit tenir sur une ligne).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
   variante paresseuse `HubLazyTemplate`, `FicheTemplate` et `FicheLazyTemplate`, `LiveTemplate`,
   `FormSheetTemplate`), en
@@ -696,10 +764,11 @@ Ouvert :
   `assets/licenses/archivo-OFL.txt`) ; libellés d'accessibilité `ds_*` dans `strings.xml`.
 - Aperçus : chaque composant et gabarit a ses `@Preview` en sombre et en clair, dans le source set
   `debug` (`app/src/debug/java/com/musclenote/android/ui/designsystem/`), comme les aperçus des
-  écrans actuels : un aperçu par composant (`DataComponentPreviews`, `ActionComponentPreviews`,
+  écrans : un aperçu par composant (`DataComponentPreviews`, `ActionComponentPreviews`,
   `TemplatePiecePreviews`), les deux planches de composants recomposées à la taille de la
   maquette (`BoardPreviews`, 1400 × 1320) et les gabarits remplis comme les écrans de la maquette
   (`TemplatePreviews`, 412 × 915, insets de la maquette).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
-- L'ancien thème (`ui/theme/`) reste tant que les écrans n'ont pas migré ; un écran migré
-  n'utilise plus que `Studio`.
+- L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
+  l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni
+  graisse posée à la main.
