@@ -15,10 +15,12 @@ import com.musclenote.android.health.AndroidHealthConnectGateway
 import com.musclenote.android.notifications.NotificationChannels
 import com.musclenote.android.notifications.RestTimerNotifier
 import com.musclenote.android.notifications.SupplementReminderScheduler
+import com.musclenote.android.notifications.UpdateNotifier
 import com.musclenote.android.notifications.WeighInReminderScheduler
 import com.musclenote.android.notifications.WorkoutNotifier
 import com.musclenote.android.update.GitHubReleaseSource
 import com.musclenote.android.update.InstallSource
+import com.musclenote.android.update.WorkManagerUpdateCheckScheduler
 import java.io.File
 
 class MuscleNoteApplication : Application() {
@@ -52,9 +54,14 @@ class MuscleNoteApplication : Application() {
             // Rappel de pesée (§ 15.13.4) : même mécanisme d'alarmes exactes.
             weighInReminders = WeighInReminderScheduler(this, TimeSource.System),
             currentVersion = BuildConfig.VERSION_NAME,
+            currentVersionCode = BuildConfig.VERSION_CODE,
             releaseSource = GitHubReleaseSource(BuildConfig.VERSION_NAME),
-            // Installée par Obtainium : c'est lui qui suit les Releases (§ 3.17).
-            updateChecksEnabled = !InstallSource.isManagedByUpdater(this),
+            // Installée par Obtainium : il suit déjà les Releases, notification coupée par défaut (§ 15.14.1).
+            installedByObtainium = InstallSource.isInstalledByObtainium(this),
+            // Notification et vérification quotidienne vers 18 h (§ 15.14), jamais dans la preview.
+            updateNotificationsAvailable = BuildConfig.UPDATE_NOTIFICATIONS,
+            updateNotifications = UpdateNotifier(this),
+            updateCheckScheduler = WorkManagerUpdateCheckScheduler(this),
             // Envoi d'un avis (§ 14) : seulement si la CI a fourni l'URL du webhook.
             feedbackSender = BuildConfig.FEEDBACK_WEBHOOK_URL
                 .takeIf(FeedbackRules::isWebhookUrl)

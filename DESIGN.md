@@ -270,7 +270,8 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
   « identique » en `textSecondary`) ; chevron 24 `textSecondary` ; **case à cocher** (`ListRowTrailing.Check`, la
   case 48 de la ligne de série) — toute la ligne la bascule (rôle case à cocher) : échauffement de
   la séance en cours, lignes à cocher d'une sheet (rappels, sauvegarde quotidienne, Health Connect ;
-  sans filet, le filet d'une sheet étant celui des `InfoRow`). Avec sa **propre action**
+  sans filet, le filet d'une sheet étant celui des `InfoRow`), réglage direct d'une liste (« Nouvelle
+  version disponible » de Paramètres, SPEC § 15.14.5, avec le filet de la liste). Avec sa **propre action**
   (`onToggle` + libellé TalkBack), la case seule (cible 48) bascule et le reste de la ligne garde
   son toucher : complément de Nutrition (case = « pris aujourd'hui », ligne → ses rappels). **Sans
   action** (ni `onClick` ni `onToggle`), la case est lue cochée ou non **et désactivée** (exercice
@@ -603,7 +604,7 @@ n'a pas encore, cf. § 13) :
 | Journal | **Depuis le début** : totaux · **une section par semaine** : séances → résumé (fiche, SPEC § 15.12), appui long → actions (SPEC § 15.8.4) · plus tard : **Calendrier** : mois (*Nouveau*) → hub |
 | Progrès | **Poids de corps** (surface) : pesée → formulaire, rappel de pesée → formulaire (SPEC § 15.13.3) · **Exercices** : puces des groupes, stats, une ligne par exercice (mini-courbe) → fiche exercice · **Calories et eau** · **Pesées** (SPEC § 15.9.2) · plus tard : **Records** : Mes records (*Nouveau*) → hub ; **Corps** : poids → fiche ; mensurations (*Nouveau*) → fiche ; photos (*Nouveau*) → hub |
 | Nutrition | **Aujourd'hui** (surface) : calories, eau → formulaire · **Compléments** : pris aujourd'hui (case), rappels et suppression → formulaire, nouveau complément → formulaire (SPEC § 15.10.1) · plus tard : protéines (*Nouveau*) → formulaire ; stock (*Nouveau*) → formulaire ; **Tendances** : courbes sur 30 jours (déplacées depuis Progrès) → fiche |
-| Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire ; notifications coupées → réglages du système · **Rappels** : rappel de pesée, un complément → formulaire (SPEC § 15.13.3) · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : mises à jour ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
+| Paramètres | **Mes données** (stats) · **Préférences** : langue, thème, repos → formulaire · **Notifications** : notifications coupées → réglages du système ; rappel de pesée, un complément → formulaire (SPEC § 15.13.3) ; nouvelle version disponible → ligne à cocher (SPEC § 15.14.5) · **Données** : sauvegarde auto, Health Connect → formulaire ; export JSON, CSV, import · **À propos** : version, vérifier maintenant, télécharger ou ouvrir Obtainium (SPEC § 15.14.5) ; rapport de plantage, envoyer un avis → formulaire (SPEC § 15.10.3) |
 
 Correspondance avec les écrans d'avant la refonte (SPEC § 2) — **toute migrée** (étape 5b, SPEC
 § 15.11) :

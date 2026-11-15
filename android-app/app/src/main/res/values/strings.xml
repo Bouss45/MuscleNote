@@ -76,7 +76,6 @@
     <string name="settings_crash_title">Rapport de plantage</string>
     <string name="settings_crash_desc">Dernier plantage le %1$s</string>
     <string name="settings_crash_share">Partager</string>
-    <string name="settings_update_title">Mises à jour</string>
     <string name="settings_update_failed">Vérification impossible : pas de connexion ?</string>
 
     <!-- Envoi d'un avis (§ 14) -->
@@ -456,12 +455,24 @@
     <string name="health_last_label">Dernier envoi</string>
     <string name="health_written_label">Écrits</string>
     <string name="health_sending">Envoi…</string>
-    <string name="settings_update_subtitle_managed">Gérées par Obtainium</string>
-    <string name="settings_update_subtitle_never">Pas encore vérifié</string>
-    <string name="settings_update_subtitle_up_to_date">À jour · vérifié le %1$s</string>
-    <string name="settings_update_subtitle_available">La %1$s est disponible</string>
     <string name="settings_update_subtitle_checking">Vérification…</string>
     <string name="settings_update_download">Télécharger la %1$s</string>
+    <!-- Notification de mise à jour (§ 15.14, 🔄 D39) -->
+    <string name="update_notify_title">Nouvelle version disponible</string>
+    <string name="update_notify_subtitle">Chaque jour vers 18 h</string>
+    <string name="update_notify_subtitle_obtainium">Obtainium te prévient déjà</string>
+    <string name="settings_version">Version %1$s</string>
+    <string name="settings_version_up_to_date">Version %1$s · à jour</string>
+    <string name="settings_version_available">Version %1$s · %2$s disponible</string>
+    <string name="settings_version_checked">Vérifiée le %1$s</string>
+    <string name="settings_version_never">Pas encore vérifiée</string>
+    <string name="settings_update_check_now">Vérifier maintenant</string>
+    <string name="settings_update_open_obtainium">Ouvrir Obtainium</string>
+    <string name="channel_updates">Mises à jour</string>
+    <string name="update_notif_title">MuscleNote %1$s disponible</string>
+    <string name="update_notif_body_default">Une nouvelle version de MuscleNote est prête.</string>
+    <string name="update_notif_view">Voir</string>
+    <string name="update_notif_ignore">Ignorer cette version</string>
     <string name="feedback_row_title">Envoyer un avis</string>
     <string name="feedback_row_subtitle">Une idée, un bug ?</string>
     <string name="feedback_sending">Envoi…</string>
@@ -659,7 +670,7 @@
     <string name="start_workout_weight_or_skip">Saisis ton poids, ou touche « Passer ».</string>
     <string name="start_workout_skip">Passer</string>
     <string name="start_workout_weighed_today">Déjà pesé aujourd\'hui : %1$s kg.</string>
-    <string name="settings_section_reminders">Rappels</string>
+    <string name="settings_section_notifications">Notifications</string>
     <string name="weigh_in_reminder_title">Rappel de pesée</string>
     <string name="weigh_in_reminder_off_subtitle">Pour penser à te peser</string>
     <string name="weigh_in_reminder_help">Il ne sonne pas si tu t\'es déjà pesé ce jour-là.</string>

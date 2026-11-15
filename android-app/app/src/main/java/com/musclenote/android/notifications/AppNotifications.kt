@@ -3,6 +3,7 @@ package com.musclenote.android.notifications
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Notification
+import android.app.NotificationManager
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -39,6 +40,9 @@ object AppNotifications {
     /** Rappel de pesée (§ 15.13.4) : une seule notification, la suivante la remplace. */
     const val ID_WEIGH_IN = 2002
 
+    /** Nouvelle version disponible (§ 15.14.4) : une seule, la version suivante la remplace. */
+    const val ID_UPDATE = 3001
+
     /** Builder commun : canal, petite icône, couleur d'accent. */
     fun builder(context: Context, channel: AppChannel): NotificationCompat.Builder =
         NotificationCompat.Builder(context, channel.id)
@@ -56,6 +60,11 @@ object AppNotifications {
     /** Notifications visibles : permission accordée et notifications de l'app activées. */
     fun areEnabled(context: Context): Boolean =
         hasPermission(context) && NotificationManagerCompat.from(context).areNotificationsEnabled()
+
+    /** Notifications de [channel] visibles : celles de l'app, et le canal n'est pas coupé. */
+    fun areEnabled(context: Context, channel: AppChannel): Boolean =
+        areEnabled(context) &&
+            NotificationManagerCompat.from(context).getNotificationChannel(channel.id)?.importance != NotificationManager.IMPORTANCE_NONE
 
     /** Affiche (ou remplace) la notification [id] ; ne fait rien si les notifications sont refusées. */
     fun post(context: Context, id: Int, notification: Notification) = post(context, tag = null, id, notification)

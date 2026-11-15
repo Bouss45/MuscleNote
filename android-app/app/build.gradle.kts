@@ -30,6 +30,8 @@ android {
         versionCode = providers.gradleProperty("versionCode").map { it.toInt() }.getOrElse(1)
         versionName = providers.gradleProperty("versionName").getOrElse("0.1.0-dev")
         buildConfigField("String", "FEEDBACK_WEBHOOK_URL", "\"$feedbackWebhookUrl\"")
+        // Notification de mise à jour et vérification quotidienne (SPEC § 15.14) ; pas dans la preview.
+        buildConfigField("boolean", "UPDATE_NOTIFICATIONS", "true")
     }
 
     signingConfigs {
@@ -61,6 +63,8 @@ android {
             applicationIdSuffix = ".preview"
             versionNameSuffix = "-preview"
             signingConfig = signingConfigs.getByName("debug")
+            // Ni vérification quotidienne ni notification de mise à jour (§ 15.14.1).
+            buildConfigField("boolean", "UPDATE_NOTIFICATIONS", "false")
             matchingFallbacks += listOf("debug")
         }
     }
@@ -72,7 +76,8 @@ android {
 
     buildFeatures {
         compose = true
-        // Version de l'app dans les rapports de plantage (§ 10.9), URL du webhook des avis (§ 14.5).
+        // Version de l'app dans les rapports de plantage (§ 10.9), URL du webhook des avis (§ 14.5),
+        // notification de mise à jour coupée dans la preview (§ 15.14.1).
         buildConfig = true
     }
 

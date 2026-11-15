@@ -22,9 +22,11 @@ enum class AppChannel(
     val id: String,
     @param:StringRes val nameRes: Int,
     val importance: Int,
-    /** Son et vibration par défaut ; sinon canal silencieux. */
+    /** Son par défaut ; sinon canal silencieux. */
     val alerting: Boolean,
     val lockscreenVisibility: Int,
+    /** Vibration `[0, 250, 250, 250]` ms avec le son (pas pour les mises à jour). */
+    val vibrates: Boolean = alerting,
 ) {
     /**
      * Notification « Séance en cours » (§ 15.5, 🔄 D31) : silencieuse, chronomètre système ; elle
@@ -64,6 +66,16 @@ enum class AppChannel(
         alerting = true,
         lockscreenVisibility = Notification.VISIBILITY_PRIVATE,
     ),
+
+    /** Nouvelle version disponible (§ 15.14.4, 🔄 D39) : son par défaut, sans vibration imposée. */
+    Updates(
+        "updates",
+        R.string.channel_updates,
+        NotificationManager.IMPORTANCE_DEFAULT,
+        alerting = true,
+        lockscreenVisibility = Notification.VISIBILITY_PUBLIC,
+        vibrates = false,
+    ),
 }
 
 object NotificationChannels {
@@ -94,8 +106,8 @@ object NotificationChannels {
                             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                             .build(),
                     )
-                    enableVibration(true)
-                    vibrationPattern = VIBRATION_PATTERN
+                    enableVibration(channel.vibrates)
+                    if (channel.vibrates) vibrationPattern = VIBRATION_PATTERN
                 } else {
                     setSound(null, null)
                     enableVibration(false)

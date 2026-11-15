@@ -18,16 +18,16 @@
     <uses-permission android:name="android.permission.POST_PROMOTED_NOTIFICATIONS" />
     <!-- Reprogrammer les rappels de compléments après un redémarrage. -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Vérification des mises à jour (§ 3.17, 🔄 D25) : une requête par jour à l'API GitHub,
-         seulement si l'app n'est pas installée par Obtainium ; aucune donnée envoyée.
+    <!-- Vérification des mises à jour (§ 3.17, § 15.14, 🔄 D25, D39) : lecture de la dernière Release
+         sur l'API GitHub, une fois par jour vers 18 h si la notification « Nouvelle version
+         disponible » est activée, et sur « Vérifier maintenant » ; aucune donnée envoyée.
          Envoi d'un avis (§ 14, 🔄 D26) : seulement quand l'utilisateur appuie sur « Envoyer ». -->
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Sauvegarde automatique (§ 15.2, 🔄 D28) : WorkManager déclare aussi WAKE_LOCK (gardée) et
-         RECEIVE_BOOT_COMPLETED (déjà là). La tâche n'a ni contrainte réseau ni travail au premier
-         plan : les deux permissions suivantes, ajoutées par WorkManager, sont retirées. -->
-    <uses-permission
-        android:name="android.permission.ACCESS_NETWORK_STATE"
-        tools:node="remove" />
+         RECEIVE_BOOT_COMPLETED (déjà là). Vérification quotidienne des mises à jour (§ 15.14.2,
+         🔄 D39) : elle attend le réseau, d'où ACCESS_NETWORK_STATE (permission normale), gardée.
+         Aucun travail au premier plan : FOREGROUND_SERVICE, ajoutée par WorkManager, est retirée. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission
         android:name="android.permission.FOREGROUND_SERVICE"
         tools:node="remove" />
@@ -36,9 +36,12 @@
     <uses-permission android:name="android.permission.health.WRITE_EXERCISE" />
     <uses-permission android:name="android.permission.health.WRITE_WEIGHT" />
 
-    <!-- App Health Connect (Android 8 à 13 ; intégrée au système depuis Android 14). -->
+    <!-- App Health Connect (Android 8 à 13 ; intégrée au système depuis Android 14).
+         Obtainium (§ 15.14.4) : « Voir » de la notification de mise à jour l'ouvre s'il a installé l'app. -->
     <queries>
         <package android:name="com.google.android.apps.healthdata" />
+        <package android:name="dev.imranr.obtainium" />
+        <package android:name="dev.imranr.obtainium.fdroid" />
     </queries>
 
     <application
@@ -119,6 +122,11 @@
         <!-- Rappel de pesée (§ 15.13.4) : sonnerie, intent explicite. -->
         <receiver
             android:name=".notifications.WeighInReminderReceiver"
+            android:exported="false" />
+
+        <!-- Notification de mise à jour (§ 15.14.4) : « Ignorer cette version », intent explicite. -->
+        <receiver
+            android:name=".notifications.UpdateNotificationReceiver"
             android:exported="false" />
 
         <!--

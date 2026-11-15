@@ -27,7 +27,6 @@ import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.RestTimerState
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.update.LatestRelease
-import com.musclenote.android.data.update.UpdateRules
 import com.musclenote.android.data.workout.WeekStatus
 import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutStats
@@ -103,9 +102,10 @@ fun HomeScreen(
     val actions = rememberSessionActions()
 
     // 🔄 D25 : nouvelle Release pour une app installée sans Obtainium, tant qu'elle n'est pas masquée.
+    // 🔄 D39 : connue par la vérification quotidienne (réglage activé) ou « Vérifier maintenant ».
     val installedVersion = container.updates.currentVersion
-    val update = if (container.updateChecksEnabled) {
-        UpdateRules.available(updateState, installedVersion)?.takeIf { it.version != updateState.dismissedVersion }
+    val update = if (!container.updates.installedByObtainium) {
+        container.updates.available(updateState)?.takeIf { it.version != updateState.dismissedVersion }
     } else {
         null
     }
