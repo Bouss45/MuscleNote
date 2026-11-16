@@ -2254,8 +2254,26 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   objectif, coche d'un complément à 2 doses par jour puis son stock, « Racheté » et le seuil ouvert
   depuis lui, TalkBack sur les jours de stock et sur « 1 sur 3 pris », texte agrandi dans le groupe
   « Aujourd'hui ».
-- **Carte du corps et muscles travaillés** (🔄 D43, § 15.17), branche `feat/carte-corps` : spécifié, en
-  cours d'implémentation.
+- **Carte du corps et muscles travaillés** (🔄 D43, § 15.17), branche `feat/carte-corps` : modèle
+  `data/model/Muscle.kt` (`Muscle`, 17 ids du SVG, vue, nom, nom savant, rôle ; `MuscleListSerializer`, lecture
+  tolérante) et `Exercise.primaryMuscles` / `secondaryMuscles` (facultatifs, omis vides, remis en forme au
+  chargement et par `BackupNormalizer`) ; muscles du catalogue dans `ExerciseCatalog` (`BuiltInExercise`) et
+  `ExerciseDefinition` ; règles pures `data/catalog/MuscleRules.kt` (filtre par muscle, exercices d'un muscle,
+  `MuscleSelection`) ; `WorkoutRepository.addCustomExercise` / `updateCustomExercise` avec les muscles.
+  Design system : `ui/designsystem/components/BodyMap.kt` (`BodyMap`, `MuscleLegend`), `BodyMapShapes.kt`
+  (tracés du SVG), `BodyMapGeometry.kt` (toucher, zones TalkBack), jetons `bodyBase` / `bodyOutline` /
+  `bodyRest` / `bodySecondary`, `ChipTone.Inverse`. Écrans : fiche exercice (`ui/exercise/ExerciseFicheScreen.kt`,
+  section « Muscles travaillés »), sheet « Muscle » (`ui/exercise/MuscleSheet.kt`), sélecteur
+  (`ui/workout/ExercisePickerSheet.kt` : « Par groupe » / « Par muscle », étape « Muscle », muscles du
+  formulaire perso ; `filterExercisesByMuscles`, `musclesSubtitle`). Tests JVM `MuscleCatalogTest` (tableaux
+  du § 15.17 relus dans ce document), `MuscleRulesTest`, `BodyMapGeometryTest` (formes identiques au SVG),
+  `WorkoutRepositoryTest`, `BackupV2Test`. Aperçus : `BodyMapPreview`, `MuscleLegendPreview`,
+  `ChipInversePreview`, fiche entière, sheets « Muscle » (fiche, Fessiers avec un exercice perso), sélecteur
+  par muscle (avec et sans choix, sheet du filtre), formulaire perso avec ses muscles ; muscles du Hip thrust
+  dans `PreviewData`. Export de la maquette : `T2-Carte-corps`, `T2-Corps`, `corps/carte-du-corps.svg`. À
+  vérifier **sur l'appareil** : toucher des petites formes (abdos, adducteurs) sur la grande carte,
+  défilement de la liste sous la carte, TalkBack sur la carte (17 éléments) et sur la légende de la fiche,
+  passage d'une sheet « Muscle » à la fiche d'un autre exercice, texte agrandi dans la légende.
 
 ---
 
@@ -5113,7 +5131,9 @@ la marche et la course quelle que soit la pente.
   § 15.17.1), centré sur sa forme dans sa vue (§ 15.17.1), lu par son nom et son état : « Pecs,
   principal », « Triceps, secondaire », « Lombaires, non travaillé » (fiche, action « Voir le muscle ») ;
   dans le filtre, une case à cocher « Pecs », cochée ou non (action « Filtrer »). La carte de la sheet
-  « Muscle », non touchable, est décorative (le titre nomme le muscle).
+  « Muscle », non touchable, est décorative (le titre nomme le muscle). L'élément d'un petit muscle a la
+  taille de sa forme (moins de 48 dp) : il sert au parcours de TalkBack, le toucher est celui de la carte
+  (à 12 dp près) ; dans la fiche, les noms de la légende sont les cibles de 48.
 
 #### 15.17.5 Fiche exercice : « Muscles travaillés »
 
@@ -5199,8 +5219,9 @@ la marche et la course quelle que soit la pente.
 
 - **Composant nouveau** `BodyMap` (DESIGN.md § 9.1) : la carte du § 15.17.4, ses tailles, états et
   éléments TalkBack ; sa géométrie pure (tracés, mise à l'échelle, toucher) testée en JVM, comme
-  `CurveGeometry` ; la ligne de légende `MuscleLegendRow` (pastille + nom, graisse selon le rôle) de la
+  `CurveGeometry` ; la légende `MuscleLegend` (étiquettes, pastille + nom, graisse selon le rôle) de la
   fiche.
+- **Variante** : la puce informative inverse (`ChipTone.Inverse`) des muscles choisis dans le filtre.
 - **Jetons nouveaux** (DESIGN.md § 2), valeurs de la maquette : `bodyBase` (#1F2125 / #E4E4E1),
   `bodyOutline` (#45484E / #B4B6BA), `bodyRest` (#2E3035 / #D3D3CF), `bodySecondary` (#7E8187 /
   #6F7277) ; le principal est `textPrimary`, l'écart la couleur de la surface.
@@ -5222,7 +5243,7 @@ Clés Android (`strings.xml`) ; noms, noms savants et rôles FR au § 15.17.1. R
 | `exercise_muscles_secondary` (pluriel) | Secondaire / Secondaires | Secondary / Secondary |
 | `muscle_sheet_label` | Muscle | Muscle |
 | `muscle_sheet_exercises` | Exercices | Exercises |
-| `muscle_role_primary` / `_secondary` | Principal / Secondaire | Primary / Secondary |
+| `muscle_use_primary` / `_secondary` | Principal / Secondaire | Primary / Secondary |
 | `muscle_state_primary` / `_secondary` / `_rest` (accessibilité) | {{nom}}, principal / {{nom}}, secondaire / {{nom}}, non travaillé | {{name}}, primary / {{name}}, secondary / {{name}}, not worked |
 | `muscle_open` (accessibilité) | Voir le muscle | Show muscle |
 | `muscle_filter_action` (accessibilité) | Filtrer | Filter |
