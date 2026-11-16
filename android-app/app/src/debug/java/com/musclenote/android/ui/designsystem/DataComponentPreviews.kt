@@ -2,6 +2,8 @@ package com.musclenote.android.ui.designsystem
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
@@ -10,7 +12,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.R
+import com.musclenote.android.data.catalog.ExerciseCatalog
 import com.musclenote.android.data.journal.CalendarRules
+import com.musclenote.android.data.model.BodyView
+import com.musclenote.android.data.model.Muscle
+import com.musclenote.android.ui.designsystem.components.BodyMap
+import com.musclenote.android.ui.designsystem.components.BodyMapSize
+import com.musclenote.android.ui.designsystem.components.MuscleLegend
+import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.designsystem.components.AlwaysPressedInteractionSource
 import com.musclenote.android.ui.designsystem.components.CalendarDay
 import com.musclenote.android.ui.designsystem.components.CalendarMonth
@@ -228,6 +237,17 @@ private fun ListRowPreview() = StudioComponentPreview { ListRowSamples() }
 @StudioComponentPreviews
 @Composable
 private fun ChipPreview() = StudioComponentPreview { ChipSamples() }
+
+/** Puce inverse (🔄 D43) : les muscles choisis dans le filtre « Par muscle », à côté d'une puce de filtre. */
+@StudioComponentPreviews
+@Composable
+private fun ChipInversePreview() = StudioComponentPreview {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StudioChip("Pecs", tone = ChipTone.Inverse, onClick = {})
+        StudioChip("Triceps", tone = ChipTone.Inverse, onClick = {})
+        FilterChip("Pecs", selected = true, onClick = {})
+    }
+}
 
 /** Hors maquette (SPEC § 15.13.3) : puces de filtre à choix multiple, jours du rappel de pesée (lues comme cases). */
 @OptIn(ExperimentalLayoutApi::class)
@@ -448,3 +468,51 @@ private fun MonthCalendarPreview() = StudioComponentPreview {
         listOf(sampleCalendarMonth(YearMonth.of(2027, 2), "Février 2027", setOf(10), LocalDate.of(2027, 2, 10), "1 séance en février")),
     )
 }
+
+/**
+ * Carte du corps (DESIGN.md § 9.1, SPEC § 15.17.4, maquette `T2-Carte-corps`) : petite taille du
+ * développé couché (principal, secondaires) sur le fond et dans un groupe, une vue seule de la sheet
+ * « Muscle », grande taille du filtre avec deux muscles sélectionnés.
+ */
+@StudioComponentPreviews
+@Composable
+private fun BodyMapPreview() = StudioComponentPreview {
+    StateCaption("Petite (150) : principal, secondaires, non travaillés — sur le fond, puis dans un groupe")
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        BodyMap(BodyMapSize.Small, primary = BenchPrimary, secondary = BenchSecondary, onMuscleClick = {})
+        BodyMap(
+            BodyMapSize.Small,
+            Modifier.background(Studio.colors.surfaceRaised, Studio.shapes.surface).padding(8.dp),
+            primary = BenchPrimary,
+            secondary = BenchSecondary,
+            onRaised = true,
+        )
+    }
+    StateCaption("Une vue (140) : face, dos")
+    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+        BodyMap(BodyMapSize.SingleView, primary = listOf(Muscle.Pectoraux), view = BodyView.Front)
+        BodyMap(BodyMapSize.SingleView, primary = listOf(Muscle.Dorsaux), view = BodyView.Back)
+    }
+    StateCaption("Grande (360), filtre : Pecs et Triceps sélectionnés")
+    BodyMap(BodyMapSize.Large, selected = listOf(Muscle.Pectoraux, Muscle.Triceps), selectable = true, onMuscleClick = {})
+}
+
+/** Légende de la fiche à côté de la petite carte (« Muscles travaillés », SPEC § 15.17.5). */
+@StudioComponentPreviews
+@Composable
+private fun MuscleLegendPreview() = StudioComponentPreview {
+    StateCaption("Développé couché : un principal, deux secondaires")
+    Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        BodyMap(BodyMapSize.Small, primary = BenchPrimary, secondary = BenchSecondary, onMuscleClick = {})
+        MuscleLegend(BenchPrimary, BenchSecondary, onMuscleClick = {}, modifier = Modifier.weight(1f))
+    }
+    StateCaption("Soulevé de terre : trois principaux, cinq secondaires")
+    Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
+        val deadlift = ExerciseCatalog.find("deadlift")!!
+        BodyMap(BodyMapSize.Small, primary = deadlift.primaryMuscles, secondary = deadlift.secondaryMuscles, onMuscleClick = {})
+        MuscleLegend(deadlift.primaryMuscles, deadlift.secondaryMuscles, onMuscleClick = {}, modifier = Modifier.weight(1f))
+    }
+}
+
+private val BenchPrimary = listOf(Muscle.Pectoraux)
+private val BenchSecondary = listOf(Muscle.EpaulesAvant, Muscle.Triceps)

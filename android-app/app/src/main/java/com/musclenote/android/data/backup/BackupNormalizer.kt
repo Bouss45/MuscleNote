@@ -1,9 +1,11 @@
 package com.musclenote.android.data.backup
 
 import com.musclenote.android.data.catalog.ExerciseCatalog
+import com.musclenote.android.data.catalog.MuscleRules
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
@@ -101,7 +103,10 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
 
     // ─── Exercices perso ────────────────────────────────────────────────────────
 
-    /** 🔄 D16 : groupe inconnu → normalisé, sinon `dos`. Un id du catalogue est ignoré (§ 3.9). */
+    /**
+     * 🔄 D16 : groupe inconnu → normalisé, sinon `dos`. Un id du catalogue est ignoré (§ 3.9). 🔄 D43 :
+     * muscles lus sans jamais refuser l'import (§ 15.17.8).
+     */
     private fun exercises(array: JsonArray): List<Exercise> =
         array.map { it as JsonObject }
             .map { e ->
@@ -110,10 +115,16 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
                     name = e["name"].stringOrNull()!!,
                     muscleGroup = MuscleGroup.fromLegacy(e["muscleGroup"].stringOrNull()!!),
                     archived = e["archived"].booleanOrNull() ?: false,
-                )
+                    primaryMuscles = muscles(e["primaryMuscles"]),
+                    secondaryMuscles = muscles(e["secondaryMuscles"]),
+                ).let(MuscleRules::normalized)
             }
             .filterNot { ExerciseCatalog.isBuiltIn(it.id) }
             .distinctBy { it.id }
+
+    /** Tableau d'ids de muscles ; pas un tableau → vide, éléments inconnus écartés. */
+    private fun muscles(value: JsonElement?): List<Muscle> =
+        Muscle.fromIds((value as? JsonArray).orEmpty().mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content })
 
     // ─── Nutrition ──────────────────────────────────────────────────────────────
 

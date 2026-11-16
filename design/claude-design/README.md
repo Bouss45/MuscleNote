@@ -23,6 +23,11 @@ Ces fichiers sont la référence visuelle ; ils ne sont pas compilés dans l'app
 - `T2-Records`, `T2-Mensurations`, `T2-Stock` : preuves « 3 fonctionnalités, zéro nouveau
   composant ».
 - `T2-Logo.dc.html` : logo haltère, 3 variantes (non tranché).
+- `T2-Carte-corps.dc.html` (sombre et clair) et `T2-Corps.dc.html` : la carte du corps (16/11/2026) —
+  états d'une zone, petite taille de la fiche, filtre « Par muscle » du sélecteur, sheet « Muscle » ;
+  `T2-Corps` est le composant réglable (muscles principaux, secondaires, sélection, vue, hauteur).
+  `corps/carte-du-corps.svg` : les formes exportées, une par muscle (id = nom de zone), source des
+  tracés de `BodyMap` (SPEC § 15.17, DESIGN.md § 9.1).
 
 Format : pages « Design Component » (`<x-dc>`), HTML statique dont les trous `{{c.…}}` sont les
 couleurs de la palette déclarée en bas de chaque fichier ; `support.js` (le moteur de Claude

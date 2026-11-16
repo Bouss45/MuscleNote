@@ -29,8 +29,11 @@ private val ChipHeight = 32.dp
 private val ChipPaddingWithIcon = 10.dp
 private val ChipPadding = 12.dp
 
-/** Ton d'une puce informative (DESIGN.md § 9.1). */
-enum class ChipTone { Neutral, Up, Down, Live, Record }
+/**
+ * Ton d'une puce informative (DESIGN.md § 9.1). [Inverse] (🔄 D43) : un muscle du filtre « Par muscle »,
+ * dessiné comme une puce de filtre sélectionnée, qui ouvre sa sheet.
+ */
+enum class ChipTone { Neutral, Up, Down, Live, Record, Inverse }
 
 /**
  * Puce informative — `StudioChip` (DESIGN.md § 9.1) : 32 de haut, rayon 12. Neutre (icône
@@ -52,9 +55,10 @@ fun StudioChip(
         ChipTone.Up, ChipTone.Record -> colors.upDim to colors.up
         ChipTone.Down -> colors.downDim to colors.down
         ChipTone.Live -> colors.liveDim to colors.liveText
+        ChipTone.Inverse -> colors.inverse to colors.onInverse
     }
     val toneIcon = when (tone) {
-        ChipTone.Neutral -> icon
+        ChipTone.Neutral, ChipTone.Inverse -> icon
         ChipTone.Up -> R.drawable.ds_ic_arrow_upward
         ChipTone.Down -> R.drawable.ds_ic_arrow_downward
         ChipTone.Record -> R.drawable.ds_ic_emoji_events
@@ -74,7 +78,10 @@ fun StudioChip(
                 toneIcon,
                 contentDescription = null,
                 size = IconSize.Chip,
-                tint = if (tone == ChipTone.Neutral) colors.textSecondary else content,
+                tint = when (tone) {
+                    ChipTone.Neutral -> colors.textSecondary
+                    else -> content
+                },
             )
         }
         Text(

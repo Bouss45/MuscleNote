@@ -2,6 +2,8 @@ package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.backup.AppJson
+import com.musclenote.android.data.catalog.MuscleSelection
+import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.Workout
@@ -438,5 +440,75 @@ class WorkoutRepositoryTest {
             assertFalse(repo.updateCustomExercise(curl.id, " ", MuscleGroup.Dos))
             assertEquals(listOf(curl), repo.customExercises.value)
         }
+    }
+
+    // ─── § 15.17 : muscles d'un exercice perso (🔄 D43) ───────────────────────────
+
+    private val exercisesFile get() = File(dataDir, "exercises.json")
+
+    @Test
+    fun `un exercice perso garde ses muscles, remis en ordre, et les relit au redémarrage`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            val muscles = MuscleSelection.of(
+                primary = listOf(Muscle.Fessiers),
+                secondary = listOf(Muscle.Adducteurs, Muscle.IschioJambiers, Muscle.Fessiers),
+            )
+            val hipThrust = repo.addCustomExercise("Hip thrust", MuscleGroup.Jambes, muscles)!!
+            assertEquals(listOf(Muscle.Fessiers), hipThrust.primaryMuscles)
+            assertEquals(listOf(Muscle.IschioJambiers, Muscle.Adducteurs), hipThrust.secondaryMuscles)
+            // Sans muscles donnés, la modification les garde.
+            assertTrue(repo.updateCustomExercise(hipThrust.id, "Hip thrust barre", MuscleGroup.Jambes))
+            assertEquals(listOf(Muscle.Fessiers), repo.customExercises.value.single().primaryMuscles)
+        }
+        coroutineScope {
+            val repo = repository()
+            val reread = repo.customExercises.value.single()
+            assertEquals("Hip thrust barre", reread.name)
+            assertEquals(listOf(Muscle.IschioJambiers, Muscle.Adducteurs), reread.secondaryMuscles)
+            // Les muscles se changent, ou se retirent tous.
+            assertTrue(repo.updateCustomExercise(reread.id, reread.name, reread.muscleGroup, MuscleSelection(primary = listOf(Muscle.Quadriceps))))
+            assertEquals(listOf(Muscle.Quadriceps), repo.customExercises.value.single().primaryMuscles)
+            assertEquals(emptyList<Muscle>(), repo.customExercises.value.single().secondaryMuscles)
+            assertTrue(repo.updateCustomExercise(reread.id, reread.name, reread.muscleGroup, MuscleSelection()))
+        }
+        coroutineScope {
+            val reread = repository().customExercises.value.single()
+            assertEquals(emptyList<Muscle>(), reread.primaryMuscles + reread.secondaryMuscles)
+            // Vides, les champs ne sont pas écrits.
+            assertFalse(exercisesFile.readText().contains("Muscles"))
+        }
+    }
+
+    @Test
+    fun `un ancien fichier d'exercices sans muscles se relit tel quel`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        exercisesFile.writeText("""[{"id":"c1","name":"Shrug","muscleGroup":"dos"},{"id":"c2","name":"Hip thrust","muscleGroup":"jambes","archived":true}]""")
+        coroutineScope {
+            val exercises = repository().customExercises.value
+            assertEquals(listOf("Shrug", "Hip thrust"), exercises.map { it.name })
+            assertEquals(listOf(false, true), exercises.map { it.archived })
+            assertTrue(exercises.all { it.primaryMuscles.isEmpty() && it.secondaryMuscles.isEmpty() })
+        }
+    }
+
+    @Test
+    fun `des muscles invalides dans le fichier sont écartés sans perdre les exercices`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        exercisesFile.writeText(
+            """[{"id":"c1","name":"A","muscleGroup":"dos","primaryMuscles":["triceps","inconnu","pectoraux","triceps"],"secondaryMuscles":"biceps"},""" +
+                """{"id":"c2","name":"B","muscleGroup":"dos","primaryMuscles":["biceps"],"secondaryMuscles":["biceps","avant-bras",3]}]""",
+        )
+        coroutineScope {
+            val exercises = repository().customExercises.value
+            assertEquals(listOf("c1", "c2"), exercises.map { it.id })
+            assertEquals(listOf(Muscle.Pectoraux, Muscle.Triceps), exercises[0].primaryMuscles)
+            assertEquals(emptyList<Muscle>(), exercises[0].secondaryMuscles)
+            assertEquals(listOf(Muscle.Biceps), exercises[1].primaryMuscles)
+            assertEquals(listOf(Muscle.AvantBras), exercises[1].secondaryMuscles)
+        }
+        // Le fichier n'a pas été mis de côté comme illisible.
+        assertTrue(exercisesFile.exists())
+        assertTrue(dataDir.listFiles()!!.none { it.name.contains("corrupt") })
     }
 }

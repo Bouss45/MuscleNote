@@ -215,6 +215,8 @@ fun MuscleNoteApp(backupViewModel: BackupViewModel, externalDestinations: Flow<E
                     exerciseId = entry.arguments?.getString(Routes.ARG_EXERCISE_ID).orEmpty(),
                     onBack = { navController.popBackStack() },
                     onEditWorkout = { navController.navigate(Routes.editWorkout(it)) { launchSingleTop = true } },
+                    // Sheet « Muscle » → la fiche d'un autre exercice (§ 15.17.7).
+                    onOpenExercise = { navController.navigate(Routes.exerciseHistory(it)) { launchSingleTop = true } },
                 )
             }
             composable(

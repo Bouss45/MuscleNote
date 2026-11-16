@@ -3,7 +3,8 @@
 Référence unique de l'interface de MuscleNote : jetons, typographie, composants, gabarits d'écran
 et navigation. Source : la maquette Claude Design « MuscleNote — refonte », page **Tour 2 · Studio
 épuré** (12/11/2026 ; **v2 listes groupées** du 15/11/2026 : tokens, Composants 1 et 2, gabarit hub,
-Journal, Paramètres et Nutrition), exportée dans [`design/claude-design/`](design/claude-design/)
+Journal, Paramètres et Nutrition ; **carte du corps** du 16/11/2026 : `T2-Carte-corps`, `T2-Corps` et
+le SVG `corps/carte-du-corps.svg`), exportée dans [`design/claude-design/`](design/claude-design/)
 (fichiers `T2-*.dc.html`). Le comportement et les règles métier restent dans `SPEC.md` ; ce document dit à
 quoi ressemble l'interface et avec quoi on la construit.
 
@@ -80,6 +81,10 @@ groupées** (15/11/2026) pour toute l'app (SPEC D40) : en clair, fond gris et gr
 | `down` | baisse | `#FF6B5E` | `#C62D22` | régression, stock bas |
 | `downDim` | baisse.attenue | `#3A1714` | `#FCE6E3` | fond de puce baisse |
 | `scrim` | voile | noir 60 % | `#121315` 40 % | voile sous une bottom sheet |
+| `bodyBase` | corps.base | `#1F2125` | `#E4E4E1` | 🔄 D43 — silhouette de la carte du corps |
+| `bodyOutline` | corps.trait | `#45484E` | `#B4B6BA` | contour de la silhouette, 1 dp |
+| `bodyRest` | corps.repos | `#2E3035` | `#D3D3CF` | muscle non travaillé |
+| `bodySecondary` | corps.secondaire | `#7E8187` | `#6F7277` | muscle secondaire (3,4:1 sur le muscle non travaillé et sur le principal) ; le principal est `textPrimary` |
 
 **Quelle couleur pour quoi :**
 
@@ -91,6 +96,9 @@ groupées** (15/11/2026) pour toute l'app (SPEC D40) : en clair, fond gris et gr
 - *Rouge (baisse)* : variation défavorable, stock bas (« 4 jours »).
 - *Gris* : variation nulle (« identique ») ou sans objectif.
 - *Courbes* : toujours `textPrimary` ; la partie après le point touché en `textTertiary`.
+- *Carte du corps* (🔄 D43) : aucune couleur de sens — principal plein `textPrimary`, secondaire
+  `bodySecondary`, non travaillé `bodyRest`, sélection = plein + anneau ; l'état se dit aussi en mots
+  (légende « Principal » / « Secondaires », TalkBack).
 
 **Contrastes sur fond** (maquette) : texte 17,1:1 · secondaire 7,7:1 · direct 12,4:1 (en clair,
 `liveText` 6,5:1) · hausse 10,2:1 / 5,4:1 · baisse 6,8:1 / 5,5:1. Tertiaire 4,0:1 / 3,6:1, d'où
@@ -327,8 +335,11 @@ valeur `numberMedium` + 2 + légende `caption` `textSecondary`.
 | record | `upDim` | `up` | `emoji_events` | 700 |
 | filtre sélectionné | `inverse` | `onInverse` | — | 700 |
 | filtre non sélectionné | `surfaceControl` | `textPrimary` | — | 400 |
+| 🔄 inverse (`ChipTone.Inverse`, D43) | `inverse` | `onInverse` | — | 700 |
 
-Choix unique par défaut (lue comme bouton radio) ; **choix multiple** (`multiSelect`, jours du rappel
+La puce **inverse** est informative avec une action : un muscle choisi dans le filtre « Par muscle »
+du sélecteur, dessiné comme une puce de filtre sélectionnée, qui ouvre sa sheet « Muscle » (bouton
+« Voir le muscle »). Puces de filtre : choix unique par défaut (lue comme bouton radio) ; **choix multiple** (`multiSelect`, jours du rappel
 de pesée, SPEC § 15.13.3) : même dessin, chaque puce se coche ou se décoche et se lit comme une case à
 cocher, avec une `description` TalkBack en toutes lettres (« lundi » pour « lun. »).
 
@@ -397,6 +408,33 @@ du héros du Journal : un `ListGroup`, padding 12 en haut et sur les côtés.
 - Accessibilité : chaque jour est un bouton (rôle bouton, action « Voir la journée ») lu en toutes
   lettres par sa description (« jeudi 12 novembre, 2 séances », « …, aujourd'hui, aucune séance »,
   « …, à venir ») ; le chiffre et les initiales ne sont pas lus à part.
+
+🔄 **Carte du corps** — `BodyMap` (D43, SPEC § 15.17.4, maquette `T2-Carte-corps`, composant
+`T2-Corps`). Les formes du SVG `design/claude-design/corps/carte-du-corps.svg` (repère 420 × 460, face à
+x 0 – 200, dos à x 220 – 420, tracés `M` / `C` / `L` / `Z`), copiées dans `BodyMapShapes` et dessinées au
+`Canvas` à l'échelle ; une forme par muscle (17), un muscle des deux vues est une seule forme.
+- Dessin : silhouettes `bodyBase` + contour 1 `bodyOutline` ; chaque muscle rempli selon son état et
+  cerné d'un **écart** de 1,5 couleur de la surface dessous (`background`, ou `surfaceRaised` avec
+  `onRaised` : groupe, sheet). Les traits ne grandissent pas avec la carte.
+- États : **principal** `textPrimary` ; **secondaire** `bodySecondary` ; **non travaillé** `bodyRest` ;
+  **sélectionné** (filtre) plein `textPrimary` + anneau de 1,75 séparé du muscle par 2,5 d'écart (trait
+  de 6 puis écart de 2,5 par-dessus).
+- Tailles (`BodyMapSize`) : **grande** 360 de haut (filtre ; réduite si la largeur manque), **petite**
+  150 (fiche), **une vue** 140 (`view` = face ou dos : sheet « Muscle »). Largeur au ratio 420 / 460
+  (200 / 460 pour une vue). Option `viewLabels` : « Face » et « Dos » (`small`, `textSecondary`, centrés)
+  6 sous chaque moitié.
+- Toucher (`onMuscleClick`) : le muscle sous le doigt, sinon le plus proche à 12 au plus, sinon rien
+  (`BodyMapGeometry`, géométrie pure testée en JVM). Pas d'état pressé ni d'animation.
+- Accessibilité : touchable, la carte pose **un élément TalkBack par muscle** (17, ordre de la liste des
+  muscles), sur sa forme dans sa vue : « Pecs, principal » (bouton « Voir le muscle ») ou, `selectable`
+  (filtre), une case à cocher « Pecs » (action « Filtrer ») ; sans action, la carte est décorative.
+
+🔄 **Légende des muscles** — `MuscleLegend` (D43, SPEC § 15.17.5), à côté de la petite carte :
+étiquette « Principal » / « Principaux » (`label`, `textSecondary`, 6 dessous), une ligne par muscle
+(pastille de 10, rayon 3, `textPrimary` ; nom `bodyLineStrong`), puis, 6 plus bas, « Secondaire(s) »
+(pastille `bodySecondary`, nom `bodyLine`). Chaque ligne fait 48 au moins, ouvre le muscle (bouton « Voir
+le muscle ») ; pressée, fond `surfaceRaised` qui déborde de 12, rayon 12 ; en texte agrandi le nom passe
+à la ligne.
 
 **Section** (assemblage) — en-tête de section + lignes, posés sur le fond. Pas un composant :
 c'est la brique des gabarits hub et fiche. 🔄 v2 : **groupe titré** — étiquette (`SectionHeader`
@@ -728,6 +766,10 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | hauteur d'une ligne dans un groupe (v2) | 64 (planche Composants 1), 56 (lignes d'une seule ligne de Paramètres) | 56 sans sous-titre, 64 avec |
 | barre d'onglets (v2) | fond + filet (Accueil, Progrès v1), `surface.groupe` sans filet (Journal, Nutrition v2) | `surfaceRaised` sans filet partout (rôle « onglets » de la planche Tokens v2) |
 | rangées du calendrier du Journal (D41) | ronds de 36 espacés de 2 (38), flèches de 44, 10 avant le résumé | rangées de 48 (cibles tactiles), flèches de 48, résumé collé à la grille de 6 rangées réservées |
+| carte du corps dans la fiche (D43) | groupe v2 juste sous le titre, noms en lignes de 28, chevron sur le groupe | dernière section de la fiche, en-tête v1 sur le fond (la fiche n'est pas redessinée) ; lignes de noms de 48 (cibles), chacune vers son muscle, sans chevron |
+| sélecteur d'exercices (D43) | écran plein, recherche dans la barre, segmenté « Par muscle · Récents · A – Z », bouton + rond par ligne, « 14 exercices » en étiquette | la sheet du sélecteur garde sa forme (D36) ; segmenté « Par groupe » / « Par muscle » ; la carte défile avec la liste ; lignes à cocher |
+| puces des muscles choisis (D43) | « Pecs × » (retirer) | puce inverse sans × : elle ouvre la sheet « Muscle », d'où « Retirer du filtre » ; « Effacer » vide tout |
+| sheet « Muscle » (D43) | « EXERCICES · 6 » et lien « Filtrer », pastille + « principal » à droite | en-tête de section v1 « Exercices » + nombre ; « Principal » / « Secondaire » en sous-titre ; depuis la fiche, chevron vers la fiche de l'exercice ; depuis le filtre, lignes à cocher et « Retirer du filtre » |
 | groupe « Aujourd'hui » de Nutrition (D42) | en-tête de 36 avec un bouton de 40 et 16 au-dessus ; « 1 840 / 2 600 kcal » et « Encore 760 kcal pour l'objectif » | en-tête de 48 (cible du bouton) et 12 au-dessus, le rond tombe à la même place ; chiffre héros et état de D35 (« encore 760 kcal » sur 2 600) |
 | compteur des compléments pris (D42) | dans l'étiquette, « COMPLÉMENTS · 1 SUR 3 PRIS », lien « Gérer » à droite | mention à droite de l'étiquette, « 1 sur 3 pris » ; pas de lien « Gérer » (chaque ligne ouvre sa sheet) |
 | jours de stock d'un complément (D42) | « 12 jours » en 15 · 600, case ronde à gauche | valeur `bodyLineStrong` avant la case 48, à droite (D40) |
@@ -883,6 +925,17 @@ Décidé (15/11/2026, SPEC D42) :
   `ListRowTrailing.ValueAction`, valeur de `ListRowTrailing.Check`, `DailySurface` redessinée,
   `highlightedHelp`.
 
+Décidé (16/11/2026, SPEC D43) :
+
+- **Carte du corps et muscles travaillés** : un composant nouveau, `BodyMap` (formes du SVG, toucher par
+  muscle, un élément TalkBack par muscle), sa légende `MuscleLegend`, quatre jetons `body*` et la puce
+  inverse. La fiche exercice gagne en dernière section « Muscles travaillés » (petite carte + noms) ; le
+  sélecteur, un segmenté « Par groupe » / « Par muscle » et la grande carte, dont un toucher ajoute ou
+  retire un muscle du filtre ; la puce d'un muscle choisi et les noms de la fiche ouvrent la sheet
+  « Muscle » (carte d'une vue, nom, nom savant, rôle, exercices). Le formulaire d'un exercice perso gagne
+  « Muscles principaux » et « Muscles secondaires » en puces à choix multiple. La séance en cours ne
+  change pas.
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : Mes records, mensurations, photos, objectif de poids
@@ -911,7 +964,9 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   `TextField.kt` pour le champ texte ; `TrendCurve.kt` pour les trois courbes et
   `CurveGeometry.kt`, leur géométrie pure, testée en JVM ; `FitText`, dans `Foundation.kt`, pour un
   mot qui doit tenir sur une ligne ; `ListGroup.kt` pour les groupes de liste v2 — `ListGroup`,
-  `ListGroupSegment`, `GroupPosition` testée en JVM, `LocalInListGroup` lu par `ListRow`).
+  `ListGroupSegment`, `GroupPosition` testée en JVM, `LocalInListGroup` lu par `ListRow` ; 🔄 D43 :
+  `BodyMap.kt` pour la carte du corps et `MuscleLegend`, `BodyMapShapes.kt` pour les tracés copiés du SVG
+  et `BodyMapGeometry.kt`, leur géométrie pure — toucher, zones TalkBack —, testée en JVM avec le SVG).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
   variante paresseuse `HubLazyTemplate`, `FicheTemplate` et `FicheLazyTemplate`, `LiveTemplate`,
   `FormSheetTemplate`), en
@@ -929,7 +984,8 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   calendrier). Hors planche : `MonthCalendarPreview` (`DataComponentPreviews`) ; 🔄 D42 :
   `IconButtonFilledPreview` (`ActionComponentPreviews`), les fins de ligne « valeur avant la case » et
   « valeur et bouton plein » dans `ListRowCheckPreview`, `DailySurfacePreview` redessinée
-  (`TemplatePiecePreviews`).
+  (`TemplatePiecePreviews`) ; 🔄 D43 : `BodyMapPreview` (petite sur le fond et dans un groupe, une vue,
+  grande avec sélection), `MuscleLegendPreview` et `ChipInversePreview` (`DataComponentPreviews`).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni

@@ -340,8 +340,8 @@ fun WorkoutScreen(
             onAdd = { definition -> container.launchMutation { repository.addExerciseToWorkout(definition.id) } },
             onDismiss = { pickerOpen = false },
             custom = CustomExerciseActions(
-                create = { name, group -> container.launchMutation { repository.addCustomExercise(name, group) } },
-                update = { id, name, group -> container.launchMutation { repository.updateCustomExercise(id, name, group) } },
+                create = { name, group, muscles -> container.launchMutation { repository.addCustomExercise(name, group, muscles) } },
+                update = { id, name, group, muscles -> container.launchMutation { repository.updateCustomExercise(id, name, group, muscles) } },
                 delete = { id -> container.launchMutation { repository.deleteCustomExercise(id) } },
             ),
         )

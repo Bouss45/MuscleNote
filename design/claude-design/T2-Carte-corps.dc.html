@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Carte du corps</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&amp;family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0..1,0&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1560px; height: 1160px; box-sizing: border-box; padding: 56px; background: {{c.bg}}; color: {{c.fg}}; font-family: Archivo, 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; display: flex; flex-direction: column; gap: 32px; overflow: hidden">
+
+  <div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Composant · Studio épuré</span>
+      <h1 style="margin: 0; font-size: 40px; line-height: 1; font-weight: 800; font-stretch: 110%; letter-spacing: -0.02em">Carte du corps</h1>
+    </div>
+    <p style="margin: 0; max-width: 620px; font-size: 15px; line-height: 1.5; color: {{c.fg2}}">17 zones, face et dos, en traits fins. Aucune couleur : jaune, vert et rouge gardent leur sens. Le plein dit « principal », le gris moyen « secondaire », le gris du corps « non travaillé » ; un anneau marque la sélection dans le filtre.</p>
+  </div>
+
+  <div style="display: flex; gap: 56px; align-items: flex-start">
+
+    <div style="width: 512px; flex-shrink: 0; display: flex; flex-direction: column; gap: 32px">
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; padding: 0 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">États d'une zone</h2>
+        <div style="border-radius: 20px; background: {{c.s1}}; overflow: hidden">
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 56px; padding-left: 16px"><span style="flex-shrink: 0; width: 40px; height: 26px; border-radius: 8px; background: {{b.prin}}"></span><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">Principal</span><span style="font-size: 13px; color: {{c.fg2}}">le muscle qui fait le travail</span></div><span style="font-size: 13px; color: {{c.fg2}}">texte.primaire</span></div></div>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 56px; padding-left: 16px"><span style="flex-shrink: 0; width: 40px; height: 26px; border-radius: 8px; background: {{b.sec}}"></span><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">Secondaire</span><span style="font-size: 13px; color: {{c.fg2}}">il aide, atténué</span></div><span style="font-size: 13px; color: {{c.fg2}}">#7E8187 · #6F7277</span></div></div>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 56px; padding-left: 16px"><span style="flex-shrink: 0; width: 40px; height: 26px; border-radius: 8px; background: {{b.repos}}"></span><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">Non travaillé</span><span style="font-size: 13px; color: {{c.fg2}}">le gris du corps</span></div><span style="font-size: 13px; color: {{c.fg2}}">#2E3035 · #D3D3CF</span></div></div>
+          <div style="display: flex; align-items: center; gap: 16px; min-height: 56px; padding-left: 16px"><span style="flex-shrink: 0; width: 36px; height: 22px; margin: 0 2px; border-radius: 7px; background: {{b.prin}}; box-shadow: 0 0 0 2.5px {{c.s1}}, 0 0 0 4.5px {{b.prin}}"></span><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 16px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 16px; font-weight: 600">Sélectionné</span><span style="font-size: 13px; color: {{c.fg2}}">filtre : plein, puis un anneau</span></div><span style="font-size: 13px; color: {{c.fg2}}">anneau 1,75 · écart 2,5</span></div></div>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; padding: 0 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Petite taille · muscles travaillés</h2>
+        <div style="border-radius: 20px; background: {{c.s1}}; padding: 16px; display: flex; gap: 20px; align-items: center">
+          <dc-import name="T2-Corps" theme="{{theme}}" surface="groupe" principal="pectoraux" secondaire="epaules-avant, triceps" selection="" vue="les deux" hauteur="150" hint-size="137px,150px"></dc-import>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Principal</span>
+            <span style="display: flex; align-items: center; gap: 10px; min-height: 28px; font-size: 16px; font-weight: 600"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span>Pecs</span>
+            <span style="margin-top: 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Secondaires</span>
+            <span style="display: flex; align-items: center; gap: 10px; min-height: 28px; font-size: 16px; font-weight: 500"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.sec}}"></span>Épaules avant</span>
+            <span style="display: flex; align-items: center; gap: 10px; min-height: 28px; font-size: 16px; font-weight: 500"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.sec}}"></span>Triceps</span>
+          </div>
+          <span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'; color: {{c.fg2}}">chevron_right</span>
+        </div>
+        <span style="padding: 0 16px; font-size: 12px; line-height: 1.5; color: {{c.fg2}}">Dans la fiche exercice. 150 px de haut, les deux vues, les noms à côté du principal au secondaire. Toucher le groupe ouvre la sheet « Muscle ».</span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; padding: 0 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Tokens de la carte</h2>
+        <div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 90px 90px; row-gap: 8px; column-gap: 12px; padding: 0 16px; font-size: 13px">
+          <span style="font-weight: 700">corps.base</span><span style="color: {{c.fg2}}">silhouette</span><span>#1F2125</span><span>#E4E4E1</span>
+          <span style="font-weight: 700">corps.trait</span><span style="color: {{c.fg2}}">contour 1 px fixe</span><span>#45484E</span><span>#B4B6BA</span>
+          <span style="font-weight: 700">corps.repos</span><span style="color: {{c.fg2}}">non travaillé</span><span>#2E3035</span><span>#D3D3CF</span>
+          <span style="font-weight: 700">corps.secondaire</span><span style="color: {{c.fg2}}">3,4:1 de part et d'autre</span><span>#7E8187</span><span>#6F7277</span>
+          <span style="font-weight: 700">corps.principal</span><span style="color: {{c.fg2}}">= texte.primaire</span><span>#F3F3F1</span><span>#121315</span>
+          <span style="font-weight: 700">corps.ecart</span><span style="color: {{c.fg2}}">1,5 px, couleur de la surface</span><span>fond</span><span>ou groupe</span>
+        </div>
+        <span style="padding: 0 16px; font-size: 12px; line-height: 1.5; color: {{c.fg2}}">Traits non mis à l'échelle : la carte reste nette de 60 à 900 px. Export : design/claude-design/corps/carte-du-corps.svg, une forme par muscle, id = nom de zone.</span>
+      </div>
+    </div>
+
+    <div style="width: 412px; height: 915px; flex-shrink: 0; box-sizing: border-box; border-radius: 32px; background: {{c.bg}}; box-shadow: 0 0 0 1px {{c.s2}}; overflow: hidden; padding: 40px 16px 0; display: flex; flex-direction: column">
+      <div style="display: flex; align-items: center; gap: 4px; height: 48px">
+        <button type="button" aria-label="Fermer" style="width: 48px; height: 48px; border: none; border-radius: 24px; background: none; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 24px/1 'Material Symbols Rounded'">close</span></button>
+        <span style="font-size: 18px; font-weight: 700">Ajouter un exercice</span>
+      </div>
+      <label style="margin-top: 8px; display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 14px; border-radius: 12px; background: {{c.s2}}; color: {{c.fg2}}">
+        <span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">search</span>
+        <input type="search" placeholder="Rechercher un exercice" aria-label="Rechercher un exercice" style="flex-grow: 1; min-width: 0; border: none; background: none; outline: none; color: {{c.fg}}; font: 500 16px Archivo, sans-serif">
+      </label>
+      <div style="margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 12px; background: {{c.s2}}">
+        <button type="button" style="height: 40px; border: none; border-radius: 9px; background: {{c.s3}}; color: {{c.fg}}; font: 700 14px Archivo, sans-serif">Par muscle</button>
+        <button type="button" style="height: 40px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">Récents</button>
+        <button type="button" style="height: 40px; border: none; border-radius: 9px; background: none; color: {{c.fg2}}; font: 600 14px Archivo, sans-serif">A – Z</button>
+      </div>
+      <div style="margin-top: 16px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+        <dc-import name="T2-Corps" theme="{{theme}}" surface="fond" principal="" secondaire="" selection="pectoraux, triceps" vue="les deux" hauteur="360" hint-size="329px,360px"></dc-import>
+        <div style="width: 329px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); text-align: center; font-size: 12px; color: {{c.fg2}}"><span>Face</span><span>Dos</span></div>
+      </div>
+      <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px">
+        <button type="button" aria-label="Retirer Pecs du filtre" style="height: 32px; padding: 0 8px 0 12px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 14px Archivo, sans-serif; display: flex; align-items: center; gap: 4px">Pecs<span aria-hidden="true" style="font: 400 18px/1 'Material Symbols Rounded'">close</span></button>
+        <button type="button" aria-label="Retirer Triceps du filtre" style="height: 32px; padding: 0 8px 0 12px; border: none; border-radius: 12px; background: {{c.inv}}; color: {{c.onInv}}; font: 700 14px Archivo, sans-serif; display: flex; align-items: center; gap: 4px">Triceps<span aria-hidden="true" style="font: 400 18px/1 'Material Symbols Rounded'">close</span></button>
+        <button type="button" style="margin-left: auto; height: 32px; padding: 0 8px; border: none; background: none; color: {{c.fg2}}; font: 600 13px Archivo, sans-serif">Effacer</button>
+      </div>
+      <div style="margin-top: 24px; display: flex; flex-direction: column; gap: 8px">
+        <h2 style="margin: 0; padding: 0 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">14 exercices</h2>
+        <div style="border-radius: 20px; background: {{c.s1}}; overflow: hidden">
+          <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 12px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Développé couché</span><span style="font-size: 13px; color: {{c.fg2}}">Pecs · triceps, épaules avant</span></div><button type="button" aria-label="Ajouter Développé couché" style="width: 40px; height: 40px; border: none; border-radius: 20px; background: {{c.s2}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">add</span></button></div></div>
+          <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 12px; border-bottom: 1px solid {{c.line}}"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Dips lestés</span><span style="font-size: 13px; color: {{c.fg2}}">Pecs, triceps · épaules avant</span></div><button type="button" aria-label="Ajouter Dips lestés" style="width: 40px; height: 40px; border: none; border-radius: 20px; background: {{c.s2}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">add</span></button></div></div>
+          <div style="display: flex; align-items: center; min-height: 64px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 12px; padding-right: 12px"><div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 16px; font-weight: 500">Extension triceps poulie</span><span style="font-size: 13px; color: {{c.fg2}}">Triceps</span></div><button type="button" aria-label="Ajouter Extension triceps poulie" style="width: 40px; height: 40px; border: none; border-radius: 20px; background: {{c.s2}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center"><span aria-hidden="true" style="font: 400 22px/1 'Material Symbols Rounded'">add</span></button></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position: relative; width: 412px; height: 915px; flex-shrink: 0; box-sizing: border-box; border-radius: 32px; background: {{c.bg}}; box-shadow: 0 0 0 1px {{c.s2}}; overflow: hidden">
+      <div style="padding: 40px 16px 0; display: flex; flex-direction: column" aria-hidden="true">
+        <div style="display: flex; align-items: center; height: 48px; margin-left: 4px"><span style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font: 400 24px/1 'Material Symbols Rounded'">arrow_back</span></div>
+        <span style="margin-top: 4px; padding-left: 16px; font-size: 28px; font-weight: 700">Développé couché</span>
+        <span style="padding-left: 16px; font-size: 13px; color: {{c.fg2}}">19 séances depuis février</span>
+        <span style="margin-top: 32px; padding: 0 16px; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Muscles travaillés</span>
+        <div style="margin-top: 8px; border-radius: 20px; background: {{c.s1}}; padding: 16px; display: flex; gap: 20px; align-items: center">
+          <dc-import name="T2-Corps" theme="{{theme}}" surface="groupe" principal="pectoraux" secondaire="epaules-avant, triceps" selection="" vue="les deux" hauteur="150" hint-size="137px,150px"></dc-import>
+          <span style="font-size: 16px; font-weight: 600">Pecs</span>
+        </div>
+      </div>
+      <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: {{c.scrim}}"></div>
+      <div role="dialog" aria-label="Muscle : Pecs, grand pectoral" style="position: absolute; left: 0; right: 0; bottom: 0; background: {{c.s1}}; border-radius: 20px 20px 0 0; padding: 10px 16px 28px; display: flex; flex-direction: column">
+        <span style="align-self: center; width: 36px; height: 4px; border-radius: 2px; background: {{c.s3}}"></span>
+        <div style="margin-top: 16px; display: flex; align-items: center; gap: 16px; padding-left: 16px">
+          <dc-import name="T2-Corps" theme="{{theme}}" surface="groupe" principal="pectoraux" secondaire="" selection="" vue="face" hauteur="140" hint-size="61px,140px"></dc-import>
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Muscle</span>
+            <h2 style="margin: 0; font-size: 32px; line-height: 1.05; font-weight: 700; letter-spacing: -0.01em">Pecs</h2>
+            <span style="font-size: 16px; color: {{c.fg2}}">grand pectoral</span>
+          </div>
+        </div>
+        <p style="margin: 20px 0 0; padding: 0 16px; font-size: 15px; line-height: 1.5; text-wrap: pretty">Rapproche le bras du buste et le pousse vers l'avant : c'est le moteur des développés, des dips et des pompes.</p>
+        <div style="margin-top: 28px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px"><span style="font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: {{c.fg2}}">Exercices · 6</span><span style="font-size: 13px; font-weight: 600; color: {{c.fg2}}">Filtrer</span></div>
+        <div style="margin-top: 4px; display: flex; flex-direction: column">
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Développé couché</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">principal</span></div></div>
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Développé incliné haltères</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">principal</span></div></div>
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Dips lestés</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">principal</span></div></div>
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Écarté à la poulie</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">principal</span></div></div>
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px; border-bottom: 1px solid {{c.line}}"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Pompes</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.prin}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">principal</span></div></div>
+          <div style="display: flex; align-items: center; min-height: 56px; padding-left: 16px"><div style="flex-grow: 1; align-self: stretch; display: flex; align-items: center; gap: 10px; padding-right: 16px"><span style="flex-grow: 1; font-size: 16px; font-weight: 500">Développé militaire</span><span style="width: 10px; height: 10px; border-radius: 3px; background: {{b.sec}}"></span><span style="width: 84px; font-size: 13px; color: {{c.fg2}}">secondaire</span></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["sombre","clair"],"default":"sombre","section":"Thème"},"$preview":{"width":1560,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const P = {
+      sombre: { bg: '#0F1012', s1: '#1A1B1F', s2: '#2A2C31', s3: '#36383E', press: '#232529', line: '#2B2D32', fg: '#F3F3F1', fg2: '#A2A5AB', fg3: '#6F737A', inv: '#F3F3F1', onInv: '#0F1012', scrim: 'rgba(0,0,0,0.6)' },
+      clair: { bg: '#F2F2F0', s1: '#FFFFFF', s2: '#E6E6E3', s3: '#D9D9D5', press: '#EDEDEA', line: '#E8E8E5', fg: '#121315', fg2: '#5C5F65', fg3: '#85888E', inv: '#121315', onInv: '#FFFFFF', scrim: 'rgba(18,19,21,0.4)' }
+    };
+    const B = {
+      sombre: { prin: '#F3F3F1', sec: '#7E8187', repos: '#2E3035' },
+      clair: { prin: '#121315', sec: '#6F7277', repos: '#D3D3CF' }
+    };
+    const k = this.props.theme === 'clair' ? 'clair' : 'sombre';
+    return { c: P[k], b: B[k], theme: k };
+  }
+}
+</script>
+</body>
+</html>

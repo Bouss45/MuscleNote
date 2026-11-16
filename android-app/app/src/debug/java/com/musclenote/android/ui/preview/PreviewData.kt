@@ -5,6 +5,7 @@ import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.LocalPreferences
+import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
@@ -43,7 +44,13 @@ object PreviewData {
     const val HIP_THRUST_ID = "1760000000000hipthrust"
 
     val customExercises = listOf(
-        Exercise(id = HIP_THRUST_ID, name = "Hip thrust", muscleGroup = MuscleGroup.Jambes),
+        Exercise(
+            id = HIP_THRUST_ID,
+            name = "Hip thrust",
+            muscleGroup = MuscleGroup.Jambes,
+            primaryMuscles = listOf(Muscle.Fessiers),
+            secondaryMuscles = listOf(Muscle.IschioJambiers),
+        ),
         Exercise(id = "1755000000000shrugarch", name = "Shrug", muscleGroup = MuscleGroup.Dos, archived = true),
     )
 
