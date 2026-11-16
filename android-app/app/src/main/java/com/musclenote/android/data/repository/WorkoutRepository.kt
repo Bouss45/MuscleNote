@@ -1,6 +1,8 @@
 package com.musclenote.android.data.repository
 
 import com.musclenote.android.data.catalog.ExerciseCatalog
+import com.musclenote.android.data.catalog.MuscleRules
+import com.musclenote.android.data.catalog.MuscleSelection
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
@@ -69,7 +71,8 @@ class WorkoutRepository(
             currentWorkoutDoc.flush()
             _workouts.value = sortedByDateDesc(workoutsDoc.read().orEmpty())
             // § 3.9 : un exercice stocké dont l'id est un id intégré est ignoré.
-            _customExercises.value = exercisesDoc.read().orEmpty().filterNot { ExerciseCatalog.isBuiltIn(it.id) }
+            // § 15.17.8 : muscles remis en forme (ordre, doublons, un muscle des deux reste principal).
+            _customExercises.value = exercisesDoc.read().orEmpty().filterNot { ExerciseCatalog.isBuiltIn(it.id) }.map(MuscleRules::normalized)
             _currentWorkout.value = currentWorkoutDoc.read()
             finalizeStaleLocked()
         }
@@ -248,24 +251,44 @@ class WorkoutRepository(
 
     // ─── Exercices perso (§ 3.9) ──────────────────────────────────────────────────────
 
-    /** Création, en fin de liste. Nom vide → rien (`null`). Pas de contrôle de doublon. */
-    suspend fun addCustomExercise(name: String, muscleGroup: MuscleGroup): Exercise? {
+    /**
+     * Création, en fin de liste, avec ses muscles facultatifs (§ 15.17.3). Nom vide → rien (`null`).
+     * Pas de contrôle de doublon.
+     */
+    suspend fun addCustomExercise(name: String, muscleGroup: MuscleGroup, muscles: MuscleSelection = MuscleSelection()): Exercise? {
         return mutex.withLock {
             val trimmed = name.trim()
             if (trimmed.isEmpty()) return null
-            val exercise = Exercise(id = idGenerator(), name = trimmed, muscleGroup = muscleGroup)
+            val exercise = MuscleRules.normalized(
+                Exercise(
+                    id = idGenerator(),
+                    name = trimmed,
+                    muscleGroup = muscleGroup,
+                    primaryMuscles = muscles.primary,
+                    secondaryMuscles = muscles.secondary,
+                ),
+            )
             commitExercises(_customExercises.value + exercise)
             exercise
         }
     }
 
-    /** Modification du nom et du groupe ; les exercices intégrés ne sont pas modifiables. */
-    suspend fun updateCustomExercise(id: String, name: String, muscleGroup: MuscleGroup): Boolean {
+    /**
+     * Modification du nom, du groupe et, si [muscles] n'est pas `null`, des muscles (§ 15.17.3) ; les
+     * exercices intégrés ne sont pas modifiables.
+     */
+    suspend fun updateCustomExercise(id: String, name: String, muscleGroup: MuscleGroup, muscles: MuscleSelection? = null): Boolean {
         return mutex.withLock {
             val trimmed = name.trim()
             val list = _customExercises.value
             if (trimmed.isEmpty() || ExerciseCatalog.isBuiltIn(id) || list.none { it.id == id }) return false
-            commitExercises(list.map { if (it.id == id) it.copy(name = trimmed, muscleGroup = muscleGroup) else it })
+            commitExercises(
+                list.map { exercise ->
+                    if (exercise.id != id) return@map exercise
+                    val renamed = exercise.copy(name = trimmed, muscleGroup = muscleGroup)
+                    if (muscles == null) renamed else MuscleRules.normalized(renamed.copy(primaryMuscles = muscles.primary, secondaryMuscles = muscles.secondary))
+                },
+            )
             true
         }
     }

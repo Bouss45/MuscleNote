@@ -17,6 +17,12 @@ data class Exercise(
     val muscleGroup: MuscleGroup,
     /** `true` = supprimé mais encore référencé par une séance (§ 3.9). */
     val archived: Boolean = false,
+    /** Muscles principaux (§ 15.17.3, 🔄 D43), dans l'ordre de [Muscle] ; facultatif, omis vide. */
+    @Serializable(with = MuscleListSerializer::class)
+    val primaryMuscles: List<Muscle> = emptyList(),
+    /** Muscles secondaires, jamais un principal ; facultatif, omis vide. */
+    @Serializable(with = MuscleListSerializer::class)
+    val secondaryMuscles: List<Muscle> = emptyList(),
 )
 
 /** Série. Les champs cardio sont en minutes, km, km/h et %. */
