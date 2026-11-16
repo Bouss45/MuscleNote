@@ -927,6 +927,8 @@ Légende : **req.** = toujours présent ; *opt.* = peut être absent.
 | `name` | string | req. | nom saisi (perso) |
 | `muscleGroup` | `MuscleGroup` | req. | un des 9 groupes |
 | `archived` | boolean | *opt.* | `true` = supprimé mais encore référencé |
+| `primaryMuscles` (🔄 D43) | string[] | *opt.* | muscles principaux, ids du § 15.17.1 ; omis s'il est vide (§ 15.17.8) |
+| `secondaryMuscles` (🔄 D43) | string[] | *opt.* | muscles secondaires, idem |
 
 **`MuscleGroup`** — enum Kotlin sérialisé en **chaînes exactes, accents compris** :
 `"dos"`, `"pecs"`, `"biceps"`, `"triceps"`, `"jambes"`, `"épaules"`, `"abdos"`, `"cardio"`,
@@ -1334,6 +1336,9 @@ chaînes `exercise.<id>` ; ils ne sont jamais lus depuis le stockage.
 
 ⚠️ Les ids sont **figés** : ils sont référencés par les séances sauvegardées (fautes
 comprises : `calfraize`, `legrise`).
+
+🔄 D43 — chaque exercice intégré a aussi ses **muscles principaux et secondaires** (§ 15.17.2),
+donnée embarquée dans l'app comme les noms : jamais stockée ni sauvegardée.
 
 ### 6.2 Groupes musculaires (ordre d'affichage, libellés, couleur)
 
@@ -1843,7 +1848,8 @@ Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finiti
 (§ 15.11), D37 avec le résumé de fin de séance (§ 15.12), D38 avec la pesée facultative et le rappel
 de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
 de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15), D42 avec les
-protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16).
+protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16), D43 avec la carte du corps
+et les muscles travaillés (§ 15.17).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1889,6 +1895,7 @@ protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16).
 | D40 | Listes groupées (maquette « v2 listes groupées » du 15/11/2026) | appliquer les groupes, les titres de section et les espacements de la maquette à Journal, Paramètres et Nutrition tels qu'ils sont, sans coder les fonctions qu'elle dessine en plus (calendrier du mois et objectif de séances du Journal, protéines, stock des compléments et moyenne sur 7 jours de Nutrition), notées comme maquettes disponibles ; couleurs v2 pour toute l'app | jetons v2 (en clair fond #F2F2F0 et groupes blancs, en sombre groupes #1A1B1F, ligne pressée dans un groupe, filets plus nets), barre d'onglets sur la surface des groupes sans filet ; sur les trois écrans, étiquettes en capitales et groupes tonaux (rayon 20, sans bordure), marges de 16, 8 entre étiquette et groupe, 32 entre groupes ; Accueil, Progrès, fiches, séance et résumé inchangés hors couleurs ; ni donnée, ni texte, ni comportement nouveau ; non repris : icônes, interrupteur et section « Connexions » de Paramètres, case ronde de Nutrition, filtre du Journal (DESIGN.md § 2, 9.1, 10.1, 12, 13 ; § 15.6, 15.8.4, 15.10.1, 15.10.3) |
 | D41 | Calendrier du Journal | en haut du Journal, le calendrier du mois de la maquette : semaine du lundi, flèches et glissement pour changer de mois, jour avec séance = rond plein, aujourd'hui = rond vide, résumé des séances du mois sous la grille ; toucher un jour ouvre une sheet « Journée » en listes groupées (séances → détail, pesée, compléments pris, calories et eau ; sections vides masquées ; jour sans rien = message court) ; historique des prises de compléments gardé désormais (date et nombre de doses par complément, champ facultatif, un enregistrement par complément et par jour, sans migration), affiché pour tous les jours à partir de cette version ; pas de réglage d'objectif : le Journal reprend la règle de la série de l'Accueil (validée à 3 séances), « 3/3 · validée » en vert, sinon gris, jamais rouge ; liste par semaine inchangée ; seules les données existantes ; chaque jour lu par TalkBack | composant `MonthCalendar` dans le groupe du héros du Journal (absent quand le Journal est vide), mois accessibles de la plus ancienne donnée au mois courant, 6 rangées réservées, rangées de 48 (cibles tactiles) ; jour d'une séance = jour local de son début (une séance commencée avant minuit reste sur la veille) ; `Supplement.intakes` `{ jour: doses }`, une dose par coche aujourd'hui, retirée en décochant, `taken` inchangé, ancien fichier relu avec un historique vide, une coche d'aujourd'hui antérieure à la mise à jour compte pour une dose ; poids du jour = règle de Progrès (pesée, sinon poids saisi au début d'une séance) ; sheet groupée (fond `background`, groupes `surfaceRaised`) ; compteur des semaines « n/3 » avec `WorkoutStats.VALIDATED_WEEK_SESSIONS` ; objectif réglable (Accueil et Journal ensemble) noté en piste (§ 3.6, 3.12, 4.1, 5.3, 15.6, 15.8.4, 15.15) |
 | D42 | Protéines, stock des compléments et moyenne sur 7 jours (maquette `T2-Nutrition`) | objectif de protéines calculé à partir de la dernière pesée (grammes par kg, réglable de 1,2 à 2,2, 1,6 par défaut) ou valeur fixe saisie au pavé ; sans aucune pesée, valeur fixe uniquement ; ligne « Protéines » comme sur la maquette (« 112 g », « objectif 150 g »), en gris, puis en vert une fois l'objectif atteint ; **eau et protéines identiques, comme sur la maquette** : deux lignes, chacune avec son bouton + (ajout au pavé), le toucher de la ligne ouvre son détail ; protéines du jour dans la sheet « Journée », à côté des calories et de l'eau ; stock des compléments en doses, saisi au pavé, décompté à partir de l'historique des prises ; jours restants = stock / doses par jour, affichés comme sur la maquette, en rouge au seuil ou en dessous (7 jours par défaut, réglable par complément) ; « Racheté » ajoute des doses ; sans stock saisi, rien ne s'affiche ; doses par jour = réglage du complément ; « Moyenne sur 7 jours » (calories, eau, protéines) comme sur la maquette, sur les seuls jours avec des données, sans aujourd'hui ; champs facultatifs, sans migration, anciennes données relues telles quelles ; Progrès, export CSV et notification de stock bas en pistes | groupe du héros de la maquette : légende « Aujourd'hui · calories » et bouton + plein des calories, chiffre héros, état et piste inchangés, puis les lignes « Eau » et « Protéines » (valeur grise puis verte avec « objectif … atteint », jamais la couleur seule ; bouton + → saisie en « Ajouter » ; ligne → détail : aujourd'hui → « Total du jour », objectif, moyenne sur 7 jours, « Ajouter ») ; rangée de stats et boutons « Calories » / « Eau » retirés, « 1 sur 3 pris » à droite de l'étiquette « Compléments » ; protéines saisies comme les calories (grammes entiers, pas ±5 g) ; dernière pesée = dernière pesée connue du § 15.13.1 (pesée, sinon poids saisi au début d'une séance, séance en cours comprise) ; objectif = poids × facteur arrondi au gramme (demi vers le haut, calcul exact), non daté (il ne vaut que pour le jour même) ; « par kg » sans poids connu → la valeur fixe, sinon pas d'objectif ; doses par jour de 1 à 20, 1 par défaut, une coche enregistre ce nombre de doses dans l'historique (au lieu d'une) ; stock = doses comptées un jour donné moins les doses prises depuis, jamais sous 0 ; jours restants = partie entière, rouges dès qu'ils sont ≤ au seuil (« à 7 jours »), sans notification ; « Racheté » et « Stock bas » seulement quand le stock est suivi, « Ne plus suivre le stock » dans son formulaire ; moyenne de J − 7 à J − 1 par mesure, jours à 0 exclus, « — » pour une mesure sans jour, groupe masqué sans aucune donnée ; pas de lien « Tendances » ; section « Calories et eau » de la « Journée » renommée « Nutrition », protéines sans objectif (non daté), comptées pour les mois accessibles ; variantes de composants : `StudioIconButton` plein, `ListRowTrailing.ValueAction`, valeur avant la case de `ListRowTrailing.Check`, `DailySurface` redessinée (§ 3.12, 4.1, 5.3, 15.6, 15.10.1, 15.15.2, 15.15.4, 15.16) |
+| D43 | Carte du corps et muscles travaillés (maquette `T2-Carte-corps`, SVG `design/claude-design/corps/`) | liste fixe des muscles (ids du SVG) avec nom courant, nom savant et rôle en une phrase ; muscles principaux et secondaires de chaque exercice intégré en donnée embarquée, jamais dans les fichiers de l'utilisateur ; exercices perso : choix des muscles dans leur formulaire, champ facultatif, sans migration ; fiche exercice : section « Muscles travaillés » en bas (petite carte + noms) ; sélecteur d'exercices : filtre « par muscle » avec la grande carte, toucher un muscle filtre la liste ; toucher un muscle (fiche ou filtre) ouvre la sheet « Muscle » ; écran de la séance en cours inchangé ; chaque muscle de la carte lu par TalkBack | 17 muscles, ordre et ids figés (§ 15.17.1) ; au moins un principal par exercice intégré, aucun muscle à la fois principal et secondaire (§ 15.17.2) ; le groupe musculaire reste (classement, cardio, filtre « Par groupe ») ; `Exercise.primaryMuscles` / `secondaryMuscles` facultatifs, omis vides, valeurs inconnues écartées à la lecture, un ancien fichier relu sans muscle ; formulaire perso : puces à choix multiple « Muscles principaux » et « Muscles secondaires », un muscle dans une seule des deux ; fiche : dernière section, carte de 150 dp et noms (principaux puis secondaires), section absente pour un exercice perso sans muscle ; sélecteur : contrôle segmenté « Par groupe » / « Par muscle », carte de 360 dp en tête de liste, plusieurs muscles possibles (union), principaux d'abord, puces des muscles choisis et « Effacer » ; sheet « Muscle » : carte d'une vue, nom, nom savant, rôle, exercices qui le travaillent (principal / secondaire), étape du sélecteur ou bottom sheet de la fiche ; toucher hors d'une zone → la plus proche à 12 dp ; composant nouveau `BodyMap` (formes du SVG pour Compose, toucher par muscle, un élément TalkBack par muscle) et jetons de la carte (§ 4.1, 6.1, 15.6, 15.9.1, 15.11.2, 15.17) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -2247,6 +2254,8 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   objectif, coche d'un complément à 2 doses par jour puis son stock, « Racheté » et le seuil ouvert
   depuis lui, TalkBack sur les jours de stock et sur « 1 sur 3 pris », texte agrandi dans le groupe
   « Aujourd'hui ».
+- **Carte du corps et muscles travaillés** (🔄 D43, § 15.17), branche `feat/carte-corps` : spécifié, en
+  cours d'implémentation.
 
 ---
 
@@ -2429,7 +2438,10 @@ compléments et moyenne sur 7 jours** (🔄 D42, § 15.16) : trois fonctions de 
 avec des champs facultatifs dans le tracker et les compléments, le groupe « Aujourd'hui » de la
 maquette (lignes « Eau » et « Protéines ») et les protéines dans la sheet « Journée » ; aucun
 composant nouveau, des variantes (`StudioIconButton` plein, valeurs de fin de `ListRow`,
-`DailySurface`).
+`DailySurface`). **Carte du corps et muscles travaillés** (🔄 D43, § 15.17) : les muscles principaux et
+secondaires de chaque exercice (embarqués pour le catalogue, facultatifs pour un exercice perso), la
+section « Muscles travaillés » de la fiche exercice, le filtre « Par muscle » du sélecteur et la sheet
+« Muscle » ; deux champs facultatifs sur les exercices perso ; un composant nouveau (`BodyMap`).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2813,6 +2825,11 @@ cours : elle revient au changement suivant de la séance ou du repos.
   protéines daté serait alors à décider (aujourd'hui il ne vaut que pour le jour même, § 15.16.1).
 - **Prévenir quand le stock est bas** (🔄 D42) : une notification quand un complément passe sous son
   seuil (§ 15.16.4) ; aujourd'hui, seul le rouge de sa ligne le signale.
+- **Muscles dans Progrès** (🔄 D43) : séries ou volume par muscle sur la semaine, ou une carte des
+  muscles travaillés récemment, à partir des muscles du § 15.17.2 (principal et secondaire à pondérer :
+  à décider). Aujourd'hui les muscles ne servent qu'à la fiche, au filtre et à la sheet « Muscle ».
+- **Muscles dans l'export CSV** (🔄 D43) : l'export ne décrit pas les exercices (§ 8) ; les muscles n'y
+  entrent pas.
 
 **Maquettes disponibles** (🔄 D40) — la maquette Claude Design « v2 listes groupées » (15/11/2026,
 `design/claude-design/`) dessine des fonctions que l'app n'a pas ; elles ne sont pas codées et
@@ -2828,6 +2845,10 @@ attendent leur propre sujet (décision, spécification, données) :
   lien « Gérer », l'heure de la prise en sous-titre (« prise à 07:40 »), la case ronde à gauche (D40),
   les puces de saisie rapide du stock (« +250 g ») et le lien « Tendances » (courbes de Nutrition,
   déplacées depuis Progrès).
+- **Sélecteur plein écran trié** (`T2-Carte-corps`, 🔄 D43) : le contrôle segmenté « Par muscle » ·
+  « Récents » · « A – Z », la recherche dans la barre du haut et le bouton + rond de chaque ligne ; le
+  sélecteur garde sa sheet, ses lignes à cocher et son segmenté « Par groupe » / « Par muscle »
+  (§ 15.17.6).
 - Les planches plus anciennes dessinent aussi **Mes records** (`T2-Records`) et les **mensurations**
   (`T2-Mensurations`).
 
@@ -3255,7 +3276,8 @@ données ne changent pas** (§ 4, § 5) : aucune migration.
 #### 15.9.1 Fiche exercice
 
 Remplace le § 2.8, même route (`exercise-history/{exerciseId}`), ouverte depuis le bouton « fiche » du
-bloc exercice de la séance en cours (§ 15.7.1) et depuis Progrès. Gabarit **fiche**, en liste
+bloc exercice de la séance en cours (§ 15.7.1) et depuis Progrès (🔄 D43 : et depuis la sheet « Muscle »,
+§ 15.17.7 ; dernière section « Muscles travaillés », § 15.17.5). Gabarit **fiche**, en liste
 paresseuse (la liste des séances peut compter des centaines de lignes). Comme avant : séances
 **terminées** où l'exercice a **au moins une série validée**, seules les séries validées comptent
 (🔄 D15), la séance en cours n'en fait pas partie, exercices archivés compris (§ 3.9). La
@@ -3836,7 +3858,8 @@ vide, étape du type). Plus de route `start-workout`.
 Remplace l'écran plein du § 2.7 (route `exercise-picker` retirée) par une **bottom sheet haute**
 (92 % de l'écran) ouverte par « Ajouter un exercice » de la séance en cours (bouton de fin de liste
 ou état vide). Mêmes règles : exercices archivés absents, filtre groupe **et** texte sur le nom
-affiché, ajouts multiples.
+affiché, ajouts multiples. 🔄 D43 : filtre « Par muscle » et sheet « Muscle » (§ 15.17.6, § 15.17.7),
+muscles d'un exercice perso dans son formulaire (§ 15.17.3).
 
 - **Haut** : titre « Ajouter un exercice » et bouton icône **+** « Nouvel exercice » ; recherche
   (`StudioTextField`, « Chercher un exercice... ») ; puces de filtre « Tous » puis les 9 groupes,
@@ -4932,3 +4955,302 @@ les formats de kcal, ml et litres. Devenues inutiles et retirées : `nutrition_w
 | `nutrition_restock_unit` | doses ajoutées | doses added |
 | `nutrition_new_stock` | Nouveau stock | New stock |
 | `journal_day_nutrition` (modifiée) | Nutrition | Nutrition |
+
+### 15.17 Carte du corps et muscles travaillés (🔄 D43)
+
+La maquette « Carte du corps » (planche `T2-Carte-corps`, composant `T2-Corps`, export
+`design/claude-design/corps/carte-du-corps.svg`) dessine **17 muscles**, de face et de dos. L'app gagne
+une **liste fixe de muscles** (§ 15.17.1), les **muscles principaux et secondaires** de chaque exercice
+intégré (§ 15.17.2, donnée embarquée, jamais dans les fichiers de l'utilisateur), un **choix facultatif**
+des muscles d'un exercice perso (§ 15.17.3), la section **« Muscles travaillés »** de la fiche exercice
+(§ 15.17.5), un **filtre « Par muscle »** dans le sélecteur d'exercices (§ 15.17.6) et une **sheet
+« Muscle »** (§ 15.17.7). L'écran de la séance en cours ne change pas (seul le sélecteur qu'il ouvre gagne
+le filtre). Le **groupe musculaire** (§ 6.2) reste tel quel : il classe les exercices, décide du cardio
+(§ 4.1) et filtre « Par groupe ». Un composant nouveau, la **carte du corps** (`BodyMap`, § 15.17.4). Le
+format gagne deux **champs facultatifs** sur les exercices perso (§ 15.17.8) : ni nouvelle version, ni
+migration.
+
+#### 15.17.1 Muscles
+
+Liste fixe ; l'**ordre ci-dessous est l'ordre d'affichage** (noms d'un exercice, puces, éléments TalkBack
+de la carte). Les ids sont ceux des formes du SVG ; **figés** : ils sont stockés dans les exercices perso.
+« Vue » = la moitié de la carte montrée par la sheet « Muscle » (celle où le muscle se voit le mieux) ; un
+muscle visible sur les deux vues est une seule forme : il se colore des deux côtés.
+
+| # | id | nom FR | nom EN | nom savant FR | nom savant EN | vue |
+|---|---|---|---|---|---|---|
+| 1 | `trapezes` | Trapèzes | Traps | trapèze | trapezius | dos |
+| 2 | `epaules-avant` | Épaules avant | Front delts | deltoïde antérieur | anterior deltoid | face |
+| 3 | `epaules-cote` | Épaules côté | Side delts | deltoïde moyen | lateral deltoid | face |
+| 4 | `epaules-arriere` | Épaules arrière | Rear delts | deltoïde postérieur | posterior deltoid | dos |
+| 5 | `pectoraux` | Pecs | Chest | grand pectoral | pectoralis major | face |
+| 6 | `biceps` | Biceps | Biceps | biceps brachial | biceps brachii | face |
+| 7 | `triceps` | Triceps | Triceps | triceps brachial | triceps brachii | dos |
+| 8 | `avant-bras` | Avant-bras | Forearms | brachio-radial, fléchisseurs et extenseurs du poignet | brachioradialis, wrist flexors and extensors | face |
+| 9 | `abdominaux` | Abdos | Abs | grand droit de l'abdomen | rectus abdominis | face |
+| 10 | `obliques` | Obliques | Obliques | obliques externe et interne | external and internal obliques | face |
+| 11 | `dorsaux` | Dorsaux | Lats | grand dorsal | latissimus dorsi | dos |
+| 12 | `lombaires` | Lombaires | Lower back | érecteurs du rachis | erector spinae | dos |
+| 13 | `fessiers` | Fessiers | Glutes | grand et moyen fessiers | gluteus maximus and medius | dos |
+| 14 | `quadriceps` | Quadriceps | Quads | quadriceps fémoral | quadriceps femoris | face |
+| 15 | `ischio-jambiers` | Ischio-jambiers | Hamstrings | biceps fémoral, semi-tendineux et semi-membraneux | biceps femoris, semitendinosus and semimembranosus | dos |
+| 16 | `adducteurs` | Adducteurs | Adductors | grand, long et court adducteurs | adductor magnus, longus and brevis | face |
+| 17 | `mollets` | Mollets | Calves | triceps sural (gastrocnémien et soléaire) | triceps surae (gastrocnemius and soleus) | dos |
+
+**Rôle** (une phrase, sheet « Muscle » ; anglais au § 15.17.11) :
+
+| id | rôle FR |
+|---|---|
+| `trapezes` | Hausse, rapproche et abaisse les omoplates : il porte les charges lourdes et tient le haut du dos dans les tirages. |
+| `epaules-avant` | Lève le bras devant soi : il pousse dans tous les développés, surtout au-dessus de la tête. |
+| `epaules-cote` | Écarte le bras sur le côté : c'est lui qui élargit la carrure, travaillé par les élévations latérales. |
+| `epaules-arriere` | Tire le bras vers l'arrière : il aide dans les tirages et le rowing, et équilibre l'épaule face aux pecs. |
+| `pectoraux` | Rapproche le bras du buste et le pousse vers l'avant : c'est le moteur des développés, des dips et des pompes. |
+| `biceps` | Plie le coude et tourne la paume vers le haut : le moteur des curls, qui aide dans les tractions et les tirages. |
+| `triceps` | Tend le coude : il finit chaque développé et chaque dips, et fait les deux tiers du volume du bras. |
+| `avant-bras` | Ferment la main et tiennent le poignet : c'est la prise, qui travaille dès qu'on tient lourd. |
+| `abdominaux` | Enroule le buste en rapprochant les côtes du bassin, et gaine le tronc sous les charges lourdes. |
+| `obliques` | Tournent et inclinent le buste, et le gardent droit quand la charge est d'un seul côté. |
+| `dorsaux` | Ramène le bras vers le bas et vers l'arrière : le moteur des tractions, des tirages et du rowing. |
+| `lombaires` | Redressent la colonne et la tiennent droite : ils travaillent dans le soulevé de terre, le squat et le rowing. |
+| `fessiers` | Tendent la hanche et écartent la jambe : le moteur des squats, des fentes et du soulevé de terre. |
+| `quadriceps` | Tend le genou : le moteur des squats, de la presse et du leg extension. |
+| `ischio-jambiers` | Plient le genou et tendent la hanche : leg curl et soulevé de terre. |
+| `adducteurs` | Ramènent la jambe vers l'intérieur : ils tiennent les genoux dans le squat et les fentes. |
+| `mollets` | Tendent la cheville, talon levé : debout surtout les jumeaux, assis surtout le soléaire. |
+
+#### 15.17.2 Muscles des exercices intégrés
+
+**Principal** = le muscle qui fait le travail ; **secondaire** = il aide. Chaque exercice du catalogue
+(§ 6.1) a **au moins un principal** et zéro ou plusieurs secondaires, **jamais le même muscle dans les
+deux**. Donnée embarquée dans le code (catalogue), comme les noms : jamais stockée, sauvegardée ni
+importée — une version qui la corrige s'applique à tout l'historique. Listes dans l'ordre du § 15.17.1.
+
+| # | id | principaux | secondaires |
+|---|---|---|---|
+| 1 | `deadlift` | `lombaires`, `fessiers`, `ischio-jambiers` | `trapezes`, `avant-bras`, `dorsaux`, `quadriceps`, `adducteurs` |
+| 2 | `pullup` | `dorsaux` | `trapezes`, `epaules-arriere`, `biceps`, `avant-bras` |
+| 3 | `row` | `trapezes`, `dorsaux` | `epaules-arriere`, `biceps`, `lombaires` |
+| 4 | `latpull` | `dorsaux` | `trapezes`, `epaules-arriere`, `biceps` |
+| 5 | `tiragebucheron` | `dorsaux` | `trapezes`, `epaules-arriere`, `biceps` |
+| 6 | `tirageh` | `trapezes`, `dorsaux` | `epaules-arriere`, `biceps` |
+| 7 | `bench` | `pectoraux` | `epaules-avant`, `triceps` |
+| 8 | `incline` | `pectoraux` | `epaules-avant`, `triceps` |
+| 9 | `fly` | `pectoraux` | `epaules-avant` |
+| 10 | `dips` | `pectoraux`, `triceps` | `epaules-avant` |
+| 11 | `dbench` | `pectoraux` | `epaules-avant`, `triceps` |
+| 12 | `dincline` | `pectoraux` | `epaules-avant`, `triceps` |
+| 13 | `pecfly` | `pectoraux` | `epaules-avant` |
+| 14 | `curl` | `biceps` | `avant-bras` |
+| 15 | `hammercurl` | `biceps`, `avant-bras` | — |
+| 16 | `concentcurl` | `biceps` | `avant-bras` |
+| 17 | `pushdown` | `triceps` | — |
+| 18 | `overheadtri` | `triceps` | — |
+| 19 | `skullcrusher` | `triceps` | — |
+| 20 | `barfront` | `triceps` | — |
+| 21 | `squat` | `fessiers`, `quadriceps` | `lombaires`, `ischio-jambiers`, `adducteurs` |
+| 22 | `legpress` | `quadriceps` | `fessiers`, `ischio-jambiers`, `adducteurs` |
+| 23 | `legcurl` | `ischio-jambiers` | `mollets` |
+| 24 | `legext` | `quadriceps` | — |
+| 25 | `lunges` | `fessiers`, `quadriceps` | `ischio-jambiers`, `adducteurs` |
+| 26 | `calfraize` | `mollets` | — |
+| 27 | `adductorpress` | `adducteurs` | — |
+| 28 | `abductorpress` | `fessiers` | — |
+| 29 | `calfsit` | `mollets` | — |
+| 30 | `ohp` | `epaules-avant` | `trapezes`, `epaules-cote`, `pectoraux`, `triceps` |
+| 31 | `lateralraise` | `epaules-cote` | `trapezes`, `epaules-avant` |
+| 32 | `frontraise` | `epaules-avant` | `epaules-cote`, `pectoraux` |
+| 33 | `crunch` | `abdominaux` | `obliques` |
+| 34 | `plank` | `abdominaux` | `obliques` |
+| 35 | `legrise` | `abdominaux` | `obliques`, `quadriceps` |
+| 36 | `treadmill` | `quadriceps`, `mollets` | `fessiers`, `ischio-jambiers` |
+| 37 | `bike` | `quadriceps` | `fessiers`, `ischio-jambiers`, `mollets` |
+| 38 | `wristcurl` | `avant-bras` | — |
+| 39 | `wristext` | `avant-bras` | — |
+| 40 | `reversecurl` | `avant-bras` | `biceps` |
+| 41 | `pinchgrip` | `avant-bras` | — |
+| 42 | `farmerwalk` | `trapezes`, `avant-bras` | `abdominaux`, `obliques`, `lombaires` |
+
+Choix notables : le brachial (sous le biceps) compte comme `biceps` et le brachio-radial comme
+`avant-bras` (curl marteau, curl inversé) ; le droit fémoral, fléchisseur de la hanche, fait du
+`quadriceps` un secondaire du relevé de jambes ; le moyen fessier fait des `fessiers` le principal de
+l'abducteur ; le chef claviculaire du grand pectoral fait des `pectoraux` un secondaire du développé
+militaire et des élévations frontales (comme la maquette) ; au tapis, `quadriceps` et `mollets` portent
+la marche et la course quelle que soit la pente.
+
+#### 15.17.3 Exercices perso
+
+- Deux champs **facultatifs** (§ 15.17.8). Un exercice perso créé avant cette version, ou sans choix,
+  n'a **aucun muscle** : pas de section « Muscles travaillés » dans sa fiche (§ 15.17.5), jamais retenu
+  par un muscle du filtre (§ 15.17.6), absent des sheets « Muscle » ; sa ligne garde son groupe en
+  sous-titre.
+- **Formulaire** « Nouvel exercice » / « Modifier l'exercice » (§ 15.11.2) : après « Groupe
+  musculaire », « Muscles principaux » puis « Muscles secondaires », chacun sous son libellé en **puces de
+  filtre à choix multiple** (les 17, dans l'ordre du § 15.17.1, sur plusieurs lignes, lues comme des cases
+  à cocher). Choisir dans une liste un muscle déjà choisi dans l'autre l'en retire. Rien d'obligatoire :
+  [Ajouter] / [Enregistrer] ne dépendent que du nom ; des secondaires sans principal sont acceptés. Le
+  formulaire défile ; « Modifier » part des muscles enregistrés.
+- Changer les muscles ne touche pas aux séances (comme le nom et le groupe, § 3.9).
+
+#### 15.17.4 Carte du corps
+
+- **Dessin** : les formes du SVG, converties pour Compose (tracés absolus `M`, `C`, `L`, `Z`) ; repère de
+  420 × 460, vue de face à gauche (x 0 – 200), vue de dos à droite (x 220 – 420) ; une vue seule recadre
+  sur 200 × 460. La carte prend la **hauteur** demandée, la largeur suit (420 / 460, ou 200 / 460 pour une
+  vue). Silhouette `bodyBase` cernée d'un contour `bodyOutline` de 1 dp ; chaque muscle rempli selon son
+  état et séparé de ses voisins par un **écart** de 1,5 dp de la couleur de la surface sous la carte (fond
+  ou groupe / sheet). Les traits ne grandissent pas avec la carte (nette de 60 à 900 dp).
+- **États d'un muscle** (aucune couleur de sens : jaune, vert et rouge gardent le leur, DESIGN.md § 1) :
+  **principal** plein `textPrimary` ; **secondaire** `bodySecondary` ; **non travaillé** `bodyRest` ;
+  **sélectionné** (filtre) plein `textPrimary` entouré d'un anneau de 1,75 dp séparé du muscle par 2,5 dp
+  d'écart.
+- **Tailles** : grande, 360 dp de haut (filtre du sélecteur, réduite si la largeur manque) ; petite,
+  150 dp (fiche) ; une vue, 140 dp (sheet « Muscle »).
+- **Toucher** (fiche et filtre seulement) : le muscle sous le doigt ; hors de toute forme, le muscle le
+  plus proche à **12 dp** au plus ; plus loin (silhouette, tête, vide), rien. Les formes ne se chevauchent
+  pas ; au même point, la dernière dessinée l'emporte.
+- **Accessibilité** : une carte touchable donne à TalkBack **un élément par muscle** (17, dans l'ordre du
+  § 15.17.1), centré sur sa forme dans sa vue (§ 15.17.1), lu par son nom et son état : « Pecs,
+  principal », « Triceps, secondaire », « Lombaires, non travaillé » (fiche, action « Voir le muscle ») ;
+  dans le filtre, une case à cocher « Pecs », cochée ou non (action « Filtrer »). La carte de la sheet
+  « Muscle », non touchable, est décorative (le titre nomme le muscle).
+
+#### 15.17.5 Fiche exercice : « Muscles travaillés »
+
+- **Dernière section** de la fiche (§ 15.9.1) : après « Séances », ou après l'état vide « Aucune séance ».
+  En-tête de section de la fiche (`SectionHeader` de 20, la fiche n'est pas en listes groupées).
+- Une rangée : à gauche la **petite carte** (150 dp, les deux vues, principaux pleins, secondaires gris,
+  écart couleur du fond) ; à 20 dp, la colonne des **noms** : étiquette « Principal » / « Principaux »
+  (selon le nombre), un nom par ligne (pastille de légende pleine, nom en 600), puis « Secondaire » /
+  « Secondaires » et leurs noms (pastille grise, nom en 500) ; sans secondaire, pas de seconde étiquette.
+  Chaque nom est une ligne d'au moins 48 dp qui ouvre la **sheet « Muscle »** (§ 15.17.7) ; toucher la
+  carte aussi, sur n'importe quel muscle, travaillé ou non. La carte reste en haut quand la colonne est plus
+  haute qu'elle ; en texte agrandi les noms passent à la ligne.
+- Exercice perso sans muscle : **pas de section**. Exercice archivé : la section comme les autres.
+
+#### 15.17.6 Sélecteur d'exercices : filtre « Par muscle »
+
+- Sous la recherche, un **contrôle segmenté** « Par groupe » / « Par muscle » ; « Par groupe » par
+  défaut, le choix est gardé tant que la sheet reste ouverte (rotation comprise), pas d'une ouverture à
+  l'autre.
+- **« Par groupe »** : les puces de groupe du § 15.11.2, inchangées.
+- **« Par muscle »** : en tête de la liste (elle défile avec), la **grande carte**, centrée, « Face » et
+  « Dos » en légende sous chaque moitié ; tous les muscles au repos sauf ceux du filtre. **Toucher un
+  muscle l'ajoute au filtre ou l'en retire** (sélectionné = plein + anneau ; plusieurs muscles possibles ;
+  vibration légère). Sous la carte, une **puce sélectionnée** par muscle choisi (ordre du § 15.17.1) puis
+  « Effacer » (bouton texte, vide le filtre) ; sans muscle choisi, « Touche un muscle pour filtrer la
+  liste. » (`caption`). Toucher la puce d'un muscle ouvre sa **sheet « Muscle »** (§ 15.17.7), étape du
+  sélecteur, d'où « Retirer du filtre ».
+- **Filtre** : exercices non archivés dont **au moins un** des muscles choisis est principal **ou**
+  secondaire, **et** dont le nom affiché contient le texte de la recherche (§ 10.6) ; aucun muscle
+  choisi → tous (texte seul). Le groupe n'est pas appliqué dans ce mode. **Ordre** : d'abord les
+  exercices où un muscle choisi est principal, puis ceux où il n'est que secondaire, chacun dans l'ordre
+  du sélecteur (catalogue, puis perso par création).
+- **Sous-titre** des lignes en « Par muscle » : les principaux puis, après « · », les secondaires, en
+  minuscules après le premier nom (« Pecs · épaules avant, triceps », « Lombaires, fessiers,
+  ischio-jambiers · trapèzes, … ») ; sans muscle, le groupe. En « Par groupe », le groupe, comme avant.
+- Lignes, cases, ajouts, appui long et « Aucun exercice trouvé » inchangés.
+
+#### 15.17.7 Sheet « Muscle »
+
+- Ouverte depuis la **fiche** (bottom sheet sur la fiche) et depuis le **filtre** (étape de la sheet du
+  sélecteur, comme ses formulaires : retour → la liste, § 15.11.2).
+- **Haut** : la carte d'une vue (140 dp, la vue du muscle, § 15.17.1 ; ce muscle plein, le reste au repos,
+  décorative) ; à 16 dp, l'étiquette « Muscle » (`label`, `textSecondary`), le **nom** (`titleScreen`, lu
+  comme un titre) et le **nom savant** (`bodyLine` en `textSecondary`).
+- Le **rôle** (`paragraph`).
+- **« Exercices »** (étiquette, nombre à droite) puis une ligne par exercice non archivé qui le
+  travaille (catalogue et perso) : **principaux d'abord**, puis secondaires, chacun dans l'ordre du
+  sélecteur ; sous-titre « Principal » / « Secondaire ».
+  - Depuis la fiche : toucher → la **fiche** de cet exercice (la sheet se ferme ; l'exercice de la fiche
+    ouverte ferme seulement la sheet), chevron à droite.
+  - Depuis le filtre : la ligne à cocher du sélecteur (cochée et inactive si l'exercice est déjà dans la
+    séance, toucher l'ajoute).
+- **Bas** : depuis le filtre, « Retirer du filtre » (bouton secondaire) ; « Fermer » (bouton texte).
+- Le contenu défile s'il dépasse (texte agrandi, muscle très sollicité).
+
+#### 15.17.8 Format des données
+
+- **`Exercise.primaryMuscles`**, **`Exercise.secondaryMuscles`** : tableaux d'ids du § 15.17.1,
+  **facultatifs, omis vides** ; les versions précédentes de l'app les ignorent (et les perdent si elles
+  réécrivent le fichier), comme `intakes` (§ 15.15.4). Lus dans `exercises.json` comme à l'import
+  (`@gymtracker_exercises`) : pas un tableau → vide ; éléments qui ne sont pas un id connu écartés,
+  doublons retirés, ordre ramené à celui du § 15.17.1 ; un muscle présent dans les deux → principal
+  seulement. Une valeur invalide ne fait jamais refuser l'import (§ 5.3). Un ancien fichier se relit sans
+  muscle.
+- Les muscles des exercices intégrés ne sont pas dans le format (§ 15.17.2). Export CSV inchangé (§ 8).
+
+#### 15.17.9 Règles (pures, testées en JVM)
+
+- **Catalogue** : chaque exercice intégré a au moins un principal ; chaque id de muscle existe dans la
+  liste ; aucun muscle à la fois principal et secondaire ; les 42 exercices sont couverts ; les ids de la
+  liste sont exactement les formes de la carte.
+- **Filtre par muscle** : retenu par un principal, par un secondaire ; plusieurs muscles (union) ;
+  principaux avant secondaires ; avec la recherche ; aucun muscle choisi (tous) ; exercice perso sans
+  muscle (jamais retenu par un muscle, présent sans choix) ; exercice perso avec muscles ; archivés
+  absents.
+- **Exercices d'un muscle** (sheet) : principaux puis secondaires, perso compris, archivés absents.
+- **Formulaire** : un muscle choisi dans une liste quitte l'autre.
+- **Lecture** : ancien fichier sans les champs relu sans muscle ; ids inconnus, doublons, muscle dans
+  les deux listes, pas un tableau ; champs omis vides à l'écriture.
+- **Carte** : toucher dans une forme, juste à côté (la plus proche à 12 dp), loin (rien) ; vue seule.
+
+#### 15.17.10 Design system
+
+- **Composant nouveau** `BodyMap` (DESIGN.md § 9.1) : la carte du § 15.17.4, ses tailles, états et
+  éléments TalkBack ; sa géométrie pure (tracés, mise à l'échelle, toucher) testée en JVM, comme
+  `CurveGeometry` ; la ligne de légende `MuscleLegendRow` (pastille + nom, graisse selon le rôle) de la
+  fiche.
+- **Jetons nouveaux** (DESIGN.md § 2), valeurs de la maquette : `bodyBase` (#1F2125 / #E4E4E1),
+  `bodyOutline` (#45484E / #B4B6BA), `bodyRest` (#2E3035 / #D3D3CF), `bodySecondary` (#7E8187 /
+  #6F7277) ; le principal est `textPrimary`, l'écart la couleur de la surface.
+- Le reste : `SectionHeader`, `ListRow`, `SegmentedControl`, `FilterChip` (choix multiple),
+  `LabeledField`, `SheetSurface`, `StudioBottomSheet`, `StudioButton`, `SheetTitle`.
+
+#### 15.17.11 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; noms, noms savants et rôles FR au § 15.17.1. Repris : les
+`exercise_picker_*` existants et « Fermer ».
+
+| clé | FR | EN |
+|---|---|---|
+| `muscle_name_<id>` (17) | Trapèzes … Mollets | Traps … Calves |
+| `muscle_scientific_<id>` (17) | trapèze … | trapezius … |
+| `muscle_role_<id>` (17) | rôles du § 15.17.1 | ci-dessous |
+| `exercise_muscles_title` | Muscles travaillés | Muscles worked |
+| `exercise_muscles_primary` (pluriel) | Principal / Principaux | Primary / Primary |
+| `exercise_muscles_secondary` (pluriel) | Secondaire / Secondaires | Secondary / Secondary |
+| `muscle_sheet_label` | Muscle | Muscle |
+| `muscle_sheet_exercises` | Exercices | Exercises |
+| `muscle_role_primary` / `_secondary` | Principal / Secondaire | Primary / Secondary |
+| `muscle_state_primary` / `_secondary` / `_rest` (accessibilité) | {{nom}}, principal / {{nom}}, secondaire / {{nom}}, non travaillé | {{name}}, primary / {{name}}, secondary / {{name}}, not worked |
+| `muscle_open` (accessibilité) | Voir le muscle | Show muscle |
+| `muscle_filter_action` (accessibilité) | Filtrer | Filter |
+| `body_map_front` / `_back` | Face / Dos | Front / Back |
+| `exercise_picker_by_group` / `_by_muscle` | Par groupe / Par muscle | By group / By muscle |
+| `exercise_picker_muscle_hint` | Touche un muscle pour filtrer la liste. | Tap a muscle to filter the list. |
+| `exercise_picker_clear` | Effacer | Clear |
+| `muscle_filter_remove` | Retirer du filtre | Remove from filter |
+| `exercise_picker_primary_muscles` / `_secondary_muscles` | Muscles principaux / Muscles secondaires | Primary muscles / Secondary muscles |
+
+Rôles en anglais (`muscle_role_<id>`) :
+
+| id | EN |
+|---|---|
+| `trapezes` | Raises, squeezes and lowers the shoulder blades: it carries heavy loads and holds the upper back in rows. |
+| `epaules-avant` | Raises the arm in front of you: it pushes in every press, especially overhead. |
+| `epaules-cote` | Lifts the arm out to the side: it gives the shoulders their width, trained by lateral raises. |
+| `epaules-arriere` | Pulls the arm back: it helps in rows and pulldowns and balances the shoulder against the chest. |
+| `pectoraux` | Brings the arm across the body and pushes it forward: it drives presses, dips and push-ups. |
+| `biceps` | Bends the elbow and turns the palm up: it drives curls and helps in pull-ups and rows. |
+| `triceps` | Straightens the elbow: it finishes every press and dip and makes up two thirds of the upper arm. |
+| `avant-bras` | Close the hand and hold the wrist: they are your grip, working whenever you hold something heavy. |
+| `abdominaux` | Curls the trunk by bringing the ribs toward the pelvis, and braces the core under heavy loads. |
+| `obliques` | Rotate and bend the trunk, and keep it upright when the load is on one side. |
+| `dorsaux` | Pulls the arm down and back: it drives pull-ups, pulldowns and rows. |
+| `lombaires` | Straighten the spine and keep it upright: they work in deadlifts, squats and rows. |
+| `fessiers` | Extend the hip and move the leg outward: they drive squats, lunges and deadlifts. |
+| `quadriceps` | Straightens the knee: it drives squats, the leg press and leg extensions. |
+| `ischio-jambiers` | Bend the knee and extend the hip: leg curls and deadlifts. |
+| `adducteurs` | Bring the leg inward: they steady the knees in squats and lunges. |
+| `mollets` | Point the foot, heel up: standing works mostly the gastrocnemius, seated mostly the soleus. |
