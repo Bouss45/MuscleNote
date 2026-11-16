@@ -46,6 +46,14 @@ data class StudioColors(
     val downDim: Color,
     /** Voile sous une bottom sheet. */
     val scrim: Color,
+    /** Carte du corps (🔄 D43, `corps.base`) : silhouette. */
+    val bodyBase: Color,
+    /** Carte du corps (`corps.trait`) : contour de la silhouette, 1 dp. */
+    val bodyOutline: Color,
+    /** Carte du corps (`corps.repos`) : muscle non travaillé. */
+    val bodyRest: Color,
+    /** Carte du corps (`corps.secondaire`) : muscle secondaire ; le principal est [textPrimary]. */
+    val bodySecondary: Color,
 )
 
 val StudioDarkColors = StudioColors(
@@ -70,6 +78,10 @@ val StudioDarkColors = StudioColors(
     down = Color(0xFFFF6B5E),
     downDim = Color(0xFF3A1714),
     scrim = Color(0x99000000),
+    bodyBase = Color(0xFF1F2125),
+    bodyOutline = Color(0xFF45484E),
+    bodyRest = Color(0xFF2E3035),
+    bodySecondary = Color(0xFF7E8187),
 )
 
 val StudioLightColors = StudioColors(
@@ -96,4 +108,8 @@ val StudioLightColors = StudioColors(
     down = Color(0xFFC62D22),
     downDim = Color(0xFFFCE6E3),
     scrim = Color(0x66121315),
+    bodyBase = Color(0xFFE4E4E1),
+    bodyOutline = Color(0xFFB4B6BA),
+    bodyRest = Color(0xFFD3D3CF),
+    bodySecondary = Color(0xFF6F7277),
 )

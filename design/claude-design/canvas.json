@@ -350,6 +350,30 @@
       "w": 1400,
       "x": 0,
       "y": 0
+    },
+    "T2-Carte-corps.dc.html": {
+      "h": 1160,
+      "page": "tour2",
+      "title": "Carte du corps — sombre",
+      "w": 1560,
+      "x": 0,
+      "y": 13315
+    },
+    "T2-Carte-corps-clair.dc.html": {
+      "h": 1160,
+      "page": "tour2",
+      "title": "Carte du corps — clair",
+      "w": 1560,
+      "x": 1640,
+      "y": 13315
+    },
+    "T2-Corps.dc.html": {
+      "h": 460,
+      "page": "tour2",
+      "title": "Composant · Carte du corps (réglages)",
+      "w": 420,
+      "x": 3280,
+      "y": 13315
     }
   },
   "createdOnFiles": {
@@ -370,7 +394,8 @@
     "t2C",
     "t2E",
     "t2F",
-    "t2G"
+    "t2G",
+    "t2H"
   ],
   "notes": {
     "t2C": {
@@ -449,6 +474,15 @@
       "w": 240,
       "x": 0,
       "y": 3630
+    },
+    "t2H": {
+      "kind": "title1",
+      "maxW": 3700,
+      "page": "tour2",
+      "text": "Carte du corps — états, deux tailles, sheet Muscle",
+      "w": 240,
+      "x": 0,
+      "y": 13045
     }
   },
   "order": [
@@ -497,7 +531,10 @@
     "T2-Nutrition.dc.html",
     "T2-Journal-clair.dc.html",
     "T2-Parametres-clair.dc.html",
-    "T2-Nutrition-clair.dc.html"
+    "T2-Nutrition-clair.dc.html",
+    "T2-Carte-corps.dc.html",
+    "T2-Carte-corps-clair.dc.html",
+    "T2-Corps.dc.html"
   ],
   "pages": [
     {
