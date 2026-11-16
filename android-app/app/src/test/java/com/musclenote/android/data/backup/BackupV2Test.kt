@@ -4,9 +4,12 @@ import com.musclenote.android.data.backup.BackupFixtures.reader
 import com.musclenote.android.data.backup.BackupFixtures.resource
 import com.musclenote.android.data.backup.BackupFixtures.success
 import com.musclenote.android.data.model.DailyTracker
+import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORIGIN
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.Muscle
+import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.ProteinGoal
 import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Supplement
@@ -409,5 +412,66 @@ class BackupV2Test {
         assertEquals(listOf(plain, tracked), reread.supplements)
         assertEquals(tracker.proteinLog, reread.dailyTracker!!.proteinLog)
         assertEquals(tracker.proteinGoal, reread.dailyTracker!!.proteinGoal)
+    }
+
+    // ─── Muscles des exercices perso (§ 15.17.8, 🔄 D43) ────────────────────────
+
+    private fun exercisesOf(items: String) = readV2(""""@gymtracker_exercises": [ $items ]""").exercises!!
+
+    @Test
+    fun `les muscles d'un exercice perso sont lus`() {
+        val exercise = exercisesOf(
+            """{ "id": "c1", "name": "Hip thrust", "muscleGroup": "jambes",
+                 "primaryMuscles": ["fessiers"], "secondaryMuscles": ["ischio-jambiers", "adducteurs"] }""",
+        ).single()
+        assertEquals(listOf(Muscle.Fessiers), exercise.primaryMuscles)
+        assertEquals(listOf(Muscle.IschioJambiers, Muscle.Adducteurs), exercise.secondaryMuscles)
+    }
+
+    @Test
+    fun `un ancien exercice perso se lit sans muscle`() {
+        val exercise = exercisesOf("""{ "id": "c1", "name": "Shrug", "muscleGroup": "dos" }""").single()
+        assertEquals(emptyList<Muscle>(), exercise.primaryMuscles)
+        assertEquals(emptyList<Muscle>(), exercise.secondaryMuscles)
+    }
+
+    @Test
+    fun `des muscles invalides sont écartés sans faire échouer l'import`() {
+        val exercises = exercisesOf(
+            """{ "id": "c1", "name": "A", "muscleGroup": "dos",
+                 "primaryMuscles": ["triceps", "inconnu", "pectoraux", "triceps", 3, null], "secondaryMuscles": "biceps" },
+               { "id": "c2", "name": "B", "muscleGroup": "dos",
+                 "primaryMuscles": ["biceps"], "secondaryMuscles": ["biceps", "avant-bras", "Biceps"] },
+               { "id": "c3", "name": "C", "muscleGroup": "dos", "primaryMuscles": {}, "secondaryMuscles": null }""",
+        )
+        assertEquals(listOf("c1", "c2", "c3"), exercises.map { it.id })
+        // Ordre de la liste des muscles, doublons et ids inconnus retirés ; pas un tableau → vide.
+        assertEquals(listOf(Muscle.Pectoraux, Muscle.Triceps), exercises[0].primaryMuscles)
+        assertEquals(emptyList<Muscle>(), exercises[0].secondaryMuscles)
+        // Un muscle des deux listes reste principal.
+        assertEquals(listOf(Muscle.Biceps), exercises[1].primaryMuscles)
+        assertEquals(listOf(Muscle.AvantBras), exercises[1].secondaryMuscles)
+        assertEquals(emptyList<Muscle>(), exercises[2].primaryMuscles + exercises[2].secondaryMuscles)
+    }
+
+    @Test
+    fun `l'export omet les muscles vides et relit les autres à l'identique`() {
+        val plain = Exercise("c1", "Shrug", MuscleGroup.Dos)
+        val withMuscles = Exercise(
+            "c2", "Hip thrust", MuscleGroup.Jambes,
+            primaryMuscles = listOf(Muscle.Fessiers), secondaryMuscles = listOf(Muscle.IschioJambiers),
+        )
+        val text = BackupWriter.write(BackupData(exercises = listOf(plain, withMuscles)), exportedAt)
+        val written = Json.parseToJsonElement(text).jsonObject.getValue(BackupKeys.EXERCISES).jsonArray
+        assertEquals(listOf("id", "name", "muscleGroup"), written[0].jsonObject.keys.toList())
+        assertEquals(
+            listOf("fessiers"),
+            written[1].jsonObject.getValue("primaryMuscles").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals(
+            listOf("ischio-jambiers"),
+            written[1].jsonObject.getValue("secondaryMuscles").jsonArray.map { it.jsonPrimitive.content },
+        )
+        assertEquals(listOf(plain, withMuscles), success(reader().read(text)).data.exercises)
     }
 }
