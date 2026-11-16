@@ -419,7 +419,10 @@ x 0 – 200, dos à x 220 – 420, tracés `M` / `C` / `L` / `Z`), copiées dans
 - États : **principal** `textPrimary` ; **secondaire** `bodySecondary` ; **non travaillé** `bodyRest` ;
   **sélectionné** (filtre) plein `textPrimary` + anneau de 1,75 séparé du muscle par 2,5 d'écart (trait
   de 6 puis écart de 2,5 par-dessus).
-- Tailles (`BodyMapSize`) : **grande** 360 de haut (filtre ; réduite si la largeur manque), **petite**
+- Tailles (`BodyMapSize`) : **grande** 360 de haut au plus ; **au-dessus d'une liste**
+  (`BodyMapSize.aboveList`, filtre du sélecteur) : ce qui laisse la réserve demandée sous la carte (4,5
+  lignes de liste et la ligne du filtre), au plus `Large` et 40 % de la hauteur de l'écran, légendes
+  comprises, jamais moins que `Small` ; réduite aussi si la largeur manque ; **petite**
   150 (fiche), **une vue** 140 (`view` = face ou dos : sheet « Muscle »). Largeur au ratio 420 / 460
   (200 / 460 pour une vue). Option `viewLabels` : « Face » et « Dos » (`small`, `textSecondary`, centrés)
   6 sous chaque moitié.
@@ -767,8 +770,8 @@ La maquette n'est pas toujours d'accord avec elle-même ; voici ce qui fait foi.
 | barre d'onglets (v2) | fond + filet (Accueil, Progrès v1), `surface.groupe` sans filet (Journal, Nutrition v2) | `surfaceRaised` sans filet partout (rôle « onglets » de la planche Tokens v2) |
 | rangées du calendrier du Journal (D41) | ronds de 36 espacés de 2 (38), flèches de 44, 10 avant le résumé | rangées de 48 (cibles tactiles), flèches de 48, résumé collé à la grille de 6 rangées réservées |
 | carte du corps dans la fiche (D43) | groupe v2 juste sous le titre, noms en lignes de 28, chevron sur le groupe | dernière section de la fiche, en-tête v1 sur le fond (la fiche n'est pas redessinée) ; lignes de noms de 48 (cibles), chacune vers son muscle, sans chevron |
-| sélecteur d'exercices (D43) | écran plein, recherche dans la barre, segmenté « Par muscle · Récents · A – Z », bouton + rond par ligne, « 14 exercices » en étiquette | la sheet du sélecteur garde sa forme (D36) ; segmenté « Par groupe » / « Par muscle » ; la carte défile avec la liste ; lignes à cocher |
-| puces des muscles choisis (D43) | « Pecs × » (retirer) | puce inverse sans × : elle ouvre la sheet « Muscle », d'où « Retirer du filtre » ; « Effacer » vide tout |
+| sélecteur d'exercices (D43) | écran plein, recherche dans la barre, segmenté « Par muscle · Récents · A – Z », bouton + rond par ligne, « 14 exercices » en étiquette ; carte de 360 | la sheet du sélecteur garde sa forme (D36) ; segmenté « Par groupe » / « Par muscle » ; carte fixe au-dessus de la liste, plus compacte (au plus 40 % de l'écran, 4 à 5 exercices visibles dessous), masquée quand le clavier est ouvert ; seule la liste défile, toujours depuis le haut ; lignes à cocher |
+| puces des muscles choisis (D43) | « Pecs × » (retirer) | à la place de l'aide « Touche un muscle… » : le nom de chaque muscle en puce inverse sans × (elle ouvre la sheet « Muscle », d'où « Retirer du filtre ») et « Retirer le filtre » (bouton texte discret, icône `close`) qui vide tout |
 | sheet « Muscle » (D43) | « EXERCICES · 6 » et lien « Filtrer », pastille + « principal » à droite | en-tête de section v1 « Exercices » + nombre ; « Principal » / « Secondaire » en sous-titre ; depuis la fiche, chevron vers la fiche de l'exercice ; depuis le filtre, lignes à cocher et « Retirer du filtre » |
 | groupe « Aujourd'hui » de Nutrition (D42) | en-tête de 36 avec un bouton de 40 et 16 au-dessus ; « 1 840 / 2 600 kcal » et « Encore 760 kcal pour l'objectif » | en-tête de 48 (cible du bouton) et 12 au-dessus, le rond tombe à la même place ; chiffre héros et état de D35 (« encore 760 kcal » sur 2 600) |
 | compteur des compléments pris (D42) | dans l'étiquette, « COMPLÉMENTS · 1 SUR 3 PRIS », lien « Gérer » à droite | mention à droite de l'étiquette, « 1 sur 3 pris » ; pas de lien « Gérer » (chaque ligne ouvre sa sheet) |

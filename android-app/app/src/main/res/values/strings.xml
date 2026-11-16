@@ -846,7 +846,7 @@
     <string name="exercise_picker_by_group">Par groupe</string>
     <string name="exercise_picker_by_muscle">Par muscle</string>
     <string name="exercise_picker_muscle_hint">Touche un muscle pour filtrer la liste.</string>
-    <string name="exercise_picker_clear">Effacer</string>
+    <string name="exercise_picker_clear">Retirer le filtre</string>
     <string name="muscle_filter_remove">Retirer du filtre</string>
     <string name="exercise_picker_primary_muscles">Muscles principaux</string>
     <string name="exercise_picker_secondary_muscles">Muscles secondaires</string>

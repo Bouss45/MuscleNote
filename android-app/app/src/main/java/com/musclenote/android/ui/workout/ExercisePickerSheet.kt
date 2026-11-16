@@ -56,6 +56,17 @@ import com.musclenote.android.ui.designsystem.components.StudioIconButton
 import com.musclenote.android.ui.designsystem.components.StudioTextField
 import com.musclenote.android.ui.designsystem.theme.Studio
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.saveable.listSaver
 import com.musclenote.android.data.catalog.MuscleSelection
 import com.musclenote.android.data.model.Muscle
@@ -72,6 +83,9 @@ import com.musclenote.android.ui.exercise.MuscleSheetContent
 
 /** Part de l'écran prise par le sélecteur : le voile reste visible au-dessus. */
 private const val PICKER_HEIGHT_FRACTION = 0.92f
+
+/** Lignes d'exercice qui restent visibles sous la carte du filtre « Par muscle » (4 à 5). */
+private const val ROWS_UNDER_MAP = 4.5f
 
 /**
  * Étapes du sélecteur (§ 15.11.2) : la liste, un formulaire d'exercice perso, ses actions ; 🔄 D43 :
@@ -311,7 +325,11 @@ internal fun ExercisePickerContent(
     }
 }
 
-/** La liste : titre (et « + »), recherche, puces de groupe, lignes à cocher. */
+/**
+ * La liste : titre (et « + »), recherche, « Par groupe » (puces de groupe) ou « Par muscle » (carte fixe
+ * et ligne du filtre), puis les lignes à cocher, seules à défiler.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PickerList(
     title: String,
@@ -333,6 +351,10 @@ private fun PickerList(
     bottomInset: Dp,
 ) {
     val filtered = if (byMuscle) filterExercisesByMuscles(definitions, search, muscles) else filterExercises(definitions, search, group)
+    // Jamais de position restaurée : à l'ouverture, au changement de mode ou de filtre, la liste part du
+    // haut (sinon elle garderait le premier exercice visible, par exemple un exercice déjà coché).
+    val listState = remember(byMuscle, muscles, group, search) { LazyListState() }
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     SheetSurface(
         Modifier.fillMaxHeight(PICKER_HEIGHT_FRACTION).imePadding(),
         spacing = Studio.spacing.s,
@@ -379,64 +401,87 @@ private fun PickerList(
                 }
             }
         }
-        LazyColumn(Modifier.weight(1f).fillMaxWidth()) {
-            if (byMuscle) {
-                item(key = "body-map") {
-                    BodyMap(
-                        BodyMapSize.Large,
-                        Modifier.fillMaxWidth().wrapContentWidth(),
-                        selected = muscles,
-                        onRaised = true,
-                        selectable = true,
-                        viewLabels = true,
-                        onMuscleClick = onMuscleToggle,
-                    )
+        // Par muscle : la carte, fixe en haut, puis la ligne du filtre ; seule la liste défile dessous.
+        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth()) {
+            val available = maxHeight
+            Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
+                if (byMuscle) {
+                    // Clavier ouvert (recherche) : la carte laisse la place à la liste.
+                    if (!WindowInsets.isImeVisible) {
+                        BodyMap(
+                            BodyMapSize.aboveList(available, screenHeight, reserve = Studio.spacing.row * ROWS_UNDER_MAP + Studio.spacing.touch),
+                            Modifier.fillMaxWidth().wrapContentWidth(),
+                            selected = muscles,
+                            onRaised = true,
+                            selectable = true,
+                            viewLabels = true,
+                            onMuscleClick = onMuscleToggle,
+                        )
+                    }
+                    MuscleFilterRow(muscles, onMuscleOpen, onMusclesClear)
                 }
-                item(key = "muscle-filter") { MuscleFilterRow(muscles, onMuscleOpen, onMusclesClear) }
+                PickerRows(filtered, addedIds, byMuscle, listState, onAdd, onActions, Modifier.weight(1f).fillMaxWidth())
             }
-            items(filtered, key = { it.id }) { definition ->
-                val added = definition.id in addedIds
-                ListRow(
-                    title = exerciseName(definition),
-                    subtitle = (if (byMuscle) musclesSubtitle(definition) else null) ?: stringResource(definition.muscleGroup.labelRes),
-                    trailing = ListRowTrailing.Check(added),
-                    onClick = if (added) null else ({ onAdd(definition) }),
-                    onLongClick = if (onActions != null && definition.isCustom && !added) ({ onActions(definition) }) else null,
-                    onLongClickLabel = stringResource(R.string.exercise_picker_actions),
+        }
+    }
+}
+
+/** Les exercices filtrés, en lignes à cocher : la seule partie qui défile. */
+@Composable
+private fun PickerRows(
+    filtered: List<ExerciseDefinition>,
+    addedIds: Set<String>,
+    byMuscle: Boolean,
+    state: LazyListState,
+    onAdd: (ExerciseDefinition) -> Unit,
+    onActions: ((ExerciseDefinition) -> Unit)?,
+    modifier: Modifier,
+) {
+    LazyColumn(modifier, state = state) {
+        items(filtered, key = { it.id }) { definition ->
+            val added = definition.id in addedIds
+            ListRow(
+                title = exerciseName(definition),
+                subtitle = (if (byMuscle) musclesSubtitle(definition) else null) ?: stringResource(definition.muscleGroup.labelRes),
+                trailing = ListRowTrailing.Check(added),
+                onClick = if (added) null else ({ onAdd(definition) }),
+                onLongClick = if (onActions != null && definition.isCustom && !added) ({ onActions(definition) }) else null,
+                onLongClickLabel = stringResource(R.string.exercise_picker_actions),
+            )
+        }
+        if (filtered.isEmpty()) {
+            item(key = "empty") {
+                Text(
+                    stringResource(R.string.edit_workout_no_exercise_found),
+                    Modifier.fillMaxWidth().padding(vertical = Studio.spacing.section),
+                    style = Studio.typography.body,
+                    color = Studio.colors.textSecondary,
+                    textAlign = TextAlign.Center,
                 )
-            }
-            if (filtered.isEmpty()) {
-                item(key = "empty") {
-                    Text(
-                        stringResource(R.string.edit_workout_no_exercise_found),
-                        Modifier.fillMaxWidth().padding(vertical = Studio.spacing.section),
-                        style = Studio.typography.body,
-                        color = Studio.colors.textSecondary,
-                        textAlign = TextAlign.Center,
-                    )
-                }
             }
         }
     }
 }
 
 /**
- * Sous la grande carte : une puce par muscle choisi (elle ouvre sa sheet « Muscle ») puis « Effacer » ;
- * sans muscle, la phrase d'aide (§ 15.17.6).
+ * Sous la carte, à hauteur fixe (48 au moins, la liste ne saute pas) : sans muscle, la phrase d'aide ;
+ * sinon le nom de chaque muscle choisi (une puce, qui ouvre sa sheet « Muscle ») et « Retirer le
+ * filtre » (§ 15.17.6).
  */
 @Composable
 private fun MuscleFilterRow(muscles: Set<Muscle>, onOpen: (Muscle) -> Unit, onClear: () -> Unit) {
     if (muscles.isEmpty()) {
-        Text(
-            stringResource(R.string.exercise_picker_muscle_hint),
-            Modifier.fillMaxWidth().padding(vertical = Studio.spacing.s),
-            style = Studio.typography.caption,
-            color = Studio.colors.textSecondary,
-            textAlign = TextAlign.Center,
-        )
+        Box(Modifier.fillMaxWidth().heightIn(min = Studio.spacing.touch), contentAlignment = Alignment.Center) {
+            Text(
+                stringResource(R.string.exercise_picker_muscle_hint),
+                style = Studio.typography.caption,
+                color = Studio.colors.textSecondary,
+                textAlign = TextAlign.Center,
+            )
+        }
         return
     }
-    Row(Modifier.padding(vertical = Studio.spacing.xs), verticalAlignment = Alignment.CenterVertically) {
+    Row(Modifier.fillMaxWidth().heightIn(min = Studio.spacing.touch), verticalAlignment = Alignment.CenterVertically) {
         FlowRow(
             Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs),
@@ -451,7 +496,14 @@ private fun MuscleFilterRow(muscles: Set<Muscle>, onOpen: (Muscle) -> Unit, onCl
                 )
             }
         }
-        StudioButton(stringResource(R.string.exercise_picker_clear), onClear, variant = ButtonVariant.Text, size = ButtonSize.Small, tone = ButtonTone.Subtle)
+        StudioButton(
+            stringResource(R.string.exercise_picker_clear),
+            onClear,
+            variant = ButtonVariant.Text,
+            size = ButtonSize.Small,
+            icon = R.drawable.ds_ic_close,
+            tone = ButtonTone.Subtle,
+        )
     }
 }
 
