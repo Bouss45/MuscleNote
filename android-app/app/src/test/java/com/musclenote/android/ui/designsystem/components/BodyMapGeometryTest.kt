@@ -6,6 +6,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Test
+import androidx.compose.ui.unit.dp
 import java.io.File
 
 /** Carte du corps (§ 15.17.4, 🔄 D43) : formes du SVG, toucher par muscle, zones TalkBack. */
@@ -95,5 +96,28 @@ class BodyMapGeometryTest {
         assertEquals("haut", top, actual.top, 0.6f)
         assertEquals("droite", right, actual.right, 0.6f)
         assertEquals("bas", bottom, actual.bottom, 0.6f)
+    }
+
+    // ─── Taille au-dessus d'une liste (filtre « Par muscle », § 15.17.6) ────────
+
+    /** 4,5 lignes de 64 et la ligne du filtre de 48. */
+    private val reserve = (64 * 4.5f + 48).dp
+
+    @Test
+    fun `au-dessus d'une liste, la carte laisse la place de 4 à 5 exercices`() {
+        // Téléphone de 891 : 600 sous le contrôle segmenté → 600 − 336 − 24 de légendes.
+        assertEquals(240.dp, BodyMapSize.aboveList(available = 600.dp, screenHeight = 891.dp, reserve = reserve))
+    }
+
+    @Test
+    fun `au-dessus d'une liste, la carte ne dépasse ni 40 % de l'écran ni la grande taille`() {
+        // 40 % de 800 = 320, légendes comprises : 296 pour la carte.
+        assertEquals(296.dp, BodyMapSize.aboveList(available = 760.dp, screenHeight = 800.dp, reserve = reserve))
+        assertEquals(BodyMapSize.Large, BodyMapSize.aboveList(available = 1200.dp, screenHeight = 1400.dp, reserve = reserve))
+    }
+
+    @Test
+    fun `sur un petit écran, la carte garde la petite taille`() {
+        assertEquals(BodyMapSize.Small, BodyMapSize.aboveList(available = 360.dp, screenHeight = 640.dp, reserve = reserve))
     }
 }

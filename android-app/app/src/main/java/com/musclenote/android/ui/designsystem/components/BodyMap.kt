@@ -57,7 +57,7 @@ import com.musclenote.android.ui.designsystem.theme.Studio
 
 /** Hauteurs de la carte du corps (DESIGN.md § 9.1, SPEC § 15.17.4). */
 object BodyMapSize {
-    /** Filtre « Par muscle » du sélecteur. */
+    /** Plus grande taille : la carte du filtre « Par muscle » quand la place ne manque pas. */
     val Large: Dp = 360.dp
 
     /** Section « Muscles travaillés » de la fiche exercice. */
@@ -65,6 +65,18 @@ object BodyMapSize {
 
     /** Une vue, en tête de la sheet « Muscle ». */
     val SingleView: Dp = 140.dp
+
+    /** Part de l'écran qu'une carte posée au-dessus d'une liste ne dépasse jamais, légendes comprises. */
+    const val ABOVE_LIST_SCREEN_FRACTION = 0.4f
+
+    /**
+     * Hauteur de la carte fixe au-dessus d'une liste (filtre du sélecteur, SPEC § 15.17.6) : ce qui
+     * laisse [reserve] sous elle dans [available], au plus [Large] et 40 % de [screenHeight] (légendes
+     * « Face » / « Dos » comprises), jamais moins de [Small].
+     */
+    fun aboveList(available: Dp, screenHeight: Dp, reserve: Dp): Dp =
+        minOf(Large, screenHeight * ABOVE_LIST_SCREEN_FRACTION - ViewLabelsHeight, available - reserve - ViewLabelsHeight)
+            .coerceAtLeast(Small)
 }
 
 private val OutlineWidth = 1.dp
@@ -78,6 +90,9 @@ private val RingGap = 2.5.dp
 private val TouchTolerance = 12.dp
 
 private val ViewLabelGap = 6.dp
+
+/** Place des légendes « Face » / « Dos » sous la carte (écart + une ligne de `small`). */
+private val ViewLabelsHeight = 24.dp
 private val SwatchSize = 10.dp
 private val SwatchRadius = 3.dp
 private val LegendGap = 10.dp
