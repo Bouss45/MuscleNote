@@ -1,6 +1,9 @@
 package com.musclenote.android.ui.exercise
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -15,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.catalog.exerciseDefinitions
+import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.progress.ChartPeriod
 import com.musclenote.android.data.progress.CurveSummary
 import com.musclenote.android.data.progress.ExerciseMetric
@@ -30,6 +34,8 @@ import com.musclenote.android.ui.components.formatInteger
 import com.musclenote.android.ui.components.formatNumber
 import com.musclenote.android.ui.components.rememberDateFormats
 import com.musclenote.android.ui.components.rememberToday
+import com.musclenote.android.ui.designsystem.components.BodyMap
+import com.musclenote.android.ui.designsystem.components.BodyMapSize
 import com.musclenote.android.ui.designsystem.components.CurvePoint
 import com.musclenote.android.ui.designsystem.components.EmptyState
 import com.musclenote.android.ui.designsystem.components.FicheTitle
@@ -37,13 +43,17 @@ import com.musclenote.android.ui.designsystem.components.FicheTopBar
 import com.musclenote.android.ui.designsystem.components.HeroNumber
 import com.musclenote.android.ui.designsystem.components.ListRow
 import com.musclenote.android.ui.designsystem.components.ListRowTrailing
+import com.musclenote.android.ui.designsystem.components.MuscleLegend
 import com.musclenote.android.ui.designsystem.components.PeriodSelector
 import com.musclenote.android.ui.designsystem.components.SectionHeader
 import com.musclenote.android.ui.designsystem.components.Stat
 import com.musclenote.android.ui.designsystem.components.StatRow
+import com.musclenote.android.ui.designsystem.components.StudioBottomSheet
 import com.musclenote.android.ui.designsystem.components.Trend
 import com.musclenote.android.ui.designsystem.components.TrendCurve
 import com.musclenote.android.ui.designsystem.templates.FicheLazyTemplate
+import com.musclenote.android.ui.designsystem.templates.HubSections
+import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.templates.systemScreenInsets
 import java.time.LocalDate
@@ -60,6 +70,7 @@ fun ExerciseFicheScreen(
     exerciseId: String,
     onBack: () -> Unit,
     onEditWorkout: (workoutId: String) -> Unit,
+    onOpenExercise: (exerciseId: String) -> Unit,
     modifier: Modifier = Modifier,
     insets: ScreenInsets = systemScreenInsets(),
 ) {
@@ -67,7 +78,8 @@ fun ExerciseFicheScreen(
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
     val customExercises by container.workouts.customExercises.collectAsStateWithLifecycle()
     // Archivés compris : un exercice supprimé mais encore référencé garde son historique.
-    val definition = remember(customExercises, exerciseId) { exerciseDefinitions(customExercises).firstOrNull { it.id == exerciseId } }
+    val definitions = remember(customExercises) { exerciseDefinitions(customExercises) }
+    val definition = remember(definitions, exerciseId) { definitions.firstOrNull { it.id == exerciseId } }
     val zone = container.time.zone()
     val today = rememberToday()
     if (definition == null) {
@@ -90,13 +102,16 @@ fun ExerciseFicheScreen(
         return
     }
     val history = remember(workouts, exerciseId, zone) { WorkoutStats.exerciseHistory(workouts, exerciseId, zone) }
-    ExerciseFicheContent(definition, history, today, zone, onBack, onEditWorkout, modifier, insets)
+    ExerciseFicheContent(definition, history, today, zone, onBack, onEditWorkout, modifier, insets, definitions = definitions, onOpenExercise = onOpenExercise)
 }
 
 /**
  * Contenu de la fiche pour [history] (séances de l'exercice, la plus récente d'abord) : séparé du
- * dépôt pour les aperçus. [initialPeriod] : période affichée à l'ouverture (« Tout »).
+ * dépôt pour les aperçus. [initialPeriod] : période affichée à l'ouverture (« Tout »). Dernière section,
+ * « Muscles travaillés » (§ 15.17.5) : un muscle touché ouvre sa sheet, qui liste les exercices de
+ * [definitions] ; l'un d'eux ouvre sa fiche ([onOpenExercise]). [initialMuscle] : sheet ouverte (aperçus).
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ExerciseFicheContent(
     definition: ExerciseDefinition,
@@ -108,6 +123,43 @@ internal fun ExerciseFicheContent(
     modifier: Modifier = Modifier,
     insets: ScreenInsets = systemScreenInsets(),
     initialPeriod: ChartPeriod = ChartPeriod.All,
+    definitions: List<ExerciseDefinition> = listOf(definition),
+    onOpenExercise: (exerciseId: String) -> Unit = {},
+    initialMuscle: Muscle? = null,
+) {
+    var openMuscle by rememberSaveable { mutableStateOf(initialMuscle) }
+    openMuscle?.let { muscle ->
+        StudioBottomSheet(onDismissRequest = { openMuscle = null }) { inset ->
+            MuscleSheetContent(
+                muscle = muscle,
+                definitions = definitions,
+                trailing = { ListRowTrailing.Chevron },
+                onExerciseClick = { other ->
+                    {
+                        openMuscle = null
+                        if (other.id != definition.id) onOpenExercise(other.id)
+                    }
+                },
+                onClose = { openMuscle = null },
+                bottomInset = inset,
+            )
+        }
+    }
+    ExerciseFicheBody(definition, history, today, zone, onBack, onEditWorkout, modifier, insets, initialPeriod) { openMuscle = it }
+}
+
+@Composable
+private fun ExerciseFicheBody(
+    definition: ExerciseDefinition,
+    history: List<ExerciseSession>,
+    today: LocalDate,
+    zone: ZoneId,
+    onBack: () -> Unit,
+    onEditWorkout: (workoutId: String) -> Unit,
+    modifier: Modifier,
+    insets: ScreenInsets,
+    initialPeriod: ChartPeriod,
+    onMuscleClick: (Muscle) -> Unit,
 ) {
     val dates = rememberDateFormats(zone)
     val metric = remember(definition, history) { ProgressStats.exerciseMetric(definition.isCardio, history) }
@@ -150,6 +202,7 @@ internal fun ExerciseFicheContent(
                     onAction = onBack,
                 )
             }
+            workedMuscles(definition, onMuscleClick)
         }
         return
     }
@@ -204,6 +257,29 @@ internal fun ExerciseFicheContent(
                     onClick = { onEditWorkout(session.workoutId) },
                     showDivider = index < history.lastIndex,
                 )
+            }
+        }
+        workedMuscles(definition, onMuscleClick)
+    }
+}
+
+/**
+ * Section « Muscles travaillés » (§ 15.17.5) : la petite carte et, à 20, les noms (principaux puis
+ * secondaires) ; un nom ou une zone de la carte ouvre la sheet « Muscle ». Rien pour un exercice
+ * perso sans muscle.
+ */
+private fun HubSections.workedMuscles(definition: ExerciseDefinition, onMuscleClick: (Muscle) -> Unit) {
+    if (!definition.hasMuscles) return
+    section(key = "muscles", header = { SectionHeader(stringResource(R.string.exercise_muscles_title)) }) {
+        item(key = "muscles-map", contentType = "muscles") {
+            Row(horizontalArrangement = Arrangement.spacedBy(Studio.spacing.screen)) {
+                BodyMap(
+                    BodyMapSize.Small,
+                    primary = definition.primaryMuscles,
+                    secondary = definition.secondaryMuscles,
+                    onMuscleClick = onMuscleClick,
+                )
+                MuscleLegend(definition.primaryMuscles, definition.secondaryMuscles, onMuscleClick, Modifier.weight(1f))
             }
         }
     }

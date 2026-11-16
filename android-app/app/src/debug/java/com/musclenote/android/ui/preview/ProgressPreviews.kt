@@ -3,6 +3,9 @@ package com.musclenote.android.ui.preview
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.data.catalog.exerciseDefinitions
+import com.musclenote.android.data.model.Muscle
+import com.musclenote.android.ui.designsystem.components.ListRowTrailing
+import com.musclenote.android.ui.exercise.MuscleSheetContent
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.progress.ChartPeriod
 import com.musclenote.android.data.progress.DayValue
@@ -50,7 +53,7 @@ private fun benchHistory(weeks: Int, weeksBefore: Long = 0, load: (Int) -> Doubl
 @PhonePreviews
 @Composable
 private fun ExerciseFicheScreenPreview() = ScreenPreview {
-    ExerciseFicheScreen(exerciseId = "bench", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
+    ExerciseFicheScreen(exerciseId = "bench", onBack = {}, onEditWorkout = {}, onOpenExercise = {}, insets = MockupInsets)
 }
 
 /** Fiche en baisse : charge qui recule de 102,5 à 86,25 kg en douze semaines (variation rouge). */
@@ -88,14 +91,52 @@ private fun ExerciseFicheEmptyPeriodPreview() = ScreenPreview {
 @PhonePreviews
 @Composable
 private fun ExerciseFicheBodyweightPreview() = ScreenPreview {
-    ExerciseFicheScreen(exerciseId = "pullup", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
+    ExerciseFicheScreen(exerciseId = "pullup", onBack = {}, onEditWorkout = {}, onOpenExercise = {}, insets = MockupInsets)
 }
 
 /** Exercice jamais fait : état vide sous le titre. */
 @PhonePreviews
 @Composable
 private fun ExerciseFicheNoSessionPreview() = ScreenPreview {
-    ExerciseFicheScreen(exerciseId = "dips", onBack = {}, onEditWorkout = {}, insets = MockupInsets)
+    ExerciseFicheScreen(exerciseId = "dips", onBack = {}, onEditWorkout = {}, onOpenExercise = {}, insets = MockupInsets)
+}
+
+/**
+ * Fiche entière du développé couché (🔄 D43) : la section « Muscles travaillés » en bas, après les
+ * séances — petite carte (pecs pleins, épaules avant et triceps gris) et noms.
+ */
+@ScreenPreviews
+@Composable
+private fun ExerciseFicheMusclesPreview() = ScreenPreview {
+    ExerciseFicheScreen(exerciseId = "bench", onBack = {}, onEditWorkout = {}, onOpenExercise = {}, insets = MockupInsets)
+}
+
+/** Sheet « Muscle » ouverte depuis la fiche : Pecs, ses exercices principaux puis secondaires. */
+@StudioComponentPreviews
+@Composable
+private fun MuscleSheetFromFichePreview() = StudioComponentPreview {
+    MuscleSheetContent(
+        muscle = Muscle.Pectoraux,
+        definitions = exerciseDefinitions(PreviewData.customExercises),
+        trailing = { ListRowTrailing.Chevron },
+        onExerciseClick = { { } },
+        onClose = {},
+        bottomInset = 0.dp,
+    )
+}
+
+/** Sheet « Muscle » d'un muscle travaillé par un exercice perso : Fessiers, Hip thrust compris. */
+@StudioComponentPreviews
+@Composable
+private fun MuscleSheetGlutesPreview() = StudioComponentPreview {
+    MuscleSheetContent(
+        muscle = Muscle.Fessiers,
+        definitions = exerciseDefinitions(PreviewData.customExercises),
+        trailing = { ListRowTrailing.Chevron },
+        onExerciseClick = { { } },
+        onClose = {},
+        bottomInset = 0.dp,
+    )
 }
 
 /** Onglet Progrès en entier (sans la barre d'onglets) : poids, exercices, calories et eau, pesées. */

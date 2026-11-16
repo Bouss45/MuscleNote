@@ -3,11 +3,15 @@ package com.musclenote.android.ui.preview
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
+import com.musclenote.android.data.catalog.MuscleSelection
 import com.musclenote.android.data.catalog.exerciseDefinitions
+import com.musclenote.android.data.model.Muscle
+import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
 import com.musclenote.android.ui.workout.CustomExerciseActions
+import com.musclenote.android.ui.workout.CustomExerciseForm
 import com.musclenote.android.ui.workout.EditBodyWeightContent
 import com.musclenote.android.ui.workout.ExercisePickerContent
 import com.musclenote.android.ui.workout.RenameSheetContent
@@ -67,7 +71,7 @@ private fun ExercisePickerPreview() = ScreenPreview(PreviewDataSet.WithCurrentWo
         definitions = definitions,
         addedIds = PreviewData.currentWorkout.exercises.mapTo(HashSet()) { it.exerciseId },
         onAdd = {},
-        custom = CustomExerciseActions(create = { _, _ -> }, update = { _, _, _ -> }, delete = {}),
+        custom = CustomExerciseActions(create = { _, _, _ -> }, update = { _, _, _, _ -> }, delete = {}),
         bottomInset = 24.dp,
     )
 }
@@ -85,6 +89,76 @@ private fun ExercisePickerSearchPreview() = ScreenPreview {
         custom = null,
         bottomInset = 24.dp,
         initialSearch = "dev",
+    )
+}
+
+/** Sélecteur « Par muscle » (🔄 D43) : Pecs et Triceps choisis, la liste filtrée, principaux d'abord. */
+@PhonePreviews
+@Composable
+private fun ExercisePickerByMusclePreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
+    val definitions = remember { exerciseDefinitions(PreviewData.customExercises).filterNot { it.archived } }
+    ExercisePickerContent(
+        title = "Ajouter un exercice",
+        definitions = definitions,
+        addedIds = PreviewData.currentWorkout.exercises.mapTo(HashSet()) { it.exerciseId },
+        onAdd = {},
+        custom = null,
+        bottomInset = 24.dp,
+        initialByMuscle = true,
+        initialMuscles = setOf(Muscle.Pectoraux, Muscle.Triceps),
+    )
+}
+
+/** « Par muscle » sans muscle choisi : la carte au repos, l'aide, toute la liste avec ses muscles. */
+@PhonePreviews
+@Composable
+private fun ExercisePickerByMuscleEmptyPreview() = ScreenPreview {
+    val definitions = remember { exerciseDefinitions(PreviewData.customExercises).filterNot { it.archived } }
+    ExercisePickerContent(
+        title = "Ajouter un exercice",
+        definitions = definitions,
+        addedIds = emptySet(),
+        onAdd = {},
+        custom = null,
+        bottomInset = 24.dp,
+        initialByMuscle = true,
+    )
+}
+
+/** Sheet « Muscle » depuis le filtre : Pecs, lignes à cocher du sélecteur, « Retirer du filtre ». */
+@PhonePreviews
+@Composable
+private fun ExercisePickerMuscleSheetPreview() = ScreenPreview(PreviewDataSet.WithCurrentWorkout) {
+    val definitions = remember { exerciseDefinitions(PreviewData.customExercises).filterNot { it.archived } }
+    ExercisePickerContent(
+        title = "Ajouter un exercice",
+        definitions = definitions,
+        addedIds = PreviewData.currentWorkout.exercises.mapTo(HashSet()) { it.exerciseId },
+        onAdd = {},
+        custom = null,
+        bottomInset = 24.dp,
+        initialByMuscle = true,
+        initialMuscles = setOf(Muscle.Pectoraux),
+        initialMuscleSheet = Muscle.Pectoraux,
+    )
+}
+
+/** « Nouvel exercice » avec ses muscles : Fessiers principal, Ischio-jambiers secondaire. */
+@StudioComponentPreviews
+@Composable
+private fun CustomExerciseFormPreview() = StudioComponentPreview {
+    CustomExerciseForm(
+        title = "Nouvel exercice",
+        name = "Hip thrust",
+        onNameChange = {},
+        group = MuscleGroup.Jambes,
+        onGroupChange = {},
+        muscles = MuscleSelection(primary = listOf(Muscle.Fessiers), secondary = listOf(Muscle.IschioJambiers)),
+        onMusclesChange = {},
+        submitLabel = "Ajouter",
+        onSubmit = {},
+        onCancel = {},
+        bottomInset = 0.dp,
     )
 }
 
