@@ -1982,7 +1982,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 620 tests JVM (48 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 737 tests JVM (55 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2340,6 +2340,28 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   puis rallumé, « Arrêter » depuis l'écran verrouillé (et la Live Update sur Android 16+), chrono après une
   fermeture de l'app, saisie « 90 » au pavé puis réouverture (`1:30`), TalkBack sur les durées, texte agrandi
   dans la colonne Durée avec son bouton.
+- **Types de séance** (🔄 D45, § 15.19), branche `feat/mes-types` : préréglages `upperBody`, `lowerBody`, `abs`,
+  `glutes` et groupe `PresetGroup.UpperLower` (`data/model/PresetId.kt`, libellés FR / EN de rattachement
+  précalculés) ; nom normalisé `normalizeWorkoutName` (`data/util/Text.kt`) ; `WorkoutRules.presetFor` /
+  `presetOf` / `withPresetFromName` et clé de séance sans casse, accents ni espaces en trop, préréglage
+  d'après le nom (démarrage, renommage, lecture de `workouts.json` et `current_workout.json` par
+  `WorkoutRepository.load`) ; type suggéré de l'Accueil (`SessionType.preset`) ; règles pures
+  `data/workout/WorkoutTypeRules.kt` (« Mes types » : ordre, 8 au plus, doublons, préréglages écartés,
+  types retirés et leur retour ; retrait ; relecture) ; `Preferences.removedWorkoutTypes`
+  (`RemovedWorkoutType`, lecture tolérante `RemovedWorkoutTypesSerializer`, `BackupNormalizer`) et
+  `PreferencesRepository.removeWorkoutType`. Interface : `WorkoutTypeFields` (rangée « Mes types »,
+  `rememberMyWorkoutTypes`, `RemoveMyTypeConfirm`), `StartWorkoutSheet` et `RenameSheetContent` (étape de
+  confirmation dans la sheet) ; variante de `FilterChip` (appui long, libellé qui passe à la ligne). Tests
+  JVM `WorkoutTypeRulesTest`, `CatalogTest` (tableau du § 6.3 relu dans ce document, noms normalisés),
+  `WorkoutRulesTest`, `WorkoutSummaryRulesTest`, `HomeRulesTest`, `WorkoutRepositoryTest`,
+  `RepositoryLoadTest`, `BackupV2Test`, `BackupV1MigrationTest` et `HealthSyncRepositoryTest` (une séance
+  rattachée est remplacée dans Health Connect sous le même identifiant client, sans doublon ni
+  suppression). Aperçus : `StartWorkoutTypePreview` (groupe « Haut / Bas », « Mes types » masquée),
+  `StartWorkoutMyTypesPreview`, `StartWorkoutRemoveTypePreview` (jeu `PreviewDataSet.WithCustomTypes`),
+  `RenameSheetPreview` (nom long). À vérifier **sur l'appareil** : appui long sur une puce (vibration,
+  confirmation, retour), TalkBack (action « Retirer de Mes types »), retour d'un type réutilisé après une
+  séance terminée, une ancienne séance perso « Haut du corps » affichée « Upper body » en anglais et
+  renvoyée une fois à Health Connect.
 
 ---
 

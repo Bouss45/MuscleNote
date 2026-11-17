@@ -343,7 +343,12 @@ La puce **inverse** est informative avec une action : un muscle choisi dans le f
 du sélecteur, dessiné comme une puce de filtre sélectionnée, qui ouvre sa sheet « Muscle » (bouton
 « Voir le muscle »). Puces de filtre : choix unique par défaut (lue comme bouton radio) ; **choix multiple** (`multiSelect`, jours du rappel
 de pesée, SPEC § 15.13.3) : même dessin, chaque puce se coche ou se décoche et se lit comme une case à
-cocher, avec une `description` TalkBack en toutes lettres (« lundi » pour « lun. »).
+cocher, avec une `description` TalkBack en toutes lettres (« lundi » pour « lun. »). 🔄 **Appui long**
+(`onLongClick`, D45) : une puce de choix unique qui porte une seconde action — une puce de « Mes types »
+se retire de la liste (SPEC § 15.19.4) ; même dessin, même lecture (bouton radio), l'action nommée pour
+TalkBack par `onLongClickLabel` (« Retirer de Mes types »). Le libellé d'une puce de filtre **passe à la
+ligne** s'il dépasse sa rangée (nom libre en texte agrandi) au lieu d'être coupé ; une marge verticale de 4
+autour du texte ne compte qu'au-delà de 32 de haut.
 
 Espace icône–texte : 6 (4 pour les flèches). Les puces de filtre et de saisie rapide sont
 cliquables (cible 48 : Compose agrandit la zone de toucher d'une puce de 32 jusqu'à 48, ou jusqu'à
