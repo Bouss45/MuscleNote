@@ -3,6 +3,7 @@ package com.musclenote.android.ui.designsystem.components
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.height
@@ -18,6 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -28,6 +30,9 @@ import com.musclenote.android.ui.designsystem.theme.Studio
 private val ChipHeight = 32.dp
 private val ChipPaddingWithIcon = 10.dp
 private val ChipPadding = 12.dp
+
+/** Marge verticale du libellé d'une puce de filtre, visible seulement quand il dépasse 32 (texte agrandi, deux lignes). */
+private val ChipTextPadding = 4.dp
 
 /**
  * Ton d'une puce informative (DESIGN.md § 9.1). [Inverse] (🔄 D43) : un muscle du filtre « Par muscle »,
@@ -97,7 +102,10 @@ fun StudioChip(
  * Puce de filtre ou de saisie rapide — `FilterChip` (DESIGN.md § 9.1) : sélectionnée en inverse
  * (700), sinon `surfaceControl` (400). Choix unique par défaut (lue comme bouton radio) ;
  * [multiSelect] = une puce d'un choix multiple (jours du rappel de pesée), lue comme case à cocher.
- * [description] remplace le libellé pour TalkBack (« lundi » pour « lun. »).
+ * [description] remplace le libellé pour TalkBack (« lundi » pour « lun. »). [onLongClick] (🔄 D45)
+ * ajoute un appui long à une puce de choix unique (retirer un type de « Mes types »), annoncé à
+ * TalkBack par [onLongClickLabel]. Un libellé plus large que sa rangée passe à la ligne (nom libre en
+ * texte agrandi) au lieu d'être coupé.
  */
 @Composable
 fun FilterChip(
@@ -107,12 +115,16 @@ fun FilterChip(
     modifier: Modifier = Modifier,
     multiSelect: Boolean = false,
     description: String? = null,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
 ) {
     val colors = Studio.colors
-    val selection = if (multiSelect) {
-        Modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })
-    } else {
-        Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+    val selection = when {
+        multiSelect -> Modifier.toggleable(value = selected, role = Role.Checkbox, onValueChange = { onClick() })
+        onLongClick != null -> Modifier
+            .semantics { this.selected = selected }
+            .combinedClickable(role = Role.RadioButton, onLongClickLabel = onLongClickLabel, onLongClick = onLongClick, onClick = onClick)
+        else -> Modifier.selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
     }
     ChipBox(
         background = if (selected) colors.inverse else colors.surfaceControl,
@@ -125,9 +137,9 @@ fun FilterChip(
     ) {
         Text(
             text,
+            modifier = Modifier.padding(vertical = ChipTextPadding),
             style = Studio.typography.body.copy(fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal),
             color = if (selected) colors.onInverse else colors.textPrimary,
-            maxLines = 1,
         )
     }
 }

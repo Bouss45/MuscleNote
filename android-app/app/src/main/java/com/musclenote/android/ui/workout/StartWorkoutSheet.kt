@@ -57,6 +57,9 @@ internal enum class StartStage { Type, Weight }
  * 🔄 D38 (§ 15.13.2) : le poids est facultatif — champ vide avec la dernière pesée en aide,
  * « Passer » démarre sans poids ; poids du jour déjà connu → pas de champ, la séance démarre sans
  * poids (celui du jour s'affiche sans être recopié).
+ *
+ * 🔄 D45 (§ 15.19) : « Mes types » en tête de l'étape du type ; l'appui long sur une de ses puces fait
+ * passer la sheet à la confirmation du retrait.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -71,7 +74,10 @@ fun StartWorkoutSheet(
     }
 }
 
-/** Contenu de [StartWorkoutSheet], avec son état. [initialStage] force l'étape (aperçus). */
+/**
+ * Contenu de [StartWorkoutSheet], avec son état. [initialStage] force l'étape et [initialRemovingType]
+ * ouvre la confirmation du retrait d'un type (aperçus).
+ */
 @Composable
 internal fun StartWorkoutForm(
     initialPreset: PresetId?,
@@ -79,8 +85,10 @@ internal fun StartWorkoutForm(
     onStarted: () -> Unit,
     bottomInset: Dp,
     initialStage: StartStage? = null,
+    initialRemovingType: String? = null,
 ) {
     val container = LocalAppContainer.current
+    val myTypes = rememberMyWorkoutTypes(container)
     val workouts by container.workouts.workouts.collectAsStateWithLifecycle()
     val weighIns by container.nutrition.bodyWeights.collectAsStateWithLifecycle()
     val today = rememberToday()
@@ -101,6 +109,8 @@ internal fun StartWorkoutForm(
     var fresh by rememberSaveable { mutableStateOf(true) }
     var invalid by rememberSaveable { mutableStateOf(false) }
     var starting by remember { mutableStateOf(false) }
+    // Type de « Mes types » dont le retrait attend confirmation (§ 15.19.4).
+    var removingType by rememberSaveable { mutableStateOf(initialRemovingType) }
     // Poids retenu au moment de « Commencer » / « Passer » (0 = sans poids), relu après la permission.
     var chosenWeight by remember { mutableDoubleStateOf(0.0) }
 
@@ -147,6 +157,22 @@ internal fun StartWorkoutForm(
     }
 
     BackHandler(enabled = stage == StartStage.Weight) { stage = StartStage.Type }
+    BackHandler(enabled = stage == StartStage.Type && removingType != null) { removingType = null }
+
+    val removing = removingType
+    if (stage == StartStage.Type && removing != null) {
+        RemoveMyTypeConfirm(
+            name = removing,
+            onConfirm = {
+                haptics.medium()
+                container.removeMyWorkoutType(removing)
+                removingType = null
+            },
+            onDismiss = { removingType = null },
+            bottomInset = bottomInset,
+        )
+        return
+    }
 
     when (stage) {
         StartStage.Type -> SheetSurface(Modifier.imePadding().verticalScroll(rememberScrollState()), bottomInset = bottomInset) {
@@ -158,11 +184,18 @@ internal fun StartWorkoutForm(
             WorkoutTypeFields(
                 preset = preset,
                 customName = customName,
+                myTypes = myTypes,
                 onSelectPreset = {
                     haptics.light()
                     preset = it
                     customName = ""
                 },
+                onSelectMyType = {
+                    haptics.light()
+                    customName = it
+                    preset = null
+                },
+                onRemoveMyType = { removingType = it },
                 onCustomNameChange = {
                     customName = it
                     if (it.isNotBlank()) preset = null

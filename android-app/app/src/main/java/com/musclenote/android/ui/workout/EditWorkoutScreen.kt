@@ -420,14 +420,18 @@ fun EditWorkoutScreen(
     }
 
     if (renameOpen) {
+        val myTypes = rememberMyWorkoutTypes(container)
         StudioBottomSheet(onDismissRequest = { renameOpen = false }) { inset ->
             RenameSheetContent(
                 preset = draft.preset,
                 name = draft.name,
+                myTypes = myTypes,
+                onRemoveMyType = { container.removeMyWorkoutType(it) },
                 onConfirm = { preset, name ->
                     haptics.light()
                     renameOpen = false
-                    update { it.copy(preset = preset, name = name) }
+                    // 🔄 D45 : un nom perso qui est celui d'un préréglage y est rattaché (§ 15.19.2).
+                    update { it.copy(preset = WorkoutRules.presetFor(preset, name), name = name) }
                 },
                 bottomInset = inset,
             )
@@ -532,28 +536,54 @@ private const val NO_VALUE = "—"
 /**
  * « Renommer la séance » (🔄 D15) : les mêmes puces et nom perso qu'au démarrage. Un préréglage fixe
  * `preset` et `name` = son libellé dans la langue courante ; un nom perso fixe `name` et efface
- * `preset`.
+ * `preset`. 🔄 D45 (§ 15.19) : « Mes types » ([myTypes]) en tête ; l'appui long sur une de ses puces
+ * fait passer la sheet à la confirmation, puis [onRemoveMyType]. [initialRemovingType] ouvre cette
+ * confirmation (aperçus).
  */
 @Composable
 internal fun RenameSheetContent(
     preset: PresetId?,
     name: String,
+    myTypes: List<String>,
+    onRemoveMyType: (String) -> Unit,
     onConfirm: (preset: PresetId?, name: String) -> Unit,
     bottomInset: Dp,
+    initialRemovingType: String? = null,
 ) {
     var chosenPreset by rememberSaveable { mutableStateOf(preset) }
     var customName by rememberSaveable { mutableStateOf(if (preset == null) name.take(CUSTOM_NAME_MAX_LENGTH) else "") }
+    var removingType by rememberSaveable { mutableStateOf(initialRemovingType) }
     val presetLabel = chosenPreset?.let { stringResource(it.labelRes) }
     val finalName = presetLabel ?: customName.trim()
+    BackHandler(enabled = removingType != null) { removingType = null }
+    val removing = removingType
+    if (removing != null) {
+        RemoveMyTypeConfirm(
+            name = removing,
+            onConfirm = {
+                onRemoveMyType(removing)
+                removingType = null
+            },
+            onDismiss = { removingType = null },
+            bottomInset = bottomInset,
+        )
+        return
+    }
     SheetSurface(Modifier.imePadding().verticalScroll(rememberScrollState()), bottomInset = bottomInset) {
         SheetTitle(stringResource(R.string.edit_workout_rename), null)
         WorkoutTypeFields(
             preset = chosenPreset,
             customName = customName,
+            myTypes = myTypes,
             onSelectPreset = {
                 chosenPreset = it
                 customName = ""
             },
+            onSelectMyType = {
+                customName = it
+                chosenPreset = null
+            },
+            onRemoveMyType = { removingType = it },
             onCustomNameChange = {
                 customName = it
                 if (it.isNotBlank()) chosenPreset = null
