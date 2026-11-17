@@ -31,7 +31,8 @@ data class SessionType(
     val daysSince: Int,
     val count: Int,
 ) {
-    val preset: PresetId? get() = lastWorkout.preset
+    /** Préréglage du type, enregistré ou d'après le nom de sa dernière séance (🔄 D45, § 15.19.2). */
+    val preset: PresetId? get() = WorkoutRules.presetOf(lastWorkout)
 
     /** Les exercices que le pré-remplissage reprendra (§ 3.1). */
     val exerciseCount: Int get() = lastWorkout.exercises.size

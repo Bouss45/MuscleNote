@@ -5,6 +5,7 @@ import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.backup.BackupFixtures
 import com.musclenote.android.data.backup.BackupReadResult
 import com.musclenote.android.data.model.Preferences
+import com.musclenote.android.data.model.RemovedWorkoutType
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
@@ -164,6 +165,48 @@ class RepositoryLoadTest {
         )
         val c = container().also { it.awaitReady() }
         assertEquals(WeighInReminder(true, 7, 30, listOf(1, 3)), c.preferences.preferences.value.weighInReminder)
+    }
+
+    @Test
+    fun `un type retiré de Mes types est enregistré et relu, un ancien fichier n'en a aucun`() = runBlocking<Unit> {
+        // 🔄 D45 (§ 15.19.5) : champ facultatif des préférences, sans migration.
+        dataDir.mkdirs()
+        File(dataDir, "preferences.json").writeText("""{"restSeconds":120,"theme":"light"}""")
+        val c = container().also { it.awaitReady() }
+        assertEquals(Preferences(120, ThemeMode.Light), c.preferences.preferences.value)
+
+        c.preferences.removeWorkoutType("Bras / Abdos", now)
+        c.preferences.removeWorkoutType("Mollets", now.plusSeconds(60))
+        // Retirer de nouveau le même nom (autre forme) remplace son entrée.
+        c.preferences.removeWorkoutType(" bras  /  ABDOS", now.plusSeconds(120))
+        val expected = listOf(
+            RemovedWorkoutType("Mollets", "2026-03-14T12:01:00.000Z"),
+            RemovedWorkoutType("bras  /  ABDOS", "2026-03-14T12:02:00.000Z"),
+        )
+        assertEquals(expected, c.preferences.preferences.value.removedWorkoutTypes)
+
+        val restarted = container().also { it.awaitReady() }
+        assertEquals(Preferences(120, ThemeMode.Light, removedWorkoutTypes = expected), restarted.preferences.preferences.value)
+    }
+
+    @Test
+    fun `des types retirés illisibles dans le fichier sont écartés sans perdre les préférences`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        File(dataDir, "preferences.json").writeText(
+            """{"restSeconds":120,"theme":"light","removedWorkoutTypes":[""" +
+                """{"name":"Bras / Abdos","removedAt":"2026-03-10T09:00:00.000Z"},{"name":"","removedAt":"2026-03-10T09:00:00.000Z"},""" +
+                """{"removedAt":"2026-03-10T09:00:00.000Z"},"Dos",{"name":"Mollets","removedAt":"hier"},{"name":"Dos","removedAt":12},""" +
+                """{"name":"bras  /  abdos","removedAt":"2026-03-12T09:00:00.000Z"}]}""",
+        )
+        val c = container().also { it.awaitReady() }
+        assertEquals(
+            Preferences(120, ThemeMode.Light, removedWorkoutTypes = listOf(RemovedWorkoutType("bras  /  abdos", "2026-03-12T09:00:00.000Z"))),
+            c.preferences.preferences.value,
+        )
+        assertTrue(dataDir.listFiles()!!.none { "corrupt" in it.name })
+
+        File(dataDir, "preferences.json").writeText("""{"restSeconds":120,"theme":"light","removedWorkoutTypes":"Bras"}""")
+        assertEquals(Preferences(120, ThemeMode.Light), container().also { it.awaitReady() }.preferences.preferences.value)
     }
 
     @Test

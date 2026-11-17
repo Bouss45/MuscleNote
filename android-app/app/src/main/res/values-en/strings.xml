@@ -109,11 +109,15 @@
     <string name="start_workout_preset_push">Push</string>
     <string name="start_workout_preset_pull">Pull</string>
     <string name="start_workout_preset_legs">Legs</string>
+    <string name="start_workout_preset_upper_body">Upper body</string>
+    <string name="start_workout_preset_lower_body">Lower body</string>
     <string name="start_workout_preset_pecs">Chest</string>
     <string name="start_workout_preset_dos">Back</string>
     <string name="start_workout_preset_shoulders">Shoulders</string>
     <string name="start_workout_preset_legs_split">Legs (split)</string>
     <string name="start_workout_preset_arms">Arms</string>
+    <string name="start_workout_preset_abs">Abs</string>
+    <string name="start_workout_preset_glutes">Glutes</string>
     <string name="start_workout_preset_full_body">Full Body</string>
     <string name="start_workout_preset_isolation">Isolation</string>
     <string name="start_workout_preset_cardio">Cardio</string>
@@ -186,10 +190,17 @@
     <string name="start_workout_title">Workout type</string>
     <string name="start_workout_subtitle">Pick or name your workout</string>
     <string name="start_workout_group_ppl">PPL</string>
+    <string name="start_workout_group_upper_lower">Upper / Lower</string>
     <string name="start_workout_group_split">Split</string>
     <string name="start_workout_group_other">Other</string>
     <string name="start_workout_custom_label">Custom</string>
     <string name="start_workout_custom_placeholder">E.g. Shoulders / Calves</string>
+    <!-- Workout types: “My types” (SPEC § 15.19.8, D45) -->
+    <string name="start_workout_my_types">My types</string>
+    <string name="start_workout_my_type_remove_action">Remove from My types</string>
+    <string name="start_workout_my_type_remove_title">Remove “%1$s”?</string>
+    <string name="start_workout_my_type_remove_message">It leaves My types. Past workouts keep their name; it comes back if you use it again.</string>
+    <string name="start_workout_my_type_remove">Remove</string>
     <string name="start_workout_next">Next</string>
     <string name="start_workout_start">Start</string>
     <string name="start_workout_weight_invalid">Enter your body weight</string>

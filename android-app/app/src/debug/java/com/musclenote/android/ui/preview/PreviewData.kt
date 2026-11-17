@@ -150,6 +150,25 @@ object PreviewData {
         )
     }.sortedByDescending { Instant.parse(it.date) }
 
+    /**
+     * Séances aux noms perso (« Mes types », 🔄 D45, § 15.19.3), ajoutées par [PreviewDataSet.WithCustomTypes] :
+     * « Bras / Abdos » deux fois (casse différente, la forme la plus récente s'affiche), « Abdos » (un
+     * préréglage, absent de « Mes types ») et deux autres noms.
+     */
+    val customTypeWorkouts: List<Workout> = listOf(
+        "Bras / Abdos" to 2L,
+        "Abdos" to 4L,
+        "Épaules / Mollets" to 6L,
+        "bras / abdos" to 9L,
+        "Gainage du matin" to 13L,
+    ).mapIndexed { index, (name, daysAgo) ->
+        Workout(
+            id = "w-type-$index", name = name, date = formatInstant(at(today.minusDays(daysAgo), 7, 30)),
+            bodyWeight = 0.0, durationMinutes = 40,
+            exercises = listOf(WorkoutExercise("curl", sets = strength("t$index-curl", 3, 12, 14.0))),
+        )
+    }
+
     /** Séance en cours (écran de séance) : Push démarrée il y a 42 min, à moitié faite. */
     val currentWorkout = Workout(
         id = "w-current", name = "Push", preset = PresetId.Push, date = formatInstant(now.minusSeconds(42 * 60)), bodyWeight = 77.9,

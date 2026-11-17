@@ -73,11 +73,13 @@ class WorkoutRepository(
         return mutex.withLock {
             // Une écriture différée de la séance en cours doit précéder sa relecture.
             currentWorkoutDoc.flush()
-            _workouts.value = sortedByDateDesc(workoutsDoc.read().orEmpty())
+            // 🔄 D45 (§ 15.19.2) : une séance perso au nom d'un préréglage y est rattachée, en mémoire ; le
+            // fichier reçoit le préréglage à sa prochaine écriture.
+            _workouts.value = sortedByDateDesc(workoutsDoc.read().orEmpty().map(WorkoutRules::withPresetFromName))
             // § 3.9 : un exercice stocké dont l'id est un id intégré est ignoré.
             // § 15.17.8 : muscles remis en forme (ordre, doublons, un muscle des deux reste principal).
             _customExercises.value = exercisesDoc.read().orEmpty().filterNot { ExerciseCatalog.isBuiltIn(it.id) }.map(MuscleRules::normalized)
-            _currentWorkout.value = currentWorkoutDoc.read()
+            _currentWorkout.value = currentWorkoutDoc.read()?.let(WorkoutRules::withPresetFromName)
             finalizeStaleLocked()
         }
     }

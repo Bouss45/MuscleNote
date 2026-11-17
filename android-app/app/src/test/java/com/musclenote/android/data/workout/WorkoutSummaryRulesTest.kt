@@ -88,15 +88,29 @@ class WorkoutSummaryRulesTest {
     }
 
     @Test
-    fun `le programme d'une séance perso est son nom normalisé`() {
+    fun `le programme d'une séance perso est son nom normalisé, sans casse ni espaces en trop`() {
         val workouts = listOf(
-            workout("2026-11-12", ex("bench", set(10, 50.0)), preset = null, name = "Haut du corps", id = "today"),
+            workout("2026-11-12", ex("bench", set(10, 50.0)), preset = null, name = "Bras / Abdos", id = "today"),
             workout("2026-11-10", ex("bench", set(10, 80.0)), preset = null, name = "Bras"),
-            workout("2026-11-05", ex("bench", set(10, 40.0)), preset = null, name = " haut du CORPS ", id = "previous"),
+            workout("2026-11-08", ex("bench", set(10, 90.0)), preset = null, name = "Bras/Abdos"),
+            workout("2026-11-05", ex("bench", set(10, 40.0)), preset = null, name = " bras  /  ABDOS ", id = "previous"),
         )
         val comparison = WorkoutSummaryRules.summary(workouts, "today", definitions)!!.comparison!!
         assertEquals("previous", comparison.previous.id)
         assertEquals(100L, comparison.variationKg)
+    }
+
+    @Test
+    fun `une ancienne séance perso au nom d'un préréglage est du même programme que lui`() {
+        // 🔄 D45 (§ 15.19.2) : « haut du corps » saisi en perso = le préréglage Haut du corps.
+        val workouts = listOf(
+            workout("2026-11-12", ex("bench", set(10, 50.0)), preset = PresetId.UpperBody, id = "today"),
+            workout("2026-11-10", ex("bench", set(10, 80.0)), preset = PresetId.LowerBody),
+            workout("2026-11-05", ex("bench", set(10, 45.0)), preset = null, name = "haut du corps", id = "previous"),
+        )
+        val comparison = WorkoutSummaryRules.summary(workouts, "today", definitions)!!.comparison!!
+        assertEquals("previous", comparison.previous.id)
+        assertEquals(50L, comparison.variationKg)
     }
 
     @Test

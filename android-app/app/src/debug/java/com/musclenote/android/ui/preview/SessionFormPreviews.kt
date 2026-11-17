@@ -62,6 +62,31 @@ private fun StartWorkoutTypeWeighedTodayPreview() = ScreenPreview(PreviewDataSet
     StartWorkoutForm(initialPreset = PresetId.Pull, initialName = null, onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Type)
 }
 
+/**
+ * Étape du type avec « Mes types » (🔄 D45, § 15.19.3) : les noms perso déjà utilisés, du plus récent au
+ * plus ancien, « Bras / Abdos » une seule fois (choisi : son nom est dans « Personnalisé ») ; « Abdos »,
+ * un préréglage, n'y est pas. Groupe « Haut / Bas » et Abdos, Fessiers dans Split.
+ */
+@PhonePreviews
+@Composable
+private fun StartWorkoutMyTypesPreview() = ScreenPreview(PreviewDataSet.WithCustomTypes) {
+    StartWorkoutForm(initialPreset = null, initialName = "Bras / Abdos", onStarted = {}, bottomInset = 24.dp, initialStage = StartStage.Type)
+}
+
+/** Appui long sur une puce de « Mes types » : confirmation du retrait dans la sheet (§ 15.19.4). */
+@PhonePreviews
+@Composable
+private fun StartWorkoutRemoveTypePreview() = ScreenPreview(PreviewDataSet.WithCustomTypes) {
+    StartWorkoutForm(
+        initialPreset = null,
+        initialName = null,
+        onStarted = {},
+        bottomInset = 24.dp,
+        initialStage = StartStage.Type,
+        initialRemovingType = "Épaules / Mollets",
+    )
+}
+
 /** Sélecteur de la séance en cours : développé couché et rowing déjà ajoutés, « + » des exercices perso. */
 @PhonePreviews
 @Composable
@@ -186,11 +211,18 @@ private fun CustomExerciseFormTimedPreview() = StudioComponentPreview {
     )
 }
 
-/** Renommer une séance de l'éditeur : Push choisi. */
+/** Renommer une séance de l'éditeur (🔄 D45) : « Mes types » en tête, « Bras / Abdos » choisi (son nom dans « Personnalisé »). */
 @StudioComponentPreviews
 @Composable
 private fun RenameSheetPreview() = StudioComponentPreview {
-    RenameSheetContent(preset = PresetId.Push, name = "Push", onConfirm = { _, _ -> }, bottomInset = 0.dp)
+    RenameSheetContent(
+        preset = null,
+        name = "Bras / Abdos",
+        myTypes = listOf("Bras / Abdos", "Épaules / Mollets", "Gainage et mobilité du matin"),
+        onRemoveMyType = {},
+        onConfirm = { _, _ -> },
+        bottomInset = 0.dp,
+    )
 }
 
 /** Poids de corps d'une séance de l'éditeur, au pavé. */

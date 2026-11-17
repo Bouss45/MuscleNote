@@ -49,7 +49,26 @@ class WorkoutRulesTest {
         assertEquals("preset:push", WorkoutRules.sessionKey(PresetId.Push, "Push"))
         assertEquals("preset:legsSplit", WorkoutRules.sessionKey(PresetId.LegsSplit, "Legs"))
         assertEquals("name:epaules / mollets", WorkoutRules.sessionKey(null, "  Épaules / Mollets "))
-        assertEquals("name:push", WorkoutRules.sessionKey(null, "Push"))
+        // 🔄 D45 : suites d'espaces réduites ; nom d'un préréglage = ce préréglage (§ 15.19.2).
+        assertEquals("name:bras / abdos", WorkoutRules.sessionKey(null, "Bras  /  ABDOS"))
+        assertEquals("preset:push", WorkoutRules.sessionKey(null, "Push"))
+        assertEquals("preset:upperBody", WorkoutRules.sessionKey(null, " haut du corps "))
+        assertEquals("preset:glutes", WorkoutRules.sessionKey(null, "Glutes"))
+        assertEquals("name:", WorkoutRules.sessionKey(null, ""))
+    }
+
+    @Test
+    fun `une séance perso au nom d'un préréglage y est rattachée, son nom gardé`() {
+        val old = workout("w", "2026-03-12T17:00:00.000Z", "haut du corps")
+        assertEquals(PresetId.UpperBody, WorkoutRules.presetOf(old))
+        assertEquals(old.copy(preset = PresetId.UpperBody), WorkoutRules.withPresetFromName(old))
+        assertEquals("haut du corps", WorkoutRules.withPresetFromName(old).name)
+        // Un préréglage enregistré n'est jamais remplacé ; un nom libre reste libre.
+        val push = workout("p", "2026-03-12T17:00:00.000Z", "Abdos", PresetId.Push)
+        assertSame(push, WorkoutRules.withPresetFromName(push))
+        val custom = workout("c", "2026-03-12T17:00:00.000Z", "Bras / Abdos")
+        assertSame(custom, WorkoutRules.withPresetFromName(custom))
+        assertNull(WorkoutRules.presetOf(custom))
     }
 
     @Test
@@ -91,22 +110,40 @@ class WorkoutRulesTest {
     }
 
     @Test
-    fun `un préréglage et un nom perso de même libellé ne se mélangent pas`() {
+    fun `un nom perso égal à un préréglage est ce préréglage, au démarrage comme au pré-remplissage`() {
+        // 🔄 D45 (§ 15.19.2) : l'ancienne séance perso « Haut du corps » sert de plan au préréglage.
         val history = listOf(
-            workout("perso", "2026-03-13T17:00:00.000Z", "Push", null, listOf(exercise("curl"))),
-            workout("preset", "2026-03-12T17:00:00.000Z", "Push", PresetId.Push, listOf(exercise("bench"))),
+            workout("pull", "2026-03-13T17:00:00.000Z", "Pull", PresetId.Pull, listOf(exercise("row"))),
+            workout("perso", "2026-03-12T17:00:00.000Z", "Haut du corps", null, listOf(exercise("bench"), exercise("curl"))),
         )
-        val fromPreset = WorkoutRules.newWorkout(history, 80.0, PresetId.Push, "Push", now, ids())
-        val fromName = WorkoutRules.newWorkout(history, 80.0, null, "push", now, ids())
-        assertEquals(listOf("bench"), fromPreset.exercises.map { it.exerciseId })
-        assertEquals(listOf("curl"), fromName.exercises.map { it.exerciseId })
+        val fromPreset = WorkoutRules.newWorkout(history, 80.0, PresetId.UpperBody, "Haut du corps", now, ids())
+        assertEquals(listOf("bench", "curl"), fromPreset.exercises.map { it.exerciseId })
+        assertEquals(PresetId.UpperBody, fromPreset.preset)
+
+        // Taper « abdos » dans « Personnalisé » démarre le préréglage Abdos, nom gardé.
+        val typed = WorkoutRules.newWorkout(history, 80.0, null, "  abdos ", now, ids())
+        assertEquals(PresetId.Abs, typed.preset)
+        assertEquals("abdos", typed.name)
+        // Taper « pull » reprend le plan du préréglage Pull.
+        assertEquals(listOf("row"), WorkoutRules.newWorkout(history, 80.0, null, "pull", now, ids()).exercises.map { it.exerciseId })
     }
 
     @Test
-    fun `un nom perso est retrouvé sans casse ni accents et enregistré sans espaces autour`() {
+    fun `le renommage rattache un nom de préréglage, un nom libre efface le préréglage`() {
+        val past = workout("w", "2026-03-12T17:00:00.000Z", "Push", PresetId.Push, listOf(exercise("bench")))
+        val glutes = WorkoutRules.patch(past, past.exercises, 0.0, " fessiers ", null)
+        assertEquals(PresetId.Glutes, glutes.preset)
+        assertEquals("fessiers", glutes.name)
+        val custom = WorkoutRules.patch(past, past.exercises, 0.0, "Bras / Abdos", null)
+        assertNull(custom.preset)
+        assertEquals(PresetId.Pull, WorkoutRules.patch(past, past.exercises, 0.0, "Pull", PresetId.Pull).preset)
+    }
+
+    @Test
+    fun `un nom perso est retrouvé sans casse, accents ni espaces en trop et enregistré sans espaces autour`() {
         val history = listOf(workout("w", "2026-03-12T17:00:00.000Z", "Épaules / Mollets", null, listOf(exercise("ohp"))))
-        val started = WorkoutRules.newWorkout(history, 80.0, null, "  epaules / MOLLETS ", now, ids())
-        assertEquals("epaules / MOLLETS", started.name)
+        val started = WorkoutRules.newWorkout(history, 80.0, null, "  epaules  /  MOLLETS ", now, ids())
+        assertEquals("epaules  /  MOLLETS", started.name)
         assertNull(started.preset)
         assertEquals(listOf("ohp"), started.exercises.map { it.exerciseId })
     }

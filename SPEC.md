@@ -233,6 +233,8 @@ enregistrer.
 > (préréglages, nom de 30 caractères, poids prérempli, raccourcis, permission puis `startWorkout`)
 > restent valables. 🔄 D38 — **le poids devient facultatif** (§ 15.13.2) : champ vide avec la dernière
 > pesée en aide, « Passer », pas de champ si le poids du jour est déjà connu ; plus de préremplissage.
+> 🔄 D45 — **quatre groupes de préréglages** (« Haut / Bas » ajouté, Abdos et Fessiers dans Split,
+> § 6.3) et une rangée **« Mes types »** en tête : les noms personnalisés déjà utilisés (§ 15.19).
 
 Deux étapes dans le même écran ; bouton en haut à gauche : ✕ (fermer) à l'étape 1,
 ← (retour à l'étape 1) à l'étape 2. Le retour système suit la même logique.
@@ -648,9 +650,13 @@ Composant maison dessiné au **`Canvas` Compose** (🔄 D13), utilisé partout.
 
 ### 3.1 Démarrer une séance, nom affiché et pré-remplissage
 
-**Clé de séance** (🔄 D3) — sert au pré-remplissage et au temps en salle :
+**Clé de séance** (🔄 D3) — sert au pré-remplissage et au temps en salle (🔄 D45 : aussi au type
+suggéré de l'Accueil, au « même programme » du résumé et à « Mes types », § 15.19.2) :
 - séance avec `preset` → `"preset:" + preset` ;
-- sinon → `"name:" + normalizeSearch(name)` (minuscules, sans accents, trim — § 10.6).
+- 🔄 D45 : sans `preset`, mais nom égal au libellé FR ou EN d'un préréglage (même comparaison que la
+  migration, § 5.3) → `"preset:" + ce préréglage` ;
+- sinon → `"name:" + nom normalisé` (minuscules, sans accents, trim — § 10.6 ; 🔄 D45 : suites
+  d'espaces réduites à une, « Bras  /  Abdos » = « bras / abdos »).
 
 **Nom affiché** : `preset` connu → libellé traduit `startWorkout.preset.<preset>` dans la
 langue courante ; sinon `name` ; si vide → date formatée.
@@ -862,6 +868,8 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
   français, comme les textes (§ 9.4).
 - `weighInReminder` (🔄 D38) : rappel de pesée (activé, heure, jours), désactivé par défaut,
   07:30, tous les jours (§ 15.13.3, § 15.13.5).
+- `removedWorkoutTypes` (🔄 D45) : types retirés de « Mes types » (nom et instant du retrait), vide
+  par défaut (§ 15.19.4, § 15.19.5).
 - Préférences locales non sauvegardées : carte de transfert masquée (§ 2.2) ; copie de la
   langue choisie dans l'app, relue par les notifications construites hors activité avant
   Android 13 (§ 9.4).
@@ -1008,9 +1016,10 @@ saisis/affichés, pas la présence des champs. 🔄 D44 : sinon, un exercice de 
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
-**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark", weighInReminder? }`
+**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark", weighInReminder?, removedWorkoutTypes? }`
 (défaut 180 et `"dark"`, 🔄 D35) ; 🔄 D38 — `weighInReminder` : `{ enabled, hour, minute, days }`,
-omis au défaut (désactivé, 07:30, tous les jours ; § 15.13.5).
+omis au défaut (désactivé, 07:30, tous les jours ; § 15.13.5) ; 🔄 D45 — `removedWorkoutTypes` :
+`[{ name, removedAt }]`, omis s'il est vide (§ 15.19.5).
 
 **`RestTimerState`** (non sauvegardé) : `{ endsAt: instant ms, total: s, exerciseName }`.
 
@@ -1249,7 +1258,9 @@ lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écarté
 § 15.16.8 (absents → 1 dose par jour, stock non suivi, seuil de 7 jours, aucune protéine, objectif de
 1,6 g par kg ; valeurs invalides → ces défauts). 🔄 D44 : `durationSeconds` d'une série et `type` d'un
 exercice lus selon le § 15.18.8 (absents → pas de durée, `"reps"` ; valeurs invalides → idem, durée
-arrondie à l'entier, négative → 0).
+arrondie à l'entier, négative → 0). 🔄 D45 : `removedWorkoutTypes` des préférences lu selon le § 15.19.5
+(absent → aucun type retiré ; entrées invalides écartées) ; une séance v2 sans `preset` dont le nom
+correspond à un préréglage y est rattachée au rechargement qui suit l'import (§ 15.19.2).
 
 ### 5.4 Déroulé d'un import
 
@@ -1385,14 +1396,23 @@ Identifiants stockés dans `Workout.preset` ; libellé = chaîne `startWorkout.p
 | PPL | `push` | Push | Push |
 | PPL | `pull` | Pull | Pull |
 | PPL | `legs` | Legs | Legs |
+| Haut / Bas (🔄 D45) | `upperBody` | Haut du corps | Upper body |
+| Haut / Bas (🔄 D45) | `lowerBody` | Bas du corps | Lower body |
 | Split | `pecs` | Pecs | Chest |
 | Split | `dos` | Dos | Back |
 | Split | `shoulders` | Épaules | Shoulders |
 | Split | `legsSplit` | Jambes | Legs (split) |
 | Split | `arms` | Bras | Arms |
+| Split (🔄 D45) | `abs` | Abdos | Abs |
+| Split (🔄 D45) | `glutes` | Fessiers | Glutes |
 | Autre | `fullBody` | Full Body | Full Body |
 | Autre | `isolation` | Isolation | Isolation |
 | Autre | `cardio` | Cardio | Cardio |
+
+Groupes, dans l'ordre d'affichage : PPL, Haut / Bas (🔄 D45, EN « Upper / Lower »), Split, Autre ; dans
+un groupe, l'ordre du tableau. 🔄 D45 : une séance sans `preset` dont le nom est le libellé FR ou EN d'un
+préréglage (anciennes séances « Haut du corps » saisies en personnalisé, par exemple) est **rattachée à
+ce préréglage**, comme à la migration v1 (§ 5.3, § 15.19.2).
 
 ⚠️ Dans l'app Expo, `legs` et `legsSplit` avaient le même libellé anglais « Legs » (deux
 préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche « Legs (split) » pour
@@ -1814,7 +1834,9 @@ séance et la modale de pesée.
 `normalizeSearch(s)` = décomposition NFD (`java.text.Normalizer`), suppression des
 diacritiques combinants (U+0300–U+036F), minuscules, `trim()`. Recherche par « contient » sur
 le nom **affiché** (donc dans la langue courante pour les exercices intégrés). Utilisé aussi
-pour la clé de séance (§ 3.1) et les correspondances de migration (§ 5.3).
+pour la clé de séance (§ 3.1) et les correspondances de migration (§ 5.3). 🔄 D45 : pour un nom de
+séance (clé de séance, préréglage d'après le nom, « Mes types »), les suites d'espaces sont en plus
+réduites à une (§ 15.19.2).
 
 ### 10.7 Groupes musculaires accentués
 `"épaules"` et `"avant-bras"` sont stockés tels quels (UTF-8, `é` en NFC). Ne pas les
@@ -1861,7 +1883,8 @@ Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finiti
 de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
 de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15), D42 avec les
 protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16), D43 avec la carte du corps
-et les muscles travaillés (§ 15.17), D44 avec les exercices au temps (§ 15.18).
+et les muscles travaillés (§ 15.17), D44 avec les exercices au temps (§ 15.18), D45 avec les types de
+séance (§ 15.19).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1909,6 +1932,7 @@ et les muscles travaillés (§ 15.17), D44 avec les exercices au temps (§ 15.18
 | D42 | Protéines, stock des compléments et moyenne sur 7 jours (maquette `T2-Nutrition`) | objectif de protéines calculé à partir de la dernière pesée (grammes par kg, réglable de 1,2 à 2,2, 1,6 par défaut) ou valeur fixe saisie au pavé ; sans aucune pesée, valeur fixe uniquement ; ligne « Protéines » comme sur la maquette (« 112 g », « objectif 150 g »), en gris, puis en vert une fois l'objectif atteint ; **eau et protéines identiques, comme sur la maquette** : deux lignes, chacune avec son bouton + (ajout au pavé), le toucher de la ligne ouvre son détail ; protéines du jour dans la sheet « Journée », à côté des calories et de l'eau ; stock des compléments en doses, saisi au pavé, décompté à partir de l'historique des prises ; jours restants = stock / doses par jour, affichés comme sur la maquette, en rouge au seuil ou en dessous (7 jours par défaut, réglable par complément) ; « Racheté » ajoute des doses ; sans stock saisi, rien ne s'affiche ; doses par jour = réglage du complément ; « Moyenne sur 7 jours » (calories, eau, protéines) comme sur la maquette, sur les seuls jours avec des données, sans aujourd'hui ; champs facultatifs, sans migration, anciennes données relues telles quelles ; Progrès, export CSV et notification de stock bas en pistes | groupe du héros de la maquette : légende « Aujourd'hui · calories » et bouton + plein des calories, chiffre héros, état et piste inchangés, puis les lignes « Eau » et « Protéines » (valeur grise puis verte avec « objectif … atteint », jamais la couleur seule ; bouton + → saisie en « Ajouter » ; ligne → détail : aujourd'hui → « Total du jour », objectif, moyenne sur 7 jours, « Ajouter ») ; rangée de stats et boutons « Calories » / « Eau » retirés, « 1 sur 3 pris » à droite de l'étiquette « Compléments » ; protéines saisies comme les calories (grammes entiers, pas ±5 g) ; dernière pesée = dernière pesée connue du § 15.13.1 (pesée, sinon poids saisi au début d'une séance, séance en cours comprise) ; objectif = poids × facteur arrondi au gramme (demi vers le haut, calcul exact), non daté (il ne vaut que pour le jour même) ; « par kg » sans poids connu → la valeur fixe, sinon pas d'objectif ; doses par jour de 1 à 20, 1 par défaut, une coche enregistre ce nombre de doses dans l'historique (au lieu d'une) ; stock = doses comptées un jour donné moins les doses prises depuis, jamais sous 0 ; jours restants = partie entière, rouges dès qu'ils sont ≤ au seuil (« à 7 jours »), sans notification ; « Racheté » et « Stock bas » seulement quand le stock est suivi, « Ne plus suivre le stock » dans son formulaire ; moyenne de J − 7 à J − 1 par mesure, jours à 0 exclus, « — » pour une mesure sans jour, groupe masqué sans aucune donnée ; pas de lien « Tendances » ; section « Calories et eau » de la « Journée » renommée « Nutrition », protéines sans objectif (non daté), comptées pour les mois accessibles ; variantes de composants : `StudioIconButton` plein, `ListRowTrailing.ValueAction`, valeur avant la case de `ListRowTrailing.Check`, `DailySurface` redessinée (§ 3.12, 4.1, 5.3, 15.6, 15.10.1, 15.15.2, 15.15.4, 15.16) |
 | D43 | Carte du corps et muscles travaillés (maquette `T2-Carte-corps`, SVG `design/claude-design/corps/`) | liste fixe des muscles (ids du SVG) avec nom courant, nom savant et rôle en une phrase ; muscles principaux et secondaires de chaque exercice intégré en donnée embarquée, jamais dans les fichiers de l'utilisateur ; exercices perso : choix des muscles dans leur formulaire, champ facultatif, sans migration ; fiche exercice : section « Muscles travaillés » en bas (petite carte + noms) ; sélecteur d'exercices : filtre « par muscle » avec la grande carte, toucher un muscle filtre la liste ; toucher un muscle (fiche ou filtre) ouvre la sheet « Muscle » ; écran de la séance en cours inchangé ; chaque muscle de la carte lu par TalkBack | 17 muscles, ordre et ids figés (§ 15.17.1) ; au moins un principal par exercice intégré, aucun muscle à la fois principal et secondaire (§ 15.17.2) ; le groupe musculaire reste (classement, cardio, filtre « Par groupe ») ; `Exercise.primaryMuscles` / `secondaryMuscles` facultatifs, omis vides, valeurs inconnues écartées à la lecture, un ancien fichier relu sans muscle ; formulaire perso : puces à choix multiple « Muscles principaux » et « Muscles secondaires », un muscle dans une seule des deux ; fiche : dernière section, carte de 150 dp et noms (principaux puis secondaires), section absente pour un exercice perso sans muscle ; sélecteur : contrôle segmenté « Par groupe » / « Par muscle », carte fixe au-dessus de la liste (au plus 360 dp et 40 % de l'écran, place de 4 à 5 exercices dessous, masquée clavier ouvert), liste toujours ouverte en haut, plusieurs muscles possibles (union), principaux d'abord, puces des muscles choisis et « Retirer le filtre » ; sheet « Muscle » : carte d'une vue, nom, nom savant, rôle, exercices qui le travaillent (principal / secondaire), étape du sélecteur ou bottom sheet de la fiche ; toucher hors d'une zone → la plus proche à 12 dp ; composant nouveau `BodyMap` (formes du SVG pour Compose, toucher par muscle, un élément TalkBack par muscle) et jetons de la carte (§ 4.1, 6.1, 15.6, 15.9.1, 15.11.2, 15.17) |
 | D44 | Exercices au temps (gainage) | type d'exercice « au temps » à côté de « charge × reps » et du poids du corps ; planche, planche latérale, chaise contre le mur et suspension à la barre embarquées au temps, avec leurs muscles ; type choisi dans le formulaire d'un exercice perso ; série au temps = durée (`m:ss`) et charge facultative (lest), saisie au pavé ou par un chronomètre dans la ligne (Démarrer / Arrêter, en jaune pendant qu'il tourne, durée reportée dans la série) ; « Préc. » en durée ; suggestion +5 s si la durée a été tenue sur toutes les séries ; « Arrêter » valide la série ; fiche et Progrès : durée max par séance, record = durée la plus longue, pas de 1RM ; séries au temps hors du volume en kg, temps sous tension dans le résumé ; chrono visible dans la notification de séance, écran verrouillé compris ; durée en secondes et type d'exercice facultatifs, sans migration, anciennes données relues telles quelles ; colonne durée dans l'export CSV | `plank` passe au temps et devient « Planche » ; `wallsit`, `sideplank`, `deadhang` ajoutés (45 exercices) ; `Exercise.type` `"reps"` (omis) / `"timed"`, ignoré pour le cardio, segmenté « Type » masqué pour le groupe Cardio ; `Set.durationSeconds` entier, distinct de `duration` (minutes, cardio) ; série au temps = série qui a une durée (une ancienne série en reps d'un exercice devenu au temps reste comptée comme avant et hors des statistiques de durée) ; colonnes # · Préc. · Durée · Kg, nouvelle série 0:30 sans lest ; durée saisie depuis la droite (4 chiffres, secondes > 59 comptées comme des secondes, borne 99:59, pas de ±5 s) ; chrono sur les séries non validées, un seul à la fois, son départ arrête le repos, « Arrêter » (ou la case) reporte les secondes entières et valide la série (le repos démarre), le pavé l'arrête sans valider, instant de départ gardé dans `set_timer.json` (hors sauvegarde) ; notification : ligne « chrono de série » prioritaire (chronomètre vers le haut, action « Arrêter » par `RestTimerReceiver`, pastille Live Update) ; métrique = durée max des séries validées avec durée, séance sans durée hors de la fiche ; temps sous tension = somme des durées validées, après les séries dans la rangée de stats du résumé ; colonne « Durée (s) » ajoutée à la fin du fichier `sets` ; variante de `SetRow` (bouton du chrono, état en cours), icônes `play_arrow`, `stop`, `ic_stop` (§ 3.1, 3.8, 4.1, 4.2, 5.3, 6.1, 8, 15.5, 15.7, 15.9.3, 15.12, 15.17.2, 15.18) |
+| D45 | Types de séance : nouveaux préréglages et types personnalisés réutilisables | groupe « Haut / Bas » (Haut du corps, Bas du corps) et Abdos, Fessiers dans Split ; les anciennes séances qui portent un de ces noms en personnalisé sont rattachées au préréglage ; rangée « Mes types » en tête du choix du type (démarrer, renommer) : les noms personnalisés déjà utilisés, les plus récents d'abord, 8 au plus, masquée sans nom ; noms comparés sans casse ni espaces en trop, forme la plus récente affichée, pas de doublon d'un préréglage ; appui long → retirer de « Mes types » après confirmation, séances passées inchangées, le nom revient s'il est réutilisé ; même comparaison pour « même programme » et le type suggéré ; seule la liste des types retirés est stockée (champ facultatif des préférences, sans migration), le reste est calculé à partir des séances | ids `upperBody`, `lowerBody`, `abs`, `glutes` (15 préréglages, 4 groupes) ; nom égal au libellé FR ou EN d'un préréglage = ce préréglage, pour tous les préréglages, à la lecture des séances, au démarrage et au renommage (`name` conservé) ; clé de séance : minuscules, sans accents, suites d'espaces réduites ; « Mes types » = séances terminées sans préréglage, une puce par clé, texte = nom de la plus récente, séance en cours non comptée ; toucher une puce met son nom dans « Personnalisé » ; retrait = `{ name, removedAt }`, le type revient dès qu'une séance de ce nom commencée après le retrait est terminée ; « Retirer » par `ConfirmSheetContent` dans la sheet ; variante de `FilterChip` (appui long, action TalkBack nommée) (§ 2.3, 3.1, 3.14, 4.1, 5.3, 6.3, 10.6, 15.8.3, 15.11.1, 15.12.3, 15.19) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1958,7 +1982,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 620 tests JVM (48 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 737 tests JVM (55 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -1976,7 +2000,7 @@ construction de l'APK (à la bascule : 245 tests, 23 classes).
 | 3 | règles métier (séance, 1RM, série hebdo, temps en salle, volume, archivage, Progrès, pesées, nutrition, préférences, séries validées) | `data/workout/`, `data/progress/`, `data/nutrition/`, `data/repository/` |
 | 4 | modèle, un fichier JSON par document, écritures atomiques et différées, fichiers illisibles mis de côté | `data/model/`, `data/storage/` |
 | 5 | sauvegarde v2, import v1 / v2 (validation, migration, normalisation), transfert depuis l'app Expo | `data/backup/`, `ui/settings/BackupViewModel.kt` |
-| 6 | 42 exercices intégrés (45 depuis 🔄 D44), 9 groupes, 11 préréglages | `data/catalog/`, `data/model/` |
+| 6 | 42 exercices intégrés (45 depuis 🔄 D44), 9 groupes, 11 préréglages (15 depuis 🔄 D45) | `data/catalog/`, `data/model/` |
 | 7 | canaux, minuteur de repos (notification en cours, alarme exacte), rappels de compléments (alarmes exactes, resynchronisations) | `notifications/`, `data/repository/RestTimerRepository.kt` |
 | 8 | export CSV | `data/export/CsvExport.kt`, `ui/settings/CsvExportTexts.kt` |
 | 9 | thème : design system « Studio épuré » (DESIGN.md ; 🔄 D36 : l'ancien thème est retiré), Archivo embarquée, icônes Material Symbols Rounded, textes FR / EN | `ui/designsystem/`, `res/` |
@@ -2316,6 +2340,28 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   puis rallumé, « Arrêter » depuis l'écran verrouillé (et la Live Update sur Android 16+), chrono après une
   fermeture de l'app, saisie « 90 » au pavé puis réouverture (`1:30`), TalkBack sur les durées, texte agrandi
   dans la colonne Durée avec son bouton.
+- **Types de séance** (🔄 D45, § 15.19), branche `feat/mes-types` : préréglages `upperBody`, `lowerBody`, `abs`,
+  `glutes` et groupe `PresetGroup.UpperLower` (`data/model/PresetId.kt`, libellés FR / EN de rattachement
+  précalculés) ; nom normalisé `normalizeWorkoutName` (`data/util/Text.kt`) ; `WorkoutRules.presetFor` /
+  `presetOf` / `withPresetFromName` et clé de séance sans casse, accents ni espaces en trop, préréglage
+  d'après le nom (démarrage, renommage, lecture de `workouts.json` et `current_workout.json` par
+  `WorkoutRepository.load`) ; type suggéré de l'Accueil (`SessionType.preset`) ; règles pures
+  `data/workout/WorkoutTypeRules.kt` (« Mes types » : ordre, 8 au plus, doublons, préréglages écartés,
+  types retirés et leur retour ; retrait ; relecture) ; `Preferences.removedWorkoutTypes`
+  (`RemovedWorkoutType`, lecture tolérante `RemovedWorkoutTypesSerializer`, `BackupNormalizer`) et
+  `PreferencesRepository.removeWorkoutType`. Interface : `WorkoutTypeFields` (rangée « Mes types »,
+  `rememberMyWorkoutTypes`, `RemoveMyTypeConfirm`), `StartWorkoutSheet` et `RenameSheetContent` (étape de
+  confirmation dans la sheet) ; variante de `FilterChip` (appui long, libellé qui passe à la ligne). Tests
+  JVM `WorkoutTypeRulesTest`, `CatalogTest` (tableau du § 6.3 relu dans ce document, noms normalisés),
+  `WorkoutRulesTest`, `WorkoutSummaryRulesTest`, `HomeRulesTest`, `WorkoutRepositoryTest`,
+  `RepositoryLoadTest`, `BackupV2Test`, `BackupV1MigrationTest` et `HealthSyncRepositoryTest` (une séance
+  rattachée est remplacée dans Health Connect sous le même identifiant client, sans doublon ni
+  suppression). Aperçus : `StartWorkoutTypePreview` (groupe « Haut / Bas », « Mes types » masquée),
+  `StartWorkoutMyTypesPreview`, `StartWorkoutRemoveTypePreview` (jeu `PreviewDataSet.WithCustomTypes`),
+  `RenameSheetPreview` (nom long). À vérifier **sur l'appareil** : appui long sur une puce (vibration,
+  confirmation, retour), TalkBack (action « Retirer de Mes types »), retour d'un type réutilisé après une
+  séance terminée, une ancienne séance perso « Haut du corps » affichée « Upper body » en anglais et
+  renvoyée une fois à Health Connect.
 
 ---
 
@@ -2506,6 +2552,10 @@ section « Muscles travaillés » de la fiche exercice, le filtre « Par muscle 
 intégrés, la durée et le lest d'une série saisis au pavé ou mesurés par un chrono dans la ligne, visible
 dans la notification ; la durée max par séance dans la fiche et Progrès, le temps sous tension dans le
 résumé ; deux champs facultatifs (durée d'une série, type d'un exercice) ; une variante de `SetRow`.
+**Types de séance** (🔄 D45, § 15.19) : quatre préréglages (Haut du corps, Bas du corps, Abdos,
+Fessiers), les anciennes séances de ces noms rattachées ; la rangée « Mes types » (noms personnalisés
+déjà utilisés, appui long pour en retirer un) ; une même comparaison des noms partout ; un champ
+facultatif dans les préférences ; une variante de `FilterChip` (appui long).
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -3191,7 +3241,8 @@ séance » le remplace).
 
 - **Choix de la surface** : une séance en cours → « En cours » ; sinon « Prochaine séance ».
 - **Fenêtre** : les séances terminées des **42 derniers jours** (jour local de la séance ≥
-  aujourd'hui − 41 jours), groupées par **clé de séance** (§ 3.1 : préréglage, ou nom normalisé).
+  aujourd'hui − 41 jours), groupées par **clé de séance** (§ 3.1 : préréglage, ou nom normalisé ;
+  🔄 D45 : sans casse ni espaces en trop, nom d'un préréglage = ce préréglage, § 15.19.2).
 - **Types réguliers** : les clés qui ont **au moins 2 séances** dans la fenêtre **et au moins la
   moitié** des séances de la clé la plus fréquente (un « Cardio » occasionnel au milieu d'un Push /
   Pull / Legs n'en est pas un).
@@ -3919,6 +3970,8 @@ vide, étape du type). Plus de route `start-workout`.
   d'erreur.
 - 🔄 D38 (§ 15.13.2) : champ vide, dernière pesée en aide, bouton texte « Passer » (séance sans
   poids) ; déjà pesé aujourd'hui → pas de champ, « Suivant » devient « ✓ Commencer ».
+- 🔄 D45 (§ 15.19) : groupe « Haut / Bas » et Abdos, Fessiers dans Split ; rangée « Mes types » en tête
+  de l'étape du type (et du renommage de l'éditeur), appui long pour retirer un type.
 - « Commencer » : permission des notifications puis `startWorkout` comme au § 2.3, la sheet se
   ferme et la séance en cours s'ouvre. Retour à l'étape du poids : l'étape du type ; voile ou
   glisser : la sheet se ferme sans rien démarrer.
@@ -4134,7 +4187,9 @@ De haut en bas :
   les séances plus récentes que S : le résumé d'une ancienne séance se lit comme le jour où elle a
   été faite (une date modifiée déplace la séance, § 15.8.4).
 - **Séance précédente du même programme** : la plus récente des séances plus anciennes qui a la
-  même **clé de séance** que S (§ 3.1 : préréglage, sinon nom normalisé). Aucune → pas de variation.
+  même **clé de séance** que S (§ 3.1 : préréglage, sinon nom normalisé ; 🔄 D45 : « Bras / Abdos » et
+  « bras  /  abdos » sont le même programme, une ancienne « Haut du corps » perso et le préréglage aussi,
+  § 15.19.2). Aucune → pas de variation.
   Une séance d'un autre programme ne compte jamais, même si elle est plus récente.
 - **Variation du volume** = volume de S arrondi au kg − volume de la précédente arrondi au kg :
   > 0 hausse (vert), < 0 baisse (rouge), 0 « identique » (gris) ; jamais « +0 kg ».
@@ -5554,3 +5609,139 @@ Clés Android (`strings.xml`) ; les libellés existants sont repris (« Kg », �
 | `exercise_fiche_hold_set_weight` | {{durée}} · {{charge}} kg | {{time}} · {{weight}} kg |
 | `summary_stat_tension` | sous tension | under tension |
 | `excel_col_duration_seconds` | Durée (s) | Duration (s) |
+
+### 15.19 Types de séance (🔄 D45)
+
+Un nom personnalisé saisi dans « Démarrer une séance » ne servait qu'à la séance en cours : il fallait
+le retaper à chaque fois, et des préréglages courants manquaient. L'app gagne **quatre préréglages**
+(§ 15.19.1), une **comparaison des noms** unique (§ 15.19.2) et, en tête du choix du type, une rangée
+**« Mes types »** : les noms personnalisés déjà utilisés, à toucher pour les reprendre (§ 15.19.3), à
+retirer par un appui long (§ 15.19.4). Tout est **calculé à partir des séances** ; seule la liste des
+types retirés est stockée, dans un **champ facultatif** des préférences, sans nouvelle version du format
+ni migration (§ 15.19.5). Pas de composant nouveau : une variante de `FilterChip` (§ 15.19.7).
+
+#### 15.19.1 Nouveaux préréglages
+
+| groupe | id | FR | EN |
+|---|---|---|---|
+| Haut / Bas | `upperBody` | Haut du corps | Upper body |
+| Haut / Bas | `lowerBody` | Bas du corps | Lower body |
+| Split (après Bras) | `abs` | Abdos | Abs |
+| Split | `glutes` | Fessiers | Glutes |
+
+- Le groupe **« Haut / Bas »** (EN « Upper / Lower ») se place entre PPL et Split : PPL, Haut / Bas,
+  Split, Autre (§ 6.3). 15 préréglages en tout.
+- Ils se comportent comme les autres : identifiant dans `Workout.preset`, libellé traduit à l'affichage
+  (§ 3.1), pré-remplissage, Health Connect, export CSV.
+
+#### 15.19.2 Comparaison des noms et rattachement aux préréglages
+
+- **Nom normalisé** d'une séance : minuscules, sans accents (§ 10.6), sans espaces au début ni à la fin,
+  **suites d'espaces réduites à une**. « Bras  /  Abdos », « bras / abdos » et « Bras / Abdos » sont le
+  même nom.
+- **Préréglage d'après le nom** : un nom normalisé égal au libellé FR ou EN normalisé d'un préréglage
+  (FR d'abord, puis EN ; « Legs » → `legs`, § 6.3) **est** ce préréglage. Vaut pour **tous** les
+  préréglages : une ancienne séance « Haut du corps », « push » ou « Abs » saisie en personnalisé compte
+  comme `upperBody`, `push` ou `abs`.
+- **Clé de séance** (§ 3.1) = `preset:` + préréglage (enregistré, sinon d'après le nom), sinon `name:` +
+  nom normalisé. Une seule règle pour : le pré-remplissage (§ 3.1), le temps en salle (§ 3.7), le **type
+  suggéré** de l'Accueil (§ 15.8.3), le **même programme** du résumé (§ 15.12.3) et « Mes types »
+  (§ 15.19.3).
+- **Rattachement** : une séance sans `preset` dont le nom correspond à un préréglage reçoit ce `preset`,
+  son `name` est conservé (comme la migration v1, § 5.3). Il est fait à la lecture des séances
+  (`workouts.json`, `current_workout.json`, donc aussi après un import), au démarrage (un nom perso
+  « abdos » démarre une séance `abs`) et au renommage dans l'éditeur. Le fichier n'est pas réécrit pour
+  autant : le `preset` y entre à la prochaine écriture de l'historique.
+- Conséquences visibles : une séance rattachée s'affiche avec le libellé traduit (« Upper body » en
+  anglais), le renommage la montre sur sa puce de préréglage ; Health Connect la renvoie au prochain
+  envoi avec ce titre (son empreinte change, § 15.3), comme une séance renommée.
+
+#### 15.19.3 Rangée « Mes types »
+
+- **Où** : en tête du choix du type (`WorkoutTypeFields`), au-dessus de PPL, sous l'étiquette « Mes
+  types » : l'étape « Type de séance » de « Démarrer une séance » (§ 15.11.1) et « Renommer la séance »
+  de l'éditeur (§ 15.11.3). Mêmes puces de filtre que les préréglages, sur plusieurs lignes.
+- **Contenu** : les **séances terminées sans préréglage** (après rattachement, § 15.19.2) au nom non
+  vide, **une puce par nom normalisé**. Texte = le nom de la **séance la plus récente** de ce nom, tel
+  qu'il est enregistré. Ordre : de la séance la plus récente à la plus ancienne (date de début, celle du
+  Journal) ; **8 puces au plus** (les 8 plus récentes). Un nom d'un préréglage n'y est jamais (il est ce
+  préréglage) ; les types retirés non plus (§ 15.19.4). La séance en cours ne compte pas.
+- **Masquée** (étiquette comprise) quand il n'y a aucune puce.
+- **Toucher une puce** : son nom passe dans le champ « Personnalisé » et le préréglage choisi est
+  désélectionné, exactement comme s'il avait été tapé. Une puce est sélectionnée tant qu'aucun préréglage
+  n'est choisi et que le nom normalisé du champ est le sien (taper « BRAS / ABDOS » la sélectionne aussi) ;
+  modifier le champ la désélectionne. « Commencer » démarre avec le nom du champ (`trim()`) : le
+  pré-remplissage reprend la dernière séance de ce type (§ 3.1).
+- Dans l'éditeur, la séance éditée compte comme les autres (son propre nom y figure, sélectionné).
+- TalkBack : puce lue comme les préréglages (bouton radio), avec l'action « Retirer de Mes types »
+  (appui long).
+
+#### 15.19.4 Retirer un type
+
+- **Appui long** sur une puce de « Mes types » (pas sur un préréglage) : vibration, la sheet passe à une
+  **confirmation** (même sheet, comme la suppression d'un exercice perso du sélecteur, § 15.11.2) : titre
+  « Retirer « {nom} » ? », message « Il disparaît de Mes types. Les séances passées gardent leur nom ; il
+  reviendra si tu le réutilises. », [Retirer] [Annuler].
+- **Retirer** : retour à l'étape du type, sans la puce ; le champ « Personnalisé » garde son texte (le
+  nom reste utilisable pour cette séance). **Annuler** ou retour : l'étape du type, inchangée.
+- **Rien ne change dans les séances** : nom, pré-remplissage, statistiques, Journal, types suggérés de
+  l'Accueil. Seule la rangée « Mes types » est concernée.
+- **Retour du type** : un type retiré revient dès qu'une séance terminée de ce nom (nom normalisé) a
+  commencé **après l'instant du retrait** — une séance démarrée plus tard avec ce nom, puis terminée.
+  Renommer une ancienne séance avec ce nom ne le fait pas revenir (sa date de début est antérieure).
+- Retirer de nouveau un nom déjà retiré remplace l'entrée (nouvel instant).
+
+#### 15.19.5 Format des données
+
+- **`Preferences.removedWorkoutTypes`** : tableau facultatif, **omis s'il est vide**, dans
+  `preferences.json` et donc dans la sauvegarde (`@gymtracker_preferences`) :
+  ```json
+  "removedWorkoutTypes": [ { "name": "Bras / Abdos", "removedAt": "2026-11-17T09:12:30.000Z" } ]
+  ```
+  `name` = le nom affiché au moment du retrait ; `removedAt` = instant ISO 8601 UTC, comme
+  `Workout.date`. Lu dans le fichier et à l'import sans jamais refuser : absent ou pas un tableau →
+  aucun type retiré ; entrée sans `name` non vide ou sans `removedAt` lisible → écartée ; deux entrées
+  du même nom normalisé → la plus récente gardée.
+- **`Workout.preset`** accepte `upperBody`, `lowerBody`, `abs`, `glutes`. Une version précédente de l'app
+  retire ces valeurs à l'import (préréglage inconnu, § 5.3) ; la séance garde son `name`.
+- Pas de nouvelle version du format, pas de migration : un ancien fichier se relit à l'identique, avec le
+  rattachement du § 15.19.2 en mémoire. Les versions précédentes ignorent `removedWorkoutTypes` (et le
+  perdent si elles réécrivent les préférences), comme `weighInReminder` (§ 15.13.5).
+
+#### 15.19.6 Règles (pures, testées en JVM)
+
+- **Nom normalisé et préréglage d'après le nom** : casse, accents, espaces en trop ; libellés FR et EN des
+  nouveaux préréglages ; « Legs » reste `legs`.
+- **Rattachement** : séance perso « haut du corps » → `upperBody` (nom conservé), à la lecture d'un ancien
+  `workouts.json` et au démarrage ; pré-remplissage d'une séance `upperBody` depuis une ancienne « Haut du
+  corps » perso.
+- **« Mes types »** : ordre (le plus récent d'abord), limite de 8, doublons de casse et d'espaces (une
+  puce, la forme la plus récente), nom égal à un préréglage écarté, nom vide écarté, séance en cours
+  ignorée ; type retiré masqué, puis revenu après une séance plus récente que le retrait, pas revenu pour
+  une séance plus ancienne ; nouveau retrait du même nom.
+- **Comparaison** : « même programme » du résumé (casse et espaces, perso rattaché au préréglage) et type
+  suggéré de l'Accueil (séances de casses différentes regroupées).
+- **Format** : préférences sans le champ relues à l'identique, champ omis quand il est vide, aller-retour,
+  entrées invalides et doublons.
+
+#### 15.19.7 Design system
+
+- **Variante** de `FilterChip` (DESIGN.md § 9.1) : appui long facultatif (`onLongClick`), avec son action
+  nommée pour TalkBack (`onLongClickLabel`) ; même rendu, même rôle (bouton radio).
+- Le reste : `LabeledField` (étiquette « Mes types »), `FlowRow` de puces, `ConfirmSheetContent`
+  (confirmation dans la sheet).
+
+#### 15.19.8 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; « Annuler » est repris (`common_cancel`).
+
+| clé | FR | EN |
+|---|---|---|
+| `start_workout_preset_upper_body` / `_lower_body` | Haut du corps / Bas du corps | Upper body / Lower body |
+| `start_workout_preset_abs` / `_glutes` | Abdos / Fessiers | Abs / Glutes |
+| `start_workout_group_upper_lower` | Haut / Bas | Upper / Lower |
+| `start_workout_my_types` | Mes types | My types |
+| `start_workout_my_type_remove_action` (accessibilité) | Retirer de Mes types | Remove from My types |
+| `start_workout_my_type_remove_title` | Retirer « {{nom}} » ? | Remove “{{name}}”? |
+| `start_workout_my_type_remove_message` | Il disparaît de Mes types. Les séances passées gardent leur nom ; il reviendra si tu le réutilises. | It leaves My types. Past workouts keep their name; it comes back if you use it again. |
+| `start_workout_my_type_remove` | Retirer | Remove |

@@ -6,7 +6,7 @@ import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.util.formatInstant
-import com.musclenote.android.data.util.normalizeSearch
+import com.musclenote.android.data.util.normalizeWorkoutName
 import com.musclenote.android.data.util.parseInstantOrNull
 import java.time.Duration
 import java.time.Instant
@@ -42,11 +42,31 @@ object WorkoutRules {
     val MAX_SESSION: Duration = Duration.ofHours(24)
 
     /**
-     * Clé de séance (🔄 D3), pour le pré-remplissage et le temps en salle : `preset:<id>` si la
-     * séance a un préréglage, sinon `name:` + nom normalisé (sans casse ni accents, § 10.6).
+     * Préréglage d'une séance (🔄 D45, § 15.19.2) : celui enregistré, sinon celui dont le libellé FR ou EN
+     * est le nom de la séance (sans casse, accents ni espaces en trop), sinon aucun.
+     */
+    fun presetFor(preset: PresetId?, name: String): PresetId? = preset ?: PresetId.fromLegacyName(name)
+
+    fun presetOf(workout: Workout): PresetId? = presetFor(workout.preset, workout.name)
+
+    /**
+     * Rattachement (🔄 D45, § 15.19.2) : une séance sans préréglage dont le nom est celui d'un préréglage
+     * le reçoit, son nom gardé ; sinon la même instance. Fait à la lecture des séances.
+     */
+    fun withPresetFromName(workout: Workout): Workout {
+        if (workout.preset != null) return workout
+        val preset = PresetId.fromLegacyName(workout.name) ?: return workout
+        return workout.copy(preset = preset)
+    }
+
+    /**
+     * Clé de séance (🔄 D3), pour le pré-remplissage, le temps en salle, le type suggéré, le même
+     * programme et « Mes types » : `preset:<id>` si la séance a un préréglage (enregistré ou d'après son
+     * nom, 🔄 D45), sinon `name:` + nom normalisé (sans casse, accents ni espaces en trop, § 10.6,
+     * § 15.19.2).
      */
     fun sessionKey(preset: PresetId?, name: String): String =
-        if (preset != null) "preset:${preset.id}" else "name:${normalizeSearch(name)}"
+        presetFor(preset, name)?.let { "preset:${it.id}" } ?: "name:${normalizeWorkoutName(name)}"
 
     fun sessionKey(workout: Workout): String = sessionKey(workout.preset, workout.name)
 
@@ -81,7 +101,8 @@ object WorkoutRules {
         return Workout(
             id = newId(),
             name = name.trim(),
-            preset = preset,
+            // 🔄 D45 : un nom perso qui est celui d'un préréglage démarre ce préréglage.
+            preset = presetFor(preset, name),
             date = formatInstant(now),
             bodyWeight = bodyWeight,
             exercises = template?.exercises.orEmpty().map { cloneExercise(it, newId) },
@@ -164,14 +185,14 @@ object WorkoutRules {
     /**
      * Enregistrement de l'éditeur de séance terminée (§ 2.9) : exercices, nom et préréglage
      * remplacés ; un poids de corps ≤ 0 (champ vide ou illisible) garde l'ancien. L'id, la date et
-     * la durée ne changent pas.
+     * la durée ne changent pas. 🔄 D45 : un nom perso qui est celui d'un préréglage y est rattaché.
      */
     fun patch(workout: Workout, exercises: List<WorkoutExercise>, bodyWeight: Double, name: String, preset: PresetId?): Workout =
         workout.copy(
             exercises = exercises,
             bodyWeight = if (bodyWeight > 0) bodyWeight else workout.bodyWeight,
             name = name.trim(),
-            preset = preset,
+            preset = presetFor(preset, name),
         )
 
     /**

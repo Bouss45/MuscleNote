@@ -20,6 +20,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import java.io.File
+import java.time.Instant
 import java.nio.file.Files
 
 /** Contenu des données d'un aperçu. */
@@ -35,6 +36,9 @@ enum class PreviewDataSet {
 
     /** [Full] plus une pesée aujourd'hui (§ 15.13.2 : plus de champ de poids au démarrage). */
     WeighedToday,
+
+    /** [Full] plus des séances aux noms perso (« Mes types », 🔄 D45, § 15.19.3). */
+    WithCustomTypes,
 }
 
 /**
@@ -61,7 +65,13 @@ fun previewContainer(context: Context, dataSet: PreviewDataSet): AppContainer {
 private fun writePreviewData(dataDir: File, dataSet: PreviewDataSet) = runBlocking(Dispatchers.IO) {
     coroutineScope {
         val files = DataFiles(dataDir, this, Dispatchers.IO)
-        files.workouts.saveNow(PreviewData.workouts)
+        files.workouts.saveNow(
+            if (dataSet == PreviewDataSet.WithCustomTypes) {
+                (PreviewData.workouts + PreviewData.customTypeWorkouts).sortedByDescending { Instant.parse(it.date) }
+            } else {
+                PreviewData.workouts
+            },
+        )
         files.exercises.saveNow(PreviewData.customExercises)
         files.bodyWeights.saveNow(
             if (dataSet == PreviewDataSet.WeighedToday) listOf(PreviewData.weighInToday) + PreviewData.bodyWeights else PreviewData.bodyWeights,

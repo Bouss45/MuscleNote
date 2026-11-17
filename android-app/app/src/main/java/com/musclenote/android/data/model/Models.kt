@@ -2,8 +2,17 @@ package com.musclenote.android.data.model
 
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonDecoder
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 // Modèle de données (SPEC § 4.1). La forme JSON est celle du format de sauvegarde v2 (§ 5.2) :
 // les champs requis n'ont pas de valeur par défaut (toujours écrits) ; les champs optionnels
@@ -231,12 +240,47 @@ data class WeighInReminder(
     }
 }
 
+/**
+ * Type retiré de « Mes types » (§ 15.19.4, 🔄 D45) : [name] = nom affiché au moment du retrait,
+ * [removedAt] = instant ISO 8601 UTC. Le type revient dès qu'une séance de ce nom commencée après cet
+ * instant est terminée.
+ */
+@Serializable
+data class RemovedWorkoutType(val name: String, val removedAt: String)
+
+/**
+ * Liste des types retirés (§ 15.19.5). La lecture ne refuse jamais : pas un tableau → vide ; élément
+ * qui n'est pas un objet avec `name` et `removedAt` textes → écarté. Le reste de la remise en forme
+ * (nom vide, instant illisible, doublons) est fait par `WorkoutTypeRules.normalized`.
+ */
+object RemovedWorkoutTypesSerializer : KSerializer<List<RemovedWorkoutType>> {
+    private val delegate = ListSerializer(RemovedWorkoutType.serializer())
+
+    override val descriptor: SerialDescriptor = delegate.descriptor
+
+    override fun serialize(encoder: Encoder, value: List<RemovedWorkoutType>) = delegate.serialize(encoder, value)
+
+    override fun deserialize(decoder: Decoder): List<RemovedWorkoutType> {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return delegate.deserialize(decoder)
+        val array = element as? JsonArray ?: return emptyList()
+        return array.mapNotNull { item ->
+            val entry = item as? JsonObject ?: return@mapNotNull null
+            val name = (entry["name"] as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return@mapNotNull null
+            val removedAt = (entry["removedAt"] as? JsonPrimitive)?.takeIf { it.isString }?.content ?: return@mapNotNull null
+            RemovedWorkoutType(name, removedAt)
+        }
+    }
+}
+
 @Serializable
 data class Preferences(
     val restSeconds: Int,
     val theme: ThemeMode,
     /** Omis quand il vaut [WeighInReminder.DEFAULT] (§ 15.13.5). */
     val weighInReminder: WeighInReminder = WeighInReminder.DEFAULT,
+    /** Types retirés de « Mes types » (§ 15.19.5, 🔄 D45) ; facultatif, omis vide. */
+    @Serializable(with = RemovedWorkoutTypesSerializer::class)
+    val removedWorkoutTypes: List<RemovedWorkoutType> = emptyList(),
 ) {
     companion object {
         const val DEFAULT_REST_SECONDS = 180
