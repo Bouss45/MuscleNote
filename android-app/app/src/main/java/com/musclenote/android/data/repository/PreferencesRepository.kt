@@ -7,15 +7,17 @@ import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.nutrition.WeighInReminderRules
 import com.musclenote.android.data.nutrition.WeighInReminders
 import com.musclenote.android.data.storage.JsonDocument
+import com.musclenote.android.data.workout.WorkoutTypeRules
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import java.time.Instant
 
 /**
- * Dépôt des préférences (SPEC § 3.14) : durée du minuteur, thème et rappel de pesée (§ 15.13),
- * sauvegardés ; et préférences locales à l'appareil (carte de transfert masquée), jamais exportées ni
+ * Dépôt des préférences (SPEC § 3.14) : durée du minuteur, thème, rappel de pesée (§ 15.13) et types
+ * retirés de « Mes types » (§ 15.19), sauvegardés ; et préférences locales à l'appareil (carte de transfert masquée), jamais exportées ni
  * touchées par un import. Chaque changement du rappel de pesée met son alarme à jour.
  */
 class PreferencesRepository(
@@ -38,9 +40,13 @@ class PreferencesRepository(
 
     suspend fun load() {
         mutex.withLock {
-            // Le rappel de pesée est remis en forme (heure, jours) : le fichier peut venir d'un import.
+            // Le rappel de pesée (heure, jours) et les types retirés (§ 15.19.5) sont remis en forme : le
+            // fichier peut venir d'un import.
             _preferences.value = (preferencesDoc.read() ?: Preferences.DEFAULT).let {
-                it.copy(weighInReminder = WeighInReminderRules.normalized(it.weighInReminder))
+                it.copy(
+                    weighInReminder = WeighInReminderRules.normalized(it.weighInReminder),
+                    removedWorkoutTypes = WorkoutTypeRules.normalized(it.removedWorkoutTypes),
+                )
             }
             _localPreferences.value = localPreferencesDoc.read() ?: LocalPreferences.DEFAULT
             _loaded.value = true
@@ -87,6 +93,20 @@ class PreferencesRepository(
             preferencesDoc.save(next)
         }
         weighInReminders.sync { _preferences.value.weighInReminder }
+    }
+
+    /**
+     * Retire [name] de « Mes types » à l'instant [now] (§ 15.19.4, 🔄 D45). Les séances ne changent pas ;
+     * le type revient dès qu'une séance de ce nom commencée après [now] est terminée. Écriture attendue.
+     */
+    suspend fun removeWorkoutType(name: String, now: Instant) {
+        mutex.withLock {
+            val current = _preferences.value
+            val next = current.copy(removedWorkoutTypes = WorkoutTypeRules.remove(current.removedWorkoutTypes, name, now))
+            if (next == current) return
+            _preferences.value = next
+            preferencesDoc.saveNow(next)
+        }
     }
 
     /**

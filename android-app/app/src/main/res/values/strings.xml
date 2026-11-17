@@ -110,11 +110,15 @@
     <string name="start_workout_preset_push">Push</string>
     <string name="start_workout_preset_pull">Pull</string>
     <string name="start_workout_preset_legs">Legs</string>
+    <string name="start_workout_preset_upper_body">Haut du corps</string>
+    <string name="start_workout_preset_lower_body">Bas du corps</string>
     <string name="start_workout_preset_pecs">Pecs</string>
     <string name="start_workout_preset_dos">Dos</string>
     <string name="start_workout_preset_shoulders">Épaules</string>
     <string name="start_workout_preset_legs_split">Jambes</string>
     <string name="start_workout_preset_arms">Bras</string>
+    <string name="start_workout_preset_abs">Abdos</string>
+    <string name="start_workout_preset_glutes">Fessiers</string>
     <string name="start_workout_preset_full_body">Full Body</string>
     <string name="start_workout_preset_isolation">Isolation</string>
     <string name="start_workout_preset_cardio">Cardio</string>
@@ -188,10 +192,17 @@
     <string name="start_workout_title">Type de séance</string>
     <string name="start_workout_subtitle">Choisis ou nomme ta séance</string>
     <string name="start_workout_group_ppl">PPL</string>
+    <string name="start_workout_group_upper_lower">Haut / Bas</string>
     <string name="start_workout_group_split">Split</string>
     <string name="start_workout_group_other">Autre</string>
     <string name="start_workout_custom_label">Personnalisé</string>
     <string name="start_workout_custom_placeholder">Ex: Épaules / Mollets</string>
+    <!-- Types de séance : « Mes types » (SPEC § 15.19.8, D45) -->
+    <string name="start_workout_my_types">Mes types</string>
+    <string name="start_workout_my_type_remove_action">Retirer de Mes types</string>
+    <string name="start_workout_my_type_remove_title">Retirer « %1$s » ?</string>
+    <string name="start_workout_my_type_remove_message">Il disparaît de Mes types. Les séances passées gardent leur nom ; il reviendra si tu le réutilises.</string>
+    <string name="start_workout_my_type_remove">Retirer</string>
     <string name="start_workout_next">Suivant</string>
     <string name="start_workout_start">Commencer</string>
     <string name="start_workout_weight_invalid">Saisis ton poids de corps</string>

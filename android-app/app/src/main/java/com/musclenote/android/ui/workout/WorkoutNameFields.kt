@@ -65,6 +65,7 @@ internal fun WorkoutTypeFields(
 
 private fun PresetGroup.labelRes(): Int = when (this) {
     PresetGroup.Ppl -> R.string.start_workout_group_ppl
+    PresetGroup.UpperLower -> R.string.start_workout_group_upper_lower
     PresetGroup.Split -> R.string.start_workout_group_split
     PresetGroup.Other -> R.string.start_workout_group_other
 }

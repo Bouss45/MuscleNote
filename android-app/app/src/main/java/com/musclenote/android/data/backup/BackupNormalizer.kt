@@ -11,6 +11,7 @@ import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.RemovedWorkoutType
 import com.musclenote.android.data.model.ProteinGoal
 import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Reminder
@@ -29,6 +30,7 @@ import com.musclenote.android.data.util.dayKey
 import com.musclenote.android.data.util.formatInstant
 import com.musclenote.android.data.util.isDayKey
 import com.musclenote.android.data.util.parseInstantOrNull
+import com.musclenote.android.data.workout.WorkoutTypeRules
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
@@ -276,7 +278,23 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
             else -> Preferences.DEFAULT_THEME
         },
         weighInReminder = weighInReminder(p["weighInReminder"]),
+        removedWorkoutTypes = removedWorkoutTypes(p["removedWorkoutTypes"]),
     )
+
+    /**
+     * Types retirés de « Mes types » (§ 15.19.5, 🔄 D45), lus sans jamais refuser l'import : pas un tableau
+     * → aucun ; entrée sans `name` ou `removedAt` texte, nom vide ou instant illisible → écartée ; même nom
+     * normalisé → le retrait le plus récent.
+     */
+    private fun removedWorkoutTypes(v: JsonElement?): List<RemovedWorkoutType> =
+        WorkoutTypeRules.normalized(
+            v.arrayOrNull().orEmpty().mapNotNull { item ->
+                val entry = item.objectOrNull() ?: return@mapNotNull null
+                val name = entry["name"].stringOrNull() ?: return@mapNotNull null
+                val removedAt = entry["removedAt"].stringOrNull() ?: return@mapNotNull null
+                RemovedWorkoutType(name, removedAt)
+            },
+        )
 
     /**
      * Rappel de pesée (§ 15.13.5, 🔄 D38), lu champ par champ sans jamais refuser l'import : absent ou
