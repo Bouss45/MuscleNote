@@ -19,6 +19,7 @@ import com.musclenote.android.data.repository.PreferencesRepository
 import com.musclenote.android.data.repository.ReleaseSource
 import com.musclenote.android.data.repository.RestTimerEffects
 import com.musclenote.android.data.repository.RestTimerRepository
+import com.musclenote.android.data.repository.SetTimerRepository
 import com.musclenote.android.data.repository.UpdateCheckScheduler
 import com.musclenote.android.data.repository.UpdateNotifications
 import com.musclenote.android.data.repository.UpdateRepository
@@ -27,6 +28,7 @@ import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.data.storage.StorageMeta
 import com.musclenote.android.data.util.CurrentDay
 import com.musclenote.android.data.util.TimeSource
+import com.musclenote.android.data.workout.SetTimerRules
 import com.musclenote.android.data.workout.WorkoutEnd
 import com.musclenote.android.data.workout.WorkoutNotifications
 import kotlinx.coroutines.CoroutineDispatcher
@@ -95,6 +97,9 @@ class AppContainer(
     val currentDay = CurrentDay(time, appScope)
     val preferences = PreferencesRepository(files.preferences, files.localPreferences, weighInReminders)
     val restTimer = RestTimerRepository(files.restTimer, time, { preferences.preferences.value.restSeconds }, restTimerEffects)
+
+    /** Chrono d'une série au temps (§ 15.18.4) ; il ne vaut que sur une série non validée de la séance en cours. */
+    val setTimer = SetTimerRepository(files.setTimer)
     val updates = UpdateRepository(
         files.updateCheck,
         time,
@@ -136,6 +141,8 @@ class AppContainer(
         }
         // Hors du chargement : awaitReady() n'attend pas Health Connect.
         appScope.launch { health.sync() }
+        // Chrono d'une série supprimée, validée ou d'une séance finie : retiré (§ 15.18.4).
+        watchSetTimer()
         // Notification de la séance en cours (§ 15.5), republiée après un redémarrage du téléphone.
         watchWorkoutNotification()
         // Resynchronisation complète des rappels au démarrage (§ 7.3, § 15.13.4).
@@ -216,6 +223,41 @@ class AppContainer(
         refreshWorkoutNotification()
     }
 
+    /**
+     * « Démarrer » le chrono de la série [setId] (§ 15.18.4) : seulement sur une série non validée de
+     * la séance en cours, sans autre chrono ; le repos en cours s'arrête. `true` s'il a démarré.
+     */
+    suspend fun startSetTimer(setId: String): Boolean {
+        awaitReady()
+        val located = SetTimerRules.locate(workouts.currentWorkout.value, setId) ?: return false
+        val running = SetTimerRules.activeOn(setTimer.state.value, workouts.currentWorkout.value)
+        if (!SetTimerRules.canStart(running, located.set)) return false
+        // Un chrono resté sur une série disparue ne compte plus.
+        if (running == null) setTimer.clear()
+        if (!setTimer.start(setId, time.now().toEpochMilli())) return false
+        restTimer.stop()
+        refreshWorkoutNotification()
+        return true
+    }
+
+    /**
+     * Arrêt du chrono en cours (§ 15.18.4) : sa série prend la durée écoulée ; « Arrêter » (ligne,
+     * case ou notification) la valide aussi et lance le repos ([validate]), l'ouverture du pavé non.
+     * [nowMillis] : l'instant de l'arrêt, celui que l'écran a déjà montré dans le pavé.
+     */
+    suspend fun stopSetTimer(validate: Boolean = true, nowMillis: Long = time.now().toEpochMilli()) {
+        awaitReady()
+        val state = setTimer.state.value ?: return
+        val cleared = setTimer.clear(state) ?: return
+        val located = SetTimerRules.locate(workouts.currentWorkout.value, cleared.setId)
+        if (located != null && !located.set.completed) {
+            val seconds = SetTimerRules.elapsedSeconds(cleared, nowMillis)
+            val exerciseId = workouts.recordHold(cleared.setId, seconds, validate)
+            if (exerciseId != null) restTimer.start(workoutNotifications.exerciseName(exerciseId, workouts.customExercises.value))
+        }
+        refreshWorkoutNotification()
+    }
+
     /** « −30 s » / « +30 s » de la notification de séance (§ 15.5). */
     suspend fun adjustRest(deltaSeconds: Int) {
         awaitReady()
@@ -233,8 +275,12 @@ class AppContainer(
         awaitReady()
         notificationMutex.withLock {
             val workout = workouts.currentWorkout.value
-            if (workout == null) workoutNotifications.cancel()
-            else workoutNotifications.show(workout, restTimer.state.value, workouts.customExercises.value)
+            if (workout == null) {
+                workoutNotifications.cancel()
+            } else {
+                val timer = SetTimerRules.activeOn(setTimer.state.value, workout)
+                workoutNotifications.show(workout, restTimer.state.value, workouts.customExercises.value, timer)
+            }
         }
     }
 
@@ -245,12 +291,23 @@ class AppContainer(
      */
     private fun watchWorkoutNotification() {
         appScope.launch {
-            combine(workouts.currentWorkout, restTimer.state, workouts.customExercises) { _, _, _ -> }
+            combine(workouts.currentWorkout, restTimer.state, workouts.customExercises, setTimer.state) { _, _, _, _ -> }
                 .conflate()
                 .collect {
                     refreshWorkoutNotification()
                     delay(NOTIFICATION_THROTTLE_MS)
                 }
+        }
+    }
+
+    /**
+     * Le chrono ne vaut que sur une série non validée de la séance en cours (§ 15.18.4) : série
+     * supprimée, exercice retiré, séance terminée, abandonnée ou finalisée → retiré sans rien reporter.
+     */
+    private fun watchSetTimer() {
+        appScope.launch {
+            combine(workouts.currentWorkout, setTimer.state) { workout, timer -> timer?.takeIf { SetTimerRules.activeOn(it, workout) == null } }
+                .collect { stale -> if (stale != null) setTimer.clear(stale) }
         }
     }
 
@@ -366,12 +423,15 @@ class AppContainer(
             launch { nutrition.load() }
             launch { preferences.load() }
             launch { restTimer.load() }
+            launch { setTimer.load() }
             launch { updates.load() }
             launch { feedback.load() }
             workouts.load()
         }
         // Séance de plus de 24 h finalisée ou abandonnée au chargement : plus de repos (§ 3.4).
         if (finalized != null) restTimer.stop()
+        // Chrono dont la série n'est plus dans la séance en cours : ignoré (§ 15.18.8).
+        setTimer.state.value?.let { if (SetTimerRules.activeOn(it, workouts.currentWorkout.value) == null) setTimer.clear(it) }
         return finalized
     }
 

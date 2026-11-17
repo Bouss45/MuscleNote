@@ -149,11 +149,13 @@
     <string name="exercise_adductorpress">Adducteur press</string>
     <string name="exercise_abductorpress">Abducteur press</string>
     <string name="exercise_calfsit">Mollets assis</string>
+    <string name="exercise_wallsit">Chaise contre le mur</string>
     <string name="exercise_ohp">Développé militaire</string>
     <string name="exercise_lateralraise">Élévations latérales</string>
     <string name="exercise_frontraise">Élévations frontales</string>
     <string name="exercise_crunch">Crunch</string>
-    <string name="exercise_plank">Gainage</string>
+    <string name="exercise_plank">Planche</string>
+    <string name="exercise_sideplank">Planche latérale</string>
     <string name="exercise_legrise">Relevé de jambes</string>
     <string name="exercise_treadmill">Tapis roulant</string>
     <string name="exercise_bike">Vélo</string>
@@ -162,6 +164,7 @@
     <string name="exercise_reversecurl">Curl inversé</string>
     <string name="exercise_pinchgrip">Pince (grip)</string>
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
+    <string name="exercise_deadhang">Suspension à la barre</string>
 
     <!-- Accueil (§ 2.2) -->
     <string name="home_migrate_title">Tu viens de l\'ancienne MuscleNote ?</string>
@@ -858,4 +861,27 @@
         <item quantity="one">Secondaire</item>
         <item quantity="other">Secondaires</item>
     </plurals>
+
+    <!-- Exercices au temps (SPEC § 15.18, 🔄 D44) -->
+    <string name="exercise_type_label">Type</string>
+    <string name="exercise_type_reps">Charge × reps</string>
+    <string name="exercise_type_timed">Au temps</string>
+    <string name="workout_col_duration">Durée</string>
+    <string name="workout_previous_hold_weight">%1$s · %2$s</string>
+    <string name="workout_suggest_plus_seconds">+%1$d s</string>
+    <string name="workout_suggest_same_duration">Même durée</string>
+    <string name="workout_timer_start">Démarrer le chrono, série %1$d</string>
+    <string name="workout_timer_stop">Arrêter le chrono, série %1$d</string>
+    <string name="duration_seconds_value">%1$d s</string>
+    <string name="duration_spoken_seconds">%1$d s</string>
+    <string name="duration_spoken_minutes">%1$d min</string>
+    <string name="duration_spoken_minutes_seconds">%1$d min %2$d s</string>
+    <string name="workout_notif_hold_weight">%1$s · %2$s kg</string>
+    <string name="workout_notif_running">Série %1$d · en cours</string>
+    <string name="workout_notif_stop">Arrêter</string>
+    <string name="curve_metric_hold">Durée max par séance</string>
+    <string name="exercise_fiche_stat_longest_hold">durée la plus longue</string>
+    <string name="exercise_fiche_hold_set_weight">%1$s · %2$s kg</string>
+    <string name="summary_stat_tension">sous tension</string>
+    <string name="excel_col_duration_seconds">Durée (s)</string>
 </resources>

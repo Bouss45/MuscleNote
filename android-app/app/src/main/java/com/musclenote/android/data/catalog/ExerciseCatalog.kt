@@ -2,6 +2,8 @@ package com.musclenote.android.data.catalog
 
 import androidx.annotation.StringRes
 import com.musclenote.android.R
+import com.musclenote.android.data.model.ExerciseType
+import com.musclenote.android.data.model.ExerciseType.Timed
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.Muscle.Abdominaux
 import com.musclenote.android.data.model.Muscle.Adducteurs
@@ -24,7 +26,8 @@ import com.musclenote.android.data.model.MuscleGroup
 
 /**
  * Exercice intégré : jamais stocké, nom affiché tiré de la chaîne [nameRes] (SPEC § 6.1). Ses muscles
- * (§ 15.17.2, 🔄 D43) sont embarqués comme son nom : au moins un principal, dans l'ordre de [Muscle].
+ * (§ 15.17.2, 🔄 D43) et son type (§ 15.18.1, 🔄 D44) sont embarqués comme son nom : au moins un
+ * principal, dans l'ordre de [Muscle].
  */
 data class BuiltInExercise(
     val id: String,
@@ -32,10 +35,12 @@ data class BuiltInExercise(
     @param:StringRes val nameRes: Int,
     val primaryMuscles: List<Muscle>,
     val secondaryMuscles: List<Muscle> = emptyList(),
+    val type: ExerciseType = ExerciseType.Reps,
 )
 
 /**
- * Catalogue des 42 exercices intégrés, dans l'ordre d'affichage, avec leurs muscles (§ 15.17.2). ⚠️ Les ids sont figés : les
+ * Catalogue des 45 exercices intégrés (42 avant 🔄 D44), dans l'ordre d'affichage, avec leurs muscles (§ 15.17.2) et leur
+ * type (§ 6.1). ⚠️ Les ids sont figés : les
  * séances sauvegardées les référencent (fautes comprises : `calfraize`, `legrise`).
  * « Perso ou intégré » se décide uniquement par l'appartenance de l'id à ce catalogue (§ 3.9).
  */
@@ -70,11 +75,13 @@ object ExerciseCatalog {
         BuiltInExercise("adductorpress", MuscleGroup.Jambes, R.string.exercise_adductorpress, listOf(Adducteurs)),
         BuiltInExercise("abductorpress", MuscleGroup.Jambes, R.string.exercise_abductorpress, listOf(Fessiers)),
         BuiltInExercise("calfsit", MuscleGroup.Jambes, R.string.exercise_calfsit, listOf(Mollets)),
+        BuiltInExercise("wallsit", MuscleGroup.Jambes, R.string.exercise_wallsit, listOf(Quadriceps), listOf(Fessiers, Adducteurs), Timed),
         BuiltInExercise("ohp", MuscleGroup.Epaules, R.string.exercise_ohp, listOf(EpaulesAvant), listOf(Trapezes, EpaulesCote, Pectoraux, Triceps)),
         BuiltInExercise("lateralraise", MuscleGroup.Epaules, R.string.exercise_lateralraise, listOf(EpaulesCote), listOf(Trapezes, EpaulesAvant)),
         BuiltInExercise("frontraise", MuscleGroup.Epaules, R.string.exercise_frontraise, listOf(EpaulesAvant), listOf(EpaulesCote, Pectoraux)),
         BuiltInExercise("crunch", MuscleGroup.Abdos, R.string.exercise_crunch, listOf(Abdominaux), listOf(Obliques)),
-        BuiltInExercise("plank", MuscleGroup.Abdos, R.string.exercise_plank, listOf(Abdominaux), listOf(Obliques)),
+        BuiltInExercise("plank", MuscleGroup.Abdos, R.string.exercise_plank, listOf(Abdominaux), listOf(Obliques), Timed),
+        BuiltInExercise("sideplank", MuscleGroup.Abdos, R.string.exercise_sideplank, listOf(Obliques), listOf(Abdominaux, Lombaires, Fessiers), Timed),
         BuiltInExercise("legrise", MuscleGroup.Abdos, R.string.exercise_legrise, listOf(Abdominaux), listOf(Obliques, Quadriceps)),
         BuiltInExercise("treadmill", MuscleGroup.Cardio, R.string.exercise_treadmill, listOf(Quadriceps, Mollets), listOf(Fessiers, IschioJambiers)),
         BuiltInExercise("bike", MuscleGroup.Cardio, R.string.exercise_bike, listOf(Quadriceps), listOf(Fessiers, IschioJambiers, Mollets)),
@@ -83,6 +90,7 @@ object ExerciseCatalog {
         BuiltInExercise("reversecurl", MuscleGroup.AvantBras, R.string.exercise_reversecurl, listOf(AvantBras), listOf(Biceps)),
         BuiltInExercise("pinchgrip", MuscleGroup.AvantBras, R.string.exercise_pinchgrip, listOf(AvantBras)),
         BuiltInExercise("farmerwalk", MuscleGroup.AvantBras, R.string.exercise_farmerwalk, listOf(Trapezes, AvantBras), listOf(Abdominaux, Obliques, Lombaires)),
+        BuiltInExercise("deadhang", MuscleGroup.AvantBras, R.string.exercise_deadhang, listOf(AvantBras), listOf(Trapezes, Dorsaux), Timed),
     )
 
     private val byId: Map<String, BuiltInExercise> = all.associateBy { it.id }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.data.catalog.MuscleSelection
 import com.musclenote.android.data.catalog.exerciseDefinitions
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
@@ -71,7 +72,7 @@ private fun ExercisePickerPreview() = ScreenPreview(PreviewDataSet.WithCurrentWo
         definitions = definitions,
         addedIds = PreviewData.currentWorkout.exercises.mapTo(HashSet()) { it.exerciseId },
         onAdd = {},
-        custom = CustomExerciseActions(create = { _, _, _ -> }, update = { _, _, _, _ -> }, delete = {}),
+        custom = CustomExerciseActions(create = { _, _, _, _ -> }, update = { _, _, _, _, _ -> }, delete = {}),
         bottomInset = 24.dp,
     )
 }
@@ -155,6 +156,29 @@ private fun CustomExerciseFormPreview() = StudioComponentPreview {
         onGroupChange = {},
         muscles = MuscleSelection(primary = listOf(Muscle.Fessiers), secondary = listOf(Muscle.IschioJambiers)),
         onMusclesChange = {},
+        type = ExerciseType.Reps,
+        onTypeChange = {},
+        submitLabel = "Ajouter",
+        onSubmit = {},
+        onCancel = {},
+        bottomInset = 0.dp,
+    )
+}
+
+/** « Nouvel exercice » au temps (§ 15.18.1) : Tenue en L, abdos, type « Au temps ». */
+@StudioComponentPreviews
+@Composable
+private fun CustomExerciseFormTimedPreview() = StudioComponentPreview {
+    CustomExerciseForm(
+        title = "Nouvel exercice",
+        name = "Tenue en L",
+        onNameChange = {},
+        group = MuscleGroup.Abdos,
+        onGroupChange = {},
+        muscles = MuscleSelection(primary = listOf(Muscle.Abdominaux)),
+        onMusclesChange = {},
+        type = ExerciseType.Timed,
+        onTypeChange = {},
         submitLabel = "Ajouter",
         onSubmit = {},
         onCancel = {},

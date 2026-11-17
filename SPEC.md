@@ -660,7 +660,8 @@ langue courante ; sinon `name` ; si vide → date formatée.
 2. Si trouvée : la nouvelle séance reprend **ses exercices dans le même ordre**, avec pour
    chacun sa **note** et **toutes ses séries** (validées ou non — c'est le plan de la
    séance) **clonées** : nouvel `id`, `completed = false`, `reps`/`weight` conservés,
-   `duration`/`distance`/`speed`/`incline` conservés s'ils sont définis.
+   `duration`/`distance`/`speed`/`incline` conservés s'ils sont définis (🔄 D44 : `durationSeconds`
+   aussi, § 15.18.2).
 3. Sinon : séance vide.
 4. Nouvelle séance : `id` généré, `preset` (ou absent), `name` = libellé du préréglage dans la
    langue courante (conservé pour la compatibilité, § 5) ou nom perso `trim()`,
@@ -752,7 +753,7 @@ sinon `"{h}h {m}m"`.
 ### 3.8 Volume
 
 `volume(séance) = Σ reps × weight` sur les **séries validées** de tous les exercices (le cardio
-vaut 0). Affiché arrondi à l'entier (kg) sur les cartes, en tonnes arrondies à l'entier sur
+vaut 0 ; 🔄 D44 : les séries au temps n'y comptent pas, lest compris, § 15.18.7). Affiché arrondi à l'entier (kg) sur les cartes, en tonnes arrondies à l'entier sur
 l'accueil (`Xt`), en tonnes au dixième dans Progrès.
 
 ### 3.9 Exercices personnalisés et archivage
@@ -929,6 +930,7 @@ Légende : **req.** = toujours présent ; *opt.* = peut être absent.
 | `archived` | boolean | *opt.* | `true` = supprimé mais encore référencé |
 | `primaryMuscles` (🔄 D43) | string[] | *opt.* | muscles principaux, ids du § 15.17.1 ; omis s'il est vide (§ 15.17.8) |
 | `secondaryMuscles` (🔄 D43) | string[] | *opt.* | muscles secondaires, idem |
+| `type` (🔄 D44) | string | *opt.* | `"reps"` (défaut, omis) ou `"timed"` (au temps) ; inconnu → `"reps"` (§ 15.18.8) |
 
 **`MuscleGroup`** — enum Kotlin sérialisé en **chaînes exactes, accents compris** :
 `"dos"`, `"pecs"`, `"biceps"`, `"triceps"`, `"jambes"`, `"épaules"`, `"abdos"`, `"cardio"`,
@@ -945,9 +947,11 @@ Légende : **req.** = toujours présent ; *opt.* = peut être absent.
 | `distance` | décimal | *opt.* | **km** | cardio |
 | `speed` | décimal | *opt.* | **km/h** | cardio |
 | `incline` | décimal | *opt.* | **%** | cardio |
+| `durationSeconds` (🔄 D44) | entier | *opt.* | **secondes** | série au temps ; omis s'il est absent (§ 15.18.8) |
 
 Un exercice est « cardio » ssi `muscleGroup == "cardio"` ; c'est ce qui décide des champs
-saisis/affichés, pas la présence des champs.
+saisis/affichés, pas la présence des champs. 🔄 D44 : sinon, un exercice de `type` `"timed"` est
+« au temps » (durée et lest, § 15.18.1) ; une série au temps est une série qui a un `durationSeconds`.
 
 **`WorkoutExercise`**
 | champ | type | | description |
@@ -1027,6 +1031,7 @@ kotlinx.serialization (même forme que les valeurs du format de sauvegarde § 5)
 | `preferences.json` | `Preferences` |
 | `local_preferences.json` | `{ migrateCardDismissed, appLanguage? }` — préférences locales (§ 3.14), hors sauvegarde |
 | `rest_timer.json` | `RestTimerState` (absent hors repos) |
+| `set_timer.json` | `{ setId, startedAt }` — chrono d'une série au temps (🔄 D44, § 15.18.4), absent sans chrono, hors sauvegarde |
 | `update_check.json` | `{ checkedAt, latestVersion?, pageUrl?, apkUrl?, dismissedVersion? }` — vérification des mises à jour (§ 3.17), hors sauvegarde |
 | `feedback.json` | `{ lastSentAt, blockedUntil }` — délais entre deux avis (§ 14.3), hors sauvegarde |
 | `auto_backup.json` | `{ enabled, folderUri?, folderName?, lastSuccessAt?, lastFailureAt?, failure?, failureDetail? }` — sauvegarde automatique (§ 15.2), hors sauvegarde |
@@ -1193,7 +1198,7 @@ Différences v2 / v1 : `Workout.preset` ajouté ; séries toujours avec `id` et 
 **Validation de forme** (identique en v1 et v2 ; une clé absente du fichier est ignorée) :
 | clé | règle |
 |---|---|
-| workouts | tableau ; chaque élément objet avec `id` string non vide (§ 3.15), `date` string parseable en instant, `name` string/absent/null, `bodyWeight` nombre fini/absent/null, `preset` string/absent, `exercises` tableau d'objets `{ exerciseId: string, sets: tableau }`, chaque set objet avec `reps` et `weight` nombres finis et `duration`/`distance`/`speed`/`incline` nombres finis, absents ou null |
+| workouts | tableau ; chaque élément objet avec `id` string non vide (§ 3.15), `date` string parseable en instant, `name` string/absent/null, `bodyWeight` nombre fini/absent/null, `preset` string/absent, `exercises` tableau d'objets `{ exerciseId: string, sets: tableau }`, chaque set objet avec `reps` et `weight` nombres finis et `duration`/`distance`/`speed`/`incline` nombres finis, absents ou null (🔄 D44 : `durationSeconds` n'est pas contrôlé, il est lu sans refuser l'import, § 15.18.8) |
 | exercises | tableau d'objets avec `id` (non vide), `name`, `muscleGroup` strings |
 | body_weights | tableau d'objets `{ date: string parseable en instant, weight: nombre fini }` |
 | supplements | tableau d'objets avec `id` (non vide) et `name` strings |
@@ -1242,7 +1247,9 @@ compléments inconnus retirées. 🔄 D38 : `weighInReminder` des préférences 
 lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écartées). 🔄 D42 : `dosesPerDay`,
 `stock` et `lowStockDays` d'un complément, `proteinLog` et `proteinGoal` du tracker lus selon le
 § 15.16.8 (absents → 1 dose par jour, stock non suivi, seuil de 7 jours, aucune protéine, objectif de
-1,6 g par kg ; valeurs invalides → ces défauts).
+1,6 g par kg ; valeurs invalides → ces défauts). 🔄 D44 : `durationSeconds` d'une série et `type` d'un
+exercice lus selon le § 15.18.8 (absents → pas de durée, `"reps"` ; valeurs invalides → idem, durée
+arrondie à l'entier, négative → 0).
 
 ### 5.4 Déroulé d'un import
 
@@ -1286,53 +1293,57 @@ partage (`application/json`).
 
 ### 6.1 Exercices intégrés
 
-42 exercices. L'**ordre ci-dessous est l'ordre d'affichage**. Les noms affichés viennent des
+45 exercices (42 jusqu'à 🔄 D44, qui ajoute `wallsit`, `sideplank` et `deadhang`, § 15.18.1). L'**ordre
+ci-dessous est l'ordre d'affichage**. Les noms affichés viennent des
 chaînes `exercise.<id>` ; ils ne sont jamais lus depuis le stockage.
 
-| # | id | nom FR | nom EN | groupe |
-|---|---|---|---|---|
-| 1 | `deadlift` | Soulevé de terre | Deadlift | dos |
-| 2 | `pullup` | Traction | Pull-up | dos |
-| 3 | `row` | Rowing barre | Barbell row | dos |
-| 4 | `latpull` | Tirage vertical | Lat pulldown | dos |
-| 5 | `tiragebucheron` | Tirage bûcheron | One-arm dumbbell row | dos |
-| 6 | `tirageh` | Tirage horizontale | Seated cable row | dos |
-| 7 | `bench` | Développé couché | Bench press | pecs |
-| 8 | `incline` | Développé incliné | Incline bench press | pecs |
-| 9 | `fly` | Écarté haltères | Dumbbell fly | pecs |
-| 10 | `dips` | Dips | Dips | pecs |
-| 11 | `dbench` | Développé couché haltères | Dumbbell bench press | pecs |
-| 12 | `dincline` | Développé incliné haltères | Incline dumbbell press | pecs |
-| 13 | `pecfly` | Pec Fly | Pec fly | pecs |
-| 14 | `curl` | Curl barre | Barbell curl | biceps |
-| 15 | `hammercurl` | Curl marteau | Hammer curl | biceps |
-| 16 | `concentcurl` | Curl concentré | Concentration curl | biceps |
-| 17 | `pushdown` | Pushdown câble | Cable pushdown | triceps |
-| 18 | `overheadtri` | Extension nuque | Overhead triceps extension | triceps |
-| 19 | `skullcrusher` | Skull crusher | Skull crusher | triceps |
-| 20 | `barfront` | Barre au front | Lying barbell extension | triceps |
-| 21 | `squat` | Squat | Squat | jambes |
-| 22 | `legpress` | Presse à cuisses | Leg press | jambes |
-| 23 | `legcurl` | Leg curl couché | Lying leg curl | jambes |
-| 24 | `legext` | Leg extension | Leg extension | jambes |
-| 25 | `lunges` | Fentes | Lunges | jambes |
-| 26 | `calfraize` | Mollets debout | Standing calf raise | jambes |
-| 27 | `adductorpress` | Adducteur press | Adductor machine | jambes |
-| 28 | `abductorpress` | Abducteur press | Abductor machine | jambes |
-| 29 | `calfsit` | Mollets assis | Seated calf raise | jambes |
-| 30 | `ohp` | Développé militaire | Overhead press | épaules |
-| 31 | `lateralraise` | Élévations latérales | Lateral raise | épaules |
-| 32 | `frontraise` | Élévations frontales | Front raise | épaules |
-| 33 | `crunch` | Crunch | Crunch | abdos |
-| 34 | `plank` | Gainage | Plank | abdos |
-| 35 | `legrise` | Relevé de jambes | Leg raise | abdos |
-| 36 | `treadmill` | Tapis roulant | Treadmill | cardio |
-| 37 | `bike` | Vélo | Stationary bike | cardio |
-| 38 | `wristcurl` | Curl poignet | Wrist curl | avant-bras |
-| 39 | `wristext` | Extension poignet | Wrist extension | avant-bras |
-| 40 | `reversecurl` | Curl inversé | Reverse curl | avant-bras |
-| 41 | `pinchgrip` | Pince (grip) | Pinch grip | avant-bras |
-| 42 | `farmerwalk` | Farmer's walk | Farmer's walk | avant-bras |
+| # | id | nom FR | nom EN | groupe | type (🔄 D44) |
+|---|---|---|---|---|---|
+| 1 | `deadlift` | Soulevé de terre | Deadlift | dos | charge × reps |
+| 2 | `pullup` | Traction | Pull-up | dos | charge × reps |
+| 3 | `row` | Rowing barre | Barbell row | dos | charge × reps |
+| 4 | `latpull` | Tirage vertical | Lat pulldown | dos | charge × reps |
+| 5 | `tiragebucheron` | Tirage bûcheron | One-arm dumbbell row | dos | charge × reps |
+| 6 | `tirageh` | Tirage horizontale | Seated cable row | dos | charge × reps |
+| 7 | `bench` | Développé couché | Bench press | pecs | charge × reps |
+| 8 | `incline` | Développé incliné | Incline bench press | pecs | charge × reps |
+| 9 | `fly` | Écarté haltères | Dumbbell fly | pecs | charge × reps |
+| 10 | `dips` | Dips | Dips | pecs | charge × reps |
+| 11 | `dbench` | Développé couché haltères | Dumbbell bench press | pecs | charge × reps |
+| 12 | `dincline` | Développé incliné haltères | Incline dumbbell press | pecs | charge × reps |
+| 13 | `pecfly` | Pec Fly | Pec fly | pecs | charge × reps |
+| 14 | `curl` | Curl barre | Barbell curl | biceps | charge × reps |
+| 15 | `hammercurl` | Curl marteau | Hammer curl | biceps | charge × reps |
+| 16 | `concentcurl` | Curl concentré | Concentration curl | biceps | charge × reps |
+| 17 | `pushdown` | Pushdown câble | Cable pushdown | triceps | charge × reps |
+| 18 | `overheadtri` | Extension nuque | Overhead triceps extension | triceps | charge × reps |
+| 19 | `skullcrusher` | Skull crusher | Skull crusher | triceps | charge × reps |
+| 20 | `barfront` | Barre au front | Lying barbell extension | triceps | charge × reps |
+| 21 | `squat` | Squat | Squat | jambes | charge × reps |
+| 22 | `legpress` | Presse à cuisses | Leg press | jambes | charge × reps |
+| 23 | `legcurl` | Leg curl couché | Lying leg curl | jambes | charge × reps |
+| 24 | `legext` | Leg extension | Leg extension | jambes | charge × reps |
+| 25 | `lunges` | Fentes | Lunges | jambes | charge × reps |
+| 26 | `calfraize` | Mollets debout | Standing calf raise | jambes | charge × reps |
+| 27 | `adductorpress` | Adducteur press | Adductor machine | jambes | charge × reps |
+| 28 | `abductorpress` | Abducteur press | Abductor machine | jambes | charge × reps |
+| 29 | `calfsit` | Mollets assis | Seated calf raise | jambes | charge × reps |
+| 30 | `wallsit` | Chaise contre le mur | Wall sit | jambes | au temps |
+| 31 | `ohp` | Développé militaire | Overhead press | épaules | charge × reps |
+| 32 | `lateralraise` | Élévations latérales | Lateral raise | épaules | charge × reps |
+| 33 | `frontraise` | Élévations frontales | Front raise | épaules | charge × reps |
+| 34 | `crunch` | Crunch | Crunch | abdos | charge × reps |
+| 35 | `plank` | Planche (🔄 D44 : « Gainage » avant) | Plank | abdos | au temps |
+| 36 | `sideplank` | Planche latérale | Side plank | abdos | au temps |
+| 37 | `legrise` | Relevé de jambes | Leg raise | abdos | charge × reps |
+| 38 | `treadmill` | Tapis roulant | Treadmill | cardio | cardio (groupe) |
+| 39 | `bike` | Vélo | Stationary bike | cardio | cardio (groupe) |
+| 40 | `wristcurl` | Curl poignet | Wrist curl | avant-bras | charge × reps |
+| 41 | `wristext` | Extension poignet | Wrist extension | avant-bras | charge × reps |
+| 42 | `reversecurl` | Curl inversé | Reverse curl | avant-bras | charge × reps |
+| 43 | `pinchgrip` | Pince (grip) | Pinch grip | avant-bras | charge × reps |
+| 44 | `farmerwalk` | Farmer's walk | Farmer's walk | avant-bras | charge × reps |
+| 45 | `deadhang` | Suspension à la barre | Dead hang | avant-bras | au temps |
 
 ⚠️ Les ids sont **figés** : ils sont référencés par les séances sauvegardées (fautes
 comprises : `calfraize`, `legrise`).
@@ -1545,6 +1556,7 @@ exercices et des séries ; **colonnes fixes**, celles qui ne s'appliquent pas re
 | Distance (km) | Distance (km) | cardio : `distance` |
 | Vitesse (km/h) | Speed (km/h) | cardio : `speed` |
 | Inclinaison (%) | Incline (%) | cardio : `incline` |
+| Durée (s) | Duration (s) | 🔄 D44 — série au temps : `durationSeconds` (§ 15.18.8) ; « Répétitions » vide, « Poids (kg) » = le lest |
 
 **`bodyweight`** (pesées **manuelles**, plus récente d'abord) : Date | Poids (kg).
 
@@ -1849,7 +1861,7 @@ Nutrition et Paramètres (§ 15.10), D36 avec les derniers écrans et les finiti
 de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 avec les listes groupées
 de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15), D42 avec les
 protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16), D43 avec la carte du corps
-et les muscles travaillés (§ 15.17).
+et les muscles travaillés (§ 15.17), D44 avec les exercices au temps (§ 15.18).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1896,6 +1908,7 @@ et les muscles travaillés (§ 15.17).
 | D41 | Calendrier du Journal | en haut du Journal, le calendrier du mois de la maquette : semaine du lundi, flèches et glissement pour changer de mois, jour avec séance = rond plein, aujourd'hui = rond vide, résumé des séances du mois sous la grille ; toucher un jour ouvre une sheet « Journée » en listes groupées (séances → détail, pesée, compléments pris, calories et eau ; sections vides masquées ; jour sans rien = message court) ; historique des prises de compléments gardé désormais (date et nombre de doses par complément, champ facultatif, un enregistrement par complément et par jour, sans migration), affiché pour tous les jours à partir de cette version ; pas de réglage d'objectif : le Journal reprend la règle de la série de l'Accueil (validée à 3 séances), « 3/3 · validée » en vert, sinon gris, jamais rouge ; liste par semaine inchangée ; seules les données existantes ; chaque jour lu par TalkBack | composant `MonthCalendar` dans le groupe du héros du Journal (absent quand le Journal est vide), mois accessibles de la plus ancienne donnée au mois courant, 6 rangées réservées, rangées de 48 (cibles tactiles) ; jour d'une séance = jour local de son début (une séance commencée avant minuit reste sur la veille) ; `Supplement.intakes` `{ jour: doses }`, une dose par coche aujourd'hui, retirée en décochant, `taken` inchangé, ancien fichier relu avec un historique vide, une coche d'aujourd'hui antérieure à la mise à jour compte pour une dose ; poids du jour = règle de Progrès (pesée, sinon poids saisi au début d'une séance) ; sheet groupée (fond `background`, groupes `surfaceRaised`) ; compteur des semaines « n/3 » avec `WorkoutStats.VALIDATED_WEEK_SESSIONS` ; objectif réglable (Accueil et Journal ensemble) noté en piste (§ 3.6, 3.12, 4.1, 5.3, 15.6, 15.8.4, 15.15) |
 | D42 | Protéines, stock des compléments et moyenne sur 7 jours (maquette `T2-Nutrition`) | objectif de protéines calculé à partir de la dernière pesée (grammes par kg, réglable de 1,2 à 2,2, 1,6 par défaut) ou valeur fixe saisie au pavé ; sans aucune pesée, valeur fixe uniquement ; ligne « Protéines » comme sur la maquette (« 112 g », « objectif 150 g »), en gris, puis en vert une fois l'objectif atteint ; **eau et protéines identiques, comme sur la maquette** : deux lignes, chacune avec son bouton + (ajout au pavé), le toucher de la ligne ouvre son détail ; protéines du jour dans la sheet « Journée », à côté des calories et de l'eau ; stock des compléments en doses, saisi au pavé, décompté à partir de l'historique des prises ; jours restants = stock / doses par jour, affichés comme sur la maquette, en rouge au seuil ou en dessous (7 jours par défaut, réglable par complément) ; « Racheté » ajoute des doses ; sans stock saisi, rien ne s'affiche ; doses par jour = réglage du complément ; « Moyenne sur 7 jours » (calories, eau, protéines) comme sur la maquette, sur les seuls jours avec des données, sans aujourd'hui ; champs facultatifs, sans migration, anciennes données relues telles quelles ; Progrès, export CSV et notification de stock bas en pistes | groupe du héros de la maquette : légende « Aujourd'hui · calories » et bouton + plein des calories, chiffre héros, état et piste inchangés, puis les lignes « Eau » et « Protéines » (valeur grise puis verte avec « objectif … atteint », jamais la couleur seule ; bouton + → saisie en « Ajouter » ; ligne → détail : aujourd'hui → « Total du jour », objectif, moyenne sur 7 jours, « Ajouter ») ; rangée de stats et boutons « Calories » / « Eau » retirés, « 1 sur 3 pris » à droite de l'étiquette « Compléments » ; protéines saisies comme les calories (grammes entiers, pas ±5 g) ; dernière pesée = dernière pesée connue du § 15.13.1 (pesée, sinon poids saisi au début d'une séance, séance en cours comprise) ; objectif = poids × facteur arrondi au gramme (demi vers le haut, calcul exact), non daté (il ne vaut que pour le jour même) ; « par kg » sans poids connu → la valeur fixe, sinon pas d'objectif ; doses par jour de 1 à 20, 1 par défaut, une coche enregistre ce nombre de doses dans l'historique (au lieu d'une) ; stock = doses comptées un jour donné moins les doses prises depuis, jamais sous 0 ; jours restants = partie entière, rouges dès qu'ils sont ≤ au seuil (« à 7 jours »), sans notification ; « Racheté » et « Stock bas » seulement quand le stock est suivi, « Ne plus suivre le stock » dans son formulaire ; moyenne de J − 7 à J − 1 par mesure, jours à 0 exclus, « — » pour une mesure sans jour, groupe masqué sans aucune donnée ; pas de lien « Tendances » ; section « Calories et eau » de la « Journée » renommée « Nutrition », protéines sans objectif (non daté), comptées pour les mois accessibles ; variantes de composants : `StudioIconButton` plein, `ListRowTrailing.ValueAction`, valeur avant la case de `ListRowTrailing.Check`, `DailySurface` redessinée (§ 3.12, 4.1, 5.3, 15.6, 15.10.1, 15.15.2, 15.15.4, 15.16) |
 | D43 | Carte du corps et muscles travaillés (maquette `T2-Carte-corps`, SVG `design/claude-design/corps/`) | liste fixe des muscles (ids du SVG) avec nom courant, nom savant et rôle en une phrase ; muscles principaux et secondaires de chaque exercice intégré en donnée embarquée, jamais dans les fichiers de l'utilisateur ; exercices perso : choix des muscles dans leur formulaire, champ facultatif, sans migration ; fiche exercice : section « Muscles travaillés » en bas (petite carte + noms) ; sélecteur d'exercices : filtre « par muscle » avec la grande carte, toucher un muscle filtre la liste ; toucher un muscle (fiche ou filtre) ouvre la sheet « Muscle » ; écran de la séance en cours inchangé ; chaque muscle de la carte lu par TalkBack | 17 muscles, ordre et ids figés (§ 15.17.1) ; au moins un principal par exercice intégré, aucun muscle à la fois principal et secondaire (§ 15.17.2) ; le groupe musculaire reste (classement, cardio, filtre « Par groupe ») ; `Exercise.primaryMuscles` / `secondaryMuscles` facultatifs, omis vides, valeurs inconnues écartées à la lecture, un ancien fichier relu sans muscle ; formulaire perso : puces à choix multiple « Muscles principaux » et « Muscles secondaires », un muscle dans une seule des deux ; fiche : dernière section, carte de 150 dp et noms (principaux puis secondaires), section absente pour un exercice perso sans muscle ; sélecteur : contrôle segmenté « Par groupe » / « Par muscle », carte fixe au-dessus de la liste (au plus 360 dp et 40 % de l'écran, place de 4 à 5 exercices dessous, masquée clavier ouvert), liste toujours ouverte en haut, plusieurs muscles possibles (union), principaux d'abord, puces des muscles choisis et « Retirer le filtre » ; sheet « Muscle » : carte d'une vue, nom, nom savant, rôle, exercices qui le travaillent (principal / secondaire), étape du sélecteur ou bottom sheet de la fiche ; toucher hors d'une zone → la plus proche à 12 dp ; composant nouveau `BodyMap` (formes du SVG pour Compose, toucher par muscle, un élément TalkBack par muscle) et jetons de la carte (§ 4.1, 6.1, 15.6, 15.9.1, 15.11.2, 15.17) |
+| D44 | Exercices au temps (gainage) | type d'exercice « au temps » à côté de « charge × reps » et du poids du corps ; planche, planche latérale, chaise contre le mur et suspension à la barre embarquées au temps, avec leurs muscles ; type choisi dans le formulaire d'un exercice perso ; série au temps = durée (`m:ss`) et charge facultative (lest), saisie au pavé ou par un chronomètre dans la ligne (Démarrer / Arrêter, en jaune pendant qu'il tourne, durée reportée dans la série) ; « Préc. » en durée ; suggestion +5 s si la durée a été tenue sur toutes les séries ; « Arrêter » valide la série ; fiche et Progrès : durée max par séance, record = durée la plus longue, pas de 1RM ; séries au temps hors du volume en kg, temps sous tension dans le résumé ; chrono visible dans la notification de séance, écran verrouillé compris ; durée en secondes et type d'exercice facultatifs, sans migration, anciennes données relues telles quelles ; colonne durée dans l'export CSV | `plank` passe au temps et devient « Planche » ; `wallsit`, `sideplank`, `deadhang` ajoutés (45 exercices) ; `Exercise.type` `"reps"` (omis) / `"timed"`, ignoré pour le cardio, segmenté « Type » masqué pour le groupe Cardio ; `Set.durationSeconds` entier, distinct de `duration` (minutes, cardio) ; série au temps = série qui a une durée (une ancienne série en reps d'un exercice devenu au temps reste comptée comme avant et hors des statistiques de durée) ; colonnes # · Préc. · Durée · Kg, nouvelle série 0:30 sans lest ; durée saisie depuis la droite (4 chiffres, secondes > 59 comptées comme des secondes, borne 99:59, pas de ±5 s) ; chrono sur les séries non validées, un seul à la fois, son départ arrête le repos, « Arrêter » (ou la case) reporte les secondes entières et valide la série (le repos démarre), le pavé l'arrête sans valider, instant de départ gardé dans `set_timer.json` (hors sauvegarde) ; notification : ligne « chrono de série » prioritaire (chronomètre vers le haut, action « Arrêter » par `RestTimerReceiver`, pastille Live Update) ; métrique = durée max des séries validées avec durée, séance sans durée hors de la fiche ; temps sous tension = somme des durées validées, après les séries dans la rangée de stats du résumé ; colonne « Durée (s) » ajoutée à la fin du fichier `sets` ; variante de `SetRow` (bouton du chrono, état en cours), icônes `play_arrow`, `stop`, `ic_stop` (§ 3.1, 3.8, 4.1, 4.2, 5.3, 6.1, 8, 15.5, 15.7, 15.9.3, 15.12, 15.17.2, 15.18) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1963,7 +1976,7 @@ construction de l'APK (à la bascule : 245 tests, 23 classes).
 | 3 | règles métier (séance, 1RM, série hebdo, temps en salle, volume, archivage, Progrès, pesées, nutrition, préférences, séries validées) | `data/workout/`, `data/progress/`, `data/nutrition/`, `data/repository/` |
 | 4 | modèle, un fichier JSON par document, écritures atomiques et différées, fichiers illisibles mis de côté | `data/model/`, `data/storage/` |
 | 5 | sauvegarde v2, import v1 / v2 (validation, migration, normalisation), transfert depuis l'app Expo | `data/backup/`, `ui/settings/BackupViewModel.kt` |
-| 6 | 42 exercices intégrés, 9 groupes, 11 préréglages | `data/catalog/`, `data/model/` |
+| 6 | 42 exercices intégrés (45 depuis 🔄 D44), 9 groupes, 11 préréglages | `data/catalog/`, `data/model/` |
 | 7 | canaux, minuteur de repos (notification en cours, alarme exacte), rappels de compléments (alarmes exactes, resynchronisations) | `notifications/`, `data/repository/RestTimerRepository.kt` |
 | 8 | export CSV | `data/export/CsvExport.kt`, `ui/settings/CsvExportTexts.kt` |
 | 9 | thème : design system « Studio épuré » (DESIGN.md ; 🔄 D36 : l'ancien thème est retiré), Archivo embarquée, icônes Material Symbols Rounded, textes FR / EN | `ui/designsystem/`, `res/` |
@@ -2274,6 +2287,35 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   vérifier **sur l'appareil** : toucher des petites formes (abdos, adducteurs) sur la grande carte,
   défilement de la liste sous la carte, TalkBack sur la carte (17 éléments) et sur la légende de la fiche,
   passage d'une sheet « Muscle » à la fiche d'un autre exercice, texte agrandi dans la légende.
+- **Exercices au temps** (🔄 D44, § 15.18), branche `feat/exercices-temps` : modèle
+  `data/model/ExerciseType.kt` (`ExerciseType` `"reps"` / `"timed"`, `SetKind` force / cardio / au temps,
+  lectures tolérantes `ExerciseTypeSerializer` et `HoldSecondsSerializer`), `Exercise.type`,
+  `WorkoutSet.durationSeconds`, `SetTimerState` (`set_timer.json`) ; catalogue de 45 exercices (`plank` au
+  temps et renommé « Planche », `wallsit`, `sideplank`, `deadhang` avec leurs muscles) et
+  `ExerciseDefinition.kind` ; règles pures `data/workout/HoldDuration.kt` (saisie depuis la droite, bornes,
+  formats `m:ss` et `h:mm:ss`), `SetTimerRules.kt` (temps écoulé, chrono valable, arrêt), `SetEntryField.Hold`
+  et `SetEntryRules.entryText` / `display`, suggestion de durée (`LoadSuggestion.hold`), `WorkoutRules.newSet`
+  par `SetKind`, volume sans les séries au temps et `WorkoutStats.timeUnderTension`, métrique
+  `ExerciseMetric.Hold` (`ProgressStats`, historique au temps), records du résumé et `tensionSeconds`
+  (`WorkoutSummaryRules`), contenu de la notification pendant le chrono (`WorkoutNotificationRules`, action
+  `StopTimer`), colonne « Durée (s) » (`CsvExport`), lecture de l'import (`BackupNormalizer`) ; dépôt
+  `data/repository/SetTimerRepository.kt`, `WorkoutRepository.recordHold` et type des exercices perso,
+  `AppContainer.startSetTimer` / `stopSetTimer` (repos arrêté au départ, repos lancé à la validation, chrono
+  retiré quand sa série disparaît) ; notification `WorkoutNotifier` et `RestTimerReceiver.ACTION_STOP_TIMER`
+  (icône `ic_stop`). Design system : variante de `SetRow` (`SetRowTimer`, `SetTimerButton`, durée en direct),
+  icônes `ds_ic_play_arrow`, `ds_ic_stop`. Écrans : séance en cours (`LiveExerciseBlock`, `WorkoutScreen`,
+  `WorkoutKeypad`, `rememberHoldSeconds`), éditeur de séance, formulaire perso (segmenté « Type »), fiche
+  exercice, résumé ; formats partagés `ExerciseFormats` (durées, lecture TalkBack). Tests JVM
+  `HoldEntryTest`, `SetTimerRulesTest`, `SetTimerTest` (chrono par `AppContainer` : départ, arrêt, repos,
+  redémarrage, série supprimée), `SessionInsightsTest`, `WorkoutRulesTest`, `WorkoutStatsTest`,
+  `ProgressStatsTest`, `WorkoutSummaryRulesTest`, `JournalRulesTest`, `WorkoutNotificationRulesTest`,
+  `BackupV2Test`, `WorkoutRepositoryTest` (fichiers relus sans être mis de côté), `CsvExportTest`,
+  `CatalogTest` (types relus dans le § 6.1), `MuscleCatalogTest` et `MuscleRulesTest`. Aperçus :
+  `SetRowTimerPreview`, bloc de la planche avec chrono en cours, pavé de la durée, formulaire perso au temps,
+  fiche de la planche, résumé avec temps sous tension. À vérifier **sur l'appareil** : chrono écran éteint
+  puis rallumé, « Arrêter » depuis l'écran verrouillé (et la Live Update sur Android 16+), chrono après une
+  fermeture de l'app, saisie « 90 » au pavé puis réouverture (`1:30`), TalkBack sur les durées, texte agrandi
+  dans la colonne Durée avec son bouton.
 
 ---
 
@@ -2460,6 +2502,10 @@ composant nouveau, des variantes (`StudioIconButton` plein, valeurs de fin de `L
 secondaires de chaque exercice (embarqués pour le catalogue, facultatifs pour un exercice perso), la
 section « Muscles travaillés » de la fiche exercice, le filtre « Par muscle » du sélecteur et la sheet
 « Muscle » ; deux champs facultatifs sur les exercices perso ; un composant nouveau (`BodyMap`).
+**Exercices au temps** (🔄 D44, § 15.18) : un type d'exercice « au temps » (gainage), quatre exercices
+intégrés, la durée et le lest d'une série saisis au pavé ou mesurés par un chrono dans la ligne, visible
+dans la notification ; la durée max par séance dans la fiche et Progrès, le temps sous tension dans le
+résumé ; deux champs facultatifs (durée d'une série, type d'un exercice) ; une variante de `SetRow`.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2756,7 +2802,8 @@ en `primary`, interrupteur) :
 ### 15.5 Notification de séance (🔄 D31)
 
 Pendant une séance en cours, une seule notification **« Séance en cours »** résume la séance et
-permet d'avancer sans ouvrir l'app. Elle remplace la notification « Repos en cours » (§ 7.2) et
+permet d'avancer sans ouvrir l'app. 🔄 D44 : elle montre aussi le chrono d'une série au temps, avec
+« Arrêter » (§ 15.18.5). Elle remplace la notification « Repos en cours » (§ 7.2) et
 son canal (§ 7.1).
 
 **Publication** : canal `workout-ongoing` (LOW, silencieux, `VISIBILITY_PUBLIC`),
@@ -2846,6 +2893,9 @@ cours : elle revient au changement suivant de la séance ou du repos.
 - **Muscles dans Progrès** (🔄 D43) : séries ou volume par muscle sur la semaine, ou une carte des
   muscles travaillés récemment, à partir des muscles du § 15.17.2 (principal et secondaire à pondérer :
   à décider). Aujourd'hui les muscles ne servent qu'à la fiche, au filtre et à la sheet « Muscle ».
+- **Chrono vers une durée visée** (🔄 D44) : un compte à rebours jusqu'à la durée de « Préc. », avec
+  une vibration une fois atteinte, ou l'écran gardé allumé pendant le chrono ; aujourd'hui le chrono
+  compte vers le haut et seule la notification le montre écran verrouillé (§ 15.18.4).
 - **Muscles dans l'export CSV** (🔄 D43) : l'export ne décrit pas les exercices (§ 8) ; les muscles n'y
   entrent pas.
 
@@ -2934,7 +2984,8 @@ migration.
 
 #### 15.7.3 Suggestion de charge
 
-Pour un exercice de force qui a une séance de référence (§ 15.7.2) ; jamais en cardio.
+Pour un exercice de force qui a une séance de référence (§ 15.7.2) ; jamais en cardio. 🔄 D44 : un
+exercice au temps a sa suggestion de durée (+5 s, § 15.18.2).
 
 - **Reps tenues** : dans la séance de référence, **toutes** les séries de l'exercice sont validées
   (une série prévue mais non validée = objectif manqué) et **chacune a au moins autant de reps que
@@ -3441,7 +3492,8 @@ pavé numérique :
     > 0 : **charge max** des séries validées de la séance (kg, la charge saisie, donc le lest ajouté
     pour un exercice au poids du corps ; une séance sans lest compte 0 kg) ;
   - **poids du corps** — toutes les séries validées de l'historique sont à 0 kg : **reps max** d'une
-    série de la séance (« reps »).
+    série de la séance (« reps ») ;
+  - 🔄 D44 — **au temps** : **durée max** d'une série validée qui a une durée (secondes, § 15.18.6).
 - **Série d'une période** : les points (séances, ou jours) de la période (§ 15.9.1, point 5), dans
   l'ordre chronologique ; vide si aucun.
 - **Résumé d'une série** : aucun point → rien (héros « — ») ; sinon **dernier** point (valeur au
@@ -5075,19 +5127,22 @@ importée — une version qui la corrige s'applique à tout l'historique. Listes
 | 27 | `adductorpress` | `adducteurs` | — |
 | 28 | `abductorpress` | `fessiers` | — |
 | 29 | `calfsit` | `mollets` | — |
-| 30 | `ohp` | `epaules-avant` | `trapezes`, `epaules-cote`, `pectoraux`, `triceps` |
-| 31 | `lateralraise` | `epaules-cote` | `trapezes`, `epaules-avant` |
-| 32 | `frontraise` | `epaules-avant` | `epaules-cote`, `pectoraux` |
-| 33 | `crunch` | `abdominaux` | `obliques` |
-| 34 | `plank` | `abdominaux` | `obliques` |
-| 35 | `legrise` | `abdominaux` | `obliques`, `quadriceps` |
-| 36 | `treadmill` | `quadriceps`, `mollets` | `fessiers`, `ischio-jambiers` |
-| 37 | `bike` | `quadriceps` | `fessiers`, `ischio-jambiers`, `mollets` |
-| 38 | `wristcurl` | `avant-bras` | — |
-| 39 | `wristext` | `avant-bras` | — |
-| 40 | `reversecurl` | `avant-bras` | `biceps` |
-| 41 | `pinchgrip` | `avant-bras` | — |
-| 42 | `farmerwalk` | `trapezes`, `avant-bras` | `abdominaux`, `obliques`, `lombaires` |
+| 30 | `wallsit` | `quadriceps` | `fessiers`, `adducteurs` |
+| 31 | `ohp` | `epaules-avant` | `trapezes`, `epaules-cote`, `pectoraux`, `triceps` |
+| 32 | `lateralraise` | `epaules-cote` | `trapezes`, `epaules-avant` |
+| 33 | `frontraise` | `epaules-avant` | `epaules-cote`, `pectoraux` |
+| 34 | `crunch` | `abdominaux` | `obliques` |
+| 35 | `plank` | `abdominaux` | `obliques` |
+| 36 | `sideplank` | `obliques` | `abdominaux`, `lombaires`, `fessiers` |
+| 37 | `legrise` | `abdominaux` | `obliques`, `quadriceps` |
+| 38 | `treadmill` | `quadriceps`, `mollets` | `fessiers`, `ischio-jambiers` |
+| 39 | `bike` | `quadriceps` | `fessiers`, `ischio-jambiers`, `mollets` |
+| 40 | `wristcurl` | `avant-bras` | — |
+| 41 | `wristext` | `avant-bras` | — |
+| 42 | `reversecurl` | `avant-bras` | `biceps` |
+| 43 | `pinchgrip` | `avant-bras` | — |
+| 44 | `farmerwalk` | `trapezes`, `avant-bras` | `abdominaux`, `obliques`, `lombaires` |
+| 45 | `deadhang` | `avant-bras` | `trapezes`, `dorsaux` |
 
 Choix notables : le brachial (sous le biceps) compte comme `biceps` et le brachio-radial comme
 `avant-bras` (curl marteau, curl inversé) ; le droit fémoral, fléchisseur de la hanche, fait du
@@ -5213,7 +5268,8 @@ la marche et la course quelle que soit la pente.
 #### 15.17.9 Règles (pures, testées en JVM)
 
 - **Catalogue** : chaque exercice intégré a au moins un principal ; chaque id de muscle existe dans la
-  liste ; aucun muscle à la fois principal et secondaire ; les 42 exercices sont couverts ; les ids de la
+  liste ; aucun muscle à la fois principal et secondaire ; les 42 exercices sont couverts (45 depuis
+  🔄 D44) ; les ids de la
   liste sont exactement les formes de la carte.
 - **Filtre par muscle** : retenu par un principal, par un secondaire ; plusieurs muscles (union) ;
   principaux avant secondaires ; avec la recherche ; aucun muscle choisi (tous) ; exercice perso sans
@@ -5287,3 +5343,214 @@ Rôles en anglais (`muscle_role_<id>`) :
 | `ischio-jambiers` | Bend the knee and extend the hip: leg curls and deadlifts. |
 | `adducteurs` | Bring the leg inward: they steady the knees in squats and lunges. |
 | `mollets` | Point the foot, heel up: standing works mostly the gastrocnemius, seated mostly the soleus. |
+
+### 15.18 Exercices au temps (🔄 D44)
+
+Les exercices de gainage se mesurent en **temps tenu**, pas en répétitions. L'app gagne un **type
+d'exercice « au temps »** (§ 15.18.1), à côté de « charge × reps » (force, dont le poids du corps, qui
+reste reconnu à ses séries à 0 kg, § 15.9.3) ; le cardio reste décidé par le groupe (§ 4.1). Une série
+au temps a une **durée** (`m:ss`) et une **charge facultative** (lest), saisies au pavé numérique ou
+mesurées par un **chronomètre** intégré à la ligne (§ 15.18.2 – 15.18.4) ; la **notification de
+séance** montre ce chrono, écran verrouillé compris (§ 15.18.5). La fiche exercice et Progrès suivent
+la **durée max par séance**, le record est la **durée la plus longue**, sans 1RM (§ 15.18.6) ; les
+séries au temps sortent du **volume en kg** et le résumé de séance affiche le **temps sous tension**
+(§ 15.18.7). Le format gagne deux **champs facultatifs** (§ 15.18.8) : ni nouvelle version, ni
+migration, les anciennes données sont relues telles quelles. Pas de composant nouveau : une variante
+de la ligne de série (§ 15.18.10).
+
+#### 15.18.1 Type d'exercice
+
+- **Charge × reps** (défaut, comportement actuel) ou **au temps**. Un exercice du groupe `cardio` est
+  toujours cardio, quel que soit son type (§ 4.1).
+- **Exercices intégrés au temps** (§ 6.1, muscles au § 15.17.2) : `plank` (« Gainage » renommé
+  **« Planche »**, EN « Plank » inchangé), et trois nouveaux : `sideplank` « Planche latérale » / « Side
+  plank » (abdos), `wallsit` « Chaise contre le mur » / « Wall sit » (jambes), `deadhang` « Suspension à
+  la barre » / « Dead hang » (avant-bras). Le type d'un exercice intégré est embarqué dans le catalogue,
+  comme ses muscles : jamais stocké.
+- **Exercice perso** : formulaire « Nouvel exercice » / « Modifier l'exercice » (§ 15.11.2), après
+  « Groupe musculaire », un contrôle segmenté **« Type »** : « Charge × reps » / « Au temps » (le premier
+  au départ, « Modifier » part du type enregistré) ; masqué quand le groupe choisi est Cardio.
+- Changer le type d'un exercice perso ne touche pas aux séances (comme le nom et le groupe, § 3.9) :
+  chaque série garde ses valeurs, l'affichage suit le nouveau type.
+- **Série au temps** = série qui a une **durée en secondes** (`durationSeconds`, § 15.18.8). Toute série
+  saisie sur un exercice au temps en a une (nouvelle série, pavé, chrono, « Préc. ») ; une série d'un
+  exercice au temps qui n'en a pas (ancienne série de « Gainage », saisie en reps avant cette version)
+  est relue telle quelle : elle s'affiche « — » dans la colonne durée et n'entre dans aucune statistique
+  de durée (§ 15.18.6), mais compte comme avant dans le volume et le nombre de séries.
+
+#### 15.18.2 Séance en cours : lignes au temps
+
+Remplace, pour un exercice au temps, les colonnes et le pavé de la force (§ 15.7.1, § 15.7.4) ; le
+reste du bloc exercice ne change pas.
+
+- **Colonnes** : **# · Préc. · Durée · Kg** ; la durée en `m:ss` (minutes non bornées, `0:45`,
+  `1:30`, `12:05`), la charge = le lest (« 0 » sans lest, comme une charge nulle). Dans la colonne Durée,
+  le **bouton du chrono** (§ 15.18.4).
+- **« Préc. »** (§ 15.7.2) : la durée de la série de même rang de la séance de référence, « 1:00 », et
+  son lest s'il y en a un, « 1:00 · 10 » (durée · kg, dans l'ordre des colonnes) ; « — » sans série de
+  ce rang, ou si elle n'a pas de durée. Toucher recopie durée et charge.
+- **« + Série »** (§ 2.5) : même durée et même charge que la dernière série, ou **0:30** sans lest.
+  Comme les champs cardio, la durée est clonée au pré-remplissage (§ 3.1, § 3.2).
+- **Pavé** (§ 15.7.4) : segments « Durée · série 2 » / « Kg » ; « Suivant » passe de Durée à Kg, puis
+  « ✓ Valider la série ». Pas de la durée **−5 s / +5 s**, de la charge ±2,5 kg. Saisie de la durée :
+  § 15.18.3.
+- **Suggestion** (§ 15.7.3), à la place de la suggestion de charge : **durée tenue** = dans la séance de
+  référence, **toutes** les séries de l'exercice sont validées et **chacune dure au moins autant que la
+  première** (sa durée tient lieu d'objectif, comme les reps de la première série) → puce verte
+  « ↑ +5 s » ; sinon « Même durée » (puce neutre). Aucune suggestion si une série validée de la séance de
+  référence n'a pas de durée. Toucher la puce : chaque série **non validée** qui a une série « Préc. » de
+  même rang prend sa durée + 5 s (ou + 0), sa charge ne change pas ; jamais appliquée d'office, toucher
+  deux fois donne le même résultat.
+- **Éditeur d'une séance terminée** (§ 2.9, § 15.11.3) : mêmes colonnes et même pavé, sans « Préc. » ni
+  chrono.
+
+#### 15.18.3 Saisie d'une durée au pavé (règles pures, testées en JVM)
+
+- Le champ garde **au plus 4 chiffres**, lus **depuis la droite** comme sur un minuteur : les deux
+  derniers sont les secondes, les autres les minutes. « 5 » → `0:05`, « 45 » → `0:45`, « 130 » →
+  `1:30`, « 1230 » → `12:30`. Vide → `0:00`. Pas de zéro inutile en tête.
+- **Valeur** = minutes × 60 + secondes, bornée à **99:59** (5 999 s). Des secondes au-delà de 59 sont
+  permises pendant la saisie et **comptent comme des secondes** : « 90 » s'affiche `0:90` pendant la
+  saisie et vaut 90 s, relu `1:30` ; « 9999 » vaut 5 999 s (`99:59`).
+- Chaque touche s'applique tout de suite à la série (🔄 D20) ; le séparateur décimal est sans effet ;
+  un champ neuf est remplacé par la première touche, « effacer » le vide, sinon retire le dernier
+  chiffre (« 130 » → « 13 » → `0:13`).
+- Un champ rouvert part de la valeur relue : 90 s → « 130 » (`1:30`).
+- **Pas** ±5 s sur la valeur relue, jamais sous 0 ni au-delà de 99:59 (« 90 » + 5 s → `1:35`).
+- Affichage hors saisie (lignes, « Préc. », fiche) : `m:ss`, la valeur relue. TalkBack lit « 1 min
+  30 s », « 45 s », « 2 min ».
+
+#### 15.18.4 Chronomètre de série
+
+- **Bouton** dans la colonne Durée de chaque série **non validée** d'un exercice au temps (séance en
+  cours seulement) : « Démarrer » (icône `play_arrow`). Une série validée n'a pas de bouton (sa place
+  reste vide, les colonnes ne bougent pas).
+- **Démarrer** : le chrono de la série part de 0:00 ; un repos en cours s'arrête (comme « Passer »,
+  § 7.2). **Un seul chrono à la fois** : tant qu'il tourne, les boutons des autres séries sont inactifs.
+- **Pendant qu'il tourne** : la durée de la série est **en jaune** (fond `liveDim`, chiffres `liveText`,
+  comme un champ en saisie mais sans curseur) et avance chaque seconde depuis l'instant de départ ; le
+  bouton devient « Arrêter » (icône `stop`). Il continue écran éteint, app fermée ou téléphone
+  redémarré : seul l'instant de départ est gardé (§ 15.18.8), le temps écoulé se recalcule.
+- **Arrêter** (ligne ou notification) : la durée écoulée, en **secondes entières** (partie entière),
+  bornée à 99:59, devient la durée de la série, et la série est **validée** : le repos démarre, comme
+  avec la case (§ 2.6, § 7.2). Une durée à corriger se reprend ensuite au pavé (série validée, « OK »).
+- **Toucher la case** pendant que le chrono tourne : comme « Arrêter ».
+- **Ouvrir le pavé sur cette série** : le chrono s'arrête, la durée est reportée **sans valider** (le
+  pavé finit par « ✓ Valider la série », comme d'habitude).
+- Supprimer la série, retirer l'exercice, terminer ou abandonner la séance, finalisation après 24 h
+  (§ 3.4) : le chrono s'arrête **sans rien reporter**.
+
+#### 15.18.5 Notification de séance
+
+Une ligne de plus au tableau du § 15.5, prioritaire sur les autres :
+
+| moment | titre | chronomètre | texte | actions |
+|---|---|---|---|---|
+| chrono de série | nom de la séance | temps de la série (`setWhen(départ)`, vers le haut) | « {exercice} · Série {n} · en cours » | « Arrêter » |
+
+- Publiée dès le départ du chrono, comme tout changement de la séance ; la notification est déjà
+  `VISIBILITY_PUBLIC` : **le chrono reste visible écran verrouillé**. En Live Update (Android 16+), la
+  pastille de la barre d'état montre le chrono (pas de texte court).
+- « Arrêter » = l'action de la ligne (§ 15.18.4), par `RestTimerReceiver` comme les autres actions
+  (utilisable écran verrouillé, attend le chargement des données si l'app était fermée) : la série est
+  validée, la notification passe au repos.
+- **Détail** d'une série au temps (prochaine série, § 15.5) : « 1:00 », « 1:00 · 10 kg » avec du lest.
+
+#### 15.18.6 Fiche exercice et Progrès
+
+- **Métrique** d'un exercice au temps (§ 15.9.3) : **durée max** d'une série validée de la séance
+  (secondes) ; le lest n'y entre pas. Seules les séries validées **qui ont une durée** comptent ; une
+  séance où l'exercice n'en a aucune n'est pas un point (ni une séance de sa fiche).
+- **Fiche exercice** (§ 15.9.1) : chiffre héros `1:30` sans unité ; variation « +15 s » sous la minute,
+  « +1:05 » au-delà, « identique » (verte, rouge, grise comme avant) ; courbe « Durée max par séance » ;
+  rangée de stats : **« durée la plus longue »** (le record) et **pas de 1RM** ; séances : « Meilleure
+  série 1:30 » (« 1:30 · 10 kg » avec du lest ; la plus longue, à égalité la plus lourde, puis la
+  première) et à droite le **temps sous tension** de la séance (somme des durées, `3:00`), « Record »
+  comme avant.
+- **Progrès** (§ 15.9.2) : ligne de l'exercice « 12 séances · record 1:30 », mini-courbe, dernière
+  valeur `1:30` et variation au même format ; « Charge max » du groupe ne compte pas les exercices au
+  temps (comme ceux au poids du corps, comptés en reps).
+- **Résumé de séance** (§ 15.12) : ligne « Meilleure série 1:30 », sans 1RM ; **record personnel** =
+  durée max strictement supérieure à celle des séances plus anciennes (§ 15.12.3).
+- TalkBack lit les durées en mots (« 1 min 30 s », variation « plus 15 s »).
+
+#### 15.18.7 Volume et temps sous tension
+
+- **Volume** (§ 3.8) : les **séries au temps** (§ 15.18.1) n'y comptent pas, lest compris. Une séance
+  faite seulement de séries au temps a un volume nul : le Journal affiche son nombre de séries (§ 15.8.4).
+- **Temps sous tension** d'une séance = somme des durées de ses séries au temps validées. Le **résumé de
+  séance** (§ 15.12.2, point 4) l'ajoute à sa rangée de stats, après les séries : « 3:45 » « sous
+  tension » (`h:mm:ss` à partir d'une heure) ; absent quand il est nul.
+
+#### 15.18.8 Format des données
+
+- **`Set.durationSeconds`** : entier, secondes, **facultatif**, omis s'il est absent ; présent sur les
+  séries au temps (0 compris). Distinct de `duration` (minutes décimales, cardio). Lu dans les fichiers
+  et à l'import sans jamais refuser : absent, `null` ou pas un nombre → absent ; nombre → arrondi à
+  l'entier (demi vers +∞), négatif → 0.
+- **`Exercise.type`** : `"reps"` (défaut, **omis**) ou `"timed"` ; facultatif ; absent ou valeur inconnue
+  (version future) → `"reps"`, sans refuser l'import.
+- Les versions précédentes de l'app ignorent ces champs (et les perdent si elles réécrivent le fichier),
+  comme `intakes` (§ 15.15.4). Pas de nouvelle version du format, pas de migration : un ancien fichier se
+  relit à l'identique.
+- **Chrono en cours** : `set_timer.json` `{ setId, startedAt }` (instant de départ en ms), propre à
+  l'appareil, **hors sauvegarde**, comme `rest_timer.json` ; absent sans chrono ; ignoré au chargement si
+  la série n'est plus dans la séance en cours.
+- **Export CSV** (§ 8) : fichier `sets`, une colonne de plus **à la fin** (les autres gardent leur place),
+  « Durée (s) » / « Duration (s) » = `durationSeconds` d'une série au temps ; pour elle, « Répétitions »
+  reste vide et « Poids (kg) » donne le lest (vide sans lest). Le « Volume total (kg) » du fichier
+  `sessions` suit le § 15.18.7.
+
+#### 15.18.9 Règles (pures, testées en JVM)
+
+- **Saisie de la durée** (§ 15.18.3) : lecture depuis la droite, 4 chiffres au plus, secondes > 59,
+  borne de 99:59, effacer, champ neuf, séparateur sans effet, réouverture, pas de ±5 s (bornes).
+- **Suggestion** : durée tenue (+5 s), une série plus courte ou non validée (même durée), série sans
+  durée (aucune), application aux seules séries non validées, idempotente.
+- **Records et courbes** : métrique durée max, séries sans durée écartées, séance sans durée absente,
+  record de la fiche, record battu du résumé (égalité, première fois), meilleure série (égalité), pas
+  de 1RM.
+- **Volume** : séries au temps exclues (lest compris) du volume d'une séance, du Journal, du résumé, du
+  « Vol. max » de Progrès et du CSV ; temps sous tension.
+- **Chrono** : durée reportée (partie entière, borne) et série validée, arrêt sans validation à
+  l'ouverture du pavé, un seul à la fois, repos arrêté au départ, annulé par la suppression de la série ;
+  contenu de la notification pendant le chrono.
+- **Format** : ancien fichier relu à l'identique, champs omis à l'écriture, valeurs invalides ; export
+  CSV (colonne à la fin, lest, reps vides).
+
+#### 15.18.10 Design system
+
+- **Variante** de `SetRow` (DESIGN.md § 9.2) : colonne Durée avec le bouton du chrono (bouton icône petit,
+  44 dans une cible de 48, `textSecondary`) et l'état **chrono en cours** (fond `liveDim`, chiffres
+  `liveText` 700, sans curseur) ; le jaune marque le temps qui passe, pas le bouton (DESIGN.md § 1).
+- Icônes nouvelles `play_arrow` et `stop` (Material Symbols Rounded) ; `ic_stop` pour l'action de la
+  notification (hors Compose, comme `ic_check`).
+- Le reste : `SegmentedControl` (type du formulaire), `Chip` (suggestion), `NumericKeypad`, `StatRow`,
+  `TrendCurve`.
+
+#### 15.18.11 Textes (FR et EN)
+
+Clés Android (`strings.xml`) ; les libellés existants sont repris (« Kg », « Préc. », « Suivant »,
+« Valider la série », « Meilleure série … », « Record », « identique », « depuis le … »).
+
+| clé | FR | EN |
+|---|---|---|
+| `exercise_plank` | Planche | Plank |
+| `exercise_sideplank` / `_wallsit` / `_deadhang` | Planche latérale / Chaise contre le mur / Suspension à la barre | Side plank / Wall sit / Dead hang |
+| `exercise_type_label` | Type | Type |
+| `exercise_type_reps` / `_timed` | Charge × reps / Au temps | Weight × reps / Timed |
+| `workout_col_duration` | Durée | Time |
+| `workout_previous_hold_weight` | {{durée}} · {{charge}} | {{time}} · {{weight}} |
+| `workout_suggest_plus_seconds` | +{{n}} s | +{{n}} s |
+| `workout_suggest_same_duration` | Même durée | Same time |
+| `workout_timer_start` / `_stop` (accessibilité) | Démarrer le chrono, série {{n}} / Arrêter le chrono, série {{n}} | Start timer, set {{n}} / Stop timer, set {{n}} |
+| `duration_seconds_value` | {{n}} s | {{n}} s |
+| `duration_spoken_seconds` / `_minutes` / `_minutes_seconds` (accessibilité) | {{s}} s / {{m}} min / {{m}} min {{s}} s | {{s}} s / {{m}} min / {{m}} min {{s}} s |
+| `workout_notif_hold_weight` | {{durée}} · {{poids}} kg | {{time}} · {{weight}} kg |
+| `workout_notif_running` | Série {{n}} · en cours | Set {{n}} · running |
+| `workout_notif_stop` | Arrêter | Stop |
+| `curve_metric_hold` | Durée max par séance | Longest hold per session |
+| `exercise_fiche_stat_longest_hold` | durée la plus longue | longest hold |
+| `exercise_fiche_hold_set_weight` | {{durée}} · {{charge}} kg | {{time}} · {{weight}} kg |
+| `summary_stat_tension` | sous tension | under tension |
+| `excel_col_duration_seconds` | Durée (s) | Duration (s) |

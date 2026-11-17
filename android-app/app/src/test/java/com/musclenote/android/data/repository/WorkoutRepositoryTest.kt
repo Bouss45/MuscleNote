@@ -3,6 +3,7 @@ package com.musclenote.android.data.repository
 import com.musclenote.android.data.AppContainer
 import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.catalog.MuscleSelection
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
@@ -509,6 +510,88 @@ class WorkoutRepositoryTest {
         }
         // Le fichier n'a pas été mis de côté comme illisible.
         assertTrue(exercisesFile.exists())
+        assertTrue(dataDir.listFiles()!!.none { it.name.contains("corrupt") })
+    }
+
+    // ─── Exercices au temps (§ 15.18, 🔄 D44) ───────────────────────────────────
+
+    @Test
+    fun `le type d'un exercice perso est enregistré, modifiable et relu`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            val hold = repo.addCustomExercise("Tenue en L", MuscleGroup.Abdos, type = ExerciseType.Timed)!!
+            assertEquals(ExerciseType.Timed, hold.type)
+            val shrug = repo.addCustomExercise("Shrug", MuscleGroup.Dos)!!
+            assertEquals(ExerciseType.Reps, shrug.type)
+            assertTrue(repo.updateCustomExercise(shrug.id, "Shrug", MuscleGroup.Dos, type = ExerciseType.Timed))
+            // Sans type, la modification garde celui enregistré.
+            assertTrue(repo.updateCustomExercise(hold.id, "Tenue en L", MuscleGroup.Abdos))
+        }
+        coroutineScope {
+            assertEquals(listOf(ExerciseType.Timed, ExerciseType.Timed), repository().customExercises.value.map { it.type })
+        }
+        // Le type par défaut n'est pas écrit.
+        assertFalse(exercisesFile.readText().contains("\"reps\""))
+    }
+
+    @Test
+    fun `une série ajoutée à un exercice au temps a une durée, le cardio reste cardio`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            val cardioTimed = repo.addCustomExercise("Corde", MuscleGroup.Cardio, type = ExerciseType.Timed)!!
+            repo.startWorkout(80.0, null, "Abdos")
+            repo.addExerciseToWorkout("plank")
+            repo.addSet("plank")
+            val first = repo.sets("plank").single()
+            assertEquals(WorkoutSet(first.id, 0, 0.0, false, durationSeconds = 30), first)
+            repo.updateSet("plank", first.id) { it.copy(durationSeconds = 75, weight = 10.0) }
+            repo.addSet("plank")
+            assertEquals(listOf(75, 75), repo.sets("plank").map { it.durationSeconds })
+            // Un exercice du groupe cardio reste cardio, quel que soit son type.
+            repo.addExerciseToWorkout(cardioTimed.id)
+            repo.addSet(cardioTimed.id)
+            assertEquals(30.0, repo.sets(cardioTimed.id).single().duration!!, 0.0)
+            assertNull(repo.sets(cardioTimed.id).single().durationSeconds)
+        }
+    }
+
+    @Test
+    fun `la durée d'une série au temps est enregistrée par le chrono, validée ou non`() = runBlocking<Unit> {
+        coroutineScope {
+            val repo = repository()
+            repo.startWorkout(80.0, null, "Abdos")
+            repo.addExerciseToWorkout("plank")
+            repo.addSet("plank")
+            repo.addSet("plank")
+            val (a, b) = repo.sets("plank")
+            assertEquals("plank", repo.recordHold(a.id, 62, validate = true))
+            assertEquals(WorkoutSet(a.id, 0, 0.0, true, durationSeconds = 62), repo.sets("plank")[0])
+            // Sans validation : la durée seulement, rien à lancer.
+            assertNull(repo.recordHold(b.id, 40, validate = false))
+            assertEquals(WorkoutSet(b.id, 0, 0.0, false, durationSeconds = 40), repo.sets("plank")[1])
+            // Série déjà validée : la durée change, le repos ne repart pas.
+            assertNull(repo.recordHold(a.id, 70, validate = true))
+            assertEquals(70, repo.sets("plank")[0].durationSeconds)
+            assertNull(repo.recordHold("absente", 10, validate = true))
+        }
+    }
+
+    @Test
+    fun `des valeurs inattendues dans les fichiers sont relues sans perdre la séance`() = runBlocking<Unit> {
+        dataDir.mkdirs()
+        File(dataDir, "workouts.json").writeText(
+            """[{"id":"w1","name":"Abdos","date":"2026-03-12T17:00:00.000Z","bodyWeight":0,"durationMinutes":20,"exercises":[{"exerciseId":"plank","sets":[""" +
+                """{"id":"a","reps":0,"weight":0,"completed":true,"durationSeconds":62.5},""" +
+                """{"id":"b","reps":0,"weight":0,"completed":true,"durationSeconds":"x"},""" +
+                """{"id":"c","reps":0,"weight":0,"completed":true,"durationSeconds":-3},""" +
+                """{"id":"d","reps":12,"weight":0,"completed":true}]}]}]""",
+        )
+        exercisesFile.writeText("""[{"id":"c1","name":"A","muscleGroup":"dos","type":"distance"},{"id":"c2","name":"B","muscleGroup":"abdos","type":"timed"}]""")
+        coroutineScope {
+            val repo = repository()
+            assertEquals(listOf(63, null, 0, null), repo.workouts.value.single().exercises.single().sets.map { it.durationSeconds })
+            assertEquals(listOf(ExerciseType.Reps, ExerciseType.Timed), repo.customExercises.value.map { it.type })
+        }
         assertTrue(dataDir.listFiles()!!.none { it.name.contains("corrupt") })
     }
 }

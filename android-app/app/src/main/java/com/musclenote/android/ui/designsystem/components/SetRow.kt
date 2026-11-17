@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -55,8 +57,20 @@ private const val PREVIOUS_MAX_SCALE = 1.5f
 /** État d'une ligne de série (DESIGN.md § 9.2). */
 enum class SetRowState { Todo, Editing, Done, DoneRecord }
 
-/** Champ d'une série : charge ou répétitions. */
+/** Champ d'une série : première colonne de valeur (charge, durée…) ou seconde (reps, lest…). */
 enum class SetField { Weight, Reps }
+
+/** Bouton du chrono d'une série au temps (SPEC § 15.18.4) : démarrer, arrêter, inactif, ou aucun (place gardée). */
+enum class SetTimerButton { Start, Stop, Unavailable, None }
+
+/**
+ * Chrono d'une série au temps dans sa ligne (variante de [SetRow], DESIGN.md § 9.2, 🔄 D44) : le
+ * bouton, sa description TalkBack (« Démarrer le chrono, série 2 ») et son action.
+ */
+@Immutable
+data class SetRowTimer(val button: SetTimerButton, val description: String = "", val onClick: () -> Unit = {}) {
+    val running: Boolean get() = button == SetTimerButton.Stop
+}
 
 /**
  * Colonnes d'une ligne de série : n° 22 · « Préc. » 60 · kg · reps · case 48, espacées de 8. Sans
@@ -115,7 +129,9 @@ fun SetTableHeader(
  * `liveDim` avec un curseur — une série validée peut être en saisie ([SetRowState.Editing] =
  * série à faire en saisie sur la charge). « Préc. » se touche pour recopier la série précédente
  * ([onPreviousClick]) ; sans [previous], la colonne disparaît (éditeur d'une séance terminée). La
- * case anime sa validation avec `Studio.motion.expressive`.
+ * case anime sa validation avec `Studio.motion.expressive`. Avec [timer] (série au temps, séance en
+ * cours), la première colonne finit par le bouton du chrono ; chrono en cours, sa valeur est en
+ * direct (`liveDim`, `liveText`, sans curseur).
  */
 @Composable
 fun SetRow(
@@ -135,6 +151,7 @@ fun SetRow(
     showDivider: Boolean = true,
     weightDescription: String? = null,
     repsDescription: String? = null,
+    timer: SetRowTimer? = null,
 ) {
     val colors = Studio.colors
     val done = state == SetRowState.Done || state == SetRowState.DoneRecord
@@ -168,7 +185,21 @@ fun SetRow(
             }
         },
         weight = {
-            SetValue(weight, done, activeField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } }, weightDescription)
+            if (timer == null) {
+                SetValue(weight, done, activeField == SetField.Weight, onFieldClick?.let { { it(SetField.Weight) } }, weightDescription)
+            } else {
+                Box(Modifier.weight(1f)) {
+                    SetValue(
+                        weight,
+                        done,
+                        activeField == SetField.Weight,
+                        onFieldClick?.let { { it(SetField.Weight) } },
+                        weightDescription,
+                        live = timer.running,
+                    )
+                }
+                SetTimerControl(timer)
+            }
         },
         reps = {
             SetValue(reps, done, activeField == SetField.Reps, onFieldClick?.let { { it(SetField.Reps) } }, repsDescription)
@@ -186,13 +217,44 @@ fun SetRow(
     )
 }
 
+/** Bouton du chrono (petit bouton icône, cible de 48) ; [SetTimerButton.None] garde sa place. */
 @Composable
-private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (() -> Unit)?, description: String?) {
+private fun SetTimerControl(timer: SetRowTimer) {
+    when (timer.button) {
+        SetTimerButton.None -> Spacer(Modifier.size(Studio.spacing.touch))
+        SetTimerButton.Stop -> StudioIconButton(R.drawable.ds_ic_stop, timer.description, timer.onClick, size = ButtonSize.Small)
+        SetTimerButton.Start, SetTimerButton.Unavailable -> StudioIconButton(
+            R.drawable.ds_ic_play_arrow,
+            timer.description,
+            timer.onClick,
+            size = ButtonSize.Small,
+            enabled = timer.button == SetTimerButton.Start,
+            tone = ButtonTone.Subtle,
+        )
+    }
+}
+
+@Composable
+private fun SetValue(value: String, done: Boolean, active: Boolean, onClick: (() -> Unit)?, description: String?, live: Boolean = false) {
     val colors = Studio.colors
     // TalkBack lit « Série 3, kg : 82,5 » plutôt que « 82,5 » seul.
     val label = if (description != null) Modifier.semantics { contentDescription = description } else Modifier
     val click = (if (onClick != null) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier).then(label)
-    if (active) {
+    if (live && !active) {
+        // Chrono en cours (§ 15.18.4) : le temps qui passe, en jaune, sans curseur.
+        Row(
+            Modifier
+                .bleed(start = FieldBleed)
+                .fillMaxWidth()
+                .heightIn(min = FieldHeight)
+                .background(colors.liveDim, Studio.shapes.control)
+                .then(click)
+                .padding(start = FieldBleed),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FitText(value, style = Studio.typography.numberMedium.copy(fontWeight = FontWeight.Bold), color = colors.liveText)
+        }
+    } else if (active) {
         Row(
             Modifier
                 .bleed(start = FieldBleed)

@@ -76,6 +76,15 @@ class JournalRulesTest {
         val pullUps = JournalRules.summary(workout("2026-11-11T17:00:00.000Z", set(10, 0.0), set(8, 0.0)), zone)
         assertFalse(pullUps.showsVolume)
         assertEquals(2, pullUps.completedSets)
+
+        // 🔄 D44 : des séries au temps, même lestées, n'ont pas de volume.
+        val planks = JournalRules.summary(
+            workout("2026-11-11T17:00:00.000Z", WorkoutSet("h1", 0, 10.0, true, durationSeconds = 60), WorkoutSet("h2", 0, 0.0, true, durationSeconds = 45)),
+            zone,
+        )
+        assertEquals(0L, planks.volumeKg)
+        assertFalse(planks.showsVolume)
+        assertEquals(2, planks.completedSets)
     }
 
     @Test

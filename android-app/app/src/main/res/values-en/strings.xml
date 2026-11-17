@@ -148,11 +148,13 @@
     <string name="exercise_adductorpress">Adductor machine</string>
     <string name="exercise_abductorpress">Abductor machine</string>
     <string name="exercise_calfsit">Seated calf raise</string>
+    <string name="exercise_wallsit">Wall sit</string>
     <string name="exercise_ohp">Overhead press</string>
     <string name="exercise_lateralraise">Lateral raise</string>
     <string name="exercise_frontraise">Front raise</string>
     <string name="exercise_crunch">Crunch</string>
     <string name="exercise_plank">Plank</string>
+    <string name="exercise_sideplank">Side plank</string>
     <string name="exercise_legrise">Leg raise</string>
     <string name="exercise_treadmill">Treadmill</string>
     <string name="exercise_bike">Stationary bike</string>
@@ -161,6 +163,7 @@
     <string name="exercise_reversecurl">Reverse curl</string>
     <string name="exercise_pinchgrip">Pinch grip</string>
     <string name="exercise_farmerwalk">Farmer\'s walk</string>
+    <string name="exercise_deadhang">Dead hang</string>
 
     <!-- Home (§ 2.2) -->
     <string name="home_migrate_title">Coming from the old MuscleNote?</string>
@@ -856,4 +859,27 @@
         <item quantity="one">Secondary</item>
         <item quantity="other">Secondary</item>
     </plurals>
+
+    <!-- Timed exercises (SPEC § 15.18, 🔄 D44) -->
+    <string name="exercise_type_label">Type</string>
+    <string name="exercise_type_reps">Weight × reps</string>
+    <string name="exercise_type_timed">Timed</string>
+    <string name="workout_col_duration">Time</string>
+    <string name="workout_previous_hold_weight">%1$s · %2$s</string>
+    <string name="workout_suggest_plus_seconds">+%1$d s</string>
+    <string name="workout_suggest_same_duration">Same time</string>
+    <string name="workout_timer_start">Start timer, set %1$d</string>
+    <string name="workout_timer_stop">Stop timer, set %1$d</string>
+    <string name="duration_seconds_value">%1$d s</string>
+    <string name="duration_spoken_seconds">%1$d s</string>
+    <string name="duration_spoken_minutes">%1$d min</string>
+    <string name="duration_spoken_minutes_seconds">%1$d min %2$d s</string>
+    <string name="workout_notif_hold_weight">%1$s · %2$s kg</string>
+    <string name="workout_notif_running">Set %1$d · running</string>
+    <string name="workout_notif_stop">Stop</string>
+    <string name="curve_metric_hold">Longest hold per session</string>
+    <string name="exercise_fiche_stat_longest_hold">longest hold</string>
+    <string name="exercise_fiche_hold_set_weight">%1$s · %2$s kg</string>
+    <string name="summary_stat_tension">under tension</string>
+    <string name="excel_col_duration_seconds">Duration (s)</string>
 </resources>

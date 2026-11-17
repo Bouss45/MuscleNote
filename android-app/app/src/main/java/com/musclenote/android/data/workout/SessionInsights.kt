@@ -1,5 +1,6 @@
 package com.musclenote.android.data.workout
 
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -18,14 +19,18 @@ data class ReferenceSession(val workout: Workout, val exercise: WorkoutExercise)
 
 /**
  * Suggestion de charge (SPEC § 15.7.3) : +2,5 kg — +1 rep au [bodyWeight] — si [increase], sinon
- * la même charge (les mêmes reps).
+ * la même charge (les mêmes reps). [hold] : suggestion de durée d'un exercice au temps, +5 s ou la
+ * même durée (§ 15.18.2, 🔄 D44).
  */
-data class LoadSuggestion(val bodyWeight: Boolean, val increase: Boolean) {
+data class LoadSuggestion(val bodyWeight: Boolean, val increase: Boolean, val hold: Boolean = false) {
     /** Ajout à la charge de la série « Préc. » (kg). */
-    val weightDelta: Double get() = if (increase && !bodyWeight) WEIGHT_STEP else 0.0
+    val weightDelta: Double get() = if (increase && !bodyWeight && !hold) WEIGHT_STEP else 0.0
 
     /** Ajout aux reps de la série « Préc. ». */
-    val repsDelta: Int get() = if (increase && bodyWeight) REPS_STEP else 0
+    val repsDelta: Int get() = if (increase && bodyWeight && !hold) REPS_STEP else 0
+
+    /** Ajout à la durée de la série « Préc. » (s). */
+    val secondsDelta: Int get() = if (increase && hold) HoldDuration.SUGGESTION_SECONDS else 0
 
     companion object {
         const val WEIGHT_STEP = 2.5
@@ -50,7 +55,7 @@ object SessionInsights {
 
     /**
      * Toucher « Préc. » (§ 15.7.2) : [target] prend les valeurs de [previous] (reps, charge, durée,
-     * distance, vitesse, inclinaison) et garde son id et sa validation.
+     * distance, vitesse, inclinaison, durée d'une série au temps) et garde son id et sa validation.
      */
     fun copyPrevious(target: WorkoutSet, previous: WorkoutSet): WorkoutSet = target.copy(
         reps = previous.reps,
@@ -59,25 +64,33 @@ object SessionInsights {
         distance = previous.distance,
         speed = previous.speed,
         incline = previous.incline,
+        durationSeconds = previous.durationSeconds,
     )
 
     /**
      * Suggestion de charge d'un exercice de force (§ 15.7.3) ; `null` en cardio ou sans séance de
      * référence. Reps tenues : toutes les séries de l'exercice validées dans la séance de référence,
      * chacune avec au moins les reps de la première. Poids du corps : séries validées toutes à 0 kg.
+     * Au temps (§ 15.18.2) : durée tenue de la même façon, chaque série au moins aussi longue que la
+     * première ; aucune suggestion si une série validée de la référence n'a pas de durée.
      */
-    fun suggestion(reference: ReferenceSession?, isCardio: Boolean): LoadSuggestion? {
-        if (reference == null || isCardio) return null
+    fun suggestion(reference: ReferenceSession?, kind: SetKind): LoadSuggestion? {
+        if (reference == null || kind == SetKind.Cardio) return null
         val done = reference.completedSets
+        val allDone = reference.exercise.sets.all { it.completed }
+        if (kind == SetKind.Timed) {
+            val durations = done.map { it.durationSeconds ?: return null }
+            return LoadSuggestion(bodyWeight = false, increase = allDone && durations.all { it >= durations.first() }, hold = true)
+        }
         val target = done.first().reps
-        val held = reference.exercise.sets.all { it.completed } && done.all { it.reps >= target }
+        val held = allDone && done.all { it.reps >= target }
         return LoadSuggestion(bodyWeight = done.all { it.weight == 0.0 }, increase = held)
     }
 
     /**
      * Toucher la suggestion (§ 15.7.3) : chaque série **non validée** de [sets] dont le rang a une
      * série « Préc. » prend sa charge + [LoadSuggestion.weightDelta] (au poids du corps : ses reps +
-     * [LoadSuggestion.repsDelta]). Les séries validées ne changent pas ; appliquer deux fois donne le
+     * [LoadSuggestion.repsDelta] ; au temps : sa durée + [LoadSuggestion.secondsDelta], § 15.18.2). Les séries validées ne changent pas ; appliquer deux fois donne le
      * même résultat. Renvoie [sets] lui-même si rien ne change.
      */
     fun applySuggestion(sets: List<WorkoutSet>, reference: ReferenceSession, suggestion: LoadSuggestion): List<WorkoutSet> {
@@ -85,6 +98,7 @@ object SessionInsights {
             val previous = reference.previous(index)
             when {
                 set.completed || previous == null -> set
+                suggestion.hold -> set.copy(durationSeconds = HoldDuration.clamp((previous.durationSeconds ?: 0) + suggestion.secondsDelta))
                 suggestion.bodyWeight -> set.copy(reps = previous.reps + suggestion.repsDelta)
                 else -> set.copy(weight = roundHundredth(previous.weight + suggestion.weightDelta))
             }

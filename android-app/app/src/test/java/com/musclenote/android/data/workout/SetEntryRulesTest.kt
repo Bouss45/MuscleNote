@@ -1,5 +1,6 @@
 package com.musclenote.android.data.workout
 
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.WorkoutSet
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -157,13 +158,13 @@ class SetEntryRulesTest {
 
     @Test
     fun `Suivant passe au champ suivant, rien après le dernier`() {
-        assertEquals(SetEntryField.Reps, SetEntryRules.next(SetEntryField.Weight, isCardio = false))
-        assertNull(SetEntryRules.next(SetEntryField.Reps, isCardio = false))
-        assertEquals(SetEntryField.Distance, SetEntryRules.next(SetEntryField.Duration, isCardio = true))
-        assertEquals(SetEntryField.Speed, SetEntryRules.next(SetEntryField.Distance, isCardio = true))
-        assertEquals(SetEntryField.Incline, SetEntryRules.next(SetEntryField.Speed, isCardio = true))
-        assertNull(SetEntryRules.next(SetEntryField.Incline, isCardio = true))
-        assertEquals(listOf(SetEntryField.Weight, SetEntryField.Reps), SetEntryRules.fields(isCardio = false))
+        assertEquals(SetEntryField.Reps, SetEntryRules.next(SetEntryField.Weight, SetKind.Strength))
+        assertNull(SetEntryRules.next(SetEntryField.Reps, SetKind.Strength))
+        assertEquals(SetEntryField.Distance, SetEntryRules.next(SetEntryField.Duration, SetKind.Cardio))
+        assertEquals(SetEntryField.Speed, SetEntryRules.next(SetEntryField.Distance, SetKind.Cardio))
+        assertEquals(SetEntryField.Incline, SetEntryRules.next(SetEntryField.Speed, SetKind.Cardio))
+        assertNull(SetEntryRules.next(SetEntryField.Incline, SetKind.Cardio))
+        assertEquals(listOf(SetEntryField.Weight, SetEntryField.Reps), SetEntryRules.fields(SetKind.Strength))
     }
 
     @Test

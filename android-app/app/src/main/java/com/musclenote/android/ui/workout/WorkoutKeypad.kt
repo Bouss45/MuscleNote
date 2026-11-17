@@ -10,7 +10,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import com.musclenote.android.R
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.workout.HoldDuration
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
 import com.musclenote.android.ui.designsystem.components.FormHeroField
@@ -84,6 +86,7 @@ internal fun fieldLabel(field: SetEntryField): String = stringResource(
         SetEntryField.Distance -> R.string.workout_col_km
         SetEntryField.Speed -> R.string.workout_keypad_speed
         SetEntryField.Incline -> R.string.workout_keypad_incline
+        SetEntryField.Hold -> R.string.workout_col_duration
     },
 )
 
@@ -96,7 +99,7 @@ internal fun fieldLabel(field: SetEntryField): String = stringResource(
 internal fun WorkoutKeypad(
     set: WorkoutSet,
     setNumber: Int,
-    isCardio: Boolean,
+    kind: SetKind,
     entry: SetEntryState,
     field: SetEntryField,
     locale: Locale,
@@ -109,12 +112,17 @@ internal fun WorkoutKeypad(
     onDelete: () -> Unit,
     onHide: () -> Unit,
 ) {
-    val fields = SetEntryRules.fields(isCardio)
+    val fields = SetEntryRules.fields(kind)
     val labels = fields.mapIndexed { index, f ->
         if (index == 0) stringResource(R.string.workout_keypad_first, fieldLabel(f), setNumber) else fieldLabel(f)
     }
-    val step = SetEntryRules.format(field.step, field, locale)
-    val last = SetEntryRules.next(field, isCardio) == null
+    // Durée : pas de 5 s (« −5 s » / « +5 s », § 15.18.2).
+    val step = if (field == SetEntryField.Hold) {
+        stringResource(R.string.duration_seconds_value, HoldDuration.STEP_SECONDS)
+    } else {
+        SetEntryRules.format(field.step, field, locale)
+    }
+    val last = SetEntryRules.next(field, kind) == null
     KeypadPanel(bottomInset = bottomInset) {
         KeypadHeader(
             options = labels,

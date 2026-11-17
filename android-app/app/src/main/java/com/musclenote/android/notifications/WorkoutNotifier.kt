@@ -7,6 +7,7 @@ import com.musclenote.android.data.catalog.ExerciseCatalog
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.RestTimerState
+import com.musclenote.android.data.model.SetTimerState
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.NotificationExercise
@@ -23,7 +24,8 @@ import java.time.format.FormatStyle
 /**
  * Notification « Séance en cours » (SPEC § 15.5, 🔄 D31) : nom de la séance, chronomètre système
  * (durée de la séance, ou compte à rebours du repos), exercice et prochaine série, actions
- * « Valider la série » ou « −30 s », « +30 s », « Passer ». En cours, silencieuse, sur l'écran
+ * « Valider la série » ou « −30 s », « +30 s », « Passer » ; pendant le chrono d'une série au temps,
+ * ce chrono et « Arrêter » (§ 15.18.5). En cours, silencieuse, sur l'écran
  * verrouillé ; proposée en Live Update (Android 16 et plus : `requestPromotedOngoing`, accordé ou
  * non par le système et l'utilisateur), sinon notification en cours classique. Android ne relaie
  * pas une notification en cours vers une montre : c'est l'alerte de fin de repos qui y arrive
@@ -32,7 +34,7 @@ import java.time.format.FormatStyle
 class WorkoutNotifier(context: Context) : WorkoutNotifications {
     private val context = context.applicationContext
 
-    override fun show(workout: Workout, rest: RestTimerState?, custom: List<Exercise>) {
+    override fun show(workout: Workout, rest: RestTimerState?, custom: List<Exercise>, setTimer: SetTimerState?) {
         val localized = context.withAppLocale()
         val locale = localized.resources.configuration.appFormattingLocale()
         val zone = ZoneId.systemDefault()
@@ -44,7 +46,7 @@ class WorkoutNotifier(context: Context) : WorkoutNotifications {
             nowMillis = System.currentTimeMillis(),
             zone = zone,
             exercises = { id ->
-                definitions[id]?.let { NotificationExercise(it.nameRes?.let(localized::getString) ?: it.customName.orEmpty(), it.isCardio) }
+                definitions[id]?.let { NotificationExercise(it.nameRes?.let(localized::getString) ?: it.customName.orEmpty(), it.kind) }
             },
             texts = WorkoutNotificationTexts(
                 locale = locale,
@@ -57,7 +59,10 @@ class WorkoutNotifier(context: Context) : WorkoutNotifications {
                 kilometers = localized.getString(R.string.workout_notif_km),
                 next = localized.getString(R.string.workout_notif_next),
                 allDone = localized.getString(R.string.workout_notif_all_done),
+                holdWeight = localized.getString(R.string.workout_notif_hold_weight),
+                running = localized.getString(R.string.workout_notif_running),
             ),
+            setTimer = setTimer,
         )
         // La notification de repos (jusqu'à la v1.0.6) n'existe plus : retirée si elle est encore affichée.
         AppNotifications.cancel(context, AppNotifications.ID_REST_TIMER_ONGOING)
@@ -100,6 +105,7 @@ class WorkoutNotifier(context: Context) : WorkoutNotifications {
                         WorkoutAction.RestMinus -> Triple(R.drawable.ic_replay_30, R.string.workout_notif_minus_30, RestTimerReceiver.ACTION_REST_MINUS)
                         WorkoutAction.RestPlus -> Triple(R.drawable.ic_forward_30, R.string.workout_notif_plus_30, RestTimerReceiver.ACTION_REST_PLUS)
                         WorkoutAction.SkipRest -> Triple(R.drawable.ic_skip_next, R.string.rest_timer_skip, RestTimerReceiver.ACTION_SKIP)
+                        WorkoutAction.StopTimer -> Triple(R.drawable.ic_stop, R.string.workout_notif_stop, RestTimerReceiver.ACTION_STOP_TIMER)
                     }
                     addAction(icon, localized.getString(label), RestTimerReceiver.action(context, receiverAction))
                 }

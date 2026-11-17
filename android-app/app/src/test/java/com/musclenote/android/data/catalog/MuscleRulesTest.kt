@@ -62,7 +62,7 @@ class MuscleRulesTest {
         assertEquals(listOf("dips", "pushdown", "overheadtri", "skullcrusher", "barfront", "adductorpress"), ids.take(6))
         // Puis secondaire seulement : développés (triceps), soulevé de terre, squat… (adducteurs).
         assertEquals(
-            listOf("deadlift", "bench", "incline", "dbench", "dincline", "squat", "legpress", "lunges", "ohp"),
+            listOf("deadlift", "bench", "incline", "dbench", "dincline", "squat", "legpress", "lunges", "wallsit", "ohp"),
             ids.drop(6),
         )
     }
@@ -107,10 +107,10 @@ class MuscleRulesTest {
     fun `les exercices d'un muscle, principaux puis secondaires, perso compris, sans les archivés`() {
         val uses = MuscleRules.usesOf(Muscle.Fessiers, definitions)
         assertEquals(
-            listOf("deadlift", "squat", "lunges", "abductorpress", "c1", "legpress", "treadmill", "bike"),
+            listOf("deadlift", "squat", "lunges", "abductorpress", "c1", "legpress", "wallsit", "sideplank", "treadmill", "bike"),
             uses.map { it.definition.id },
         )
-        assertEquals(List(5) { MuscleRole.Primary } + List(3) { MuscleRole.Secondary }, uses.map { it.role })
+        assertEquals(List(5) { MuscleRole.Primary } + List(5) { MuscleRole.Secondary }, uses.map { it.role })
         assertTrue(MuscleRules.usesOf(Muscle.Dorsaux, definitions).none { it.definition.id == "c3" })
     }
 

@@ -1,6 +1,7 @@
 package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -50,8 +51,8 @@ object WorkoutRules {
     fun sessionKey(workout: Workout): String = sessionKey(workout.preset, workout.name)
 
     /**
-     * Séries reprises dans une nouvelle séance : nouvel id, non validées ; reps, poids et champs
-     * cardio conservés (un champ cardio absent reste absent).
+     * Séries reprises dans une nouvelle séance : nouvel id, non validées ; reps, poids, champs
+     * cardio et durée d'une série au temps conservés (un champ absent reste absent, § 3.1).
      */
     fun cloneSetsForReuse(sets: List<WorkoutSet>, newId: () -> String): List<WorkoutSet> =
         sets.map { it.copy(id = newId(), completed = false) }
@@ -102,29 +103,35 @@ object WorkoutRules {
     /**
      * Série ajoutée par « + Ajouter une série » (§ 2.5) : force → reps et poids de [last], ou
      * 10 × 20 kg ; cardio → reps et poids à 0, durée / distance / vitesse / inclinaison de [last]
-     * champ par champ, ou 30 min / 0 / 0 / 0. Non validée en séance ; l'éditeur de séance terminée
-     * passe [completed] = `true` (§ 2.9).
+     * champ par champ, ou 30 min / 0 / 0 / 0 ; au temps (§ 15.18.2) → durée et lest de [last], ou
+     * 0:30 sans lest. Non validée en séance ; l'éditeur de séance terminée passe [completed] =
+     * `true` (§ 2.9).
      */
-    fun newSet(last: WorkoutSet?, isCardio: Boolean, id: String, completed: Boolean = false): WorkoutSet =
-        if (isCardio) {
-            WorkoutSet(
-                id = id,
-                reps = 0,
-                weight = 0.0,
-                completed = completed,
-                duration = last?.duration ?: DEFAULT_CARDIO_DURATION,
-                distance = last?.distance ?: 0.0,
-                speed = last?.speed ?: 0.0,
-                incline = last?.incline ?: 0.0,
-            )
-        } else {
-            WorkoutSet(
-                id = id,
-                reps = last?.reps ?: DEFAULT_REPS,
-                weight = last?.weight ?: DEFAULT_WEIGHT,
-                completed = completed,
-            )
-        }
+    fun newSet(last: WorkoutSet?, kind: SetKind, id: String, completed: Boolean = false): WorkoutSet = when (kind) {
+        SetKind.Timed -> WorkoutSet(
+            id = id,
+            reps = 0,
+            weight = last?.weight ?: 0.0,
+            completed = completed,
+            durationSeconds = last?.durationSeconds ?: HoldDuration.DEFAULT_SECONDS,
+        )
+        SetKind.Cardio -> WorkoutSet(
+            id = id,
+            reps = 0,
+            weight = 0.0,
+            completed = completed,
+            duration = last?.duration ?: DEFAULT_CARDIO_DURATION,
+            distance = last?.distance ?: 0.0,
+            speed = last?.speed ?: 0.0,
+            incline = last?.incline ?: 0.0,
+        )
+        SetKind.Strength -> WorkoutSet(
+            id = id,
+            reps = last?.reps ?: DEFAULT_REPS,
+            weight = last?.weight ?: DEFAULT_WEIGHT,
+            completed = completed,
+        )
+    }
 
     fun hasCompletedSet(workout: Workout): Boolean = workout.exercises.any { e -> e.sets.any { it.completed } }
 

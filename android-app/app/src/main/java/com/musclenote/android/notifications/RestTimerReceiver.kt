@@ -32,6 +32,8 @@ class RestTimerReceiver : BroadcastReceiver() {
             ACTION_COMPLETE_SET -> runAsync(container) { container.completeNextSet() }
             ACTION_REST_MINUS -> runAsync(container) { container.adjustRest(-WorkoutNotificationRules.ADJUST_SECONDS) }
             ACTION_REST_PLUS -> runAsync(container) { container.adjustRest(WorkoutNotificationRules.ADJUST_SECONDS) }
+            // « Arrêter » le chrono d'une série au temps : durée reportée, série validée (§ 15.18.5).
+            ACTION_STOP_TIMER -> runAsync(container) { container.stopSetTimer(validate = true) }
         }
     }
 
@@ -56,6 +58,7 @@ class RestTimerReceiver : BroadcastReceiver() {
         const val ACTION_COMPLETE_SET = "com.musclenote.android.action.WORKOUT_COMPLETE_SET"
         const val ACTION_REST_MINUS = "com.musclenote.android.action.REST_TIMER_MINUS"
         const val ACTION_REST_PLUS = "com.musclenote.android.action.REST_TIMER_PLUS"
+        const val ACTION_STOP_TIMER = "com.musclenote.android.action.WORKOUT_STOP_TIMER"
         const val EXTRA_ENDS_AT = "endsAt"
 
         /** Code de requête par action : un `PendingIntent` distinct pour chacune. */
@@ -64,6 +67,7 @@ class RestTimerReceiver : BroadcastReceiver() {
             ACTION_COMPLETE_SET to 4,
             ACTION_REST_MINUS to 5,
             ACTION_REST_PLUS to 6,
+            ACTION_STOP_TIMER to 7,
         )
 
         /** `PendingIntent` d'une action de notification ([ACTION_SKIP], [ACTION_COMPLETE_SET]…). */

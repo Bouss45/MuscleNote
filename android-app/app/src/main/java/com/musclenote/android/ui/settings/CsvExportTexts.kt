@@ -74,5 +74,6 @@ object CsvExportTexts {
         CsvColumn.Incline -> R.string.excel_col_incline
         CsvColumn.Calories -> R.string.excel_col_calories
         CsvColumn.Water -> R.string.excel_col_water
+        CsvColumn.DurationSeconds -> R.string.excel_col_duration_seconds
     }
 }

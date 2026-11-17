@@ -5,6 +5,8 @@ import com.musclenote.android.data.catalog.MuscleRules
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.ExerciseType
+import com.musclenote.android.data.model.HoldSecondsSerializer
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
@@ -99,6 +101,8 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         distance = s["distance"].numberOrNull(),
         speed = s["speed"].numberOrNull(),
         incline = s["incline"].numberOrNull(),
+        // 🔄 D44 : lue sans refuser l'import, arrondie à l'entier, négative → 0 (§ 15.18.8).
+        durationSeconds = HoldSecondsSerializer.secondsOf(s["durationSeconds"] as? JsonPrimitive),
     )
 
     // ─── Exercices perso ────────────────────────────────────────────────────────
@@ -117,6 +121,8 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
                     archived = e["archived"].booleanOrNull() ?: false,
                     primaryMuscles = muscles(e["primaryMuscles"]),
                     secondaryMuscles = muscles(e["secondaryMuscles"]),
+                    // 🔄 D44 : absent ou inconnu → « charge × reps » (§ 15.18.8).
+                    type = ExerciseType.fromId(e["type"].stringOrNull()),
                 ).let(MuscleRules::normalized)
             }
             .filterNot { ExerciseCatalog.isBuiltIn(it.id) }

@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.musclenote.android.R
 import com.musclenote.android.data.catalog.ExerciseDefinition
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.ui.components.exerciseName
 import com.musclenote.android.ui.components.filterExercises
@@ -93,10 +94,13 @@ private const val ROWS_UNDER_MAP = 4.5f
  */
 private enum class PickerStage { List, New, Edit, Actions, Delete, Muscle }
 
-/** Création, modification et suppression des exercices perso (§ 3.9), muscles compris (§ 15.17.3). */
+/**
+ * Création, modification et suppression des exercices perso (§ 3.9), muscles (§ 15.17.3) et type
+ * (§ 15.18.1) compris.
+ */
 internal class CustomExerciseActions(
-    val create: (name: String, group: MuscleGroup, muscles: MuscleSelection) -> Unit,
-    val update: (id: String, name: String, group: MuscleGroup, muscles: MuscleSelection) -> Unit,
+    val create: (name: String, group: MuscleGroup, muscles: MuscleSelection, type: ExerciseType) -> Unit,
+    val update: (id: String, name: String, group: MuscleGroup, muscles: MuscleSelection, type: ExerciseType) -> Unit,
     val delete: (id: String) -> Unit,
 )
 
@@ -173,6 +177,7 @@ internal fun ExercisePickerContent(
     var formName by rememberSaveable { mutableStateOf("") }
     var formGroup by rememberSaveable { mutableStateOf(MuscleGroup.FALLBACK) }
     var formMuscles by rememberSaveable(stateSaver = MuscleSelectionSaver) { mutableStateOf(MuscleSelection()) }
+    var formType by rememberSaveable { mutableStateOf(ExerciseType.Reps) }
 
     val target = targetId?.let { id -> definitions.firstOrNull { it.id == id } }
     // L'exercice visé a disparu (supprimé, ajouté ailleurs) : retour à la liste.
@@ -212,6 +217,7 @@ internal fun ExercisePickerContent(
                     formName = ""
                     formGroup = group ?: MuscleGroup.FALLBACK
                     formMuscles = MuscleSelection()
+                    formType = ExerciseType.Reps
                     stage = PickerStage.New
                 }
             },
@@ -241,12 +247,21 @@ internal fun ExercisePickerContent(
                     haptics.light()
                     formMuscles = it
                 },
+                type = formType,
+                onTypeChange = {
+                    haptics.light()
+                    formType = it
+                },
                 submitLabel = stringResource(if (editing) R.string.common_save else R.string.common_add),
                 onSubmit = {
                     val actions = custom ?: return@CustomExerciseForm
                     haptics.medium()
                     val id = targetId
-                    if (editing && id != null) actions.update(id, formName, formGroup, formMuscles) else actions.create(formName, formGroup, formMuscles)
+                    if (editing && id != null) {
+                        actions.update(id, formName, formGroup, formMuscles, formType)
+                    } else {
+                        actions.create(formName, formGroup, formMuscles, formType)
+                    }
                     stage = PickerStage.List
                 },
                 onCancel = { stage = PickerStage.List },
@@ -263,6 +278,7 @@ internal fun ExercisePickerContent(
                         formName = target.customName.orEmpty()
                         formGroup = target.muscleGroup
                         formMuscles = MuscleSelection.of(target.primaryMuscles, target.secondaryMuscles)
+                        formType = target.type
                         stage = PickerStage.Edit
                     },
                     modifier = Modifier.fillMaxWidth(),
@@ -507,7 +523,10 @@ private fun MuscleFilterRow(muscles: Set<Muscle>, onOpen: (Muscle) -> Unit, onCl
     }
 }
 
-/** « Nouvel exercice » / « Modifier l'exercice » : nom (focus automatique) et groupe musculaire. */
+/**
+ * « Nouvel exercice » / « Modifier l'exercice » : nom (focus automatique), groupe musculaire, type
+ * (« Charge × reps » / « Au temps », masqué pour le cardio, § 15.18.1) et muscles.
+ */
 @Composable
 internal fun CustomExerciseForm(
     title: String,
@@ -517,6 +536,8 @@ internal fun CustomExerciseForm(
     onGroupChange: (MuscleGroup) -> Unit,
     muscles: MuscleSelection,
     onMusclesChange: (MuscleSelection) -> Unit,
+    type: ExerciseType,
+    onTypeChange: (ExerciseType) -> Unit,
     submitLabel: String,
     onSubmit: () -> Unit,
     onCancel: () -> Unit,
@@ -543,6 +564,16 @@ internal fun CustomExerciseForm(
                 for (candidate in MuscleGroup.entries) {
                     FilterChip(stringResource(candidate.labelRes), selected = candidate == group, onClick = { onGroupChange(candidate) })
                 }
+            }
+        }
+        // 🔄 D44 : le groupe Cardio décide du cardio, le type n'y a pas de sens (§ 15.18.1).
+        if (group != MuscleGroup.Cardio) {
+            LabeledField(stringResource(R.string.exercise_type_label)) {
+                SegmentedControl(
+                    options = listOf(stringResource(R.string.exercise_type_reps), stringResource(R.string.exercise_type_timed)),
+                    selectedIndex = type.ordinal,
+                    onSelect = { onTypeChange(ExerciseType.entries[it]) },
+                )
             }
         }
         // 🔄 D43 : muscles facultatifs, un muscle dans une seule des deux listes (§ 15.17.3).

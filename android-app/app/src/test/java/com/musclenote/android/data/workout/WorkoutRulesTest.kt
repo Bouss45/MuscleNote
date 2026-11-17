@@ -1,6 +1,7 @@
 package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -158,26 +159,48 @@ class WorkoutRulesTest {
 
     @Test
     fun `une nouvelle série de force reprend la dernière, sinon 10 × 20 kg, non validée`() {
-        assertEquals(set("x", 10, 20.0, completed = false), WorkoutRules.newSet(null, isCardio = false, id = "x"))
-        assertEquals(set("y", 8, 82.5, completed = false), WorkoutRules.newSet(set("a", 8, 82.5, completed = true), isCardio = false, id = "y"))
+        assertEquals(set("x", 10, 20.0, completed = false), WorkoutRules.newSet(null, kind = SetKind.Strength, id = "x"))
+        assertEquals(set("y", 8, 82.5, completed = false), WorkoutRules.newSet(set("a", 8, 82.5, completed = true), kind = SetKind.Strength, id = "y"))
     }
 
     @Test
     fun `une nouvelle série de cardio reprend la dernière champ par champ, sinon 30 min`() {
         assertEquals(
             cardio("x", duration = 30.0, distance = 0.0, speed = 0.0, incline = 0.0, completed = false),
-            WorkoutRules.newSet(null, isCardio = true, id = "x"),
+            WorkoutRules.newSet(null, kind = SetKind.Cardio, id = "x"),
         )
         val last = cardio("a", duration = 25.0, distance = null, speed = 9.5, incline = null)
         assertEquals(
             cardio("y", duration = 25.0, distance = 0.0, speed = 9.5, incline = 0.0, completed = false),
-            WorkoutRules.newSet(last, isCardio = true, id = "y"),
+            WorkoutRules.newSet(last, kind = SetKind.Cardio, id = "y"),
         )
     }
 
     @Test
+    fun `une nouvelle série au temps reprend la durée et le lest de la dernière, sinon 0 30 sans lest`() {
+        // § 15.18.2, 🔄 D44.
+        assertEquals(WorkoutSet("x", 0, 0.0, false, durationSeconds = 30), WorkoutRules.newSet(null, kind = SetKind.Timed, id = "x"))
+        val last = WorkoutSet("a", 0, 10.0, true, durationSeconds = 75)
+        assertEquals(WorkoutSet("y", 0, 10.0, false, durationSeconds = 75), WorkoutRules.newSet(last, kind = SetKind.Timed, id = "y"))
+        // Après une ancienne série en reps (sans durée) : 0:30, son lest.
+        assertEquals(
+            WorkoutSet("z", 0, 0.0, false, durationSeconds = 30),
+            WorkoutRules.newSet(WorkoutSet("b", 12, 0.0, true), kind = SetKind.Timed, id = "z"),
+        )
+    }
+
+    @Test
+    fun `la durée d'une série au temps est reprise au pré-remplissage`() {
+        val cloned = WorkoutRules.cloneSetsForReuse(listOf(WorkoutSet("a", 0, 5.0, true, durationSeconds = 60)), ids()).single()
+        assertEquals(60, cloned.durationSeconds)
+        assertEquals(5.0, cloned.weight, 0.0)
+        assertFalse(cloned.completed)
+    }
+
+    @Test
     fun `l'éditeur de séance terminée crée des séries validées`() {
-        assertTrue(WorkoutRules.newSet(null, isCardio = false, id = "x", completed = true).completed)
+        assertTrue(WorkoutRules.newSet(null, kind = SetKind.Strength, id = "x", completed = true).completed)
+        assertTrue(WorkoutRules.newSet(null, kind = SetKind.Timed, id = "x", completed = true).completed)
     }
 
     // ─── § 3.3 : fin de séance ───────────────────────────────────────────────────

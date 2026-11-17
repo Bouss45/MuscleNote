@@ -42,6 +42,9 @@ data class ExerciseSession(val workoutId: String, val date: Instant, val sets: L
     val maxWeight: Double get() = sets.maxOfOrNull { it.weight } ?: 0.0
     val maxReps: Int get() = sets.maxOfOrNull { it.reps } ?: 0
     val totalDuration: Double get() = sets.sumOf { it.duration ?: 0.0 }
+
+    /** Temps sous tension (s) : somme des durées des séries au temps (§ 15.18.7). */
+    val totalHold: Int get() = sets.sumOf { it.durationSeconds ?: 0 }
     val volume: Double get() = WorkoutStats.volume(sets)
     val bestOneRepMax: Double get() = WorkoutStats.bestOneRepMax(sets)
 }
@@ -80,10 +83,17 @@ object WorkoutStats {
 
     // ─── § 3.8 : volume et compteurs ──────────────────────────────────────────────
 
-    /** Σ reps × poids des séries **validées**, en kg (le cardio, à 0 × 0, vaut 0). */
-    fun volume(sets: List<WorkoutSet>): Double = sets.filter { it.completed }.sumOf { it.reps * it.weight }
+    /**
+     * Σ reps × poids des séries **validées**, en kg (le cardio, à 0 × 0, vaut 0) ; les séries au
+     * temps n'y comptent pas, lest compris (§ 3.8, § 15.18.7, 🔄 D44).
+     */
+    fun volume(sets: List<WorkoutSet>): Double = sets.filter { it.completed && it.durationSeconds == null }.sumOf { it.reps * it.weight }
 
     fun volume(workout: Workout): Double = workout.exercises.sumOf { volume(it.sets) }
+
+    /** Temps sous tension (s, § 15.18.7) : somme des durées des séries au temps **validées**. */
+    fun timeUnderTension(workout: Workout): Int =
+        workout.exercises.sumOf { e -> e.sets.filter { it.completed }.sumOf { it.durationSeconds ?: 0 } }
 
     /** Nombre de séries validées de la séance. */
     fun completedSetCount(workout: Workout): Int = workout.exercises.sumOf { e -> e.sets.count { it.completed } }
@@ -227,11 +237,13 @@ object WorkoutStats {
     /**
      * Séances terminées où l'exercice a au moins une série validée, de la plus récente à la plus
      * ancienne, avec leurs seules séries validées (🔄 D15). Une séance à la date illisible est
-     * ignorée (elle ne peut être ni datée ni placée sur le graphique).
+     * ignorée (elle ne peut être ni datée ni placée sur le graphique). Exercice au temps ([timed],
+     * § 15.18.6) : seules les séries validées qui ont une durée comptent.
      */
-    fun exerciseHistory(workouts: List<Workout>, exerciseId: String, zone: ZoneId): List<ExerciseSession> =
+    fun exerciseHistory(workouts: List<Workout>, exerciseId: String, zone: ZoneId, timed: Boolean = false): List<ExerciseSession> =
         workouts.mapNotNull { workout ->
-            val sets = workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets.orEmpty().filter { it.completed }
+            val sets = workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets.orEmpty()
+                .filter { it.completed && (!timed || it.durationSeconds != null) }
             if (sets.isEmpty()) return@mapNotNull null
             val date = parseInstantOrNull(workout.date, zone) ?: return@mapNotNull null
             ExerciseSession(workout.id, date, sets)

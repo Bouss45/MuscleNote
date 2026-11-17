@@ -2,6 +2,7 @@ package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.Workout
@@ -20,7 +21,9 @@ import org.junit.Test
  */
 class WorkoutSummaryRulesTest {
 
-    private val definitions = exerciseDefinitions(listOf(Exercise("perso", "Gainage lesté", MuscleGroup.Abdos)))
+    private val definitions = exerciseDefinitions(
+        listOf(Exercise("perso", "Gainage lesté", MuscleGroup.Abdos), Exercise("tenue", "Tenue perso", MuscleGroup.Epaules, type = ExerciseType.Timed)),
+    )
     private var nextId = 0
 
     private fun set(reps: Int, weight: Double, completed: Boolean = true) = WorkoutSet("s${++nextId}", reps, weight, completed)
@@ -270,5 +273,55 @@ class WorkoutSummaryRulesTest {
         assertEquals(82.5, bench.bestSet!!.weight, 0.0)
         assertEquals(107.0, bench.bestOneRepMax, 0.0) // 80 × (1 + 10/30) = 106,67 → 107
         assertEquals(3, bench.sets.size)
+    }
+
+    // ─── Exercices au temps (§ 15.18.6 – 15.18.7, 🔄 D44) ─────────────────────────
+
+    private fun hold(seconds: Int?, weight: Double = 0.0, completed: Boolean = true) =
+        WorkoutSet("h${++nextId}", 0, weight, completed, durationSeconds = seconds)
+
+    @Test
+    fun `au temps, une durée max plus longue est un record, sans 1RM`() {
+        val workouts = listOf(
+            workout("2026-11-12", ex("plank", hold(60, weight = 20.0), hold(95)), id = "today"),
+            workout("2026-11-05", ex("plank", hold(90), hold(90))),
+            workout("2026-10-29", ex("plank", hold(120, completed = false))),
+        )
+        assertEquals(setOf(SummaryRecord.Personal), records(workouts, "today", "plank"))
+        val plank = WorkoutSummaryRules.summary(workouts, "today", definitions)!!.exercises.single()
+        assertEquals(0.0, plank.bestOneRepMax, 0.0)
+        assertEquals(95, plank.bestSet!!.durationSeconds)
+    }
+
+    @Test
+    fun `au temps, égalité ou première fois, pas de record, une vieille séance en reps ne compte pas`() {
+        val tie = listOf(
+            workout("2026-11-12", ex("plank", hold(90)), id = "today"),
+            workout("2026-11-05", ex("plank", hold(90))),
+        )
+        assertEquals(emptySet<SummaryRecord>(), records(tie, "today", "plank"))
+        val first = listOf(
+            workout("2026-11-12", ex("plank", hold(90)), id = "today"),
+            // Ancienne séance de « Gainage » en reps : rien à battre.
+            workout("2026-11-05", ex("plank", set(60, 0.0))),
+        )
+        assertEquals(emptySet<SummaryRecord>(), records(first, "today", "plank"))
+        // Un exercice perso au temps suit la même règle.
+        val custom = listOf(
+            workout("2026-11-12", ex("tenue", hold(40, weight = 5.0)), id = "today"),
+            workout("2026-11-05", ex("tenue", hold(30, weight = 10.0))),
+        )
+        assertEquals(setOf(SummaryRecord.Personal), records(custom, "today", "tenue"))
+    }
+
+    @Test
+    fun `temps sous tension et volume sans les séries au temps`() {
+        val workouts = listOf(
+            workout("2026-11-12", ex("bench", set(10, 80.0)), ex("plank", hold(60, weight = 10.0), hold(45), hold(30, completed = false)), ex("wallsit", hold(120)), id = "today"),
+        )
+        val summary = WorkoutSummaryRules.summary(workouts, "today", definitions)!!
+        assertEquals(800L, summary.volumeKg)
+        assertEquals(225, summary.tensionSeconds)
+        assertEquals(0, WorkoutSummaryRules.summary(listOf(push("2026-11-12", 100.0, id = "p")), "p", definitions)!!.tensionSeconds)
     }
 }
