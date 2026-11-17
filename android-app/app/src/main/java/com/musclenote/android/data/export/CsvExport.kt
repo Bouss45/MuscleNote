@@ -27,6 +27,9 @@ data class CsvFormat(val separator: Char, val decimalComma: Boolean) {
 enum class CsvColumn {
     Date, Time, SessionName, Session, Duration, BodyWeight, Exercises, TotalSets, TotalVolume,
     Exercise, MuscleGroup, SetNumber, Reps, Weight, Distance, Speed, Incline, Calories, Water,
+
+    /** Durée d'une série au temps, en secondes (§ 15.18.8, 🔄 D44) : à la fin du fichier `sets`. */
+    DurationSeconds,
 }
 
 /**
@@ -102,12 +105,15 @@ object CsvExport {
     /**
      * Une ligne par série validée : séances les plus récentes d'abord, puis ordre des exercices et
      * des séries. Colonnes fixes : force → reps et poids (vides si 0) ; cardio → durée, distance,
-     * vitesse, inclinaison. « Série n° » = rang de la série dans l'exercice, comme dans l'app.
+     * vitesse, inclinaison ; série au temps → durée en secondes dans la dernière colonne, le lest
+     * dans le poids, reps vides (§ 15.18.8). « Série n° » = rang de la série dans l'exercice, comme
+     * dans l'app.
      */
     fun sets(workouts: List<Workout>, texts: CsvTexts, format: CsvFormat, zone: ZoneId): String? {
         val header = listOf(
             CsvColumn.Date, CsvColumn.Session, CsvColumn.Exercise, CsvColumn.MuscleGroup, CsvColumn.SetNumber,
             CsvColumn.Reps, CsvColumn.Weight, CsvColumn.Duration, CsvColumn.Distance, CsvColumn.Speed, CsvColumn.Incline,
+            CsvColumn.DurationSeconds,
         )
         val rows = mutableListOf<List<String>>()
         for (workout in workouts) {
@@ -129,6 +135,7 @@ object CsvExport {
                         if (cardio) set.distance?.let { number(it, format) }.orEmpty() else "",
                         if (cardio) set.speed?.let { number(it, format) }.orEmpty() else "",
                         if (cardio) set.incline?.let { number(it, format) }.orEmpty() else "",
+                        if (cardio) "" else set.durationSeconds?.toString().orEmpty(),
                     )
                 }
             }

@@ -23,9 +23,15 @@ data class Exercise(
     /** Muscles secondaires, jamais un principal ; facultatif, omis vide. */
     @Serializable(with = MuscleListSerializer::class)
     val secondaryMuscles: List<Muscle> = emptyList(),
+    /** « Charge × reps » ou « au temps » (§ 15.18.1, 🔄 D44) ; omis au défaut, inconnu → défaut. */
+    val type: ExerciseType = ExerciseType.Reps,
 )
 
-/** Série. Les champs cardio sont en minutes, km, km/h et %. */
+/**
+ * Série. Les champs cardio sont en minutes, km, km/h et %. [durationSeconds] : durée d'une série au
+ * temps, en secondes (§ 15.18.8, 🔄 D44) — une série qui en a une est une « série au temps » ; omise
+ * absente, lue sans jamais refuser le fichier.
+ */
 @Serializable
 data class WorkoutSet(
     val id: String,
@@ -36,6 +42,8 @@ data class WorkoutSet(
     val distance: Double? = null,
     val speed: Double? = null,
     val incline: Double? = null,
+    @Serializable(with = HoldSecondsSerializer::class)
+    val durationSeconds: Int? = null,
 )
 
 @Serializable
@@ -255,6 +263,16 @@ data class LocalPreferences(
         val DEFAULT = LocalPreferences()
     }
 }
+
+/**
+ * Chrono d'une série au temps (§ 15.18.4, 🔄 D44) : la série [setId] de la séance en cours, partie à
+ * [startedAt] (ms depuis l'époque). Propre à l'appareil, hors sauvegarde (`set_timer.json`).
+ */
+@Serializable
+data class SetTimerState(
+    val setId: String,
+    val startedAt: Long,
+)
 
 /** État du minuteur de repos (non sauvegardé, § 7.2). */
 @Serializable

@@ -4,6 +4,7 @@ import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.MuscleGroup
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.nutrition.BodyWeightRules
@@ -35,9 +36,9 @@ data class DailyStats(
 
 /**
  * Métrique d'une séance d'un exercice (SPEC § 15.9.3, 🔄 D34) : charge max (kg), reps max au poids
- * du corps, ou durée totale en cardio (min).
+ * du corps, durée totale en cardio (min), ou durée max d'une série au temps (s, § 15.18.6, 🔄 D44).
  */
-enum class ExerciseMetric { Load, Reps, Duration }
+enum class ExerciseMetric { Load, Reps, Duration, Hold }
 
 /**
  * Un point d'un exercice : une séance où il a au moins une série validée — son jour local, sa
@@ -67,8 +68,8 @@ data class MuscleGroupProgress(
     val sessions: Int,
     val exercises: List<ExerciseProgress>,
     /**
-     * « Charge max » (kg, records des exercices comptés en charge) ou « Durée max » (min) ; `null` si
-     * aucun exercice du groupe n'a de charge.
+     * « Charge max » (kg, records des exercices comptés en charge : ni reps ni durée d'une série au
+     * temps) ou « Durée max » (min) ; `null` si aucun exercice du groupe n'a de charge.
      */
     val maxMetric: Double?,
     /** « Vol. max » : max par séance de Σ reps × poids (kg) ; en cardio, de Σ distance (km). */
@@ -171,19 +172,20 @@ object ProgressStats {
     // ─── Exercices ───────────────────────────────────────────────────────────────────
 
     /**
-     * Métrique d'un exercice d'après son [history] (§ 15.9.3) : durée en cardio ; sinon charge max dès
-     * qu'une série validée a une charge > 0 (le lest d'un exercice au poids du corps), reps max si
-     * toutes sont à 0 kg. Sans historique : charge.
+     * Métrique d'un exercice d'après son [history] (§ 15.9.3) : durée en cardio ; durée max au temps
+     * (§ 15.18.6) ; sinon charge max dès qu'une série validée a une charge > 0 (le lest d'un exercice
+     * au poids du corps), reps max si toutes sont à 0 kg. Sans historique : charge.
      */
-    fun exerciseMetric(isCardio: Boolean, history: List<ExerciseSession>): ExerciseMetric =
-        metricOfSessions(isCardio, history.map { it.sets })
+    fun exerciseMetric(kind: SetKind, history: List<ExerciseSession>): ExerciseMetric =
+        metricOfSessions(kind, history.map { it.sets })
 
     /**
      * La règle de [exerciseMetric] sur les séries validées de chaque séance ([sessions]) : aussi pour
      * les records du résumé de séance (§ 15.12.3), qui ne gardent que les séances plus anciennes.
      */
-    fun metricOfSessions(isCardio: Boolean, sessions: List<List<WorkoutSet>>): ExerciseMetric = when {
-        isCardio -> ExerciseMetric.Duration
+    fun metricOfSessions(kind: SetKind, sessions: List<List<WorkoutSet>>): ExerciseMetric = when {
+        kind == SetKind.Cardio -> ExerciseMetric.Duration
+        kind == SetKind.Timed -> ExerciseMetric.Hold
         sessions.isNotEmpty() && sessions.all { sets -> sets.all { it.weight <= 0.0 } } -> ExerciseMetric.Reps
         else -> ExerciseMetric.Load
     }
@@ -196,6 +198,8 @@ object ProgressStats {
         ExerciseMetric.Load -> sets.maxOfOrNull { it.weight } ?: 0.0
         ExerciseMetric.Reps -> (sets.maxOfOrNull { it.reps } ?: 0).toDouble()
         ExerciseMetric.Duration -> sets.sumOf { it.duration ?: 0.0 }
+        // Une série sans durée (ancienne série en reps) n'entre pas dans la durée max (§ 15.18.6).
+        ExerciseMetric.Hold -> (sets.mapNotNull { it.durationSeconds }.maxOrNull() ?: 0).toDouble()
     }
 
     /**
@@ -217,13 +221,14 @@ object ProgressStats {
 
     /**
      * Meilleure série d'une séance (§ 15.9.1) parmi [sets] (validées) : la plus lourde, à égalité le
-     * plus de reps, puis la première ; en cardio, la plus longue, puis la plus longue distance.
+     * plus de reps, puis la première ; en cardio, la plus longue, puis la plus longue distance ; au
+     * temps (§ 15.18.6), la plus longue, puis la plus lourde (une série sans durée passe après).
      */
-    fun bestSet(sets: List<WorkoutSet>, isCardio: Boolean): WorkoutSet? {
-        val order = if (isCardio) {
-            compareBy<WorkoutSet>({ it.duration ?: 0.0 }, { it.distance ?: 0.0 })
-        } else {
-            compareBy<WorkoutSet>({ it.weight }, { it.reps })
+    fun bestSet(sets: List<WorkoutSet>, kind: SetKind): WorkoutSet? {
+        val order = when (kind) {
+            SetKind.Cardio -> compareBy<WorkoutSet>({ it.duration ?: 0.0 }, { it.distance ?: 0.0 })
+            SetKind.Timed -> compareBy<WorkoutSet>({ it.durationSeconds ?: -1 }, { it.weight })
+            SetKind.Strength -> compareBy<WorkoutSet>({ it.weight }, { it.reps })
         }
         // maxWithOrNull garde le premier des éléments égaux.
         return sets.maxWithOrNull(order)
@@ -244,9 +249,9 @@ object ProgressStats {
         val isCardio = group == MuscleGroup.Cardio
         val inGroup = definitions.filter { it.muscleGroup == group }
         val exercises = inGroup.mapNotNull { definition ->
-            val history = WorkoutStats.exerciseHistory(workouts, definition.id, zone)
+            val history = WorkoutStats.exerciseHistory(workouts, definition.id, zone, timed = definition.isTimed)
             if (history.isEmpty()) return@mapNotNull null
-            val metric = exerciseMetric(definition.isCardio, history)
+            val metric = exerciseMetric(definition.kind, history)
             ExerciseProgress(definition, metric, exerciseSeries(history, metric, zone))
         }
             // Tri stable : à égalité de date et de nombre de séances, l'ordre du catalogue puis des perso.
@@ -257,14 +262,15 @@ object ProgressStats {
             workout.exercises
                 .filter { it.exerciseId in groupIds }
                 .sumOf { e ->
-                    e.sets.filter { it.completed }.sumOf { set -> if (isCardio) set.distance ?: 0.0 else set.reps * set.weight }
+                    // Les séries au temps n'ont pas de volume (§ 15.18.7).
+                    if (isCardio) e.sets.filter { it.completed }.sumOf { it.distance ?: 0.0 } else WorkoutStats.volume(e.sets)
                 }
         } ?: 0.0
 
         return MuscleGroupProgress(
             sessions = muscleSessionCounts(workouts, definitions).getValue(group),
             exercises = exercises,
-            maxMetric = exercises.filter { it.metric != ExerciseMetric.Reps }.maxOfOrNull { it.record },
+            maxMetric = exercises.filter { it.metric == ExerciseMetric.Load || it.metric == ExerciseMetric.Duration }.maxOfOrNull { it.record },
             maxVolume = maxVolume,
         )
     }

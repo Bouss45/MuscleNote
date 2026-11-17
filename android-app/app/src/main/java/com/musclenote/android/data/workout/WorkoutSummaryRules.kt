@@ -1,6 +1,7 @@
 package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.catalog.ExerciseDefinition
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.progress.ProgressStats
@@ -8,7 +9,10 @@ import kotlin.math.roundToLong
 
 /** Un record de la fiche exercice (§ 15.9.1, point 6) battu dans une séance. */
 enum class SummaryRecord {
-    /** Record personnel : la métrique de la fiche (charge max, reps au poids du corps, durée en cardio). */
+    /**
+     * Record personnel : la métrique de la fiche (charge max, reps au poids du corps, durée en cardio,
+     * durée max au temps).
+     */
     Personal,
 
     /** Meilleur 1RM estimé (Epley, § 3.5), force seulement. */
@@ -33,13 +37,15 @@ data class SummaryExercise(
 }
 
 /**
- * Résumé d'une séance terminée (§ 15.12.2) : volume arrondi au kg, séries validées, comparaison au
- * même programme (`null` la première fois) et exercices ayant au moins une série validée.
+ * Résumé d'une séance terminée (§ 15.12.2) : volume arrondi au kg, séries validées, temps sous
+ * tension (s, § 15.18.7 ; 0 sans série au temps), comparaison au même programme (`null` la première
+ * fois) et exercices ayant au moins une série validée.
  */
 data class WorkoutSummary(
     val workout: Workout,
     val volumeKg: Long,
     val completedSets: Int,
+    val tensionSeconds: Int,
     val comparison: VolumeComparison?,
     val exercises: List<SummaryExercise>,
 ) {
@@ -70,15 +76,16 @@ object WorkoutSummaryRules {
             SummaryExercise(
                 definition = definition,
                 sets = sets,
-                bestSet = ProgressStats.bestSet(sets, definition.isCardio),
-                bestOneRepMax = if (definition.isCardio) 0.0 else WorkoutStats.bestOneRepMax(sets),
-                records = recordsBroken(sets, definition.id, definition.isCardio, older),
+                bestSet = ProgressStats.bestSet(sets, definition.kind),
+                bestOneRepMax = if (definition.kind == SetKind.Strength) WorkoutStats.bestOneRepMax(sets) else 0.0,
+                records = recordsBroken(sets, definition.id, definition.kind, older),
             )
         }
         return WorkoutSummary(
             workout = workout,
             volumeKg = volumeKg(workout),
             completedSets = WorkoutStats.completedSetCount(workout),
+            tensionSeconds = WorkoutStats.timeUnderTension(workout),
             comparison = compareVolume(workout, older),
             exercises = exercises,
         )
@@ -97,20 +104,22 @@ object WorkoutSummaryRules {
     /**
      * Records battus par les séries validées [sets] d'un exercice, contre ses séances [older] où il
      * a au moins une série validée : strictement au-dessus, jamais à égalité ; aucun la première fois.
+     * Au temps (§ 15.18.6), seules les séries qui ont une durée comptent, et pas de 1RM.
      */
-    fun recordsBroken(sets: List<WorkoutSet>, exerciseId: String, isCardio: Boolean, older: List<Workout>): Set<SummaryRecord> {
-        val done = sets.filter { it.completed }
+    fun recordsBroken(sets: List<WorkoutSet>, exerciseId: String, kind: SetKind, older: List<Workout>): Set<SummaryRecord> {
+        fun counted(set: WorkoutSet) = set.completed && (kind != SetKind.Timed || set.durationSeconds != null)
+        val done = sets.filter(::counted)
         val before = older.mapNotNull { workout ->
-            workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.filter { it.completed }?.takeIf { it.isNotEmpty() }
+            workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.filter(::counted)?.takeIf { it.isNotEmpty() }
         }
         if (done.isEmpty() || before.isEmpty()) return emptySet()
 
         // Charge ou reps : décidé sur les séances plus anciennes et celle-ci (un premier lest compte en kg).
-        val metric = ProgressStats.metricOfSessions(isCardio, before + listOf(done))
+        val metric = ProgressStats.metricOfSessions(kind, before + listOf(done))
         val records = mutableSetOf<SummaryRecord>()
         val best = before.maxOf { ProgressStats.metricValue(it, metric) }
         if (beats(ProgressStats.metricValue(done, metric), best)) records += SummaryRecord.Personal
-        if (!isCardio) {
+        if (kind == SetKind.Strength) {
             val oneRepMax = WorkoutStats.bestOneRepMax(done)
             if (oneRepMax > 0 && beats(oneRepMax, before.maxOf { WorkoutStats.bestOneRepMax(it) })) records += SummaryRecord.OneRepMax
         }

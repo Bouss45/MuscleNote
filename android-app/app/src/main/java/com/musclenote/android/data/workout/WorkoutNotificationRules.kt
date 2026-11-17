@@ -1,6 +1,8 @@
 package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.RestTimerState
+import com.musclenote.android.data.model.SetKind
+import com.musclenote.android.data.model.SetTimerState
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -13,8 +15,8 @@ import java.util.Locale
 /** Prochaine série à faire : [set], [number]-ième série (à partir de 1) de [exercise]. */
 data class NextSet(val exercise: WorkoutExercise, val set: WorkoutSet, val number: Int)
 
-/** Action d'une notification de séance (§ 15.5). */
-enum class WorkoutAction { CompleteSet, RestMinus, RestPlus, SkipRest }
+/** Action d'une notification de séance (§ 15.5) ; [StopTimer] = « Arrêter » le chrono d'une série (§ 15.18.5). */
+enum class WorkoutAction { CompleteSet, RestMinus, RestPlus, SkipRest, StopTimer }
 
 /**
  * Contenu de la notification « Séance en cours » (§ 15.5) : textes déjà traduits, chronomètre
@@ -30,8 +32,8 @@ data class WorkoutNotificationContent(
     val actions: List<WorkoutAction>,
 )
 
-/** Un exercice de la séance tel que la notification le montre. */
-data class NotificationExercise(val name: String, val cardio: Boolean)
+/** Un exercice de la séance tel que la notification le montre : son nom et les champs de ses séries. */
+data class NotificationExercise(val name: String, val kind: SetKind)
 
 /**
  * Textes de la notification, dans la langue de l'app : formats Android (`%1$s`, `%1$d`) lus dans
@@ -56,6 +58,10 @@ data class WorkoutNotificationTexts(
     /** `%1$s` = exercice et série. */
     val next: String,
     val allDone: String,
+    /** `%1$s` = durée `m:ss`, `%2$s` = lest (§ 15.18.5). */
+    val holdWeight: String,
+    /** `%1$d` = numéro de la série dont le chrono tourne. */
+    val running: String,
 )
 
 /**
@@ -91,7 +97,10 @@ object WorkoutNotificationRules {
      *   validées », aucune action ;
      * - repos en cours ([rest] pas encore fini à [nowMillis]) : titre « {séance} · Repos », compte à
      *   rebours jusqu'à la fin du repos, texte = « Prochaine : … », actions −30 s, +30 s, Passer
-     *   (Android n'en montre que trois).
+     *   (Android n'en montre que trois) ;
+     * - chrono d'une série au temps ([setTimer], sur une série non validée de la séance) : prioritaire,
+     *   titre = nom de la séance, chrono vers le haut depuis son départ, texte « {exercice} · Série n ·
+     *   en cours », action « Arrêter » ; la pastille d'une Live Update montre le chrono (§ 15.18.5).
      */
     fun content(
         workout: Workout,
@@ -101,7 +110,9 @@ object WorkoutNotificationRules {
         zone: ZoneId,
         exercises: (String) -> NotificationExercise?,
         texts: WorkoutNotificationTexts,
+        setTimer: SetTimerState? = null,
     ): WorkoutNotificationContent {
+        holdContent(workout, workoutName, setTimer, exercises, texts)?.let { return it }
         val next = nextSet(workout) { exercises(it) != null }
         val nextLine = next?.let { set -> exercises(set.exercise.exerciseId)?.let { line(set, it, texts) } }
         val resting = rest?.takeUnless { RestTimerRules.isFinished(it, nowMillis) }
@@ -126,9 +137,31 @@ object WorkoutNotificationRules {
         }
     }
 
+    /** Pendant le chrono d'une série au temps (§ 15.18.5) ; `null` sans chrono valable. */
+    private fun holdContent(
+        workout: Workout,
+        workoutName: String,
+        setTimer: SetTimerState?,
+        exercises: (String) -> NotificationExercise?,
+        texts: WorkoutNotificationTexts,
+    ): WorkoutNotificationContent? {
+        val timer = SetTimerRules.activeOn(setTimer, workout) ?: return null
+        val located = SetTimerRules.locate(workout, timer.setId) ?: return null
+        val exercise = exercises(located.exercise.exerciseId) ?: return null
+        val number = located.exercise.sets.indexOfFirst { it.id == timer.setId } + 1
+        return WorkoutNotificationContent(
+            title = workoutName,
+            text = exercise.name + SEPARATOR + texts.running.format(texts.locale, number),
+            chronometerBase = timer.startedAt,
+            countDown = false,
+            chipText = null,
+            actions = listOf(WorkoutAction.StopTimer),
+        )
+    }
+
     /** « Développé couché · Série 3 · 8 × 80 kg ». */
     fun line(next: NextSet, exercise: NotificationExercise, texts: WorkoutNotificationTexts): String {
-        val detail = detail(next.set, exercise.cardio, texts)
+        val detail = detail(next.set, exercise.kind, texts)
         val set = if (detail == null) texts.setOnly.format(texts.locale, next.number)
         else texts.setWithDetail.format(texts.locale, next.number, detail)
         return exercise.name + SEPARATOR + set
@@ -136,10 +169,15 @@ object WorkoutNotificationRules {
 
     /**
      * Détail d'une série : force → « 8 × 80 kg » (« 8 reps » à 0 kg) ; cardio → durée et distance
-     * renseignées (« 30 min · 5 km »), `null` sans l'une ni l'autre.
+     * renseignées (« 30 min · 5 km »), `null` sans l'une ni l'autre ; au temps → « 1:00 », « 1:00 ·
+     * 10 kg » avec du lest (§ 15.18.5).
      */
-    private fun detail(set: WorkoutSet, cardio: Boolean, texts: WorkoutNotificationTexts): String? {
-        if (!cardio) {
+    private fun detail(set: WorkoutSet, kind: SetKind, texts: WorkoutNotificationTexts): String? {
+        if (kind == SetKind.Timed) {
+            val duration = HoldDuration.format(set.durationSeconds ?: 0)
+            return if (set.weight > 0) texts.holdWeight.format(texts.locale, duration, number(set.weight, texts.locale)) else duration
+        }
+        if (kind == SetKind.Strength) {
             return if (set.weight > 0) texts.strength.format(texts.locale, set.reps, number(set.weight, texts.locale))
             else texts.repsOnly.format(texts.locale, set.reps)
         }

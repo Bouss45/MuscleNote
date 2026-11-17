@@ -10,6 +10,7 @@ import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.LocalPreferences
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.RestTimerState
+import com.musclenote.android.data.model.SetTimerState
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.update.UpdateCheckState
@@ -54,6 +55,9 @@ class DataFiles(
 
     /** Repos en cours (§ 7.2) ; fichier absent hors repos. */
     val restTimer = document("rest_timer.json", RestTimerState.serializer())
+
+    /** Chrono d'une série au temps (§ 15.18.4), propre à l'appareil, hors sauvegarde. */
+    val setTimer = document("set_timer.json", SetTimerState.serializer())
 
     /** Vérification des mises à jour (§ 3.17), propre à l'appareil, hors sauvegarde. */
     val updateCheck = document("update_check.json", UpdateCheckState.serializer())

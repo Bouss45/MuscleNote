@@ -4,8 +4,10 @@ import com.musclenote.android.data.catalog.ExerciseCatalog
 import com.musclenote.android.data.catalog.MuscleRules
 import com.musclenote.android.data.catalog.MuscleSelection
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -15,6 +17,8 @@ import com.musclenote.android.data.util.formatInstant
 import com.musclenote.android.data.util.newId
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.CustomExerciseDeletion
+import com.musclenote.android.data.workout.HoldDuration
+import com.musclenote.android.data.workout.SetTimerRules
 import com.musclenote.android.data.workout.WorkoutEnd
 import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutRules
@@ -181,10 +185,30 @@ class WorkoutRepository(
     suspend fun updateExerciseNote(exerciseId: String, note: String) =
         updateCurrent { w -> w.mapExercise(exerciseId) { it.copy(note = note.ifEmpty { null }) } }
 
-    /** « + Ajouter une série » (§ 2.5) : force ou cardio selon le groupe de l'exercice. */
+    /** « + Ajouter une série » (§ 2.5) : force, cardio ou au temps selon l'exercice (§ 15.18.1). */
     suspend fun addSet(exerciseId: String) = updateCurrent { w ->
-        val cardio = muscleGroupOf(exerciseId) == MuscleGroup.Cardio
-        w.mapExercise(exerciseId) { e -> e.copy(sets = e.sets + WorkoutRules.newSet(e.sets.lastOrNull(), cardio, idGenerator())) }
+        val kind = kindOf(exerciseId)
+        w.mapExercise(exerciseId) { e -> e.copy(sets = e.sets + WorkoutRules.newSet(e.sets.lastOrNull(), kind, idGenerator())) }
+    }
+
+    /**
+     * Chrono d'une série au temps arrêté (§ 15.18.4) : la série [setId] de la séance en cours prend
+     * [seconds] comme durée et, si [validate], est validée. Renvoie l'id de son exercice si elle vient
+     * de passer à validée (le repos démarre alors), sinon `null`.
+     */
+    suspend fun recordHold(setId: String, seconds: Int, validate: Boolean): String? {
+        return mutex.withLock {
+            val current = _currentWorkout.value ?: return null
+            val located = SetTimerRules.locate(current, setId) ?: return null
+            val completes = validate && !located.set.completed
+            val exerciseId = located.exercise.exerciseId
+            commitCurrent(
+                current.mapSet(exerciseId, setId) {
+                    it.copy(durationSeconds = HoldDuration.clamp(seconds), completed = it.completed || completes)
+                },
+            )
+            exerciseId.takeIf { completes }
+        }
     }
 
     /** Saisie dans une ligne de série, appliquée à chaque frappe (§ 2.6). */
@@ -255,7 +279,12 @@ class WorkoutRepository(
      * Création, en fin de liste, avec ses muscles facultatifs (§ 15.17.3). Nom vide → rien (`null`).
      * Pas de contrôle de doublon.
      */
-    suspend fun addCustomExercise(name: String, muscleGroup: MuscleGroup, muscles: MuscleSelection = MuscleSelection()): Exercise? {
+    suspend fun addCustomExercise(
+        name: String,
+        muscleGroup: MuscleGroup,
+        muscles: MuscleSelection = MuscleSelection(),
+        type: ExerciseType = ExerciseType.Reps,
+    ): Exercise? {
         return mutex.withLock {
             val trimmed = name.trim()
             if (trimmed.isEmpty()) return null
@@ -266,6 +295,7 @@ class WorkoutRepository(
                     muscleGroup = muscleGroup,
                     primaryMuscles = muscles.primary,
                     secondaryMuscles = muscles.secondary,
+                    type = type,
                 ),
             )
             commitExercises(_customExercises.value + exercise)
@@ -274,10 +304,16 @@ class WorkoutRepository(
     }
 
     /**
-     * Modification du nom, du groupe et, si [muscles] n'est pas `null`, des muscles (§ 15.17.3) ; les
-     * exercices intégrés ne sont pas modifiables.
+     * Modification du nom, du groupe et, s'ils ne sont pas `null`, des muscles (§ 15.17.3) et du type
+     * (§ 15.18.1) ; les exercices intégrés ne sont pas modifiables. Les séances ne changent pas.
      */
-    suspend fun updateCustomExercise(id: String, name: String, muscleGroup: MuscleGroup, muscles: MuscleSelection? = null): Boolean {
+    suspend fun updateCustomExercise(
+        id: String,
+        name: String,
+        muscleGroup: MuscleGroup,
+        muscles: MuscleSelection? = null,
+        type: ExerciseType? = null,
+    ): Boolean {
         return mutex.withLock {
             val trimmed = name.trim()
             val list = _customExercises.value
@@ -285,7 +321,7 @@ class WorkoutRepository(
             commitExercises(
                 list.map { exercise ->
                     if (exercise.id != id) return@map exercise
-                    val renamed = exercise.copy(name = trimmed, muscleGroup = muscleGroup)
+                    val renamed = exercise.copy(name = trimmed, muscleGroup = muscleGroup, type = type ?: exercise.type)
                     if (muscles == null) renamed else MuscleRules.normalized(renamed.copy(primaryMuscles = muscles.primary, secondaryMuscles = muscles.secondary))
                 },
             )
@@ -332,6 +368,13 @@ class WorkoutRepository(
     private fun muscleGroupOf(exerciseId: String): MuscleGroup? =
         ExerciseCatalog.find(exerciseId)?.muscleGroup
             ?: _customExercises.value.firstOrNull { it.id == exerciseId }?.muscleGroup
+
+    /** Champs des séries de l'exercice (§ 15.18.1) ; un exercice inconnu est traité en force. */
+    private fun kindOf(exerciseId: String): SetKind {
+        ExerciseCatalog.find(exerciseId)?.let { return SetKind.of(it.muscleGroup, it.type) }
+        val custom = _customExercises.value.firstOrNull { it.id == exerciseId } ?: return SetKind.Strength
+        return SetKind.of(custom.muscleGroup, custom.type)
+    }
 
     private fun sortedByDateDesc(list: List<Workout>): List<Workout> =
         list.sortedByDescending { parseInstantOrNull(it.date, time.zone()) ?: Instant.MIN }
