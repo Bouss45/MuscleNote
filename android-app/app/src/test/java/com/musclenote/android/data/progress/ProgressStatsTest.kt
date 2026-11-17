@@ -5,6 +5,7 @@ import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.MuscleGroup
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -250,29 +251,29 @@ class ProgressStatsTest {
     fun `métrique d'un exercice selon son historique`() {
         fun session(vararg sets: WorkoutSet) =
             com.musclenote.android.data.workout.ExerciseSession("w", java.time.Instant.EPOCH, sets.toList())
-        assertEquals(ExerciseMetric.Duration, ProgressStats.exerciseMetric(isCardio = true, history = listOf(session(cardio(20.0, 3.0)))))
-        assertEquals(ExerciseMetric.Reps, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(12, 0.0)))))
-        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(isCardio = false, history = listOf(session(set(10, 0.0)), session(set(5, 2.5)))))
-        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(isCardio = false, history = emptyList()))
+        assertEquals(ExerciseMetric.Duration, ProgressStats.exerciseMetric(kind = SetKind.Cardio, history = listOf(session(cardio(20.0, 3.0)))))
+        assertEquals(ExerciseMetric.Reps, ProgressStats.exerciseMetric(kind = SetKind.Strength, history = listOf(session(set(10, 0.0)), session(set(12, 0.0)))))
+        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(kind = SetKind.Strength, history = listOf(session(set(10, 0.0)), session(set(5, 2.5)))))
+        assertEquals(ExerciseMetric.Load, ProgressStats.exerciseMetric(kind = SetKind.Strength, history = emptyList()))
     }
 
     @Test
     fun `meilleure série, la plus lourde, puis le plus de reps, puis la première`() {
         val heavy = set(5, 100.0)
-        assertEquals(heavy, ProgressStats.bestSet(listOf(set(8, 90.0), heavy, set(3, 95.0)), isCardio = false))
+        assertEquals(heavy, ProgressStats.bestSet(listOf(set(8, 90.0), heavy, set(3, 95.0)), kind = SetKind.Strength))
         val moreReps = set(8, 80.0)
-        assertEquals(moreReps, ProgressStats.bestSet(listOf(set(6, 80.0), moreReps, set(8, 80.0)), isCardio = false))
+        assertEquals(moreReps, ProgressStats.bestSet(listOf(set(6, 80.0), moreReps, set(8, 80.0)), kind = SetKind.Strength))
         val bodyweight = set(15, 0.0)
-        assertEquals(bodyweight, ProgressStats.bestSet(listOf(set(12, 0.0), bodyweight), isCardio = false))
-        assertNull(ProgressStats.bestSet(emptyList(), isCardio = false))
+        assertEquals(bodyweight, ProgressStats.bestSet(listOf(set(12, 0.0), bodyweight), kind = SetKind.Strength))
+        assertNull(ProgressStats.bestSet(emptyList(), kind = SetKind.Strength))
     }
 
     @Test
     fun `meilleure série en cardio, la plus longue, puis la plus longue distance`() {
         val longest = cardio(30.0, 5.0)
-        assertEquals(longest, ProgressStats.bestSet(listOf(cardio(20.0, 6.0), longest, cardio(30.0, 4.0)), isCardio = true))
+        assertEquals(longest, ProgressStats.bestSet(listOf(cardio(20.0, 6.0), longest, cardio(30.0, 4.0)), kind = SetKind.Cardio))
         val farther = cardio(30.0, 5.2)
-        assertEquals(farther, ProgressStats.bestSet(listOf(cardio(30.0, 5.0), farther), isCardio = true))
+        assertEquals(farther, ProgressStats.bestSet(listOf(cardio(30.0, 5.0), farther), kind = SetKind.Cardio))
     }
 
     @Test
@@ -299,5 +300,64 @@ class ProgressStatsTest {
         assertEquals(30.0, progress.maxMetric!!, 0.0)
         // 3,2 + 1,5 + 3,0 le 14 ; 4,0 le 12 (la série non validée ne compte pas).
         assertEquals(7.7, progress.maxVolume, 1e-9)
+    }
+
+    // ─── Exercices au temps (§ 15.18.6, 🔄 D44) ──────────────────────────────────
+
+    private fun hold(seconds: Int?, weight: Double = 0.0, completed: Boolean = true) =
+        WorkoutSet("h${++nextId}", 0, weight, completed, durationSeconds = seconds)
+
+    @Test
+    fun `au temps, la métrique est la durée max d'une série validée, lest ignoré`() {
+        fun session(vararg sets: WorkoutSet) =
+            com.musclenote.android.data.workout.ExerciseSession("w", java.time.Instant.EPOCH, sets.toList())
+        assertEquals(ExerciseMetric.Hold, ProgressStats.exerciseMetric(kind = SetKind.Timed, history = listOf(session(hold(60, weight = 10.0)))))
+        assertEquals(ExerciseMetric.Hold, ProgressStats.exerciseMetric(kind = SetKind.Timed, history = emptyList()))
+        assertEquals(75.0, ProgressStats.metricValue(listOf(hold(60, weight = 20.0), hold(75), hold(70)), ExerciseMetric.Hold), 0.0)
+        // Une série sans durée n'entre pas dans la métrique.
+        assertEquals(45.0, ProgressStats.metricValue(listOf(WorkoutSet("old", 120, 0.0, true), hold(45)), ExerciseMetric.Hold), 0.0)
+        assertEquals(0.0, ProgressStats.metricValue(emptyList(), ExerciseMetric.Hold), 0.0)
+    }
+
+    @Test
+    fun `points d'un exercice au temps, séances sans durée écartées, record et tendance en secondes`() {
+        val workouts = listOf(
+            workout("2026-03-14T17:00:00.000Z", 80.0, ex("plank", hold(90), hold(100, completed = false))),
+            workout("2026-03-12T17:00:00.000Z", 80.0, ex("plank", hold(75, weight = 10.0), hold(60))),
+            // Ancienne séance de « Gainage » en reps : pas un point.
+            workout("2026-03-10T17:00:00.000Z", 80.0, ex("plank", set(12, 0.0))),
+            workout("2026-03-08T17:00:00.000Z", 80.0, ex("plank", hold(45))),
+        )
+        val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Abdos, zone)
+        val plank = progress.exercises.single { it.definition.id == "plank" }
+        assertEquals(ExerciseMetric.Hold, plank.metric)
+        assertEquals(listOf(45.0, 75.0, 90.0), plank.points.map { it.value })
+        assertEquals(3, plank.sessionCount)
+        assertEquals(90.0, plank.record, 0.0)
+        assertEquals(45.0, plank.trend!!, 0.0)
+    }
+
+    @Test
+    fun `les exercices au temps n'entrent ni dans la charge max ni dans le volume max du groupe`() {
+        val workouts = listOf(
+            workout("2026-03-14T17:00:00.000Z", 80.0, ex("plank", hold(120, weight = 20.0)), ex("crunch", set(15, 5.0))),
+        )
+        val progress = ProgressStats.muscleGroupProgress(workouts, definitions, MuscleGroup.Abdos, zone)
+        assertEquals(5.0, progress.maxMetric!!, 0.0)
+        assertEquals(75.0, progress.maxVolume, 1e-9)
+        val only = ProgressStats.muscleGroupProgress(listOf(workout("2026-03-14T17:00:00.000Z", 80.0, ex("plank", hold(60, weight = 10.0)))), definitions, MuscleGroup.Abdos, zone)
+        assertNull(only.maxMetric)
+        assertEquals(0.0, only.maxVolume, 0.0)
+    }
+
+    @Test
+    fun `meilleure série au temps, la plus longue, puis la plus lourde, puis la première`() {
+        val longest = hold(90)
+        assertEquals(longest, ProgressStats.bestSet(listOf(hold(60, weight = 20.0), longest, hold(75)), kind = SetKind.Timed))
+        val heavier = hold(60, weight = 10.0)
+        assertEquals(heavier, ProgressStats.bestSet(listOf(hold(60), heavier, hold(60, weight = 10.0)), kind = SetKind.Timed))
+        // Une série sans durée ne passe jamais devant une série au temps.
+        val timed = hold(30)
+        assertEquals(timed, ProgressStats.bestSet(listOf(WorkoutSet("old", 50, 40.0, true), timed), kind = SetKind.Timed))
     }
 }

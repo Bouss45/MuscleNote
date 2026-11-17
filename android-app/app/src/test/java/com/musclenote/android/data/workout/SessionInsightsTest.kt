@@ -1,6 +1,7 @@
 package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -77,8 +78,8 @@ class SessionInsightsTest {
 
     // ─── Suggestion de charge ────────────────────────────────────────────────────────
 
-    private fun suggestionFor(vararg sets: WorkoutSet, isCardio: Boolean = false): LoadSuggestion? =
-        SessionInsights.suggestion(SessionInsights.reference(history(workout("2026-11-05", exercise("bench", *sets))), "bench"), isCardio)
+    private fun suggestionFor(vararg sets: WorkoutSet, kind: SetKind = SetKind.Strength): LoadSuggestion? =
+        SessionInsights.suggestion(SessionInsights.reference(history(workout("2026-11-05", exercise("bench", *sets))), "bench"), kind)
 
     @Test
     fun `toutes les séries ont tenu les reps de la première, +2,5 kg`() {
@@ -110,8 +111,8 @@ class SessionInsightsTest {
 
     @Test
     fun `ni suggestion en cardio ni sans référence`() {
-        assertNull(suggestionFor(cardio(30.0), isCardio = true))
-        assertNull(SessionInsights.suggestion(null, isCardio = false))
+        assertNull(suggestionFor(cardio(30.0), kind = SetKind.Cardio))
+        assertNull(SessionInsights.suggestion(null, kind = SetKind.Strength))
     }
 
     @Test
@@ -131,7 +132,7 @@ class SessionInsightsTest {
     fun `appliquer la suggestion, séries non validées avec un Préc seulement, sans cumul`() {
         val last = workout("2026-11-05", exercise("bench", set(8, 80.0), set(8, 81.25), set(8, 80.0)))
         val reference = SessionInsights.reference(history(last), "bench")!!
-        val suggestion = SessionInsights.suggestion(reference, isCardio = false)!!
+        val suggestion = SessionInsights.suggestion(reference, kind = SetKind.Strength)!!
         val current = listOf(
             set(8, 82.5, completed = true), // validée : jamais touchée
             set(6, 80.0, completed = false),
@@ -165,7 +166,7 @@ class SessionInsightsTest {
         val last = workout("2026-11-05", exercise("bench", set(8, 80.0), set(6, 80.0)))
         val reference = SessionInsights.reference(history(last), "bench")!!
         val current = listOf(set(8, 85.0, completed = false), set(8, 85.0, completed = false))
-        val applied = SessionInsights.applySuggestion(current, reference, SessionInsights.suggestion(reference, isCardio = false)!!)
+        val applied = SessionInsights.applySuggestion(current, reference, SessionInsights.suggestion(reference, kind = SetKind.Strength)!!)
         assertEquals(listOf(80.0, 80.0), applied.map { it.weight })
     }
 
@@ -175,6 +176,77 @@ class SessionInsightsTest {
         val reference = SessionInsights.reference(history(last), "bench")!!
         val current = listOf(set(8, 82.5, completed = true))
         assertSame(current, SessionInsights.applySuggestion(current, reference, LoadSuggestion(bodyWeight = false, increase = true)))
+    }
+
+    // ─── Exercices au temps (§ 15.18.2, 🔄 D44) ────────────────────────────────────
+
+    private fun hold(seconds: Int?, weight: Double = 0.0, completed: Boolean = true) =
+        WorkoutSet("h${++nextId}", 0, weight, completed, durationSeconds = seconds)
+
+    private fun holdSuggestion(vararg sets: WorkoutSet): LoadSuggestion? =
+        SessionInsights.suggestion(SessionInsights.reference(history(workout("2026-11-05", exercise("plank", *sets))), "plank"), SetKind.Timed)
+
+    @Test
+    fun `recopier Préc reprend la durée et le lest`() {
+        val copied = SessionInsights.copyPrevious(hold(30, completed = false), hold(75, weight = 10.0))
+        assertEquals(75, copied.durationSeconds)
+        assertEquals(10.0, copied.weight, 0.0)
+        assertFalse(copied.completed)
+    }
+
+    @Test
+    fun `durée tenue sur toutes les séries, +5 s`() {
+        val up = LoadSuggestion(bodyWeight = false, increase = true, hold = true)
+        assertEquals(up, holdSuggestion(hold(60), hold(60), hold(65)))
+        assertEquals(up, holdSuggestion(hold(45)))
+        assertEquals(5, up.secondsDelta)
+        assertEquals(0.0, up.weightDelta, 0.0)
+        assertEquals(0, up.repsDelta)
+    }
+
+    @Test
+    fun `une série plus courte que la première ou non validée, même durée`() {
+        val same = LoadSuggestion(bodyWeight = false, increase = false, hold = true)
+        assertEquals(same, holdSuggestion(hold(60), hold(55)))
+        assertEquals(same, holdSuggestion(hold(60), hold(60), hold(60, completed = false)))
+        assertEquals(0, same.secondsDelta)
+        // Le lest ne change rien à la règle.
+        assertEquals(same, holdSuggestion(hold(60, weight = 10.0), hold(50, weight = 10.0)))
+    }
+
+    @Test
+    fun `pas de suggestion si une série validée de la référence n'a pas de durée`() {
+        // Ancienne série de « Gainage » saisie en reps (§ 15.18.1).
+        assertNull(holdSuggestion(WorkoutSet("old", 12, 0.0, true), hold(60)))
+        assertNull(holdSuggestion(WorkoutSet("old", 12, 0.0, true)))
+    }
+
+    @Test
+    fun `appliquer +5 s aux séries non validées qui ont un Préc, sans cumul ni toucher au lest`() {
+        val last = workout("2026-11-05", exercise("plank", hold(60), hold(60, weight = 5.0)))
+        val reference = SessionInsights.reference(history(last), "plank")!!
+        val suggestion = SessionInsights.suggestion(reference, SetKind.Timed)!!
+        val current = listOf(
+            hold(70, completed = true), // validée : jamais touchée
+            hold(30, weight = 10.0, completed = false),
+            hold(30, completed = false), // rang 3 : pas de Préc
+        )
+        val applied = SessionInsights.applySuggestion(current, reference, suggestion)
+        assertEquals(listOf(70, 65, 30), applied.map { it.durationSeconds })
+        assertEquals(listOf(0.0, 10.0, 0.0), applied.map { it.weight })
+        assertEquals(current.map { it.completed }, applied.map { it.completed })
+        assertEquals(applied, SessionInsights.applySuggestion(applied, reference, suggestion))
+        // Même durée : la durée de Préc.
+        val same = SessionInsights.applySuggestion(current, reference, suggestion.copy(increase = false))
+        assertEquals(listOf(70, 60, 30), same.map { it.durationSeconds })
+    }
+
+    @Test
+    fun `la durée suggérée ne dépasse pas 99 59`() {
+        val last = workout("2026-11-05", exercise("plank", hold(5998)))
+        val reference = SessionInsights.reference(history(last), "plank")!!
+        val applied = SessionInsights.applySuggestion(listOf(hold(30, completed = false)), reference, SessionInsights.suggestion(reference, SetKind.Timed)!!)
+        assertEquals(5999, applied.single().durationSeconds)
     }
 
     // ─── Place du repos ──────────────────────────────────────────────────────────────

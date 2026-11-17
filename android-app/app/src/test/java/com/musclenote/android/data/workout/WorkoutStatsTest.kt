@@ -249,4 +249,50 @@ class WorkoutStatsTest {
         val session = WorkoutStats.exerciseHistory(workouts, "treadmill", zone).single()
         assertEquals(32.5, session.totalDuration, 0.0)
     }
+
+    // ─── § 15.18 : séries au temps (🔄 D44) ─────────────────────────────────────────
+
+    private fun hold(seconds: Int?, weight: Double = 0.0, completed: Boolean = true) =
+        WorkoutSet("h${++nextId}", 0, weight, completed, durationSeconds = seconds)
+
+    @Test
+    fun `les séries au temps ne comptent pas dans le volume, lest compris`() {
+        val workout = workout(
+            "2026-03-10T17:00:00.000Z",
+            WorkoutExercise("bench", sets = listOf(set(8, 80.0))),
+            // Série au temps lestée : jamais dans le volume, même avec des reps venues d'ailleurs.
+            WorkoutExercise("plank", sets = listOf(hold(60, weight = 10.0), WorkoutSet("odd", 3, 10.0, true, durationSeconds = 30))),
+            // Ancienne série en reps d'un exercice devenu au temps : comptée comme avant.
+            WorkoutExercise("oldplank", sets = listOf(WorkoutSet("old", 10, 5.0, true))),
+        )
+        assertEquals(8 * 80.0 + 10 * 5.0, WorkoutStats.volume(workout), 1e-9)
+    }
+
+    @Test
+    fun `temps sous tension, somme des durées validées`() {
+        val workout = workout(
+            "2026-03-10T17:00:00.000Z",
+            WorkoutExercise("plank", sets = listOf(hold(60), hold(45, weight = 10.0), hold(90, completed = false))),
+            WorkoutExercise("wallsit", sets = listOf(hold(120), hold(null))),
+            WorkoutExercise("bench", sets = listOf(set(8, 80.0))),
+        )
+        assertEquals(225, WorkoutStats.timeUnderTension(workout))
+        assertEquals(0, WorkoutStats.timeUnderTension(workout("2026-03-10T17:00:00.000Z", WorkoutExercise("bench", sets = listOf(set(8, 80.0))))))
+    }
+
+    @Test
+    fun `l'historique d'un exercice au temps ne garde que les séries validées avec une durée`() {
+        val workouts = listOf(
+            workout("2026-03-12T17:00:00.000Z", WorkoutExercise("plank", sets = listOf(hold(60), hold(70, completed = false))), id = "recent"),
+            // Ancienne séance de « Gainage » en reps : pas une séance au temps.
+            workout("2026-03-10T17:00:00.000Z", WorkoutExercise("plank", sets = listOf(WorkoutSet("old", 12, 0.0, true))), id = "reps"),
+            workout("2026-03-08T17:00:00.000Z", WorkoutExercise("plank", sets = listOf(WorkoutSet("old2", 12, 0.0, true), hold(45))), id = "mixed"),
+        )
+        val history = WorkoutStats.exerciseHistory(workouts, "plank", zone, timed = true)
+        assertEquals(listOf("recent", "mixed"), history.map { it.workoutId })
+        assertEquals(listOf(45), history[1].sets.map { it.durationSeconds })
+        assertEquals(60, history[0].totalHold)
+        // Sans le drapeau, l'historique reste celui des séries validées.
+        assertEquals(3, WorkoutStats.exerciseHistory(workouts, "plank", zone).size)
+    }
 }

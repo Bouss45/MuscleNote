@@ -3,6 +3,7 @@ package com.musclenote.android.data.model
 import com.musclenote.android.R
 import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.catalog.ExerciseCatalog
+import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.util.normalizeSearch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -17,12 +18,13 @@ class CatalogTest {
     // ─── Exercices intégrés ─────────────────────────────────────────────────────
 
     @Test
-    fun `le catalogue contient 42 exercices aux ids uniques dans l'ordre de la SPEC`() {
+    fun `le catalogue contient 45 exercices aux ids uniques dans l'ordre de la SPEC`() {
         val ids = ExerciseCatalog.all.map { it.id }
-        assertEquals(42, ids.size)
-        assertEquals(42, ids.toSet().size)
+        assertEquals(45, ids.size)
+        assertEquals(45, ids.toSet().size)
         assertEquals("deadlift", ids.first())
-        assertEquals("farmerwalk", ids.last())
+        assertEquals("deadhang", ids.last())
+        assertEquals(specRows("### 6.1 Exercices intégrés", columns = 6).map { it[1].removeSurrounding("`") }, ids)
         // Ids figés, fautes comprises.
         assertTrue(ExerciseCatalog.isBuiltIn("calfraize") && ExerciseCatalog.isBuiltIn("legrise"))
         assertTrue(!ExerciseCatalog.isBuiltIn("1740000000000exo00001"))
@@ -34,8 +36,8 @@ class CatalogTest {
         assertEquals(
             mapOf(
                 MuscleGroup.Dos to 6, MuscleGroup.Pecs to 7, MuscleGroup.Biceps to 3, MuscleGroup.Triceps to 4,
-                MuscleGroup.Jambes to 9, MuscleGroup.Epaules to 3, MuscleGroup.Abdos to 3, MuscleGroup.Cardio to 2,
-                MuscleGroup.AvantBras to 5,
+                MuscleGroup.Jambes to 10, MuscleGroup.Epaules to 3, MuscleGroup.Abdos to 4, MuscleGroup.Cardio to 2,
+                MuscleGroup.AvantBras to 6,
             ),
             counts,
         )
@@ -52,6 +54,27 @@ class CatalogTest {
         }
         assertEquals("Soulevé de terre", FR["exercise_deadlift"])
         assertEquals("Farmer's walk", EN["exercise_farmerwalk"])
+    }
+
+    @Test
+    fun `les exercices au temps sont ceux de la SPEC, avec leurs noms`() {
+        // § 6.1 et § 15.18.1 (🔄 D44) : la colonne « type » fait foi.
+        val timed = specRows("### 6.1 Exercices intégrés", columns = 6).filter { it[5] == "au temps" }.map { it[1].removeSurrounding("`") }
+        assertEquals(listOf("wallsit", "plank", "sideplank", "deadhang"), timed)
+        assertEquals(timed, ExerciseCatalog.all.filter { it.type == ExerciseType.Timed }.map { it.id })
+        assertEquals("Planche", FR["exercise_plank"])
+        assertEquals("Planche latérale", FR["exercise_sideplank"])
+        assertEquals("Chaise contre le mur", FR["exercise_wallsit"])
+        assertEquals("Suspension à la barre", FR["exercise_deadhang"])
+        assertEquals("Side plank", EN["exercise_sideplank"])
+        assertEquals("Wall sit", EN["exercise_wallsit"])
+        assertEquals("Dead hang", EN["exercise_deadhang"])
+        // Le cardio reste décidé par le groupe, même avec un type au temps.
+        val definitions = exerciseDefinitions(listOf(Exercise("c", "Corde", MuscleGroup.Cardio, type = ExerciseType.Timed)))
+        assertEquals(SetKind.Cardio, definitions.single { it.id == "c" }.kind)
+        assertEquals(SetKind.Timed, definitions.single { it.id == "plank" }.kind)
+        assertEquals(SetKind.Strength, definitions.single { it.id == "crunch" }.kind)
+        assertEquals(SetKind.Cardio, definitions.single { it.id == "treadmill" }.kind)
     }
 
     // ─── Groupes musculaires ────────────────────────────────────────────────────
@@ -155,6 +178,19 @@ class CatalogTest {
     private companion object {
         val FR = strings("src/main/res/values/strings.xml")
         val EN = strings("src/main/res/values-en/strings.xml")
+        val SPEC: List<String> = File("../../SPEC.md").readLines()
+
+        /** Lignes du premier tableau qui suit la ligne commençant par [marker], en [columns] cellules. */
+        fun specRows(marker: String, columns: Int): List<List<String>> {
+            val start = SPEC.indexOfFirst { it.startsWith(marker) }
+            check(start >= 0) { "« $marker » introuvable dans SPEC.md" }
+            val table = SPEC.drop(start + 1).dropWhile { !it.startsWith("|") }.takeWhile { it.startsWith("|") }
+            return table.drop(2).map { line ->
+                val cells = line.trim().removePrefix("|").removeSuffix("|").split(" | ").map { it.trim() }
+                check(cells.size == columns) { "ligne inattendue : $line" }
+                cells
+            }
+        }
 
         /** `<string name="…">` → texte, échappements Android retirés. */
         fun strings(path: String): Map<String, String> {

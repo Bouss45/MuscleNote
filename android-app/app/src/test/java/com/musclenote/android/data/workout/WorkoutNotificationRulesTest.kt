@@ -2,6 +2,8 @@ package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.RestTimerState
+import com.musclenote.android.data.model.SetKind
+import com.musclenote.android.data.model.SetTimerState
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -41,10 +43,11 @@ class WorkoutNotificationRulesTest {
     private fun exercise(id: String, vararg sets: WorkoutSet) = WorkoutExercise(exerciseId = id, sets = sets.toList())
 
     private val names = mapOf(
-        "bench" to NotificationExercise("Développé couché", cardio = false),
-        "incline" to NotificationExercise("Développé incliné haltères", cardio = false),
-        "pullup" to NotificationExercise("Tractions", cardio = false),
-        "run" to NotificationExercise("Course", cardio = true),
+        "bench" to NotificationExercise("Développé couché", SetKind.Strength),
+        "incline" to NotificationExercise("Développé incliné haltères", SetKind.Strength),
+        "pullup" to NotificationExercise("Tractions", SetKind.Strength),
+        "run" to NotificationExercise("Course", SetKind.Cardio),
+        "plank" to NotificationExercise("Planche", SetKind.Timed),
     )
 
     /** Séance du signalement : 2 séries validées sur 4 au développé couché, puis l'incliné. */
@@ -53,8 +56,13 @@ class WorkoutNotificationRulesTest {
         exercise("incline", set("i1", reps = 10, weight = 28.0), set("i2", reps = 10, weight = 28.0)),
     )
 
-    private fun content(workout: Workout, rest: RestTimerState? = null, texts: WorkoutNotificationTexts = FR, exercises: Map<String, NotificationExercise> = names) =
-        WorkoutNotificationRules.content(workout, "Push", rest, now, zone, { exercises[it] }, texts)
+    private fun content(
+        workout: Workout,
+        rest: RestTimerState? = null,
+        texts: WorkoutNotificationTexts = FR,
+        exercises: Map<String, NotificationExercise> = names,
+        setTimer: SetTimerState? = null,
+    ) = WorkoutNotificationRules.content(workout, "Push", rest, now, zone, { exercises[it] }, texts, setTimer)
 
     // ─── Prochaine série ─────────────────────────────────────────────────────────
 
@@ -150,7 +158,7 @@ class WorkoutNotificationRulesTest {
     fun `poids décimal à la locale, poids nul en répétitions, cardio en durée et distance`() {
         val decimal = workout(exercise("bench", set("b1", completed = true), set("b2", weight = 82.5)))
         assertEquals("Développé couché · Série 2 · 8 × 82,5 kg", content(decimal).text)
-        assertEquals("Bench press · Set 2 · 8 × 82.5 kg", content(decimal, texts = EN, exercises = mapOf("bench" to NotificationExercise("Bench press", false))).text)
+        assertEquals("Bench press · Set 2 · 8 × 82.5 kg", content(decimal, texts = EN, exercises = mapOf("bench" to NotificationExercise("Bench press", SetKind.Strength))).text)
 
         assertEquals("Tractions · Série 1 · 8 reps", content(workout(exercise("pullup", set("p1", weight = 0.0)))).text)
 
@@ -162,13 +170,54 @@ class WorkoutNotificationRulesTest {
 
     @Test
     fun `textes anglais`() {
-        val en = mapOf("bench" to NotificationExercise("Bench press", false), "incline" to NotificationExercise("Incline dumbbell press", false))
+        val en = mapOf("bench" to NotificationExercise("Bench press", SetKind.Strength), "incline" to NotificationExercise("Incline dumbbell press", SetKind.Strength))
         assertEquals("Bench press · Set 3 · 8 × 80 kg", content(push, texts = EN, exercises = en).text)
         assertEquals("Set 3", content(push, texts = EN, exercises = en).chipText)
         val rest = RestTimerState(endsAt = now + 30_000, total = 90, exerciseName = "Bench press")
         assertEquals("Push · Rest", content(push, rest, EN, en).title)
         assertEquals("Next: Bench press · Set 3 · 8 × 80 kg", content(push, rest, EN, en).text)
         assertEquals("All sets are done", content(workout(), texts = EN).text)
+    }
+
+    // ─── Séries au temps et chrono (§ 15.18.5, 🔄 D44) ─────────────────────────────
+
+    private fun hold(id: String, seconds: Int? = 60, weight: Double = 0.0, completed: Boolean = false) =
+        WorkoutSet(id = id, reps = 0, weight = weight, completed = completed, durationSeconds = seconds)
+
+    @Test
+    fun `détail d'une série au temps, durée puis lest`() {
+        assertEquals("Planche · Série 1 · 1:00", content(workout(exercise("plank", hold("h1")))).text)
+        assertEquals("Planche · Série 1 · 1:30 · 10 kg", content(workout(exercise("plank", hold("h1", 90, weight = 10.0)))).text)
+        assertEquals("Planche · Série 1 · 0:00", content(workout(exercise("plank", hold("h1", null)))).text)
+        val en = mapOf("plank" to NotificationExercise("Plank", SetKind.Timed))
+        assertEquals("Plank · Set 1 · 1:30 · 12.5 kg", content(workout(exercise("plank", hold("h1", 90, weight = 12.5))), texts = EN, exercises = en).text)
+    }
+
+    @Test
+    fun `pendant le chrono d'une série - chrono vers le haut depuis le départ, Arrêter, prioritaire sur le repos`() {
+        val planks = workout(exercise("plank", hold("h1", completed = true), hold("h2")))
+        val startedAt = now - 42_000
+        val timer = SetTimerState(setId = "h2", startedAt = startedAt)
+        val c = content(planks, setTimer = timer)
+        assertEquals("Push", c.title)
+        assertEquals("Planche · Série 2 · en cours", c.text)
+        assertEquals(startedAt, c.chronometerBase)
+        assertFalse(c.countDown)
+        // La pastille d'une Live Update montre le chrono.
+        assertNull(c.chipText)
+        assertEquals(listOf(WorkoutAction.StopTimer), c.actions)
+        // Même pendant un repos.
+        val rest = RestTimerState(endsAt = now + 60_000, total = 90, exerciseName = "Planche")
+        assertEquals(c, content(planks, rest = rest, setTimer = timer))
+        val en = mapOf("plank" to NotificationExercise("Plank", SetKind.Timed))
+        assertEquals("Plank · Set 2 · running", content(planks, texts = EN, exercises = en, setTimer = timer).text)
+    }
+
+    @Test
+    fun `un chrono sur une série validée ou disparue ne compte plus`() {
+        val planks = workout(exercise("plank", hold("h1", completed = true), hold("h2")))
+        assertEquals(content(planks), content(planks, setTimer = SetTimerState("h1", now - 5_000)))
+        assertEquals(content(planks), content(planks, setTimer = SetTimerState("absente", now - 5_000)))
     }
 
     private companion object {
@@ -193,6 +242,8 @@ class WorkoutNotificationRulesTest {
                 kilometers = strings.getValue("workout_notif_km"),
                 next = strings.getValue("workout_notif_next"),
                 allDone = strings.getValue("workout_notif_all_done"),
+                holdWeight = strings.getValue("workout_notif_hold_weight"),
+                running = strings.getValue("workout_notif_running"),
             )
         }
     }

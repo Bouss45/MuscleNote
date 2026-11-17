@@ -25,7 +25,7 @@ class CsvExportTest {
         CsvColumn.Exercise to "Exercice", CsvColumn.MuscleGroup to "Groupe musculaire", CsvColumn.SetNumber to "Série n°",
         CsvColumn.Reps to "Répétitions", CsvColumn.Weight to "Poids (kg)", CsvColumn.Distance to "Distance (km)",
         CsvColumn.Speed to "Vitesse (km/h)", CsvColumn.Incline to "Inclinaison (%)", CsvColumn.Calories to "Calories (kcal)",
-        CsvColumn.Water to "Eau (ml)",
+        CsvColumn.Water to "Eau (ml)", CsvColumn.DurationSeconds to "Durée (s)",
     )
 
     private val texts = CsvTexts(
@@ -99,12 +99,12 @@ class CsvExportTest {
         val csv = CsvExport.sets(listOf(push, old), texts, CsvFormat.FRENCH, zone)!!
         assertEquals(
             listOf(
-                "Date;Séance;Exercice;Groupe musculaire;Série n°;Répétitions;Poids (kg);Durée (min);Distance (km);Vitesse (km/h);Inclinaison (%)",
-                "2026-03-14;Push;Développé couché;Pecs;2;8;62,5;;;;",
-                "2026-03-14;Push;Développé couché;Pecs;3;6;70;;;;",
-                "2026-03-14;Push;Tapis roulant;Cardio;1;;;20;3,2;9,6;0",
+                "Date;Séance;Exercice;Groupe musculaire;Série n°;Répétitions;Poids (kg);Durée (min);Distance (km);Vitesse (km/h);Inclinaison (%);Durée (s)",
+                "2026-03-14;Push;Développé couché;Pecs;2;8;62,5;;;;;",
+                "2026-03-14;Push;Développé couché;Pecs;3;6;70;;;;;",
+                "2026-03-14;Push;Tapis roulant;Cardio;1;;;20;3,2;9,6;0;",
                 // Exercice inconnu : son id, groupe vide ; poids 0 → vide.
-                "2026-03-14;Push;inconnu;;1;10;;;;;",
+                "2026-03-14;Push;inconnu;;1;10;;;;;;",
             ),
             lines(csv),
         )
@@ -181,5 +181,51 @@ class CsvExportTest {
             ),
             all.map { it.name },
         )
+    }
+
+    // ─── Séries au temps (§ 15.18.8, 🔄 D44) ────────────────────────────────────
+
+    private val planks = Workout(
+        id = "w5",
+        name = "Abdos",
+        date = "2026-03-14T17:00:00.000Z",
+        bodyWeight = 0.0,
+        exercises = listOf(
+            WorkoutExercise(
+                "plank",
+                sets = listOf(
+                    WorkoutSet("p1", 0, 0.0, true, durationSeconds = 60),
+                    WorkoutSet("p2", 0, 12.5, true, durationSeconds = 45),
+                    WorkoutSet("p3", 0, 0.0, false, durationSeconds = 90),
+                    // Ancienne série en reps d'un exercice devenu au temps : exportée comme avant.
+                    WorkoutSet("p4", 12, 0.0, true),
+                ),
+            ),
+            WorkoutExercise("bench", sets = listOf(set("b", 10, 50.0))),
+        ),
+        durationMinutes = 30,
+    )
+
+    @Test
+    fun `une colonne durée en secondes à la fin, le lest dans le poids, les reps vides`() {
+        val texts = CsvTexts(
+            header = { frenchHeaders.getValue(it) },
+            workoutName = { it.name },
+            exerciseName = { id -> mapOf("plank" to "Planche", "bench" to "Développé couché")[id] ?: id },
+            muscleGroupName = { id -> mapOf("plank" to "Abdos", "bench" to "Pecs")[id].orEmpty() },
+            isCardio = { false },
+        )
+        assertEquals(
+            listOf(
+                "Date;Séance;Exercice;Groupe musculaire;Série n°;Répétitions;Poids (kg);Durée (min);Distance (km);Vitesse (km/h);Inclinaison (%);Durée (s)",
+                "2026-03-14;Abdos;Planche;Abdos;1;;;;;;;60",
+                "2026-03-14;Abdos;Planche;Abdos;2;;12,5;;;;;45",
+                "2026-03-14;Abdos;Planche;Abdos;4;12;;;;;;",
+                "2026-03-14;Abdos;Développé couché;Pecs;1;10;50;;;;;",
+            ),
+            lines(CsvExport.sets(listOf(planks), texts, CsvFormat.FRENCH, zone)!!),
+        )
+        // Le volume du fichier des séances ne compte pas les séries au temps, lest compris.
+        assertEquals("2026-03-14;18:00;Abdos;30;;2;4;500", lines(CsvExport.sessions(listOf(planks), texts, CsvFormat.FRENCH, zone)!!)[1])
     }
 }

@@ -5,6 +5,7 @@ import com.musclenote.android.data.backup.BackupFixtures.resource
 import com.musclenote.android.data.backup.BackupFixtures.success
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
+import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORIGIN
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
@@ -17,6 +18,8 @@ import com.musclenote.android.data.model.SupplementStock
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.model.WorkoutExercise
+import com.musclenote.android.data.model.WorkoutSet
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -473,5 +476,64 @@ class BackupV2Test {
             written[1].jsonObject.getValue("secondaryMuscles").jsonArray.map { it.jsonPrimitive.content },
         )
         assertEquals(listOf(plain, withMuscles), success(reader().read(text)).data.exercises)
+    }
+
+    // ─── Exercices au temps (§ 15.18.8, 🔄 D44) ─────────────────────────────────
+
+    private fun setsOf(sets: String) = readV2(
+        """"@gymtracker_workouts": [ { "id": "w1", "name": "Abdos", "date": "2026-11-12T17:00:00.000Z", "bodyWeight": 0,
+             "exercises": [ { "exerciseId": "plank", "sets": [ $sets ] } ] } ]""",
+    ).workouts!!.single().exercises.single().sets
+
+    @Test
+    fun `l'exemple de la SPEC, sans les champs nouveaux, se relit sans durée ni type`() {
+        assertTrue(specData.workouts!!.flatMap { w -> w.exercises.flatMap { it.sets } }.all { it.durationSeconds == null })
+        assertTrue(specData.exercises!!.all { it.type == ExerciseType.Reps })
+    }
+
+    @Test
+    fun `la durée en secondes d'une série est lue, arrondie, jamais négative`() {
+        val sets = setsOf(
+            """{ "id": "a", "reps": 0, "weight": 10, "completed": true, "durationSeconds": 75 },
+               { "id": "b", "reps": 0, "weight": 0, "completed": true, "durationSeconds": 62.5 },
+               { "id": "c", "reps": 0, "weight": 0, "completed": true, "durationSeconds": -4 },
+               { "id": "d", "reps": 0, "weight": 0, "completed": true, "durationSeconds": "1:30" },
+               { "id": "e", "reps": 0, "weight": 0, "completed": true, "durationSeconds": null },
+               { "id": "f", "reps": 12, "weight": 0, "completed": true }""",
+        )
+        assertEquals(listOf(75, 63, 0, null, null, null), sets.map { it.durationSeconds })
+        assertEquals(10.0, sets[0].weight, 0.0)
+        assertEquals(12, sets[5].reps)
+    }
+
+    @Test
+    fun `le type d'un exercice perso est lu, inconnu ou absent il vaut charge × reps`() {
+        val exercises = exercisesOf(
+            """{ "id": "c1", "name": "Tenue", "muscleGroup": "épaules", "type": "timed" },
+               { "id": "c2", "name": "Shrug", "muscleGroup": "dos" },
+               { "id": "c3", "name": "Futur", "muscleGroup": "dos", "type": "distance" },
+               { "id": "c4", "name": "Bizarre", "muscleGroup": "dos", "type": 3 }""",
+        )
+        assertEquals(listOf(ExerciseType.Timed, ExerciseType.Reps, ExerciseType.Reps, ExerciseType.Reps), exercises.map { it.type })
+    }
+
+    @Test
+    fun `l'export omet la durée absente et le type par défaut, et relit le reste à l'identique`() {
+        val plank = WorkoutSet("h1", 0, 10.0, true, durationSeconds = 60)
+        val bench = WorkoutSet("s1", 8, 80.0, true)
+        val workout = Workout("w1", "Push", null, "2026-11-12T17:00:00.000Z", 0.0, listOf(WorkoutExercise("plank", sets = listOf(plank, bench))), 45)
+        val timed = Exercise("c1", "Tenue", MuscleGroup.Epaules, type = ExerciseType.Timed)
+        val plain = Exercise("c2", "Shrug", MuscleGroup.Dos)
+        val text = BackupWriter.write(BackupData(workouts = listOf(workout), exercises = listOf(timed, plain)), exportedAt)
+        val root = Json.parseToJsonElement(text).jsonObject
+        val sets = root.getValue(BackupKeys.WORKOUTS).jsonArray[0].jsonObject.getValue("exercises").jsonArray[0].jsonObject.getValue("sets").jsonArray
+        assertEquals("60", sets[0].jsonObject.getValue("durationSeconds").jsonPrimitive.content)
+        assertFalse("durationSeconds" in sets[1].jsonObject)
+        val exercises = root.getValue(BackupKeys.EXERCISES).jsonArray
+        assertEquals("timed", exercises[0].jsonObject.getValue("type").jsonPrimitive.content)
+        assertEquals(listOf("id", "name", "muscleGroup"), exercises[1].jsonObject.keys.toList())
+        val reread = success(reader().read(text)).data
+        assertEquals(listOf(workout), reread.workouts)
+        assertEquals(listOf(timed, plain), reread.exercises)
     }
 }
