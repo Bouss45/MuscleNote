@@ -2287,6 +2287,35 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   vérifier **sur l'appareil** : toucher des petites formes (abdos, adducteurs) sur la grande carte,
   défilement de la liste sous la carte, TalkBack sur la carte (17 éléments) et sur la légende de la fiche,
   passage d'une sheet « Muscle » à la fiche d'un autre exercice, texte agrandi dans la légende.
+- **Exercices au temps** (🔄 D44, § 15.18), branche `feat/exercices-temps` : modèle
+  `data/model/ExerciseType.kt` (`ExerciseType` `"reps"` / `"timed"`, `SetKind` force / cardio / au temps,
+  lectures tolérantes `ExerciseTypeSerializer` et `HoldSecondsSerializer`), `Exercise.type`,
+  `WorkoutSet.durationSeconds`, `SetTimerState` (`set_timer.json`) ; catalogue de 45 exercices (`plank` au
+  temps et renommé « Planche », `wallsit`, `sideplank`, `deadhang` avec leurs muscles) et
+  `ExerciseDefinition.kind` ; règles pures `data/workout/HoldDuration.kt` (saisie depuis la droite, bornes,
+  formats `m:ss` et `h:mm:ss`), `SetTimerRules.kt` (temps écoulé, chrono valable, arrêt), `SetEntryField.Hold`
+  et `SetEntryRules.entryText` / `display`, suggestion de durée (`LoadSuggestion.hold`), `WorkoutRules.newSet`
+  par `SetKind`, volume sans les séries au temps et `WorkoutStats.timeUnderTension`, métrique
+  `ExerciseMetric.Hold` (`ProgressStats`, historique au temps), records du résumé et `tensionSeconds`
+  (`WorkoutSummaryRules`), contenu de la notification pendant le chrono (`WorkoutNotificationRules`, action
+  `StopTimer`), colonne « Durée (s) » (`CsvExport`), lecture de l'import (`BackupNormalizer`) ; dépôt
+  `data/repository/SetTimerRepository.kt`, `WorkoutRepository.recordHold` et type des exercices perso,
+  `AppContainer.startSetTimer` / `stopSetTimer` (repos arrêté au départ, repos lancé à la validation, chrono
+  retiré quand sa série disparaît) ; notification `WorkoutNotifier` et `RestTimerReceiver.ACTION_STOP_TIMER`
+  (icône `ic_stop`). Design system : variante de `SetRow` (`SetRowTimer`, `SetTimerButton`, durée en direct),
+  icônes `ds_ic_play_arrow`, `ds_ic_stop`. Écrans : séance en cours (`LiveExerciseBlock`, `WorkoutScreen`,
+  `WorkoutKeypad`, `rememberHoldSeconds`), éditeur de séance, formulaire perso (segmenté « Type »), fiche
+  exercice, résumé ; formats partagés `ExerciseFormats` (durées, lecture TalkBack). Tests JVM
+  `HoldEntryTest`, `SetTimerRulesTest`, `SetTimerTest` (chrono par `AppContainer` : départ, arrêt, repos,
+  redémarrage, série supprimée), `SessionInsightsTest`, `WorkoutRulesTest`, `WorkoutStatsTest`,
+  `ProgressStatsTest`, `WorkoutSummaryRulesTest`, `JournalRulesTest`, `WorkoutNotificationRulesTest`,
+  `BackupV2Test`, `WorkoutRepositoryTest` (fichiers relus sans être mis de côté), `CsvExportTest`,
+  `CatalogTest` (types relus dans le § 6.1), `MuscleCatalogTest` et `MuscleRulesTest`. Aperçus :
+  `SetRowTimerPreview`, bloc de la planche avec chrono en cours, pavé de la durée, formulaire perso au temps,
+  fiche de la planche, résumé avec temps sous tension. À vérifier **sur l'appareil** : chrono écran éteint
+  puis rallumé, « Arrêter » depuis l'écran verrouillé (et la Live Update sur Android 16+), chrono après une
+  fermeture de l'app, saisie « 90 » au pavé puis réouverture (`1:30`), TalkBack sur les durées, texte agrandi
+  dans la colonne Durée avec son bouton.
 
 ---
 

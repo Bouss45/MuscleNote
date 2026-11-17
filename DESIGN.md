@@ -246,7 +246,9 @@ Jeu de la maquette : `home`, `calendar_month`, `monitoring`, `restaurant` (+ ple
 `emoji_events`, `edit_note`, `straighten`, `photo_camera` ; ajoutées avec la séance en cours :
 `delete` (supprimer la série, en-tête du pavé), `fitness_center` (état vide de la séance) ; avec
 Nutrition : `pill` (état vide des compléments) ; avec le rappel de pesée (SPEC § 15.13) :
-`notifications` (bouton de la surface « Poids de corps » de Progrès).
+`notifications` (bouton de la surface « Poids de corps » de Progrès) ; avec les exercices au temps
+(SPEC § 15.18, 🔄 D44) : `play_arrow` et `stop` (chrono d'une série, dans sa ligne), et hors Compose
+`ic_stop` (action « Arrêter » de la notification de séance).
 
 ## 9. Composants
 
@@ -521,6 +523,22 @@ padding 20, éléments espacés de 14 ; 🔄 v2, groupe du héros d'un hub group
 
 La validation anime la case avec `expressive`.
 
+🔄 **Série au temps** (variante, SPEC § 15.18, D44 ; hors maquette) — colonnes **# · Préc. · Durée ·
+Kg** (en-tête « DURÉE », valeur `m:ss` en `numberMedium` : « 1:05 » ; « Préc. » « 1:00 · 10 »). En séance
+en cours, la colonne Durée finit par le **bouton du chrono** (`timer` : bouton icône petit, 44 dans une
+cible de 48) :
+
+| état du chrono | bouton | valeur de la durée |
+|---|---|---|
+| prêt (série à faire) | `play_arrow` `textSecondary`, « Démarrer le chrono, série n » | comme une valeur à faire |
+| en cours | `stop` `textPrimary`, « Arrêter le chrono, série n » | fond `liveDim` (rayon 12, hauteur 44, déborde de 8 comme un champ en saisie), chiffres `liveText` 700, **sans curseur** ; elle avance chaque seconde |
+| un autre chrono tourne | `play_arrow` inactif (`textTertiary`) | comme une valeur à faire |
+| série validée | aucun, sa place reste (les colonnes ne bougent pas) | validée |
+
+Le jaune marque le temps qui passe, jamais le bouton (§ 1). Dans l'éditeur d'une séance terminée, pas de
+bouton (la colonne Durée est une valeur comme les autres). TalkBack lit la durée en mots (« Série 2,
+Durée : 1 min 5 s »).
+
 **Ligne « + Série »** — `AddSetRow`. Sous la dernière série de chaque bloc exercice, **toujours
 visible** : ajouter une série est fréquent en séance, ce n'est pas une option de menu. Hauteur 48,
 alignée sur la colonne des numéros : icône `add` 22 `textSecondary`, 6, libellé `actionSmall`
@@ -560,7 +578,9 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire. 🔄 Varia
   17 → 16, ex. « −2,5 » / « +2,5 », « −50 » / « +50 ») et effacer (`surfacePressed`, `backspace`, lue « Effacer ») ;
   touche principale sur deux colonnes (`inverse` / `onInverse`, `action`, icône `check` 22
   optionnelle) qui reprend l'action de l'écran (« Valider la série », « Ajouter »).
-- Pas configurables : ±2,5 kg, ±1 rep, ±50 g…
+- Pas configurables : ±2,5 kg, ±1 rep, ±50 g… ; « −5 s » / « +5 s » sur la durée d'une série au temps
+  (🔄 D44), dont les chiffres se lisent depuis la droite comme sur un minuteur (« 130 » → `1:30`, SPEC
+  § 15.18.3).
 
 **Champ texte** — `StudioTextField` (hors maquette, ajouté avec la séance en cours) : texte libre
 au clavier du système, la note d'un exercice. Hauteur 48 au moins, rayon 12, padding 16 / 14,
@@ -988,7 +1008,9 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   `IconButtonFilledPreview` (`ActionComponentPreviews`), les fins de ligne « valeur avant la case » et
   « valeur et bouton plein » dans `ListRowCheckPreview`, `DailySurfacePreview` redessinée
   (`TemplatePiecePreviews`) ; 🔄 D43 : `BodyMapPreview` (petite sur le fond et dans un groupe, une vue,
-  grande avec sélection), `MuscleLegendPreview` et `ChipInversePreview` (`DataComponentPreviews`).
+  grande avec sélection), `MuscleLegendPreview` et `ChipInversePreview` (`DataComponentPreviews`) ;
+  🔄 D44 : `SetRowTimerPreview` (`ActionComponentPreviews` : validée, chrono en cours, autre chrono en
+  cours, prête, durée en saisie).
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni
