@@ -31,6 +31,7 @@ import com.musclenote.android.R
 import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
@@ -70,7 +71,11 @@ import com.musclenote.android.ui.designsystem.templates.FicheLazyTemplate
 import com.musclenote.android.ui.designsystem.templates.ScreenInsets
 import com.musclenote.android.ui.designsystem.templates.systemScreenInsets
 import com.musclenote.android.ui.designsystem.theme.Studio
+import com.musclenote.android.ui.exercise.spokenDuration
 import kotlinx.serialization.Serializable
+
+/** Durée absente d'une ancienne série en reps (§ 15.18.1). */
+private const val NO_DURATION = "—"
 
 /**
  * Copie de travail de l'éditeur (§ 2.9) : rien n'est enregistré avant « Enregistrer ». Les
@@ -156,14 +161,14 @@ fun EditWorkoutScreen(
     val byId = remember(definitions) { definitions.associateBy { it.id } }
     // § 10.5 : un exercice dont la définition est introuvable est masqué (mais conservé).
     val visible = draft.exercises.filter { it.exerciseId in byId }
-    fun isCardio(exerciseId: String) = byId[exerciseId]?.isCardio == true
-    fun text(field: SetEntryField, set: WorkoutSet) = SetEntryRules.format(field.read(set), field, locale)
+    fun kind(exerciseId: String) = byId[exerciseId]?.kind ?: SetKind.Strength
+    fun text(field: SetEntryField, set: WorkoutSet) = SetEntryRules.entryText(field.read(set), field, locale)
 
     // Saisie au pavé (§ 15.7.4) ; fermée si sa série disparaît.
     val entry = rememberSaveable(saver = SetEntryState.Saver) {
         SetEntryState().also { state ->
             val set = initialEntry?.let { t -> visible.firstOrNull { it.exerciseId == t.exerciseId }?.sets?.firstOrNull { it.id == t.setId } }
-            if (initialEntry != null && set != null) state.open(initialEntry, SetEntryRules.format(initialEntry.field.read(set), initialEntry.field, locale))
+            if (initialEntry != null && set != null) state.open(initialEntry, SetEntryRules.entryText(initialEntry.field.read(set), initialEntry.field, locale))
         }
     }
     val target = entry.target
@@ -210,11 +215,11 @@ fun EditWorkoutScreen(
             val set = targetSet
             if (target != null && exercise != null && set != null) {
                 val exerciseId = exercise.exerciseId
-                val cardio = isCardio(exerciseId)
+                val setKind = kind(exerciseId)
                 WorkoutKeypad(
                     set = set,
                     setNumber = exercise.sets.indexOf(set) + 1,
-                    isCardio = cardio,
+                    kind = setKind,
                     entry = entry,
                     field = target.field,
                     locale = locale,
@@ -232,11 +237,11 @@ fun EditWorkoutScreen(
                     },
                     onStep = { direction ->
                         val value = SetEntryRules.step(target.field.read(set), direction, target.field, locale) ?: return@WorkoutKeypad
-                        entry.reset(SetEntryRules.format(value, target.field, locale))
+                        entry.reset(SetEntryRules.entryText(value, target.field, locale))
                         update { it.mapSet(exerciseId, set.id) { s -> target.field.write(s, value) } }
                     },
                     onAction = {
-                        val nextField = SetEntryRules.next(target.field, cardio)
+                        val nextField = SetEntryRules.next(target.field, setKind)
                         when {
                             nextField != null -> open(exerciseId, set, nextField)
                             set.completed -> entry.close()
@@ -245,7 +250,7 @@ fun EditWorkoutScreen(
                                 haptics.medium()
                                 update { it.mapSet(exerciseId, set.id) { s -> s.copy(completed = true) } }
                                 val following = SetEntryRules.nextOpenSet(exercise.sets, set.id)
-                                if (following != null) open(exerciseId, following, SetEntryRules.fields(cardio).first()) else entry.close()
+                                if (following != null) open(exerciseId, following, SetEntryRules.fields(setKind).first()) else entry.close()
                             }
                         }
                     },
@@ -294,7 +299,7 @@ fun EditWorkoutScreen(
         for (exercise in visible) {
             val exerciseId = exercise.exerciseId
             val definition = byId.getValue(exerciseId)
-            val fields = SetEntryRules.fields(definition.isCardio)
+            val fields = SetEntryRules.fields(definition.kind)
             val (firstField, secondField) = fields[0] to fields[1]
             section(
                 key = exerciseId,
@@ -326,8 +331,18 @@ fun EditWorkoutScreen(
                             requester.bringIntoView()
                         }
                     }
-                    fun display(field: SetEntryField) = if (active == field) entry.text else text(field, set)
+                    fun display(field: SetEntryField) = when {
+                        active == field -> SetEntryRules.display(entry.text, field)
+                        // Ancienne série en reps d'un exercice devenu au temps (§ 15.18.1).
+                        field == SetEntryField.Hold && set.durationSeconds == null -> NO_DURATION
+                        else -> SetEntryRules.format(field.read(set), field, locale)
+                    }
                     val number = index + 1
+                    @Composable
+                    fun spoken(field: SetEntryField): String {
+                        val seconds = set.durationSeconds
+                        return if (field == SetEntryField.Hold && active != field && seconds != null) spokenDuration(seconds) else display(field)
+                    }
                     SetRow(
                         index = number.toString(),
                         previous = null,
@@ -347,8 +362,8 @@ fun EditWorkoutScreen(
                         },
                         onFieldClick = { column -> open(exerciseId, set, if (column == SetField.Weight) firstField else secondField) },
                         showDivider = index != exercise.sets.lastIndex,
-                        weightDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(firstField), display(firstField)),
-                        repsDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(secondField), display(secondField)),
+                        weightDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(firstField), spoken(firstField)),
+                        repsDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(secondField), spoken(secondField)),
                     )
                 }
                 item(key = "add-set:$exerciseId") {
@@ -356,7 +371,7 @@ fun EditWorkoutScreen(
                         haptics.light()
                         // Copie de la dernière série, ou 10 × 20 kg / 30 min ; validée (§ 2.9).
                         update { d ->
-                            d.mapSets(exerciseId) { sets -> sets + WorkoutRules.newSet(sets.lastOrNull(), definition.isCardio, newId(), completed = true) }
+                            d.mapSets(exerciseId) { sets -> sets + WorkoutRules.newSet(sets.lastOrNull(), definition.kind, newId(), completed = true) }
                         }
                     })
                 }
@@ -392,8 +407,8 @@ fun EditWorkoutScreen(
             addedIds = draft.exercises.mapTo(HashSet()) { it.exerciseId },
             onAdd = { definition ->
                 haptics.medium()
-                // Série initiale validée : 10 × 20 kg, ou 30 min / 0 / 0 / 0 en cardio (🔄 D15).
-                val firstSet = WorkoutRules.newSet(null, definition.isCardio, newId(), completed = true)
+                // Série initiale validée : 10 × 20 kg, 30 min / 0 / 0 / 0 en cardio (🔄 D15), 0:30 au temps (§ 15.18.2).
+                val firstSet = WorkoutRules.newSet(null, definition.kind, newId(), completed = true)
                 update { d ->
                     if (d.exercises.any { it.exerciseId == definition.id }) d
                     else d.copy(exercises = d.exercises + WorkoutExercise(definition.id, sets = listOf(firstSet)))

@@ -49,6 +49,39 @@ private fun benchHistory(weeks: Int, weeksBefore: Long = 0, load: (Int) -> Doubl
     }.asReversed()
 }
 
+private val plank = exerciseDefinitions(emptyList()).first { it.id == "plank" }
+
+/**
+ * Fiche d'un exercice au temps (§ 15.18.6) : planche sur huit semaines, durée max qui passe de 0:45 à
+ * 1:30, lest certaines séances ; durée la plus longue, pas de 1RM, temps sous tension à droite.
+ */
+@PhonePreviews
+@Composable
+private fun ExerciseFicheTimedPreview() = ScreenPreview {
+    val count = 16
+    val history = List(count) { n ->
+        val day = PreviewData.today.minusDays(((count - 1 - n) * 7L) / 2)
+        val date = day.atTime(LocalTime.of(18, 30)).atZone(PreviewData.zone).toInstant()
+        val longest = 45 + n * 3
+        ExerciseSession(
+            workoutId = "plank-$n",
+            date = date,
+            sets = List(3) { i ->
+                WorkoutSet("plank-$n-$i", 0, if (n % 4 == 3 && i == 0) 10.0 else 0.0, true, durationSeconds = longest - i * 5)
+            },
+        )
+    }.asReversed()
+    ExerciseFicheContent(
+        definition = plank,
+        history = history,
+        today = PreviewData.today,
+        zone = PreviewData.zone,
+        onBack = {},
+        onEditWorkout = {},
+        insets = MockupInsets,
+    )
+}
+
 /** Fiche en hausse : le développé couché de PreviewData, période « Tout » (maquette). */
 @PhonePreviews
 @Composable

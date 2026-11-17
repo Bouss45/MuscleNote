@@ -19,6 +19,7 @@ import com.musclenote.android.R
 import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.Muscle
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.progress.ChartPeriod
 import com.musclenote.android.data.progress.CurveSummary
 import com.musclenote.android.data.progress.ExerciseMetric
@@ -26,6 +27,7 @@ import com.musclenote.android.data.progress.ProgressCurves
 import com.musclenote.android.data.progress.ProgressStats
 import com.musclenote.android.data.progress.SessionPoint
 import com.musclenote.android.data.workout.ExerciseSession
+import com.musclenote.android.data.workout.HoldDuration
 import com.musclenote.android.data.workout.WorkoutStats
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.DateFormats
@@ -101,7 +103,10 @@ fun ExerciseFicheScreen(
         }
         return
     }
-    val history = remember(workouts, exerciseId, zone) { WorkoutStats.exerciseHistory(workouts, exerciseId, zone) }
+    // Au temps, seules les séries qui ont une durée comptent (§ 15.18.6).
+    val history = remember(workouts, exerciseId, zone, definition.isTimed) {
+        WorkoutStats.exerciseHistory(workouts, exerciseId, zone, timed = definition.isTimed)
+    }
     ExerciseFicheContent(definition, history, today, zone, onBack, onEditWorkout, modifier, insets, definitions = definitions, onOpenExercise = onOpenExercise)
 }
 
@@ -162,7 +167,7 @@ private fun ExerciseFicheBody(
     onMuscleClick: (Muscle) -> Unit,
 ) {
     val dates = rememberDateFormats(zone)
-    val metric = remember(definition, history) { ProgressStats.exerciseMetric(definition.isCardio, history) }
+    val metric = remember(definition, history) { ProgressStats.exerciseMetric(definition.kind, history) }
     val series = remember(history, metric, zone) { ProgressStats.exerciseSeries(history, metric, zone) }
     var periodIndex by rememberSaveable { mutableIntStateOf(initialPeriod.ordinal) }
     val period = ChartPeriod.entries[periodIndex]
@@ -250,7 +255,7 @@ private fun ExerciseFicheBody(
             itemsIndexed(history, key = { _, session -> session.workoutId }, contentType = { _, _ -> "session" }) { index, session ->
                 SessionHistoryRow(
                     session = session,
-                    isCardio = definition.isCardio,
+                    kind = definition.kind,
                     isRecord = session.workoutId == recordId,
                     dates = dates,
                     today = today,
@@ -336,30 +341,37 @@ private fun ficheCurveDescription(
     dates: DateFormats,
     today: LocalDate,
 ): String {
-    val end = summary?.let { CurveEnd(metricText(it.last.value, metric), dates.shortDay(it.last.day, today)) }
+    val end = summary?.let { CurveEnd(metricSpoken(it.last.value, metric), dates.shortDay(it.last.day, today)) }
     return curveDescription(
         curve = stringResource(metric.curveLabelRes()),
         period = stringResource(period.descriptionRes()),
-        start = summary?.let { CurveEnd(metricText(it.first.value, metric), dates.shortDay(it.first.day, today)) },
+        start = summary?.let { CurveEnd(metricSpoken(it.first.value, metric), dates.shortDay(it.first.day, today)) },
         end = end,
-        change = summary?.variation?.let { metricDelta(it, metric) },
+        change = summary?.variation?.let { metricDeltaSpoken(it, metric) },
     )
 }
 
 /**
  * Rangée de stats (§ 15.9.1, point 6), sur tout l'historique : record personnel (séance la plus
- * longue en cardio) et 1RM estimé s'il est > 0.
+ * longue en cardio, durée la plus longue au temps) et 1RM estimé s'il est > 0 (jamais en cardio ni
+ * au temps, § 15.18.6).
  */
 @Composable
 private fun RecordStats(definition: ExerciseDefinition, history: List<ExerciseSession>, series: List<SessionPoint>, metric: ExerciseMetric) {
     val record = series.maxOf { it.value }
-    val oneRepMax = if (definition.isCardio) 0.0 else history.maxOf { it.bestOneRepMax }
+    val oneRepMax = if (definition.kind == SetKind.Strength) history.maxOf { it.bestOneRepMax } else 0.0
     StatRow(
         buildList {
             add(
                 Stat(
                     metricText(record, metric),
-                    stringResource(if (definition.isCardio) R.string.exercise_fiche_stat_longest else R.string.exercise_fiche_stat_record),
+                    stringResource(
+                        when (definition.kind) {
+                            SetKind.Cardio -> R.string.exercise_fiche_stat_longest
+                            SetKind.Timed -> R.string.exercise_fiche_stat_longest_hold
+                            SetKind.Strength -> R.string.exercise_fiche_stat_record
+                        },
+                    ),
                 ),
             )
             if (oneRepMax > 0) add(Stat(stringResource(R.string.common_kg_value, formatNumber(oneRepMax)), stringResource(R.string.exercise_fiche_stat_one_rm)))
@@ -369,12 +381,13 @@ private fun RecordStats(definition: ExerciseDefinition, history: List<ExerciseSe
 
 /**
  * Une séance de l'exercice (§ 15.9.1, point 7) : date, meilleure série et 1RM, volume (ou séries,
- * ou durée en cardio), « Record » sur la séance qui détient le record de la période.
+ * ou durée en cardio, ou temps sous tension au temps), « Record » sur la séance qui détient le
+ * record de la période.
  */
 @Composable
 private fun SessionHistoryRow(
     session: ExerciseSession,
-    isCardio: Boolean,
+    kind: SetKind,
     isRecord: Boolean,
     dates: DateFormats,
     today: LocalDate,
@@ -382,12 +395,13 @@ private fun SessionHistoryRow(
     showDivider: Boolean,
 ) {
     val subtitle = bestSetLine(
-        best = ProgressStats.bestSet(session.sets, isCardio),
-        oneRepMax = if (isCardio) 0.0 else session.bestOneRepMax,
-        isCardio = isCardio,
+        best = ProgressStats.bestSet(session.sets, kind),
+        oneRepMax = if (kind == SetKind.Strength) session.bestOneRepMax else 0.0,
+        kind = kind,
     )
     val value = when {
-        isCardio -> stringResource(R.string.common_min_value, formatNumber(session.totalDuration))
+        kind == SetKind.Cardio -> stringResource(R.string.common_min_value, formatNumber(session.totalDuration))
+        kind == SetKind.Timed -> HoldDuration.formatLong(session.totalHold)
         session.volume > 0 -> stringResource(R.string.session_volume_kg, formatInteger(session.volume))
         else -> pluralStringResource(R.plurals.common_sets_count, session.sets.size, session.sets.size)
     }

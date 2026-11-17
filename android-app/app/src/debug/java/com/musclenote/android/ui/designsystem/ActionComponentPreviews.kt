@@ -34,6 +34,8 @@ import com.musclenote.android.ui.designsystem.components.RestFinishedBanner
 import com.musclenote.android.ui.designsystem.components.SetRow
 import com.musclenote.android.ui.designsystem.components.SetField
 import com.musclenote.android.ui.designsystem.components.SetRowState
+import com.musclenote.android.ui.designsystem.components.SetRowTimer
+import com.musclenote.android.ui.designsystem.components.SetTimerButton
 import com.musclenote.android.ui.designsystem.components.SetTableHeader
 import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
@@ -228,6 +230,25 @@ private fun HighlightSurfacePreview() = StudioComponentPreview { HighlightSurfac
 @StudioComponentPreviews
 @Composable
 private fun SetRowPreview() = StudioComponentPreview { SetRowSamples() }
+
+/** 🔄 D44 (SPEC § 15.18.4) : séries au temps, colonne Durée avec le bouton du chrono. */
+@StudioComponentPreviews
+@Composable
+private fun SetRowTimerPreview() = StudioComponentPreview {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SetTableHeader("#", "Préc.", "Durée", "Kg")
+        StateCaption("Validée — pas de bouton, sa place reste")
+        SetRow("1", "1:00", "1:05", "0", SetRowState.Done, "Série 1 validée", {}, timer = SetRowTimer(SetTimerButton.None))
+        StateCaption("Chrono en cours")
+        SetRow("2", "1:00 · 10", "0:42", "10", SetRowState.Todo, "Valider la série 2", {}, timer = SetRowTimer(SetTimerButton.Stop, "Arrêter le chrono, série 2"))
+        StateCaption("À faire — autre chrono en cours")
+        SetRow("3", "—", "1:00", "0", SetRowState.Todo, "Valider la série 3", {}, timer = SetRowTimer(SetTimerButton.Unavailable, "Démarrer le chrono, série 3"))
+        StateCaption("À faire — Démarrer")
+        SetRow("3", "—", "1:00", "0", SetRowState.Todo, "Valider la série 3", {}, timer = SetRowTimer(SetTimerButton.Start, "Démarrer le chrono, série 3"))
+        StateCaption("En saisie (durée)")
+        SetRow("3", "—", "0:90", "0", SetRowState.Todo, "Valider la série 3", {}, editingField = SetField.Weight, timer = SetRowTimer(SetTimerButton.Start, "Démarrer le chrono, série 3"), showDivider = false)
+    }
+}
 
 @StudioComponentPreviews
 @Composable

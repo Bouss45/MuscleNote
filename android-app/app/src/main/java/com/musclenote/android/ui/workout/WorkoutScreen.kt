@@ -24,6 +24,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.musclenote.android.R
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.model.RestTimerState
+import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.util.TimeSource
@@ -31,6 +32,7 @@ import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.SessionInsights
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
+import com.musclenote.android.data.workout.SetTimerRules
 import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutRules
 import com.musclenote.android.data.workout.WorkoutStats
@@ -79,6 +81,7 @@ fun WorkoutScreen(
     val current by repository.currentWorkout.collectAsStateWithLifecycle()
     val history by repository.workouts.collectAsStateWithLifecycle()
     val restTimer by container.restTimer.state.collectAsStateWithLifecycle()
+    val setTimerState by container.setTimer.state.collectAsStateWithLifecycle()
     val customExercises by repository.customExercises.collectAsStateWithLifecycle()
     val haptics = rememberHaptics()
     val locale = appLocale()
@@ -97,12 +100,15 @@ fun WorkoutScreen(
     val references = remember(history, visibleIds) { visibleIds.associateWith { SessionInsights.reference(history, it) } }
     val restAnchor = SessionInsights.restAnchor(workout) { it in definitions }
     val restRunning = rememberRestRunning(restTimer, container.time)
+    // Chrono d'une série au temps (§ 15.18.4) : seulement sur une série non validée de la séance.
+    val holdTimer = SetTimerRules.activeOn(setTimerState, workout)
+    val holdSeconds = rememberHoldSeconds(holdTimer, container.time)
 
     // Saisie au pavé (§ 15.7.4) ; fermée si sa série disparaît (supprimée, exercice retiré).
     val entry = rememberSaveable(saver = SetEntryState.Saver) {
         SetEntryState().also { state ->
             val set = initialEntry?.let { t -> visible.firstOrNull { it.exerciseId == t.exerciseId }?.sets?.firstOrNull { it.id == t.setId } }
-            if (initialEntry != null && set != null) state.open(initialEntry, SetEntryRules.format(initialEntry.field.read(set), initialEntry.field, locale))
+            if (initialEntry != null && set != null) state.open(initialEntry, SetEntryRules.entryText(initialEntry.field.read(set), initialEntry.field, locale))
         }
     }
     val target = entry.target
@@ -140,14 +146,26 @@ fun WorkoutScreen(
     val totalSets = workout.exercises.sumOf { it.sets.size }
     val completedSets = workout.exercises.sumOf { e -> e.sets.count { it.completed } }
 
-    fun isCardio(exerciseId: String) = definitions[exerciseId]?.isCardio == true
+    fun kind(exerciseId: String) = definitions[exerciseId]?.kind ?: SetKind.Strength
     val labels = visible.associate { it.exerciseId to exerciseName(definitions.getValue(it.exerciseId)) }
     fun label(exerciseId: String) = labels[exerciseId].orEmpty()
-    fun text(field: SetEntryField, set: WorkoutSet) = SetEntryRules.format(field.read(set), field, locale)
+    fun text(field: SetEntryField, set: WorkoutSet) = SetEntryRules.entryText(field.read(set), field, locale)
 
-    /** Ouvre le pavé sur [field] de [setId], neuf. */
-    fun open(exerciseId: String, set: WorkoutSet, field: SetEntryField) =
-        entry.open(EntryTarget(exerciseId, set.id, field), text(field, set))
+    /**
+     * Ouvre le pavé sur [field] de [setId], neuf. Sur la série dont le chrono tourne, le chrono
+     * s'arrête d'abord, sans valider : la durée reportée s'affiche (§ 15.18.4).
+     */
+    fun open(exerciseId: String, set: WorkoutSet, field: SetEntryField) {
+        val timer = holdTimer?.takeIf { it.setId == set.id }
+        val shown = if (timer != null) {
+            val now = container.time.now().toEpochMilli()
+            container.launchMutation { container.stopSetTimer(validate = false, nowMillis = now) }
+            SetTimerRules.stopped(set, timer, now, validate = false)
+        } else {
+            set
+        }
+        entry.open(EntryTarget(exerciseId, set.id, field), text(field, shown))
+    }
 
     /** Non validée → validée : repos avec le nom affiché de l'exercice (§ 2.6, § 7.2). */
     fun completeAndRest(exerciseId: String, setId: String, label: String) =
@@ -179,11 +197,11 @@ fun WorkoutScreen(
             val exercise = targetExercise
             val set = targetSet
             if (target != null && exercise != null && set != null) {
-                val cardio = isCardio(exercise.exerciseId)
+                val setKind = kind(exercise.exerciseId)
                 WorkoutKeypad(
                     set = set,
                     setNumber = exercise.sets.indexOf(set) + 1,
-                    isCardio = cardio,
+                    kind = setKind,
                     entry = entry,
                     field = target.field,
                     locale = locale,
@@ -201,11 +219,11 @@ fun WorkoutScreen(
                     },
                     onStep = { direction ->
                         val value = SetEntryRules.step(target.field.read(set), direction, target.field, locale) ?: return@WorkoutKeypad
-                        entry.reset(SetEntryRules.format(value, target.field, locale))
+                        entry.reset(SetEntryRules.entryText(value, target.field, locale))
                         container.launchMutation { repository.updateSet(exercise.exerciseId, set.id) { target.field.write(it, value) } }
                     },
                     onAction = {
-                        val nextField = SetEntryRules.next(target.field, cardio)
+                        val nextField = SetEntryRules.next(target.field, setKind)
                         when {
                             nextField != null -> open(exercise.exerciseId, set, nextField)
                             set.completed -> entry.close()
@@ -214,7 +232,7 @@ fun WorkoutScreen(
                                 completeAndRest(exercise.exerciseId, set.id, label(exercise.exerciseId))
                                 val following = SetEntryRules.nextOpenSet(exercise.sets, set.id)
                                 if (following != null) {
-                                    open(exercise.exerciseId, following, SetEntryRules.fields(cardio).first())
+                                    open(exercise.exerciseId, following, SetEntryRules.fields(setKind).first())
                                 } else {
                                     entry.close()
                                 }
@@ -258,14 +276,14 @@ fun WorkoutScreen(
 
         items(ordered, key = { it.exerciseId }) { exercise ->
             val exerciseId = exercise.exerciseId
-            val cardio = isCardio(exerciseId)
+            val setKind = kind(exerciseId)
             val reference = references[exerciseId]
-            val suggestion = SessionInsights.suggestion(reference, cardio)
+            val suggestion = SessionInsights.suggestion(reference, setKind)
             ReorderableItem(reorderState, key = exerciseId) { isDragging ->
                 LiveExerciseBlock(
                     name = label(exerciseId),
                     exercise = exercise,
-                    isCardio = cardio,
+                    kind = setKind,
                     reference = reference,
                     referenceDate = reference?.workout?.let { parseInstantOrNull(it.date, container.time.zone()) }?.let { dates.weekdayDayMonth(it) },
                     suggestion = suggestion,
@@ -299,7 +317,23 @@ fun WorkoutScreen(
                     onCheck = { set ->
                         haptics.medium()
                         container.launchMutation {
-                            if (repository.toggleSetCompleted(exerciseId, set.id) == true) container.restTimer.start(label(exerciseId))
+                            // Case touchée pendant le chrono : comme « Arrêter » (§ 15.18.4).
+                            if (holdTimer?.setId == set.id) {
+                                container.stopSetTimer(validate = true)
+                            } else if (repository.toggleSetCompleted(exerciseId, set.id) == true) {
+                                container.restTimer.start(label(exerciseId))
+                            }
+                        }
+                    },
+                    timer = holdTimer,
+                    holdSeconds = holdSeconds,
+                    onTimerClick = { set ->
+                        if (holdTimer?.setId == set.id) {
+                            haptics.medium()
+                            container.launchMutation { container.stopSetTimer(validate = true) }
+                        } else {
+                            haptics.light()
+                            container.launchMutation { container.startSetTimer(set.id) }
                         }
                     },
                     onAddSet = {
@@ -340,8 +374,8 @@ fun WorkoutScreen(
             onAdd = { definition -> container.launchMutation { repository.addExerciseToWorkout(definition.id) } },
             onDismiss = { pickerOpen = false },
             custom = CustomExerciseActions(
-                create = { name, group, muscles -> container.launchMutation { repository.addCustomExercise(name, group, muscles) } },
-                update = { id, name, group, muscles -> container.launchMutation { repository.updateCustomExercise(id, name, group, muscles) } },
+                create = { name, group, muscles, type -> container.launchMutation { repository.addCustomExercise(name, group, muscles, type) } },
+                update = { id, name, group, muscles, type -> container.launchMutation { repository.updateCustomExercise(id, name, group, muscles, type) } },
                 delete = { id -> container.launchMutation { repository.deleteCustomExercise(id) } },
             ),
         )

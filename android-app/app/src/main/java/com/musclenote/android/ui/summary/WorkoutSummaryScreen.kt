@@ -21,6 +21,7 @@ import com.musclenote.android.R
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.progress.ExerciseMetric
 import com.musclenote.android.data.util.parseInstantOrNull
+import com.musclenote.android.data.workout.HoldDuration
 import com.musclenote.android.data.workout.SummaryExercise
 import com.musclenote.android.data.workout.VolumeComparison
 import com.musclenote.android.data.workout.WorkoutSummary
@@ -172,6 +173,10 @@ internal fun WorkoutSummaryContent(
                             pluralStringResource(R.plurals.summary_stat_sets, summary.completedSets),
                         ),
                     )
+                    // Temps sous tension des séries au temps (§ 15.18.7), absent quand il est nul.
+                    if (summary.tensionSeconds > 0) {
+                        add(Stat(HoldDuration.formatLong(summary.tensionSeconds), stringResource(R.string.summary_stat_tension)))
+                    }
                 },
             )
         },
@@ -249,7 +254,7 @@ private fun previousContext(comparison: VolumeComparison, dates: DateFormats, to
 private fun SummaryExerciseRow(exercise: SummaryExercise, showDivider: Boolean) {
     ListRow(
         title = exerciseName(exercise.definition),
-        subtitle = bestSetLine(exercise.bestSet, exercise.bestOneRepMax, exercise.definition.isCardio),
+        subtitle = bestSetLine(exercise.bestSet, exercise.bestOneRepMax, exercise.definition.kind),
         trailing = if (exercise.brokeRecord) {
             ListRowTrailing.DeltaOnly(stringResource(R.string.exercise_fiche_record), Trend.Up)
         } else {
