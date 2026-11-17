@@ -5,15 +5,18 @@ import com.musclenote.android.data.health.HealthRecordType
 import com.musclenote.android.data.health.HealthRecords
 import com.musclenote.android.data.health.HealthSyncState
 import com.musclenote.android.data.model.BodyWeightEntry
+import com.musclenote.android.data.model.PresetId
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.storage.DataFiles
 import com.musclenote.android.data.util.TimeSource
+import com.musclenote.android.data.workout.WorkoutRules
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -273,6 +276,44 @@ class HealthSyncRepositoryTest {
             repo.change(newWorkouts = emptyList(), newWeighIns = emptyList())
             assertTrue(gateway.stored.isEmpty())
             assertTrue(repo.state.value.sent.isEmpty())
+        }
+    }
+
+    @Test
+    fun `une séance rattachée à un préréglage est remplacée sous le même identifiant, sans doublon`() = runBlocking<Unit> {
+        coroutineScope {
+            // Séance perso « Haut du corps » envoyée avant la mise à jour (🔄 D45, § 15.19.2).
+            workouts = listOf(workout("w1").copy(name = "Haut du corps"))
+            val repo = repository()
+            repo.onPermissionsResult(all)
+            repo.sendHistory()
+            val keys = setOf("musclenote-session-w1", "musclenote-weight-2026-11-10", "musclenote-weight-2026-11-09")
+            assertEquals(keys, gateway.stored.keys)
+            val (sentFingerprint, firstVersion) = gateway.stored.getValue("musclenote-session-w1")
+            val upsertsBefore = gateway.upsertCalls
+
+            // Après la mise à jour, la lecture des séances la rattache au préréglage, sans passer par la
+            // file (l'état chargé est la référence) : c'est l'empreinte envoyée qui ne correspond plus.
+            clock = clock.plusSeconds(60)
+            workouts = workouts.map(WorkoutRules::withPresetFromName)
+            val desired = HealthRecords.all(workouts, weighIns, zone).getValue("musclenote-session-w1") as HealthRecordSpec.Session
+            assertEquals(PresetId.UpperBody, desired.preset)
+            assertTrue(repo.sync())
+
+            // Même identifiant client, version plus grande : Health Connect remplace, rien n'est créé ni supprimé.
+            assertEquals(keys, gateway.stored.keys)
+            val (fingerprint, version) = gateway.stored.getValue("musclenote-session-w1")
+            assertNotEquals(sentFingerprint, fingerprint)
+            assertEquals(desired.fingerprint, fingerprint)
+            assertTrue(version > firstVersion)
+            assertTrue(gateway.deleteCalls.isEmpty())
+            assertEquals(upsertsBefore + 1, gateway.upsertCalls)
+            assertEquals(keys, repo.state.value.sent.keys)
+            assertTrue(repo.state.value.pending.isEmpty())
+
+            // Envoyer l'historique ensuite ne crée pas de doublon non plus.
+            repo.sendHistory()
+            assertEquals(keys, gateway.stored.keys)
         }
     }
 

@@ -226,11 +226,11 @@ class WorkoutRepositoryTest {
         val exercises = listOf(WorkoutExercise("ohp", sets = listOf(WorkoutSet("e1", 5, 50.0, true))))
         coroutineScope {
             val repo = repository()
-            repo.patchWorkout("past", exercises, bodyWeight = 0.0, name = " Épaules ", preset = null)
+            repo.patchWorkout("past", exercises, bodyWeight = 0.0, name = " Épaules / Mollets ", preset = null)
             val patched = repo.workouts.value.single()
             assertEquals(exercises, patched.exercises)
             assertEquals(79.0, patched.bodyWeight, 0.0)
-            assertEquals("Épaules", patched.name)
+            assertEquals("Épaules / Mollets", patched.name)
             assertNull(patched.preset)
             // Date et durée inchangées.
             assertEquals(pastPush().date, patched.date)
@@ -242,6 +242,42 @@ class WorkoutRepositoryTest {
             repo.patchWorkout("inconnue", emptyList(), 70.0, "X", null)
         }
         coroutineScope { assertEquals(PresetId.Pull, repository().workouts.value.single().preset) }
+    }
+
+    @Test
+    fun `un ancien fichier relit une séance perso au nom d'un préréglage rattachée, nom gardé`() = runBlocking<Unit> {
+        // 🔄 D45 (§ 15.19.2) : rattachement en mémoire, le fichier n'est réécrit qu'à la prochaine écriture.
+        val custom = pastPush().copy(id = "upper", name = "haut du corps", preset = null, date = "2026-03-13T17:00:00.000Z")
+        val free = pastPush().copy(id = "free", name = "Bras / Abdos", preset = null, date = "2026-03-11T17:00:00.000Z")
+        writeHistory(custom, pastPush(), free)
+        dataDir.mkdirs()
+        currentFile.writeText(AppJson.storage.encodeToString(Workout.serializer(), custom.copy(id = "cur", name = "Abs", date = "2026-03-14T16:30:00.000Z")))
+        val before = File(dataDir, "workouts.json").readText()
+        coroutineScope {
+            val repo = repository()
+            assertEquals(listOf(PresetId.UpperBody, PresetId.Push, null), repo.workouts.value.map { it.preset })
+            assertEquals(listOf("haut du corps", "Push", "Bras / Abdos"), repo.workouts.value.map { it.name })
+            assertEquals(PresetId.Abs, repo.currentWorkout.value!!.preset)
+            assertEquals("Abs", repo.currentWorkout.value!!.name)
+        }
+        // Lecture seule : fichier intact, rien de mis de côté.
+        assertEquals(before, File(dataDir, "workouts.json").readText())
+        assertTrue(dataDir.listFiles()!!.none { "corrupt" in it.name })
+    }
+
+    @Test
+    fun `démarrer avec un nom perso de préréglage démarre ce préréglage, pré-rempli de l'ancienne séance perso`() = runBlocking<Unit> {
+        writeHistory(pastPush().copy(id = "upper", name = "Haut du corps", preset = null))
+        coroutineScope {
+            val repo = repository()
+            val started = repo.startWorkout(80.0, PresetId.UpperBody, "Haut du corps")
+            assertEquals(PresetId.UpperBody, started.preset)
+            assertEquals(listOf("bench"), started.exercises.map { it.exerciseId })
+            // Une nouvelle séance remplace la séance en cours.
+            val typed = repo.startWorkout(80.0, null, " fessiers ")
+            assertEquals(PresetId.Glutes, typed.preset)
+            assertEquals("fessiers", typed.name)
+        }
     }
 
     // ─── Séance en cours ─────────────────────────────────────────────────────────

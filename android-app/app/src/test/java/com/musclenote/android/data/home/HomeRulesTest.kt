@@ -159,6 +159,25 @@ class HomeRulesTest {
     }
 
     @Test
+    fun `casse et espaces en trop, ou nom d'un préréglage, regroupent les séances d'un type`() {
+        // 🔄 D45 (§ 15.19.2) : même clé que le pré-remplissage et le résumé.
+        val workouts = history(
+            session("2026-11-10", name = "Bras  /  Abdos"),
+            session("2026-11-03", name = "bras / abdos"),
+            session("2026-11-09", PresetId.UpperBody),
+            session("2026-11-02", name = "haut du corps"),
+        )
+        val types = HomeRules.regularTypes(workouts, today, zone)
+        assertEquals(listOf("preset:upperBody", "name:bras / abdos"), types.map { it.key })
+        assertEquals(listOf(2, 2), types.map { it.count })
+        // Le préréglage est celui de la séance la plus récente ; une séance perso rattachée le donne aussi.
+        assertEquals(PresetId.UpperBody, types[0].preset)
+        assertEquals("Bras  /  Abdos", types[1].lastWorkout.name)
+        val customLast = HomeRules.regularTypes(history(session("2026-11-10", name = "Haut du corps"), session("2026-11-03", PresetId.UpperBody)), today, zone)
+        assertEquals(PresetId.UpperBody, customLast.single().preset)
+    }
+
+    @Test
     fun `à égalité de dernière séance, le plus fréquent puis l'ordre de la clé`() {
         val workouts = history(
             session("2026-11-10", PresetId.Push, id = "push-1"), session("2026-11-10", PresetId.Pull, id = "pull-1"),

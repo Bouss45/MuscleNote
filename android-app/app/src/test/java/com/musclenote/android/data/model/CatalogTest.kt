@@ -5,6 +5,7 @@ import com.musclenote.android.data.backup.AppJson
 import com.musclenote.android.data.catalog.ExerciseCatalog
 import com.musclenote.android.data.catalog.exerciseDefinitions
 import com.musclenote.android.data.util.normalizeSearch
+import com.musclenote.android.data.util.normalizeWorkoutName
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -121,11 +122,19 @@ class CatalogTest {
     // ─── Préréglages ────────────────────────────────────────────────────────────
 
     @Test
-    fun `les préréglages ont les ids de la SPEC`() {
-        assertEquals(
-            listOf("push", "pull", "legs", "pecs", "dos", "shoulders", "legsSplit", "arms", "fullBody", "isolation", "cardio"),
-            PresetId.entries.map { it.id },
-        )
+    fun `les préréglages ont les ids, les groupes et l'ordre de la SPEC`() {
+        // 🔄 D45 : groupe « Haut / Bas » et Abdos, Fessiers dans Split (15 préréglages).
+        val rows = specRows("### 6.3 Préréglages de séance", columns = 4)
+        assertEquals(15, rows.size)
+        assertEquals(rows.map { it[1].removeSurrounding("`") }, PresetId.entries.map { it.id })
+        val groups = mapOf("PPL" to PresetGroup.Ppl, "Haut / Bas" to PresetGroup.UpperLower, "Split" to PresetGroup.Split, "Autre" to PresetGroup.Other)
+        assertEquals(rows.map { groups.getValue(it[0].substringBefore(" (").trim()) }, PresetId.entries.map { it.group })
+        assertEquals(listOf(PresetGroup.Ppl, PresetGroup.UpperLower, PresetGroup.Split, PresetGroup.Other), PresetGroup.entries)
+        // Libellés FR et EN du tableau = ceux de la migration.
+        for ((row, preset) in rows.zip(PresetId.entries)) {
+            assertEquals(row[2], preset.labelFr)
+            assertEquals(row[3], preset.labelEn)
+        }
         for (preset in PresetId.entries) {
             assertEquals("\"${preset.id}\"", AppJson.storage.encodeToString(PresetId.serializer(), preset))
         }
@@ -160,17 +169,37 @@ class CatalogTest {
             "full body" to PresetId.FullBody,
             "Isolation" to PresetId.Isolation,
             "cardio" to PresetId.Cardio,
+            // 🔄 D45 : nouveaux préréglages, espaces en trop compris.
+            "Haut du corps" to PresetId.UpperBody,
+            " haut   du CORPS " to PresetId.UpperBody,
+            "Upper body" to PresetId.UpperBody,
+            "Bas du corps" to PresetId.LowerBody,
+            "lower body" to PresetId.LowerBody,
+            "Abdos" to PresetId.Abs,
+            "Abs" to PresetId.Abs,
+            "Fessiers" to PresetId.Glutes,
+            "glutes" to PresetId.Glutes,
+            "Full\u00A0 Body" to PresetId.FullBody,
         )
         for ((name, expected) in cases) assertEquals("« $name »", expected, PresetId.fromLegacyName(name))
-        assertNull(PresetId.fromLegacyName("Haut du corps"))
         assertNull(PresetId.fromLegacyName("Push day"))
+        assertNull(PresetId.fromLegacyName("Hautducorps"))
         assertNull(PresetId.fromLegacyName(""))
+        assertNull(PresetId.fromLegacyName("   "))
     }
 
     @Test
     fun `la normalisation de recherche retire accents casse et espaces`() {
         assertEquals("developpe couche", normalizeSearch("  Développé Couché "))
         assertEquals("epaules", normalizeSearch("épaules"))
+    }
+
+    @Test
+    fun `un nom de séance normalisé réduit aussi les suites d'espaces`() {
+        // 🔄 D45 (§ 15.19.2).
+        assertEquals("bras / abdos", normalizeWorkoutName("  Bras  /\tAbdos "))
+        assertEquals("epaules / mollets", normalizeWorkoutName("Épaules\u00A0/\u202FMollets"))
+        assertEquals("", normalizeWorkoutName(" \u00A0 "))
     }
 
     // ─── Ressources ─────────────────────────────────────────────────────────────

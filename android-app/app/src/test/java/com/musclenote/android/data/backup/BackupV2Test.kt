@@ -9,6 +9,7 @@ import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.DailyTracker.Companion.GOAL_HISTORY_ORIGIN
 import com.musclenote.android.data.model.Preferences
 import com.musclenote.android.data.model.PresetId
+import com.musclenote.android.data.model.RemovedWorkoutType
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.ProteinGoal
@@ -162,6 +163,40 @@ class BackupV2Test {
         assertEquals(ThemeMode.System, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "system" }""").preferences!!.theme)
         assertEquals(ThemeMode.Dark, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark" }""").preferences!!.theme)
         assertEquals(ThemeMode.Light, readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "light" }""").preferences!!.theme)
+    }
+
+    // ─── Types retirés de « Mes types » (§ 15.19.5, 🔄 D45) ───────────────────────
+
+    private fun removedOf(json: String) =
+        readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark"$json }""").preferences!!.removedWorkoutTypes
+
+    @Test
+    fun `les types retirés sont lus entrée par entrée, sans faire échouer l'import`() {
+        assertEquals(emptyList<RemovedWorkoutType>(), removedOf(""))
+        assertEquals(emptyList<RemovedWorkoutType>(), removedOf(""", "removedWorkoutTypes": null"""))
+        assertEquals(emptyList<RemovedWorkoutType>(), removedOf(""", "removedWorkoutTypes": "Bras""""))
+        assertEquals(
+            listOf(RemovedWorkoutType("Mollets", "2026-11-10T09:00:00.000Z"), RemovedWorkoutType("bras / abdos", "2026-11-12T09:00:00.000Z")),
+            removedOf(
+                """, "removedWorkoutTypes": [ { "name": "Mollets", "removedAt": "2026-11-10T09:00:00.000Z" },""" +
+                    """ { "name": "Bras / Abdos", "removedAt": "2026-11-11T09:00:00.000Z" }, { "name": "bras / abdos", "removedAt": "2026-11-12T09:00:00.000Z" },""" +
+                    """ { "name": " ", "removedAt": "2026-11-12T09:00:00.000Z" }, { "name": "Dos", "removedAt": 12 }, { "name": "Dos" }, 3 ]""",
+            ),
+        )
+        // Fichier de l'app Expo : aucun type retiré.
+        assertEquals(emptyList<RemovedWorkoutType>(), success(reader().read(resource("v1_sample.json"))).data.preferences!!.removedWorkoutTypes)
+    }
+
+    @Test
+    fun `l'export n'écrit les types retirés que s'il y en a, et les relit`() {
+        fun preferencesJson(preferences: Preferences) =
+            Json.parseToJsonElement(BackupWriter.write(BackupData(preferences = preferences), exportedAt)).jsonObject.getValue(BackupKeys.PREFERENCES).jsonObject
+        assertFalse("removedWorkoutTypes" in preferencesJson(Preferences.DEFAULT))
+        val custom = Preferences.DEFAULT.copy(removedWorkoutTypes = listOf(RemovedWorkoutType("Bras / Abdos", "2026-11-11T09:00:00.000Z")))
+        val written = preferencesJson(custom).getValue("removedWorkoutTypes").jsonArray.single().jsonObject
+        assertEquals("Bras / Abdos", written.getValue("name").jsonPrimitive.content)
+        assertEquals("2026-11-11T09:00:00.000Z", written.getValue("removedAt").jsonPrimitive.content)
+        assertEquals(custom, success(reader().read(BackupWriter.write(BackupData(preferences = custom), exportedAt))).data.preferences)
     }
 
     // ─── Pesée facultative et rappel de pesée (§ 15.13.5, 🔄 D38) ───────────────────

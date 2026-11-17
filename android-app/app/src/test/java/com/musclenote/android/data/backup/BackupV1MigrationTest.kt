@@ -63,7 +63,7 @@ class BackupV1MigrationTest {
         assertEquals(PresetId.Pecs, workout("1741700000000wkt00004").preset) // « Chest » (EN)
         assertEquals(PresetId.Shoulders, workout("1741800000000wkt00005").preset) // « Epaules » sans accent
         assertNull(workout("1741900000000wkt00006").preset) // nom absent
-        assertNull(workout("1742000000000wkt00007").preset) // « Haut du corps »
+        assertEquals(PresetId.UpperBody, workout("1742000000000wkt00007").preset) // « Haut du corps » (🔄 D45)
         // Le nom d'origine est conservé.
         assertEquals("jambes ", workout("1741200000000wkt00002").name)
     }
