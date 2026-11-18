@@ -56,7 +56,7 @@ import com.musclenote.android.ui.workout.ConfirmSheet
 private val IMPORT_MIME_TYPES = arrayOf("application/json", "text/plain", "*/*")
 
 /** Formulaire ouvert au-dessus de Paramètres (§ 15.10.3). */
-enum class SettingsSheet { Language, Theme, RestTimer, WeighInReminder, AutoBackup, Health, CrashReport, Feedback }
+enum class SettingsSheet { Language, Theme, RestTimer, SupersetRest, WeighInReminder, AutoBackup, Health, CrashReport, Feedback }
 
 /**
  * Paramètres (SPEC § 15.10.3, 🔄 D35) : hub de second niveau, ouvert par l'engrenage de l'Accueil.
@@ -149,6 +149,12 @@ fun SettingsScreen(
                 add(SettingsRow("language", stringResource(R.string.settings_language_title), value = languageLabel(currentAppLanguage())) { sheet = SettingsSheet.Language })
                 add(SettingsRow("theme", stringResource(R.string.settings_theme_title), value = themeLabel(preferences.theme)) { sheet = SettingsSheet.Theme })
                 add(SettingsRow("rest", stringResource(R.string.settings_rest_timer_title), value = restDurationLabel(preferences.restSeconds)) { sheet = SettingsSheet.RestTimer })
+                // 🔄 D46 : repos de transition d'une supersérie, juste après le minuteur (§ 15.20.4).
+                add(
+                    SettingsRow("superset-rest", stringResource(R.string.settings_superset_rest_title), value = restDurationLabel(preferences.supersetRestSeconds)) {
+                        sheet = SettingsSheet.SupersetRest
+                    },
+                )
             },
         )
 
@@ -262,6 +268,15 @@ fun SettingsScreen(
                 haptics.light()
                 sheet = null
                 container.launchMutation { container.preferences.setRestSeconds(seconds) }
+            },
+            onDismiss = dismiss,
+        )
+        SettingsSheet.SupersetRest -> SupersetRestSheet(
+            selected = preferences.supersetRestSeconds,
+            onSelect = { seconds ->
+                haptics.light()
+                sheet = null
+                container.launchMutation { container.preferences.setSupersetRestSeconds(seconds) }
             },
             onDismiss = dismiss,
         )

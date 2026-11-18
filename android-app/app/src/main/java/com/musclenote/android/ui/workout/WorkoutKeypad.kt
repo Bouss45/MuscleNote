@@ -15,9 +15,11 @@ import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.workout.HoldDuration
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
+import com.musclenote.android.data.workout.SetNumber
 import com.musclenote.android.ui.designsystem.components.FormHeroField
 import com.musclenote.android.ui.designsystem.components.KeypadHeader
 import com.musclenote.android.ui.designsystem.components.KeypadPanel
+import com.musclenote.android.ui.designsystem.components.KeypadToggle
 import com.musclenote.android.ui.designsystem.components.NumericKeypad
 import java.util.Locale
 
@@ -92,13 +94,14 @@ internal fun fieldLabel(field: SetEntryField): String = stringResource(
 
 /**
  * Pavé de la séance en cours (§ 15.7.4), en bas de l'écran : segmenté des champs de la série
- * (« Kg · série 3 » / « Reps »), supprimer, fermer ; vitesse et inclinaison (absentes des colonnes)
+ * (« Kg · série 3 » / « Reps », « Kg · chauffe 1 » pour une série de chauffe), puce « Chauffe »
+ * ([onToggleWarmup], § 15.21.1), supprimer, fermer ; vitesse et inclinaison (absentes des colonnes)
  * dans un champ héros ; touches, pas et touche principale (« Suivant », « Valider la série », « OK »).
  */
 @Composable
 internal fun WorkoutKeypad(
     set: WorkoutSet,
-    setNumber: Int,
+    number: SetNumber,
     kind: SetKind,
     entry: SetEntryState,
     field: SetEntryField,
@@ -111,10 +114,12 @@ internal fun WorkoutKeypad(
     onAction: () -> Unit,
     onDelete: () -> Unit,
     onHide: () -> Unit,
+    onToggleWarmup: () -> Unit,
 ) {
     val fields = SetEntryRules.fields(kind)
+    val first = if (number.warmup) R.string.workout_keypad_first_warmup else R.string.workout_keypad_first
     val labels = fields.mapIndexed { index, f ->
-        if (index == 0) stringResource(R.string.workout_keypad_first, fieldLabel(f), setNumber) else fieldLabel(f)
+        if (index == 0) stringResource(first, fieldLabel(f), number.rank) else fieldLabel(f)
     }
     // Durée : pas de 5 s (« −5 s » / « +5 s », § 15.18.2).
     val step = if (field == SetEntryField.Hold) {
@@ -131,6 +136,12 @@ internal fun WorkoutKeypad(
             onHide = onHide,
             onDelete = onDelete,
             deleteDescription = stringResource(R.string.workout_delete_set),
+            toggle = KeypadToggle(
+                label = stringResource(R.string.workout_warmup_chip),
+                checked = set.warmup,
+                description = stringResource(R.string.workout_warmup_toggle),
+                onToggle = onToggleWarmup,
+            ),
         )
         if (field == SetEntryField.Speed || field == SetEntryField.Incline) {
             FormHeroField(entry.text, fieldLabel(field))

@@ -143,10 +143,33 @@ fun RestTimerSheet(selected: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit
 @Composable
 internal fun RestTimerSheetContent(selected: Int, onSelect: (Int) -> Unit, bottomInset: Dp = 0.dp) {
     OptionsSheetContent(stringResource(R.string.settings_rest_timer_title), stringResource(R.string.settings_rest_timer_desc), bottomInset) {
-        FlowRow(horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
-            for (seconds in RestTimerRules.PRESETS) {
-                FilterChip(restDurationLabel(seconds), selected = seconds == selected, onClick = { onSelect(seconds) })
-            }
+        DurationChips(RestTimerRules.PRESETS, selected, onSelect)
+    }
+}
+
+/**
+ * Repos dans une supersérie (🔄 D46, § 15.20.4) : 0 (aucun repos, par défaut) à 60 s ; vaut pour les
+ * repos de transition démarrés ensuite.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SupersetRestSheet(selected: Int, onSelect: (Int) -> Unit, onDismiss: () -> Unit) {
+    StudioBottomSheet(onDismissRequest = onDismiss) { inset -> SupersetRestSheetContent(selected, onSelect, inset) }
+}
+
+@Composable
+internal fun SupersetRestSheetContent(selected: Int, onSelect: (Int) -> Unit, bottomInset: Dp = 0.dp) {
+    OptionsSheetContent(stringResource(R.string.settings_superset_rest_title), stringResource(R.string.settings_superset_rest_desc), bottomInset) {
+        DurationChips(RestTimerRules.SUPERSET_PRESETS, selected, onSelect)
+    }
+}
+
+/** Puces de filtre d'une durée (« 0 s », « 1 min 30 »…), sur plusieurs lignes. */
+@Composable
+private fun DurationChips(presets: List<Int>, selected: Int, onSelect: (Int) -> Unit) {
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(Studio.spacing.xs), verticalArrangement = Arrangement.spacedBy(Studio.spacing.xs)) {
+        for (seconds in presets) {
+            FilterChip(restDurationLabel(seconds), selected = seconds == selected, onClick = { onSelect(seconds) })
         }
     }
 }

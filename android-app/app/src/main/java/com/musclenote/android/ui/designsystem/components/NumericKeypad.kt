@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -141,8 +142,9 @@ private fun Key(
 }
 
 /**
- * En-tête du pavé : segmenté compact (« Kg · série 3 » / « Reps »), puis à droite, en discret,
- * « Supprimer la série » (optionnel, [onDelete]) et « Fermer le pavé ».
+ * En-tête du pavé : segmenté compact (« Kg · série 3 » / « Reps »), la puce [toggle] (optionnelle,
+ * « Chauffe »), puis à droite, en discret, « Supprimer la série » (optionnel, [onDelete]) et « Fermer
+ * le pavé ».
  */
 @Composable
 fun KeypadHeader(
@@ -154,6 +156,7 @@ fun KeypadHeader(
     hideDescription: String = stringResource(R.string.ds_keypad_hide),
     onDelete: (() -> Unit)? = null,
     deleteDescription: String? = null,
+    toggle: KeypadToggle? = null,
 ) {
     Row(
         modifier.fillMaxWidth().padding(start = Studio.spacing.xxs),
@@ -163,6 +166,16 @@ fun KeypadHeader(
         // (quatre champs du cardio, texte à 200 %).
         Box(Modifier.weight(1f)) {
             SegmentedControl(options, selectedIndex, onSelect, Modifier.clip(Studio.shapes.control).horizontalScroll(rememberScrollState()), compact = true)
+        }
+        if (toggle != null) {
+            FilterChip(
+                toggle.label,
+                selected = toggle.checked,
+                onClick = toggle.onToggle,
+                modifier = Modifier.padding(start = Studio.spacing.xs),
+                multiSelect = true,
+                description = toggle.description,
+            )
         }
         if (onDelete != null) {
             StudioIconButton(
@@ -182,6 +195,14 @@ fun KeypadHeader(
         )
     }
 }
+
+/**
+ * Puce facultative de l'en-tête du pavé (🔄 D47, SPEC § 15.21.1) : une puce de filtre à cocher avant les
+ * boutons icône — « Chauffe », sélectionnée quand la série ouverte est une série de chauffe —, lue comme
+ * case à cocher ([description] : « Série de chauffe »).
+ */
+@Immutable
+data class KeypadToggle(val label: String, val checked: Boolean, val description: String, val onToggle: () -> Unit)
 
 /**
  * Panneau du pavé : `surfaceRaised`, padding 12, éléments espacés de 10. Posé en bas de l'écran

@@ -180,6 +180,24 @@ object PreviewData {
         ),
     )
 
+    /**
+     * Séance en cours avec une série de chauffe et une supersérie (🔄 D46, D47, SPEC § 15.20, § 15.21) :
+     * développé couché (chauffe à 40 kg puis 3 séries, toutes validées), développé incliné haltères lié
+     * aux élévations latérales (premier tour fait, le repos normal tourne), puis développé militaire.
+     */
+    val supersetWorkout = Workout(
+        id = "w-superset", name = "Push", preset = PresetId.Push, date = formatInstant(now.minusSeconds(38 * 60)), bodyWeight = 77.9,
+        exercises = listOf(
+            WorkoutExercise(
+                "bench",
+                sets = listOf(WorkoutSet(id = "ss-bench-w", reps = 10, weight = 40.0, completed = true, warmup = true)) + strength("ss-bench", 3, 8, 80.0),
+            ),
+            WorkoutExercise("dincline", sets = strength("ss-dincline", 3, 10, 28.0, completed = 1), supersetId = "ss-push"),
+            WorkoutExercise("lateralraise", sets = strength("ss-lat", 3, 12, 10.0, completed = 1), supersetId = "ss-push"),
+            WorkoutExercise("ohp", sets = strength("ss-ohp", 3, 8, 50.0, completed = 0)),
+        ),
+    )
+
     /** Repos en cours : 1 min 35 restante sur 2 min 30. */
     val restTimer = RestTimerState(endsAt = now.toEpochMilli() + 95_000, total = 150, exerciseName = "Développé couché")
 

@@ -544,11 +544,24 @@ Le jaune marque le temps qui passe, jamais le bouton (§ 1). Dans l'éditeur d'u
 bouton (la colonne Durée est une valeur comme les autres). TalkBack lit la durée en mots (« Série 2,
 Durée : 1 min 5 s »).
 
+🔄 **Série de chauffe** (variante, SPEC § 15.21, D47 ; hors maquette) — la colonne « # » montre **« C »**
+(EN « W »), même style que les numéros ; les séries de travail sont numérotées sans elles (C, 1, 2, 3).
+Valeurs, case et états inchangés ; TalkBack lit « Chauffe 1, Kg : 40 », « Valider la chauffe 1 ».
+
 **Ligne « + Série »** — `AddSetRow`. Sous la dernière série de chaque bloc exercice, **toujours
 visible** : ajouter une série est fréquent en séance, ce n'est pas une option de menu. Hauteur 48,
 alignée sur la colonne des numéros : icône `add` 22 `textSecondary`, 6, libellé `actionSmall`
 `textPrimary` (« Série »). Pressée : fond `surfaceRaised` qui déborde de 12, rayon 12. Lue par
 TalkBack avec son exercice (`description` : « Ajouter une série : Squat »).
+
+🔄 **Lien de supersérie** — `SupersetLink` (D46, SPEC § 15.20.2 ; hors maquette). Sous la ligne « + Série »
+d'un bloc exercice lié au suivant : un **trait vertical** de 2, bouts arrondis, `textTertiary` (élément non
+textuel, ≥ 3:1 sur le fond), au milieu de la colonne des numéros (22) — donc sous l'icône `add` de
+« + Série » — et, 6 après la colonne, le libellé **« Supersérie »** (`caption`, `textSecondary`), aligné sur
+« Série ». Hauteur minimale 24 (padding 4 en haut et en bas), elle grandit avec le libellé ; le trait
+couvre aussi `extendBelow` (l'écart de 24 de la liste) pour descendre jusqu'au titre du bloc suivant.
+**Aucune couleur** : ni le jaune (le direct), ni le vert (la progression). Un circuit de trois exercices a
+deux liens. TalkBack lit un seul élément, « Supersérie : Développé couché, puis Tractions ».
 
 **Bandeau de repos** — `RestBanner`. Entre deux séries, **sans fond** : padding 12 en haut, 14 en
 bas, filet en bas, éléments espacés de 10.
@@ -576,7 +589,10 @@ confirmations (« Terminer la séance ? ») et au gabarit formulaire. 🔄 Varia
 éléments espacés de 10.
 - En-tête (optionnel) : segmenté compact (« Kg · série 3 » / « Reps ») et, à droite, boutons icône
   44 en `textSecondary` : `delete` « Supprimer la série » (optionnel, séance en cours) puis
-  `keyboard_hide` « Fermer le pavé ». Le segmenté prend la place restante et défile s'il est trop
+  `keyboard_hide` « Fermer le pavé ». 🔄 Puce facultative (`KeypadToggle`, D47) entre le segmenté et les
+  boutons, 8 après le segmenté : une puce de filtre à choix multiple, **« Chauffe »** (sélectionnée =
+  série de chauffe, « Kg · chauffe 1 » dans le segmenté), lue comme case à cocher « Série de chauffe »
+  (séance en cours et éditeur d'une séance terminée). Le segmenté prend la place restante et défile s'il est trop
   large (quatre champs du cardio, texte à 200 %) : les boutons gardent leur cible de 48.
 - Grille de 4 colonnes espacées de 6, touches de 52, rayon 12 : chiffres 1–9, « , », 0 sur
   `surfaceControl` (`numberKey`) ; colonne de droite : pas − et + (`surfacePressed`, `action` en
@@ -964,6 +980,16 @@ Décidé (16/11/2026, SPEC D43) :
   « Muscles principaux » et « Muscles secondaires » en puces à choix multiple. La séance en cours ne
   change pas.
 
+Décidé (18/11/2026, SPEC D46, D47) :
+
+- **Superséries** : aucun écran nouveau. Le menu ⋮ du bloc gagne « Lier à l'exercice suivant » et
+  « Délier » (boutons secondaires, sous la note ; « Supersérie avec … » sous le titre de la sheet) ; entre
+  deux blocs liés, le **lien de supersérie** (`SupersetLink`, composant nouveau : trait gris fin et
+  « Supersérie », sans couleur). Paramètres gagne la ligne « Repos dans une supersérie » (puces 0 … 60 s),
+  juste après le minuteur. L'éditeur, le résumé et le Journal ne montrent pas les liens.
+- **Séries de chauffe** : une puce « Chauffe » dans l'en-tête du pavé (variante de `KeypadHeader`) et
+  « C » dans la colonne « # » de `SetRow`, aucun composant nouveau.
+
 Hors périmètre pour l'instant :
 
 - **Données nouvelles** : Mes records, mensurations, photos, objectif de poids
@@ -994,7 +1020,8 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   mot qui doit tenir sur une ligne ; `ListGroup.kt` pour les groupes de liste v2 — `ListGroup`,
   `ListGroupSegment`, `GroupPosition` testée en JVM, `LocalInListGroup` lu par `ListRow` ; 🔄 D43 :
   `BodyMap.kt` pour la carte du corps et `MuscleLegend`, `BodyMapShapes.kt` pour les tracés copiés du SVG
-  et `BodyMapGeometry.kt`, leur géométrie pure — toucher, zones TalkBack —, testée en JVM avec le SVG).
+  et `BodyMapGeometry.kt`, leur géométrie pure — toucher, zones TalkBack —, testée en JVM avec le SVG ;
+  🔄 D46 : `SupersetLink.kt` pour le lien de supersérie).
 - `ui/designsystem/templates/Templates.kt` : les quatre gabarits du § 10 (`HubTemplate` et sa
   variante paresseuse `HubLazyTemplate`, `FicheTemplate` et `FicheLazyTemplate`, `LiveTemplate`,
   `FormSheetTemplate`), en
@@ -1015,7 +1042,9 @@ Ouvert : rien (la recherche d'exercice est tranchée ci-dessus).
   (`TemplatePiecePreviews`) ; 🔄 D43 : `BodyMapPreview` (petite sur le fond et dans un groupe, une vue,
   grande avec sélection), `MuscleLegendPreview` et `ChipInversePreview` (`DataComponentPreviews`) ;
   🔄 D44 : `SetRowTimerPreview` (`ActionComponentPreviews` : validée, chrono en cours, autre chrono en
-  cours, prête, durée en saisie).
+  cours, prête, durée en saisie) ; 🔄 D46, D47 : `SupersetLinkPreview` (série de chauffe « C », « + Série »,
+  lien, titre du bloc suivant) et `KeypadHeaderTogglePreview` (puce « Chauffe » sélectionnée ou non)
+  dans `ActionComponentPreviews`.
 - Textes des composants (libellés d'accessibilité, « Tout voir »…) dans `strings.xml` FR / EN.
 - L'ancien thème (`ui/theme/`, Inter, couleurs de groupe, icônes Outlined) est **retiré** depuis
   l'étape 5b (SPEC § 15.11) : tout écran n'utilise que `Studio`, sans couleur, taille, police ni

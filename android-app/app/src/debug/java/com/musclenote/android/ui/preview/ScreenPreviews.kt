@@ -93,6 +93,16 @@ private fun WorkoutScreenPreview() = ScreenPreview(PreviewDataSet.WithCurrentWor
 }
 
 /**
+ * 🔄 D46, D47 (§ 15.20.2, § 15.21.2) : série de chauffe « C » du développé couché, développé incliné lié
+ * aux élévations latérales (trait « Supersérie »), repos après le premier tour.
+ */
+@ScreenPreviews
+@Composable
+private fun WorkoutScreenSupersetPreview() = ScreenPreview(PreviewDataSet.WithSuperset) {
+    WorkoutScreen(onBack = {}, onOpenHistory = {}, onFinished = {})
+}
+
+/**
  * Ce qu'un téléphone montre, comme l'écran « en direct » de la maquette : repos en cours, pavé
  * ouvert sur la charge de la 4e série du développé couché.
  */

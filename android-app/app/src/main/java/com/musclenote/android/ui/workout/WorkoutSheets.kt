@@ -85,8 +85,9 @@ internal fun WarmupSheetContent(done: Int, onToggle: (Int) -> Unit, onClose: () 
 
 /**
  * Options d'un exercice (menu ⋮, § 15.7.1) : note enregistrée à chaque frappe ([onNoteChange] ;
- * absente dans l'éditeur d'une séance terminée, § 2.9), « Retirer de la séance » (confirmation à
- * part).
+ * absente dans l'éditeur d'une séance terminée, § 2.9), « Lier à l'exercice suivant » ([onLinkNext]) et
+ * « Délier » ([onUnlink]) dans la séance en cours (🔄 D46, § 15.20.1), « Retirer de la séance »
+ * (confirmation à part).
  */
 @Composable
 internal fun ExerciseOptionsSheetContent(
@@ -97,6 +98,8 @@ internal fun ExerciseOptionsSheetContent(
     onClose: () -> Unit,
     bottomInset: Dp,
     subtitle: String? = null,
+    onLinkNext: (() -> Unit)? = null,
+    onUnlink: (() -> Unit)? = null,
 ) {
     var text by rememberSaveable { mutableStateOf(note) }
     SheetSurface(Modifier.imePadding(), bottomInset = bottomInset) {
@@ -110,6 +113,12 @@ internal fun ExerciseOptionsSheetContent(
                 },
                 placeholder = stringResource(R.string.exercise_card_note_placeholder),
             )
+        }
+        if (onLinkNext != null) {
+            StudioButton(stringResource(R.string.superset_link_next), onLinkNext, Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
+        }
+        if (onUnlink != null) {
+            StudioButton(stringResource(R.string.superset_unlink), onUnlink, Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
         }
         StudioButton(stringResource(R.string.workout_exercise_remove), onRemove, Modifier.fillMaxWidth(), variant = ButtonVariant.Secondary)
         StudioButton(stringResource(R.string.ds_close), onClose, Modifier.fillMaxWidth(), variant = ButtonVariant.Text)

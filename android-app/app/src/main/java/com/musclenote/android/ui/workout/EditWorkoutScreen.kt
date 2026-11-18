@@ -40,6 +40,8 @@ import com.musclenote.android.data.util.parseDecimal
 import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
+import com.musclenote.android.data.workout.SetNumber
+import com.musclenote.android.data.workout.SetNumbering
 import com.musclenote.android.data.workout.WorkoutRules
 import com.musclenote.android.ui.LocalAppContainer
 import com.musclenote.android.ui.components.appLocale
@@ -218,7 +220,7 @@ fun EditWorkoutScreen(
                 val setKind = kind(exerciseId)
                 WorkoutKeypad(
                     set = set,
-                    setNumber = exercise.sets.indexOf(set) + 1,
+                    number = SetNumbering.of(exercise.sets, set.id) ?: SetNumber(warmup = false, rank = 1),
                     kind = setKind,
                     entry = entry,
                     field = target.field,
@@ -259,6 +261,11 @@ fun EditWorkoutScreen(
                         deleteSetId = set.id
                     },
                     onHide = { entry.close() },
+                    // 🔄 D47 : marquer une série de chauffe dans la copie (§ 15.21.1).
+                    onToggleWarmup = {
+                        haptics.light()
+                        update { it.mapSet(exerciseId, set.id) { s -> s.copy(warmup = !s.warmup) } }
+                    },
                 )
             } else {
                 BottomActionBar(
@@ -319,6 +326,7 @@ fun EditWorkoutScreen(
                     }
                 },
             ) {
+                val numbers = SetNumbering.of(exercise.sets)
                 itemsIndexed(exercise.sets, key = { _, set -> set.id }) { index, set ->
                     val editingHere = target?.setId == set.id
                     val active = target?.field.takeIf { editingHere }
@@ -337,19 +345,20 @@ fun EditWorkoutScreen(
                         field == SetEntryField.Hold && set.durationSeconds == null -> NO_DURATION
                         else -> SetEntryRules.format(field.read(set), field, locale)
                     }
-                    val number = index + 1
+                    val number = numbers[index].rank
+                    val warmup = numbers[index].warmup
                     @Composable
                     fun spoken(field: SetEntryField): String {
                         val seconds = set.durationSeconds
                         return if (field == SetEntryField.Hold && active != field && seconds != null) spokenDuration(seconds) else display(field)
                     }
                     SetRow(
-                        index = number.toString(),
+                        index = if (warmup) stringResource(R.string.workout_warmup_short) else number.toString(),
                         previous = null,
                         weight = display(firstField),
                         reps = display(secondField),
                         state = if (set.completed) SetRowState.Done else SetRowState.Todo,
-                        checkDescription = stringResource(if (set.completed) R.string.workout_set_checked else R.string.workout_set_check, number),
+                        checkDescription = stringResource(checkLabel(warmup, set.completed), number),
                         onCheck = {
                             haptics.medium()
                             update { it.mapSet(exerciseId, set.id) { s -> s.copy(completed = !s.completed) } }
@@ -362,8 +371,8 @@ fun EditWorkoutScreen(
                         },
                         onFieldClick = { column -> open(exerciseId, set, if (column == SetField.Weight) firstField else secondField) },
                         showDivider = index != exercise.sets.lastIndex,
-                        weightDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(firstField), spoken(firstField)),
-                        repsDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(secondField), spoken(secondField)),
+                        weightDescription = stringResource(valueLabel(warmup), number, fieldLabel(firstField), spoken(firstField)),
+                        repsDescription = stringResource(valueLabel(warmup), number, fieldLabel(secondField), spoken(secondField)),
                     )
                 }
                 item(key = "add-set:$exerciseId") {
@@ -494,9 +503,10 @@ fun EditWorkoutScreen(
     val deleteExercise = deleteSetOf
     val deleteSet = deleteSetId
     if (deleteExercise != null && deleteSet != null) {
-        val number = visible.firstOrNull { it.exerciseId == deleteExercise }?.sets?.indexOfFirst { it.id == deleteSet }?.plus(1) ?: 0
+        val number = visible.firstOrNull { it.exerciseId == deleteExercise }?.sets?.let { SetNumbering.of(it, deleteSet) }
+            ?: SetNumber(warmup = false, rank = 0)
         ConfirmSheet(
-            title = stringResource(R.string.workout_delete_set_title, number),
+            title = stringResource(if (number.warmup) R.string.workout_delete_warmup_title else R.string.workout_delete_set_title, number.rank),
             message = stringResource(R.string.workout_delete_set_message),
             confirmLabel = stringResource(R.string.common_delete),
             dismissLabel = stringResource(R.string.common_cancel),
