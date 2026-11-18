@@ -342,11 +342,15 @@ class AppContainer(
     /**
      * Le chrono ne vaut que sur une série non validée de la séance en cours (§ 15.18.4) : série
      * supprimée, exercice retiré, séance terminée, abandonnée ou finalisée → retiré sans rien reporter.
+     * `combine` peut associer un chrono qui vient de démarrer à une séance qu'il n'a pas encore vue
+     * changer (sans la série ajoutée juste avant) : la séance actuelle est relue avant de le retirer.
      */
     private fun watchSetTimer() {
         appScope.launch {
             combine(workouts.currentWorkout, setTimer.state) { workout, timer -> timer?.takeIf { SetTimerRules.activeOn(it, workout) == null } }
-                .collect { stale -> if (stale != null) setTimer.clear(stale) }
+                .collect { stale ->
+                    if (stale != null && SetTimerRules.activeOn(stale, workouts.currentWorkout.value) == null) setTimer.clear(stale)
+                }
         }
     }
 
