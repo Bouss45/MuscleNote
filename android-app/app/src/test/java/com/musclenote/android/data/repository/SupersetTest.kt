@@ -249,7 +249,9 @@ class SupersetTest {
         assertEquals(0, container.preferences.preferences.value.supersetRestSeconds)
         container.preferences.setSupersetRestSeconds(45)
         assertEquals(45, container.preferences.preferences.value.supersetRestSeconds)
-        eventually { File(dataDir, "preferences.json").readText().contains(""""supersetRestSeconds":45""") }
+        val file = File(dataDir, "preferences.json")
+        // L'écriture se fait en arrière-plan : le fichier peut ne pas encore exister.
+        eventually { file.exists() && file.readText().contains(""""supersetRestSeconds":45""") }
         assertEquals(45, container().preferences.preferences.value.supersetRestSeconds)
     }
 
