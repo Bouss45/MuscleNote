@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -22,8 +24,10 @@ import com.musclenote.android.ui.designsystem.components.ButtonSize
 import com.musclenote.android.ui.designsystem.components.ButtonVariant
 import com.musclenote.android.ui.designsystem.components.ConfirmSheetContent
 import com.musclenote.android.ui.designsystem.components.EmptyState
+import com.musclenote.android.ui.designsystem.components.ExerciseBlockHeader
 import com.musclenote.android.ui.designsystem.components.KeypadHeader
 import com.musclenote.android.ui.designsystem.components.KeypadPanel
+import com.musclenote.android.ui.designsystem.components.KeypadToggle
 import com.musclenote.android.ui.designsystem.components.LiveSessionCard
 import com.musclenote.android.ui.designsystem.components.MiniSessionBar
 import com.musclenote.android.ui.designsystem.components.NavItem
@@ -41,6 +45,7 @@ import com.musclenote.android.ui.designsystem.components.StudioButton
 import com.musclenote.android.ui.designsystem.components.StudioIconButton
 import com.musclenote.android.ui.designsystem.components.StudioNavigationBar
 import com.musclenote.android.ui.designsystem.components.StudioTextField
+import com.musclenote.android.ui.designsystem.components.SupersetLink
 import com.musclenote.android.ui.designsystem.theme.Studio
 
 /*
@@ -300,6 +305,43 @@ private fun KeypadHeaderDeletePreview() = StudioComponentPreview {
     }
     KeypadPanel(shape = Studio.shapes.surface) {
         KeypadHeader(listOf("Min · série 1", "Km", "Km/h", "%"), selectedIndex = 2, onSelect = {}, onHide = {}, onDelete = {}, deleteDescription = "Supprimer la série")
+    }
+}
+
+/** 🔄 D47 (SPEC § 15.21.1) : puce « Chauffe » de l'en-tête du pavé, sélectionnée puis non. */
+@StudioComponentPreviews
+@Composable
+private fun KeypadHeaderTogglePreview() = StudioComponentPreview {
+    KeypadPanel(shape = Studio.shapes.surface) {
+        KeypadHeader(
+            listOf("Kg · chauffe 1", "Reps"), selectedIndex = 0, onSelect = {}, onHide = {}, onDelete = {}, deleteDescription = "Supprimer la série",
+            toggle = KeypadToggle("Chauffe", checked = true, description = "Série de chauffe", onToggle = {}),
+        )
+    }
+    KeypadPanel(shape = Studio.shapes.surface) {
+        KeypadHeader(
+            listOf("Kg · série 2", "Reps"), selectedIndex = 1, onSelect = {}, onHide = {}, onDelete = {}, deleteDescription = "Supprimer la série",
+            toggle = KeypadToggle("Chauffe", checked = false, description = "Série de chauffe", onToggle = {}),
+        )
+    }
+}
+
+/**
+ * 🔄 D46 (SPEC § 15.20.2) : lien de supersérie entre deux blocs, sous « + Série » ; le trait traverse
+ * l'écart de 24 de la liste jusqu'au titre du bloc suivant. Série de chauffe : « C » dans la colonne « # ».
+ */
+@StudioComponentPreviews
+@Composable
+private fun SupersetLinkPreview() = StudioComponentPreview {
+    Column {
+        SetTableHeader("#", "Préc.", "Kg", "Reps")
+        SetRow("C", "40 × 10", "40", "10", SetRowState.Done, "Chauffe 1 validée", {})
+        SetRow("1", "80 × 8", "82,5", "8", SetRowState.Done, "Série 1 validée", {})
+        SetRow("2", "80 × 8", "82,5", "8", SetRowState.Todo, "Valider la série 2", {}, showDivider = false)
+        AddSetRow("Série", {})
+        SupersetLink("Supersérie", "Supersérie : Développé couché, puis Tractions", extendBelow = Studio.spacing.l)
+        Spacer(Modifier.height(Studio.spacing.l))
+        ExerciseBlockHeader("Tractions", onOpenDetails = {}, onMore = {})
     }
 }
 

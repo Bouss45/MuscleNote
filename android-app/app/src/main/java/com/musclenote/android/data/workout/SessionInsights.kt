@@ -4,17 +4,24 @@ import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.model.counted
 import kotlin.math.roundToLong
 
 /**
  * Séance de référence d'un exercice (SPEC § 15.7.2) : la séance terminée la plus récente où il a
- * au moins une série validée. [completedSets] = ses séries validées, dans l'ordre.
+ * au moins une série comptée (validée, pas de chauffe, 🔄 D47). [completedSets] = ses séries de travail
+ * validées, dans l'ordre ; [completedWarmups] = ses séries de chauffe validées.
  */
 data class ReferenceSession(val workout: Workout, val exercise: WorkoutExercise) {
-    val completedSets: List<WorkoutSet> = exercise.sets.filter { it.completed }
+    val completedSets: List<WorkoutSet> = exercise.sets.filter { it.counted }
+    val completedWarmups: List<WorkoutSet> = exercise.sets.filter { it.completed && it.warmup }
 
-    /** Colonne « Préc. » de la ligne d'indice [index] (0 = première série) ; `null` → « — ». */
+    /** Colonne « Préc. » de la série de travail d'indice [index] (0 = la première) ; `null` → « — ». */
     fun previous(index: Int): WorkoutSet? = completedSets.getOrNull(index)
+
+    /** Colonne « Préc. » d'une série numérotée [number] (§ 15.21.4) : rangs séparés pour les chauffes. */
+    fun previous(number: SetNumber): WorkoutSet? =
+        (if (number.warmup) completedWarmups else completedSets).getOrNull(number.rank - 1)
 }
 
 /**
@@ -49,7 +56,7 @@ object SessionInsights {
     fun reference(history: List<Workout>, exerciseId: String): ReferenceSession? =
         history.firstNotNullOfOrNull { workout ->
             workout.exercises
-                .firstOrNull { it.exerciseId == exerciseId && it.sets.any { set -> set.completed } }
+                .firstOrNull { it.exerciseId == exerciseId && it.sets.any { set -> set.counted } }
                 ?.let { ReferenceSession(workout, it) }
         }
 
@@ -76,8 +83,9 @@ object SessionInsights {
      */
     fun suggestion(reference: ReferenceSession?, kind: SetKind): LoadSuggestion? {
         if (reference == null || kind == SetKind.Cardio) return null
+        // 🔄 D47 : seules les séries de travail comptent (§ 15.21.4).
         val done = reference.completedSets
-        val allDone = reference.exercise.sets.all { it.completed }
+        val allDone = reference.exercise.sets.filterNot { it.warmup }.all { it.completed }
         if (kind == SetKind.Timed) {
             val durations = done.map { it.durationSeconds ?: return null }
             return LoadSuggestion(bodyWeight = false, increase = allDone && durations.all { it >= durations.first() }, hold = true)
@@ -94,10 +102,12 @@ object SessionInsights {
      * même résultat. Renvoie [sets] lui-même si rien ne change.
      */
     fun applySuggestion(sets: List<WorkoutSet>, reference: ReferenceSession, suggestion: LoadSuggestion): List<WorkoutSet> {
+        val numbers = SetNumbering.of(sets)
         val applied = sets.mapIndexed { index, set ->
-            val previous = reference.previous(index)
+            val previous = reference.previous(numbers[index])
             when {
-                set.completed || previous == null -> set
+                // 🔄 D47 : les séries de chauffe ne bougent pas (§ 15.21.4).
+                set.completed || set.warmup || previous == null -> set
                 suggestion.hold -> set.copy(durationSeconds = HoldDuration.clamp((previous.durationSeconds ?: 0) + suggestion.secondsDelta))
                 suggestion.bodyWeight -> set.copy(reps = previous.reps + suggestion.repsDelta)
                 else -> set.copy(weight = roundHundredth(previous.weight + suggestion.weightDelta))
@@ -107,14 +117,14 @@ object SessionInsights {
     }
 
     /**
-     * Place du bandeau de repos (§ 15.7.1) : id de la dernière série validée dans l'ordre de la
-     * séance, parmi les exercices affichés ([isShown]) ; `null` → en haut de la liste.
+     * Place du bandeau de repos (§ 15.7.1) : id de la dernière série validée dans l'ordre d'enchaînement
+     * (🔄 D46, § 15.20.3 : l'ordre de la séance sans supersérie), parmi les exercices affichés
+     * ([isShown]) ; `null` → en haut de la liste.
      */
     fun restAnchor(workout: Workout, isShown: (String) -> Boolean = { true }): String? =
-        workout.exercises
-            .filter { isShown(it.exerciseId) }
-            .flatMap { it.sets }
-            .lastOrNull { it.completed }
+        SupersetRules.chainOrder(workout.exercises.filter { isShown(it.exerciseId) })
+            .lastOrNull { it.set.completed }
+            ?.set
             ?.id
 
     private fun roundHundredth(value: Double): Double = (value * 100).roundToLong() / 100.0

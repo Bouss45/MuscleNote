@@ -1,5 +1,6 @@
 package com.musclenote.android.ui.workout
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -29,6 +30,7 @@ import com.musclenote.android.data.workout.LoadSuggestion
 import com.musclenote.android.data.workout.ReferenceSession
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
+import com.musclenote.android.data.workout.SetNumbering
 import com.musclenote.android.ui.designsystem.components.AddSetRow
 import com.musclenote.android.ui.designsystem.components.ChipTone
 import com.musclenote.android.ui.designsystem.components.ExerciseBlockHeader
@@ -39,6 +41,7 @@ import com.musclenote.android.ui.designsystem.components.SetRowTimer
 import com.musclenote.android.ui.designsystem.components.SetTableHeader
 import com.musclenote.android.ui.designsystem.components.SetTimerButton
 import com.musclenote.android.ui.designsystem.components.StudioChip
+import com.musclenote.android.ui.designsystem.components.SupersetLink
 import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.exercise.spokenDuration
 import java.util.Locale
@@ -55,6 +58,9 @@ private const val NO_PREVIOUS = "—"
  * note, colonnes, lignes de série avec le repos après [restAnchor], « + Série ». Exercice au temps
  * (§ 15.18.2) : colonnes Durée · Kg et le chrono de chaque série ; [timer] = le chrono en cours de la
  * séance (une seule série), [holdSeconds] son temps écoulé, [onTimerClick] Démarrer / Arrêter.
+ * Séries de chauffe (§ 15.21.2) : « C » dans la colonne « # », séries de travail numérotées sans elles,
+ * « Préc. » par rangs séparés. Exercice lié au suivant (§ 15.20.2) : [linkToNext] = la description
+ * TalkBack du trait de supersérie posé sous « + Série ».
  */
 @Composable
 internal fun LiveExerciseBlock(
@@ -80,6 +86,7 @@ internal fun LiveExerciseBlock(
     timer: SetTimerState? = null,
     holdSeconds: Int = 0,
     onTimerClick: (WorkoutSet) -> Unit = {},
+    linkToNext: String? = null,
 ) {
     val fields = SetEntryRules.fields(kind)
     val (firstField, secondField) = fields[0] to fields[1]
@@ -133,9 +140,11 @@ internal fun LiveExerciseBlock(
                 fieldLabel(secondField),
             )
         }
+        val numbers = SetNumbering.of(exercise.sets)
         exercise.sets.forEachIndexed { index, set ->
             key(set.id) {
-                val previous = reference?.previous(index)
+                val setNumber = numbers[index]
+                val previous = reference?.previous(setNumber)
                 val editingHere = target?.setId == set.id
                 val active = target?.field.takeIf { editingHere }
                 val requester = remember { BringIntoViewRequester() }
@@ -155,7 +164,8 @@ internal fun LiveExerciseBlock(
                     field == SetEntryField.Hold && set.durationSeconds == null -> NO_PREVIOUS
                     else -> SetEntryRules.format(field.read(set), field, locale)
                 }
-                val number = index + 1
+                val number = setNumber.rank
+                val warmup = setNumber.warmup
                 @Composable
                 fun spoken(field: SetEntryField): String = when {
                     field != SetEntryField.Hold || (active == field) -> display(field)
@@ -166,12 +176,12 @@ internal fun LiveExerciseBlock(
                 val previousLabel = previous?.let { previousText(it, kind, locale) } ?: NO_PREVIOUS
                 val isLast = index == exercise.sets.lastIndex
                 SetRow(
-                    index = number.toString(),
+                    index = if (warmup) stringResource(R.string.workout_warmup_short) else number.toString(),
                     previous = previousLabel,
                     weight = display(firstField),
                     reps = display(secondField),
                     state = if (set.completed) SetRowState.Done else SetRowState.Todo,
-                    checkDescription = stringResource(if (set.completed) R.string.workout_set_checked else R.string.workout_set_check, number),
+                    checkDescription = stringResource(checkLabel(warmup, set.completed), number),
                     onCheck = { onCheck(set) },
                     modifier = Modifier.bringIntoViewRequester(requester),
                     editingField = when (active) {
@@ -183,8 +193,8 @@ internal fun LiveExerciseBlock(
                     onPreviousClick = previous?.let { { onPreviousClick(set, it) } },
                     previousClickLabel = stringResource(R.string.workout_previous_copy, previousLabel),
                     showDivider = !isLast || restAnchor == set.id,
-                    weightDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(firstField), spoken(firstField)),
-                    repsDescription = stringResource(R.string.workout_set_value_description, number, fieldLabel(secondField), spoken(secondField)),
+                    weightDescription = stringResource(valueLabel(warmup), number, fieldLabel(firstField), spoken(firstField)),
+                    repsDescription = stringResource(valueLabel(warmup), number, fieldLabel(secondField), spoken(secondField)),
                     timer = if (kind == SetKind.Timed) {
                         SetRowTimer(
                             button = when {
@@ -193,7 +203,7 @@ internal fun LiveExerciseBlock(
                                 timer != null -> SetTimerButton.Unavailable
                                 else -> SetTimerButton.Start
                             },
-                            description = stringResource(if (running) R.string.workout_timer_stop else R.string.workout_timer_start, number),
+                            description = stringResource(timerLabel(warmup, running), number),
                             onClick = { onTimerClick(set) },
                         )
                     } else {
@@ -208,7 +218,34 @@ internal fun LiveExerciseBlock(
             onAddSet,
             description = stringResource(R.string.workout_add_set_to, name),
         )
+        if (linkToNext != null) {
+            // Le trait descend jusqu'au bloc suivant, à travers l'écart de la liste.
+            SupersetLink(stringResource(R.string.superset_label), linkToNext, extendBelow = Studio.spacing.l)
+        }
     }
+}
+
+/** Case d'une série (§ 2.6) : « Valider la série 2 », « Chauffe 1 validée »… (§ 15.21.2). */
+@StringRes
+internal fun checkLabel(warmup: Boolean, completed: Boolean): Int = when {
+    warmup && completed -> R.string.workout_warmup_checked
+    warmup -> R.string.workout_warmup_check
+    completed -> R.string.workout_set_checked
+    else -> R.string.workout_set_check
+}
+
+/** Valeur d'une série lue par TalkBack : « Série 2, Kg : 80 », « Chauffe 1, Kg : 40 ». */
+@StringRes
+internal fun valueLabel(warmup: Boolean): Int =
+    if (warmup) R.string.workout_warmup_value_description else R.string.workout_set_value_description
+
+/** Bouton du chrono d'une série au temps (§ 15.18.4). */
+@StringRes
+private fun timerLabel(warmup: Boolean, running: Boolean): Int = when {
+    warmup && running -> R.string.workout_warmup_timer_stop
+    warmup -> R.string.workout_warmup_timer_start
+    running -> R.string.workout_timer_stop
+    else -> R.string.workout_timer_start
 }
 
 /**

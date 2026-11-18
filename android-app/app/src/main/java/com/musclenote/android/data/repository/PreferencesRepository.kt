@@ -16,8 +16,8 @@ import kotlinx.coroutines.sync.withLock
 import java.time.Instant
 
 /**
- * Dépôt des préférences (SPEC § 3.14) : durée du minuteur, thème, rappel de pesée (§ 15.13) et types
- * retirés de « Mes types » (§ 15.19), sauvegardés ; et préférences locales à l'appareil (carte de transfert masquée), jamais exportées ni
+ * Dépôt des préférences (SPEC § 3.14) : durée du minuteur, thème, rappel de pesée (§ 15.13), types
+ * retirés de « Mes types » (§ 15.19) et repos de transition d'une supersérie (§ 15.20.4), sauvegardés ; et préférences locales à l'appareil (carte de transfert masquée), jamais exportées ni
  * touchées par un import. Chaque changement du rappel de pesée met son alarme à jour.
  */
 class PreferencesRepository(
@@ -46,6 +46,7 @@ class PreferencesRepository(
                 it.copy(
                     weighInReminder = WeighInReminderRules.normalized(it.weighInReminder),
                     removedWorkoutTypes = WorkoutTypeRules.normalized(it.removedWorkoutTypes),
+                    supersetRestSeconds = Preferences.supersetRestOrDefault(it.supersetRestSeconds),
                 )
             }
             _localPreferences.value = localPreferencesDoc.read() ?: LocalPreferences.DEFAULT
@@ -65,6 +66,20 @@ class PreferencesRepository(
         if (seconds <= 0) return
         mutex.withLock {
             val next = _preferences.value.copy(restSeconds = seconds)
+            if (next == _preferences.value) return
+            _preferences.value = next
+            preferencesDoc.save(next)
+        }
+    }
+
+    /**
+     * Repos de transition dans une supersérie (🔄 D46, § 15.20.4) : 0 à 60 s (0 = aucun repos), sinon
+     * ignoré ; vaut pour les repos démarrés ensuite.
+     */
+    suspend fun setSupersetRestSeconds(seconds: Int) {
+        if (seconds !in 0..Preferences.MAX_SUPERSET_REST_SECONDS) return
+        mutex.withLock {
+            val next = _preferences.value.copy(supersetRestSeconds = seconds)
             if (next == _preferences.value) return
             _preferences.value = next
             preferencesDoc.save(next)

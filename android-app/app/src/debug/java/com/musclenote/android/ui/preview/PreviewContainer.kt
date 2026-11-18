@@ -39,6 +39,9 @@ enum class PreviewDataSet {
 
     /** [Full] plus des séances aux noms perso (« Mes types », 🔄 D45, § 15.19.3). */
     WithCustomTypes,
+
+    /** [Full] plus une séance en cours avec une série de chauffe et une supersérie (🔄 D46, D47), repos en cours. */
+    WithSuperset,
 }
 
 /**
@@ -85,6 +88,10 @@ private fun writePreviewData(dataDir: File, dataSet: PreviewDataSet) = runBlocki
         files.updateCheck.saveNow(PreviewData.updateCheck)
         if (dataSet == PreviewDataSet.WithCurrentWorkout) {
             files.currentWorkout.saveNow(PreviewData.currentWorkout)
+            files.restTimer.saveNow(PreviewData.restTimer)
+        }
+        if (dataSet == PreviewDataSet.WithSuperset) {
+            files.currentWorkout.saveNow(PreviewData.supersetWorkout)
             files.restTimer.saveNow(PreviewData.restTimer)
         }
     }

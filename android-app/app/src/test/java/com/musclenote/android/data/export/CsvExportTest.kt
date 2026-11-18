@@ -228,4 +228,17 @@ class CsvExportTest {
         // Le volume du fichier des séances ne compte pas les séries au temps, lest compris.
         assertEquals("2026-03-14;18:00;Abdos;30;;2;4;500", lines(CsvExport.sessions(listOf(planks), texts, CsvFormat.FRENCH, zone)!!)[1])
     }
+
+    @Test
+    fun `les séries de chauffe ne sont pas exportées, les séries de travail sont numérotées sans elles`() {
+        val warmedUp = Workout(
+            "w5", "Push", null, "2026-03-12T17:00:00.000Z", 0.0,
+            listOf(WorkoutExercise("bench", sets = listOf(WorkoutSet("w", 10, 40.0, true, warmup = true), set("b", 8, 80.0), set("c", 8, 80.0)))),
+            50,
+        )
+        val sets = lines(CsvExport.sets(listOf(warmedUp), texts, CsvFormat.FRENCH, zone)!!).drop(1)
+        assertEquals(listOf("2026-03-12;Push;Développé couché;Pecs;1;8;80;;;;;", "2026-03-12;Push;Développé couché;Pecs;2;8;80;;;;;"), sets)
+        // Séries totales et volume sans la chauffe.
+        assertEquals("2026-03-12;18:00;Push;50;;1;2;1280", lines(CsvExport.sessions(listOf(warmedUp), texts, CsvFormat.FRENCH, zone)!!)[1])
+    }
 }

@@ -4,6 +4,7 @@ import com.musclenote.android.data.catalog.ExerciseDefinition
 import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.model.counted
 import com.musclenote.android.data.progress.ProgressStats
 import kotlin.math.roundToLong
 
@@ -71,7 +72,7 @@ object WorkoutSummaryRules {
         val exercises = workout.exercises.mapNotNull { exercise ->
             // Exercice inconnu masqué (§ 10.5) ; sans série validée, il n'a pas été fait.
             val definition = byId[exercise.exerciseId] ?: return@mapNotNull null
-            val sets = exercise.sets.filter { it.completed }
+            val sets = exercise.sets.filter { it.counted }
             if (sets.isEmpty()) return@mapNotNull null
             SummaryExercise(
                 definition = definition,
@@ -107,7 +108,7 @@ object WorkoutSummaryRules {
      * Au temps (§ 15.18.6), seules les séries qui ont une durée comptent, et pas de 1RM.
      */
     fun recordsBroken(sets: List<WorkoutSet>, exerciseId: String, kind: SetKind, older: List<Workout>): Set<SummaryRecord> {
-        fun counted(set: WorkoutSet) = set.completed && (kind != SetKind.Timed || set.durationSeconds != null)
+        fun counted(set: WorkoutSet) = set.counted && (kind != SetKind.Timed || set.durationSeconds != null)
         val done = sets.filter(::counted)
         val before = older.mapNotNull { workout ->
             workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets?.filter(::counted)?.takeIf { it.isNotEmpty() }

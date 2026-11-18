@@ -32,7 +32,10 @@ import com.musclenote.android.data.util.parseInstantOrNull
 import com.musclenote.android.data.workout.SessionInsights
 import com.musclenote.android.data.workout.SetEntryField
 import com.musclenote.android.data.workout.SetEntryRules
+import com.musclenote.android.data.workout.SetNumber
+import com.musclenote.android.data.workout.SetNumbering
 import com.musclenote.android.data.workout.SetTimerRules
+import com.musclenote.android.data.workout.SupersetRules
 import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutRules
 import com.musclenote.android.data.workout.WorkoutStats
@@ -167,9 +170,12 @@ fun WorkoutScreen(
         entry.open(EntryTarget(exerciseId, set.id, field), text(field, shown))
     }
 
-    /** Non validée → validée : repos avec le nom affiché de l'exercice (§ 2.6, § 7.2). */
-    fun completeAndRest(exerciseId: String, setId: String, label: String) =
-        container.launchMutation { if (repository.completeSet(exerciseId, setId)) container.restTimer.start(label) }
+    /**
+     * Non validée → validée : le repos suit les règles des superséries (§ 2.6, § 7.2, 🔄 D46 § 15.20.3 :
+     * aucun repos ou repos de transition entre deux exercices liés, repos normal en fin de tour).
+     */
+    fun completeAndRest(exerciseId: String, setId: String) =
+        container.launchMutation { container.completeSet(exerciseId, setId) }
 
     val restContent: @Composable () -> Unit = {
         restTimer?.let { rest ->
@@ -200,7 +206,7 @@ fun WorkoutScreen(
                 val setKind = kind(exercise.exerciseId)
                 WorkoutKeypad(
                     set = set,
-                    setNumber = exercise.sets.indexOf(set) + 1,
+                    number = SetNumbering.of(exercise.sets, set.id) ?: SetNumber(warmup = false, rank = 1),
                     kind = setKind,
                     entry = entry,
                     field = target.field,
@@ -229,10 +235,13 @@ fun WorkoutScreen(
                             set.completed -> entry.close()
                             else -> {
                                 haptics.medium()
-                                completeAndRest(exercise.exerciseId, set.id, label(exercise.exerciseId))
-                                val following = SetEntryRules.nextOpenSet(exercise.sets, set.id)
+                                completeAndRest(exercise.exerciseId, set.id)
+                                // 🔄 D46 : dans une supersérie, la même série de l'exercice suivant, puis le
+                                // tour suivant ; sinon la série suivante du même exercice (§ 15.20.3).
+                                val following = SupersetRules.afterCompleting(visible, exercise.exerciseId, set.id).next
                                 if (following != null) {
-                                    open(exercise.exerciseId, following, SetEntryRules.fields(setKind).first())
+                                    val nextId = following.exercise.exerciseId
+                                    open(nextId, following.set, SetEntryRules.fields(kind(nextId)).first())
                                 } else {
                                     entry.close()
                                 }
@@ -244,6 +253,10 @@ fun WorkoutScreen(
                         deleteSetId = set.id
                     },
                     onHide = { entry.close() },
+                    onToggleWarmup = {
+                        haptics.light()
+                        container.launchMutation { repository.updateSet(exercise.exerciseId, set.id) { it.copy(warmup = !it.warmup) } }
+                    },
                 )
             } else {
                 BottomActionBar(
@@ -276,6 +289,13 @@ fun WorkoutScreen(
 
         items(ordered, key = { it.exerciseId }) { exercise ->
             val exerciseId = exercise.exerciseId
+            // Les traits de supersérie suivent l'ordre affiché, glisser-déposer compris (§ 15.20.2).
+            val nextInOrder = ordered.getOrNull(ordered.indexOf(exercise) + 1)
+            val linkToNext = if (nextInOrder != null && SupersetRules.isLinkedToNext(ordered, exerciseId)) {
+                stringResource(R.string.superset_link_description, label(exerciseId), label(nextInOrder.exerciseId))
+            } else {
+                null
+            }
             val setKind = kind(exerciseId)
             val reference = references[exerciseId]
             val suggestion = SessionInsights.suggestion(reference, setKind)
@@ -320,8 +340,8 @@ fun WorkoutScreen(
                             // Case touchée pendant le chrono : comme « Arrêter » (§ 15.18.4).
                             if (holdTimer?.setId == set.id) {
                                 container.stopSetTimer(validate = true)
-                            } else if (repository.toggleSetCompleted(exerciseId, set.id) == true) {
-                                container.restTimer.start(label(exerciseId))
+                            } else {
+                                container.toggleSetCompleted(exerciseId, set.id)
                             }
                         }
                     },
@@ -340,6 +360,7 @@ fun WorkoutScreen(
                         haptics.light()
                         container.launchMutation { repository.addSet(exerciseId) }
                     },
+                    linkToNext = linkToNext,
                     modifier = if (isDragging) Modifier.background(Studio.colors.surfaceRaised, Studio.shapes.surface) else Modifier,
                     headerModifier = Modifier.longPressDraggableHandle(
                         onDragStarted = { haptics.light() },
@@ -400,6 +421,8 @@ fun WorkoutScreen(
         if (exercise == null) {
             optionsFor = null
         } else {
+            // 🔄 D46 (§ 15.20.1) : superséries entre exercices affichés, dans l'ordre de la séance.
+            val partners = SupersetRules.groupOf(visible, exerciseId)?.filter { it.exerciseId != exerciseId }
             StudioBottomSheet(onDismissRequest = { optionsFor = null }) { inset ->
                 ExerciseOptionsSheetContent(
                     name = label(exerciseId),
@@ -411,6 +434,25 @@ fun WorkoutScreen(
                     },
                     onClose = { optionsFor = null },
                     bottomInset = inset,
+                    subtitle = partners?.let { list -> stringResource(R.string.superset_with, list.joinToString(", ") { label(it.exerciseId) }) },
+                    onLinkNext = if (SupersetRules.canLinkToNext(visible, exerciseId)) {
+                        {
+                            haptics.light()
+                            optionsFor = null
+                            container.launchMutation { repository.linkToNext(exerciseId) }
+                        }
+                    } else {
+                        null
+                    },
+                    onUnlink = if (partners != null) {
+                        {
+                            haptics.light()
+                            optionsFor = null
+                            container.launchMutation { repository.unlink(exerciseId) }
+                        }
+                    } else {
+                        null
+                    },
                 )
             }
         }
@@ -434,9 +476,9 @@ fun WorkoutScreen(
     val deleteExercise = deleteSetOf
     val deleteSet = deleteSetId
     if (deleteExercise != null && deleteSet != null) {
-        val number = byId[deleteExercise]?.sets?.indexOfFirst { it.id == deleteSet }?.plus(1) ?: 0
+        val number = byId[deleteExercise]?.sets?.let { SetNumbering.of(it, deleteSet) } ?: SetNumber(warmup = false, rank = 0)
         ConfirmSheet(
-            title = stringResource(R.string.workout_delete_set_title, number),
+            title = stringResource(if (number.warmup) R.string.workout_delete_warmup_title else R.string.workout_delete_set_title, number.rank),
             message = stringResource(R.string.workout_delete_set_message),
             confirmLabel = stringResource(R.string.common_delete),
             dismissLabel = stringResource(R.string.common_cancel),

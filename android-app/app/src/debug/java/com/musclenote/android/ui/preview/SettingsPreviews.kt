@@ -12,6 +12,7 @@ import com.musclenote.android.ui.settings.FeedbackSheetContent
 import com.musclenote.android.ui.settings.HealthConnectSheetContent
 import com.musclenote.android.ui.settings.LanguageSheetContent
 import com.musclenote.android.ui.settings.RestTimerSheetContent
+import com.musclenote.android.ui.settings.SupersetRestSheetContent
 import com.musclenote.android.ui.settings.SettingsScreen
 import com.musclenote.android.ui.settings.ThemeSheetContent
 import com.musclenote.android.ui.settings.WeighInReminderSheetContent
@@ -54,6 +55,15 @@ private fun PreferenceSheetsPreview() = StudioComponentPreview {
     LanguageSheetContent(selected = AppLanguage.System, onSelect = {})
     StateCaption("Minuteur de repos")
     RestTimerSheetContent(selected = 150, onSelect = {})
+}
+
+/** 🔄 D46 (§ 15.20.4) : repos dans une supersérie, 0 s par défaut, puis 15 s choisies. */
+@StudioComponentPreviews
+@Composable
+private fun SupersetRestSheetPreview() = StudioComponentPreview {
+    SupersetRestSheetContent(selected = 0, onSelect = {})
+    StateCaption("15 s")
+    SupersetRestSheetContent(selected = 15, onSelect = {})
 }
 
 /** Sauvegarde automatique activée, dernière sauvegarde ce matin (PreviewData). */

@@ -218,9 +218,48 @@ class AppContainer(
      */
     suspend fun completeNextSet() {
         awaitReady()
-        val exerciseId = workouts.completeNextSet()
-        if (exerciseId != null) restTimer.start(workoutNotifications.exerciseName(exerciseId, workouts.customExercises.value))
+        val completed = workouts.completeNext()
+        if (completed != null) restAfterCompleting(completed.first, completed.second)
         refreshWorkoutNotification()
+    }
+
+    /**
+     * Valider la série [setId] (pavé, § 15.7.4) sans jamais la dévalider ; si elle vient de passer à
+     * validée, le repos suit les règles des superséries ([restAfterCompleting]). `true` dans ce cas.
+     */
+    suspend fun completeSet(exerciseId: String, setId: String): Boolean {
+        awaitReady()
+        if (!workouts.completeSet(exerciseId, setId)) return false
+        restAfterCompleting(exerciseId, setId)
+        return true
+    }
+
+    /**
+     * La case d'une série (§ 2.6) : bascule sa validation ; validée, le repos suit les règles des
+     * superséries, dévalidée rien ne change. Le nouvel état, `null` si la série est introuvable.
+     */
+    suspend fun toggleSetCompleted(exerciseId: String, setId: String): Boolean? {
+        awaitReady()
+        val completed = workouts.toggleSetCompleted(exerciseId, setId)
+        if (completed == true) restAfterCompleting(exerciseId, setId)
+        return completed
+    }
+
+    /**
+     * Repos après la validation de [setId] (🔄 D46, § 15.20.3) : dans une supersérie, entre deux
+     * exercices liés, le repos en cours s'arrête et le repos de transition démarre s'il est réglé ; sinon
+     * (fin du tour, série de chauffe, hors supersérie) le repos normal. Il porte le nom de l'exercice de
+     * la série suivante de la supersérie, sinon celui de la série validée.
+     */
+    private suspend fun restAfterCompleting(exerciseId: String, setId: String) {
+        val after = workouts.afterCompleting(exerciseId, setId) ?: return
+        val name = workoutNotifications.exerciseName(after.next?.exercise?.exerciseId ?: exerciseId, workouts.customExercises.value)
+        val transitionSeconds = preferences.preferences.value.supersetRestSeconds
+        when {
+            !after.transition -> restTimer.start(name)
+            transitionSeconds > 0 -> restTimer.start(name, transitionSeconds)
+            else -> restTimer.stop()
+        }
     }
 
     /**
@@ -253,7 +292,7 @@ class AppContainer(
         if (located != null && !located.set.completed) {
             val seconds = SetTimerRules.elapsedSeconds(cleared, nowMillis)
             val exerciseId = workouts.recordHold(cleared.setId, seconds, validate)
-            if (exerciseId != null) restTimer.start(workoutNotifications.exerciseName(exerciseId, workouts.customExercises.value))
+            if (exerciseId != null) restAfterCompleting(exerciseId, cleared.setId)
         }
         refreshWorkoutNotification()
     }

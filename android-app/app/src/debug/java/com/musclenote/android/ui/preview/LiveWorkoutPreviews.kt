@@ -1,5 +1,7 @@
 package com.musclenote.android.ui.preview
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import com.musclenote.android.data.model.SetKind
@@ -9,9 +11,11 @@ import com.musclenote.android.data.model.WorkoutExercise
 import com.musclenote.android.data.model.WorkoutSet
 import com.musclenote.android.data.workout.SessionInsights
 import com.musclenote.android.data.workout.SetEntryField
+import com.musclenote.android.data.workout.SetNumber
 import com.musclenote.android.ui.designsystem.StudioComponentPreview
 import com.musclenote.android.ui.designsystem.StudioComponentPreviews
 import com.musclenote.android.ui.designsystem.components.RestBanner
+import com.musclenote.android.ui.designsystem.theme.Studio
 import com.musclenote.android.ui.workout.EntryTarget
 import com.musclenote.android.ui.workout.ExerciseOptionsSheetContent
 import com.musclenote.android.ui.workout.LiveExerciseBlock
@@ -150,9 +154,9 @@ private fun LiveExerciseBlockTimedPreview() = StudioComponentPreview {
 private fun WorkoutKeypadTimedPreview() = StudioComponentPreview {
     val set = WorkoutSet("pl-3", 0, 0.0, false, durationSeconds = 90)
     WorkoutKeypad(
-        set, 3, kind = SetKind.Timed, entry = SetEntryState(EntryTarget("plank", set.id, SetEntryField.Hold), "130", fresh = false),
+        set, SetNumber(warmup = false, rank = 3), kind = SetKind.Timed, entry = SetEntryState(EntryTarget("plank", set.id, SetEntryField.Hold), "130", fresh = false),
         field = SetEntryField.Hold, locale = french, bottomInset = 0.dp,
-        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {},
+        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {}, onToggleWarmup = {},
     )
 }
 
@@ -162,14 +166,14 @@ private fun WorkoutKeypadTimedPreview() = StudioComponentPreview {
 private fun WorkoutKeypadPreview() = StudioComponentPreview {
     val set = current("bench").sets.last()
     WorkoutKeypad(
-        set, 4, kind = SetKind.Strength, entry = SetEntryState(EntryTarget("bench", set.id, SetEntryField.Weight), "80"),
+        set, SetNumber(warmup = false, rank = 4), kind = SetKind.Strength, entry = SetEntryState(EntryTarget("bench", set.id, SetEntryField.Weight), "80"),
         field = SetEntryField.Weight, locale = french, bottomInset = 0.dp,
-        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {},
+        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {}, onToggleWarmup = {},
     )
     WorkoutKeypad(
-        set, 4, kind = SetKind.Strength, entry = SetEntryState(EntryTarget("bench", set.id, SetEntryField.Reps), "8"),
+        set, SetNumber(warmup = false, rank = 4), kind = SetKind.Strength, entry = SetEntryState(EntryTarget("bench", set.id, SetEntryField.Reps), "8"),
         field = SetEntryField.Reps, locale = french, bottomInset = 0.dp,
-        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {},
+        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {}, onToggleWarmup = {},
     )
 }
 
@@ -179,9 +183,9 @@ private fun WorkoutKeypadPreview() = StudioComponentPreview {
 private fun WorkoutKeypadCardioPreview() = StudioComponentPreview {
     val set = WorkoutSet("tm-1", 0, 0.0, false, duration = 30.0, distance = 5.0, speed = 9.5)
     WorkoutKeypad(
-        set, 2, kind = SetKind.Cardio, entry = SetEntryState(EntryTarget("treadmill", set.id, SetEntryField.Speed), "9,5"),
+        set, SetNumber(warmup = false, rank = 2), kind = SetKind.Cardio, entry = SetEntryState(EntryTarget("treadmill", set.id, SetEntryField.Speed), "9,5"),
         field = SetEntryField.Speed, locale = french, bottomInset = 0.dp,
-        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {},
+        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {}, onToggleWarmup = {},
     )
 }
 
@@ -190,5 +194,87 @@ private fun WorkoutKeypadCardioPreview() = StudioComponentPreview {
 @Composable
 private fun WorkoutSheetsPreview() = StudioComponentPreview {
     WarmupSheetContent(done = 0b00011, onToggle = {}, onClose = {}, bottomInset = 0.dp)
-    ExerciseOptionsSheetContent("Développé couché", "Prise un peu plus serrée", {}, {}, {}, bottomInset = 0.dp)
+    ExerciseOptionsSheetContent("Développé couché", "Prise un peu plus serrée", {}, {}, {}, bottomInset = 0.dp, onLinkNext = {})
+}
+
+/**
+ * 🔄 D46 (§ 15.20.1) : options d'un exercice lié — « Supersérie avec … » sous le titre ; au milieu d'un
+ * circuit « Délier » seul, en fin de supersérie suivie d'un exercice les deux boutons.
+ */
+@StudioComponentPreviews
+@Composable
+private fun ExerciseOptionsSupersetPreview() = StudioComponentPreview {
+    ExerciseOptionsSheetContent(
+        "Développé incliné haltères", "", {}, {}, {}, bottomInset = 0.dp,
+        subtitle = "Supersérie avec Élévations latérales", onUnlink = {},
+    )
+    ExerciseOptionsSheetContent(
+        "Élévations latérales", "", {}, {}, {}, bottomInset = 0.dp,
+        subtitle = "Supersérie avec Développé incliné haltères", onLinkNext = {}, onUnlink = {},
+    )
+}
+
+/**
+ * 🔄 D46 (§ 15.20.2) : développé incliné haltères lié aux élévations latérales (premier tour fait) : le
+ * trait « Supersérie » sous « + Série », à travers l'écart de la liste jusqu'au bloc suivant.
+ */
+@StudioComponentPreviews
+@Composable
+private fun LiveExerciseBlockSupersetPreview() = StudioComponentPreview {
+    val exercises = PreviewData.supersetWorkout.exercises
+    val incline = exercises.first { it.exerciseId == "dincline" }
+    val reference = SessionInsights.reference(PreviewData.workouts, "dincline")
+    Column(verticalArrangement = Arrangement.spacedBy(Studio.spacing.l)) {
+        LiveExerciseBlock(
+            name = "Développé incliné haltères",
+            exercise = incline,
+            kind = SetKind.Strength,
+            reference = reference,
+            referenceDate = "jeu. 5 nov.",
+            suggestion = SessionInsights.suggestion(reference, SetKind.Strength),
+            entry = SetEntryState(),
+            locale = french,
+            restAnchor = null,
+            rest = {},
+            onOpenDetails = {},
+            onMore = {},
+            onApplySuggestion = {},
+            onFieldClick = { _, _ -> },
+            onPreviousClick = { _, _ -> },
+            onCheck = {},
+            onAddSet = {},
+            linkToNext = "Supersérie : Développé incliné haltères, puis Élévations latérales",
+        )
+        LiveExerciseBlock(
+            name = "Élévations latérales",
+            exercise = exercises.first { it.exerciseId == "lateralraise" },
+            kind = SetKind.Strength,
+            reference = null,
+            referenceDate = null,
+            suggestion = null,
+            entry = SetEntryState(),
+            locale = french,
+            restAnchor = null,
+            rest = {},
+            onOpenDetails = {},
+            onMore = {},
+            onApplySuggestion = {},
+            onFieldClick = { _, _ -> },
+            onPreviousClick = { _, _ -> },
+            onCheck = {},
+            onAddSet = {},
+        )
+    }
+}
+
+/** 🔄 D47 (§ 15.21.1) : pavé d'une série de chauffe, « Kg · chauffe 1 », puce « Chauffe » sélectionnée. */
+@StudioComponentPreviews
+@Composable
+private fun WorkoutKeypadWarmupPreview() = StudioComponentPreview {
+    val set = PreviewData.supersetWorkout.exercises.first { it.exerciseId == "bench" }.sets.first()
+    WorkoutKeypad(
+        set, SetNumber(warmup = true, rank = 1), kind = SetKind.Strength, entry = SetEntryState(EntryTarget("bench", set.id, SetEntryField.Weight), "40"),
+        field = SetEntryField.Weight, locale = french, bottomInset = 0.dp,
+        onSelectField = {}, onDigit = {}, onBackspace = {}, onStep = {}, onAction = {}, onDelete = {}, onHide = {}, onToggleWarmup = {},
+    )
 }

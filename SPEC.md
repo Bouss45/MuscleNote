@@ -667,7 +667,7 @@ langue courante ; sinon `name` ; si vide → date formatée.
    chacun sa **note** et **toutes ses séries** (validées ou non — c'est le plan de la
    séance) **clonées** : nouvel `id`, `completed = false`, `reps`/`weight` conservés,
    `duration`/`distance`/`speed`/`incline` conservés s'ils sont définis (🔄 D44 : `durationSeconds`
-   aussi, § 15.18.2).
+   aussi, § 15.18.2). 🔄 D46 : les liens de supersérie (`supersetId`) sont repris (§ 15.20.6).
 3. Sinon : séance vide.
 4. Nouvelle séance : `id` généré, `preset` (ou absent), `name` = libellé du préréglage dans la
    langue courante (conservé pour la compatibilité, § 5) ou nom perso `trim()`,
@@ -678,7 +678,8 @@ langue courante ; sinon `name` ; si vide → date formatée.
 
 `addExerciseToWorkout(id)` : sans effet si l'exercice est déjà dans la séance. Sinon ajoute en
 fin de liste l'exercice avec la note et les séries (clonées comme au § 3.1) de la **séance
-terminée la plus récente contenant cet exercice** ; aucune → 0 série.
+terminée la plus récente contenant cet exercice** ; aucune → 0 série. 🔄 D46 : jamais lié à une
+supersérie, même si l'exercice l'était dans cette séance (§ 15.20.6).
 
 ### 3.3 Terminer une séance
 
@@ -870,6 +871,8 @@ Durée = préférence `restSeconds` (défaut **180 s** ; préréglages 60, 90, 1
   07:30, tous les jours (§ 15.13.3, § 15.13.5).
 - `removedWorkoutTypes` (🔄 D45) : types retirés de « Mes types » (nom et instant du retrait), vide
   par défaut (§ 15.19.4, § 15.19.5).
+- `supersetRestSeconds` (🔄 D46) : repos de transition dans une supersérie, 0 à 60 s, 0 par défaut
+  (aucun repos, § 15.20.4, § 15.20.7).
 - Préférences locales non sauvegardées : carte de transfert masquée (§ 2.2) ; copie de la
   langue choisie dans l'app, relue par les notifications construites hors activité avant
   Android 13 (§ 9.4).
@@ -887,7 +890,8 @@ dans les statistiques (accueil, historique d'exercice, Progrès, records, 1RM, t
 via les séances retenues) et dans l'export CSV. Les séries non validées sont conservées
 dans les séances (plan pour le pré-remplissage, modifiables dans l'éditeur) et dans la
 sauvegarde JSON. Les anciennes séances importées depuis l'app Expo ont toutes leurs séries
-marquées validées (§ 5.3), pour que leurs statistiques ne changent pas.
+marquées validées (§ 5.3), pour que leurs statistiques ne changent pas. 🔄 D47 : une **série de
+chauffe** validée ne compte pas non plus ; « série comptée » = validée et pas de chauffe (§ 15.21.3).
 
 ### 3.17 Vérification des mises à jour (🔄 D25)
 
@@ -956,6 +960,7 @@ Légende : **req.** = toujours présent ; *opt.* = peut être absent.
 | `speed` | décimal | *opt.* | **km/h** | cardio |
 | `incline` | décimal | *opt.* | **%** | cardio |
 | `durationSeconds` (🔄 D44) | entier | *opt.* | **secondes** | série au temps ; omis s'il est absent (§ 15.18.8) |
+| `warmup` (🔄 D47) | boolean | *opt.* | | série de chauffe, hors statistiques ; omis à `false` (§ 15.21.6) |
 
 Un exercice est « cardio » ssi `muscleGroup == "cardio"` ; c'est ce qui décide des champs
 saisis/affichés, pas la présence des champs. 🔄 D44 : sinon, un exercice de `type` `"timed"` est
@@ -967,6 +972,7 @@ saisis/affichés, pas la présence des champs. 🔄 D44 : sinon, un exercice de 
 | `exerciseId` | string | req. | unique dans une séance |
 | `sets` | `Set[]` | req. | ordre d'affichage |
 | `note` | string | *opt.* | note libre |
+| `supersetId` (🔄 D46) | string | *opt.* | supersérie : deux exercices voisins au même identifiant sont liés ; omis s'il est absent (§ 15.20.7) |
 
 **`Workout`** (séance)
 | champ | type | | unité | description |
@@ -1016,10 +1022,11 @@ saisis/affichés, pas la présence des champs. 🔄 D44 : sinon, un exercice de 
 
 Les journaux peuvent contenir des jours à 0 (après ⟲).
 
-**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark", weighInReminder?, removedWorkoutTypes? }`
+**`Preferences`** : `{ restSeconds: entier, theme: "system" | "light" | "dark", weighInReminder?, removedWorkoutTypes?, supersetRestSeconds? }`
 (défaut 180 et `"dark"`, 🔄 D35) ; 🔄 D38 — `weighInReminder` : `{ enabled, hour, minute, days }`,
 omis au défaut (désactivé, 07:30, tous les jours ; § 15.13.5) ; 🔄 D45 — `removedWorkoutTypes` :
-`[{ name, removedAt }]`, omis s'il est vide (§ 15.19.5).
+`[{ name, removedAt }]`, omis s'il est vide (§ 15.19.5) ; 🔄 D46 — `supersetRestSeconds` : entier 0 à 60,
+omis à 0 (§ 15.20.7).
 
 **`RestTimerState`** (non sauvegardé) : `{ endsAt: instant ms, total: s, exerciseName }`.
 
@@ -1260,7 +1267,10 @@ lu selon le § 15.15.4 (absent → historique vide ; entrées invalides écarté
 exercice lus selon le § 15.18.8 (absents → pas de durée, `"reps"` ; valeurs invalides → idem, durée
 arrondie à l'entier, négative → 0). 🔄 D45 : `removedWorkoutTypes` des préférences lu selon le § 15.19.5
 (absent → aucun type retiré ; entrées invalides écartées) ; une séance v2 sans `preset` dont le nom
-correspond à un préréglage y est rattachée au rechargement qui suit l'import (§ 15.19.2).
+correspond à un préréglage y est rattachée au rechargement qui suit l'import (§ 15.19.2). 🔄 D46 :
+`supersetId` d'un exercice de séance et `supersetRestSeconds` des préférences lus selon le § 15.20.7
+(absents → pas de lien, 0 s ; valeurs invalides → idem). 🔄 D47 : `warmup` d'une série lu selon le
+§ 15.21.6 (absent ou invalide → `false`).
 
 ### 5.4 Déroulé d'un import
 
@@ -1460,7 +1470,9 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
   (`endsAt`, `total`, nom de l'exercice) est persisté dans `rest_timer.json` pour survivre à
   la mort du processus.
 - **Démarrage** : en validant une série en séance (non validée → validée). Dévalider ne fait
-  rien. Durée = `restSeconds` au moment du démarrage.
+  rien. Durée = `restSeconds` au moment du démarrage. 🔄 D46 : dans une supersérie, entre deux
+  exercices liés, le repos de transition (`supersetRestSeconds`, aucun repos à 0 s) ; le repos normal
+  en fin de tour (§ 15.20.3).
 - **Au démarrage du repos** :
   1. 🔄 D31 — le repos s'affiche dans la notification **« Séance en cours »** (§ 15.5) : titre
      « {séance} · Repos », compte à rebours **géré par le système** jusqu'à `endsAt`, prochaine
@@ -1547,7 +1559,8 @@ préréglages distincts, clés différentes). 🔄 D24 — l'app native affiche 
     les `"` internes sont doublés ;
   - dates **ISO `AAAA-MM-JJ`** (jour local), heures `HH:mm` ;
   - cellule vide = champ vide.
-- Seules les **séries validées** sont exportées et comptées (🔄 D15).
+- Seules les **séries validées** sont exportées et comptées (🔄 D15) ; 🔄 D47 : pas les séries de chauffe,
+  et « Série n° » est le rang parmi les séries de travail (§ 15.21.3).
 
 **`sessions`** (une ligne par séance terminée, plus récente d'abord)
 | en-tête FR | en-tête EN | valeur |
@@ -1884,7 +1897,7 @@ de pesée (§ 15.13), D39 avec la notification de mise à jour (§ 15.14), D40 a
 de la maquette v2 (DESIGN.md, § 15.6), D41 avec le calendrier du Journal (§ 15.15), D42 avec les
 protéines, le stock des compléments et la moyenne sur 7 jours (§ 15.16), D43 avec la carte du corps
 et les muscles travaillés (§ 15.17), D44 avec les exercices au temps (§ 15.18), D45 avec les types de
-séance (§ 15.19).
+séance (§ 15.19), D46 avec les superséries (§ 15.20), D47 avec les séries de chauffe (§ 15.21).
 
 | n° | Sujet | Réponse | Ce qui est spécifié |
 |---|---|---|---|
@@ -1933,6 +1946,8 @@ séance (§ 15.19).
 | D43 | Carte du corps et muscles travaillés (maquette `T2-Carte-corps`, SVG `design/claude-design/corps/`) | liste fixe des muscles (ids du SVG) avec nom courant, nom savant et rôle en une phrase ; muscles principaux et secondaires de chaque exercice intégré en donnée embarquée, jamais dans les fichiers de l'utilisateur ; exercices perso : choix des muscles dans leur formulaire, champ facultatif, sans migration ; fiche exercice : section « Muscles travaillés » en bas (petite carte + noms) ; sélecteur d'exercices : filtre « par muscle » avec la grande carte, toucher un muscle filtre la liste ; toucher un muscle (fiche ou filtre) ouvre la sheet « Muscle » ; écran de la séance en cours inchangé ; chaque muscle de la carte lu par TalkBack | 17 muscles, ordre et ids figés (§ 15.17.1) ; au moins un principal par exercice intégré, aucun muscle à la fois principal et secondaire (§ 15.17.2) ; le groupe musculaire reste (classement, cardio, filtre « Par groupe ») ; `Exercise.primaryMuscles` / `secondaryMuscles` facultatifs, omis vides, valeurs inconnues écartées à la lecture, un ancien fichier relu sans muscle ; formulaire perso : puces à choix multiple « Muscles principaux » et « Muscles secondaires », un muscle dans une seule des deux ; fiche : dernière section, carte de 150 dp et noms (principaux puis secondaires), section absente pour un exercice perso sans muscle ; sélecteur : contrôle segmenté « Par groupe » / « Par muscle », carte fixe au-dessus de la liste (au plus 360 dp et 40 % de l'écran, place de 4 à 5 exercices dessous, masquée clavier ouvert), liste toujours ouverte en haut, plusieurs muscles possibles (union), principaux d'abord, puces des muscles choisis et « Retirer le filtre » ; sheet « Muscle » : carte d'une vue, nom, nom savant, rôle, exercices qui le travaillent (principal / secondaire), étape du sélecteur ou bottom sheet de la fiche ; toucher hors d'une zone → la plus proche à 12 dp ; composant nouveau `BodyMap` (formes du SVG pour Compose, toucher par muscle, un élément TalkBack par muscle) et jetons de la carte (§ 4.1, 6.1, 15.6, 15.9.1, 15.11.2, 15.17) |
 | D44 | Exercices au temps (gainage) | type d'exercice « au temps » à côté de « charge × reps » et du poids du corps ; planche, planche latérale, chaise contre le mur et suspension à la barre embarquées au temps, avec leurs muscles ; type choisi dans le formulaire d'un exercice perso ; série au temps = durée (`m:ss`) et charge facultative (lest), saisie au pavé ou par un chronomètre dans la ligne (Démarrer / Arrêter, en jaune pendant qu'il tourne, durée reportée dans la série) ; « Préc. » en durée ; suggestion +5 s si la durée a été tenue sur toutes les séries ; « Arrêter » valide la série ; fiche et Progrès : durée max par séance, record = durée la plus longue, pas de 1RM ; séries au temps hors du volume en kg, temps sous tension dans le résumé ; chrono visible dans la notification de séance, écran verrouillé compris ; durée en secondes et type d'exercice facultatifs, sans migration, anciennes données relues telles quelles ; colonne durée dans l'export CSV | `plank` passe au temps et devient « Planche » ; `wallsit`, `sideplank`, `deadhang` ajoutés (45 exercices) ; `Exercise.type` `"reps"` (omis) / `"timed"`, ignoré pour le cardio, segmenté « Type » masqué pour le groupe Cardio ; `Set.durationSeconds` entier, distinct de `duration` (minutes, cardio) ; série au temps = série qui a une durée (une ancienne série en reps d'un exercice devenu au temps reste comptée comme avant et hors des statistiques de durée) ; colonnes # · Préc. · Durée · Kg, nouvelle série 0:30 sans lest ; durée saisie depuis la droite (4 chiffres, secondes > 59 comptées comme des secondes, borne 99:59, pas de ±5 s) ; chrono sur les séries non validées, un seul à la fois, son départ arrête le repos, « Arrêter » (ou la case) reporte les secondes entières et valide la série (le repos démarre), le pavé l'arrête sans valider, instant de départ gardé dans `set_timer.json` (hors sauvegarde) ; notification : ligne « chrono de série » prioritaire (chronomètre vers le haut, action « Arrêter » par `RestTimerReceiver`, pastille Live Update) ; métrique = durée max des séries validées avec durée, séance sans durée hors de la fiche ; temps sous tension = somme des durées validées, après les séries dans la rangée de stats du résumé ; colonne « Durée (s) » ajoutée à la fin du fichier `sets` ; variante de `SetRow` (bouton du chrono, état en cours), icônes `play_arrow`, `stop`, `ic_stop` (§ 3.1, 3.8, 4.1, 4.2, 5.3, 6.1, 8, 15.5, 15.7, 15.9.3, 15.12, 15.17.2, 15.18) |
 | D45 | Types de séance : nouveaux préréglages et types personnalisés réutilisables | groupe « Haut / Bas » (Haut du corps, Bas du corps) et Abdos, Fessiers dans Split ; les anciennes séances qui portent un de ces noms en personnalisé sont rattachées au préréglage ; rangée « Mes types » en tête du choix du type (démarrer, renommer) : les noms personnalisés déjà utilisés, les plus récents d'abord, 8 au plus, masquée sans nom ; noms comparés sans casse ni espaces en trop, forme la plus récente affichée, pas de doublon d'un préréglage ; appui long → retirer de « Mes types » après confirmation, séances passées inchangées, le nom revient s'il est réutilisé ; même comparaison pour « même programme » et le type suggéré ; seule la liste des types retirés est stockée (champ facultatif des préférences, sans migration), le reste est calculé à partir des séances | ids `upperBody`, `lowerBody`, `abs`, `glutes` (15 préréglages, 4 groupes) ; nom égal au libellé FR ou EN d'un préréglage = ce préréglage, pour tous les préréglages, à la lecture des séances, au démarrage et au renommage (`name` conservé) ; clé de séance : minuscules, sans accents, suites d'espaces réduites ; « Mes types » = séances terminées sans préréglage, une puce par clé, texte = nom de la plus récente, séance en cours non comptée ; toucher une puce met son nom dans « Personnalisé » ; retrait = `{ name, removedAt }`, le type revient dès qu'une séance de ce nom commencée après le retrait est terminée ; « Retirer » par `ConfirmSheetContent` dans la sheet ; variante de `FilterChip` (appui long, action TalkBack nommée) (§ 2.3, 3.1, 3.14, 4.1, 5.3, 6.3, 10.6, 15.8.3, 15.11.1, 15.12.3, 15.19) |
+| D46 | Superséries, version légère | aucun écran nouveau : « Lier à l'exercice suivant » / « Délier » dans le menu ⋮ du bloc exercice, plusieurs liens à la suite = un circuit ; un trait fin vertical relie les blocs liés, libellé « Supersérie » en petit, gris, sans couleur ; valider une série d'un exercice lié qui n'est pas le dernier : pas de repos (ou le repos de transition s'il est réglé) et la saisie passe à la même série de l'exercice suivant ; la série du dernier exercice : repos normal ; réglage « Repos dans une supersérie » à côté du minuteur, 0 s par défaut (0 à 60 s) ; la notification de séance indique l'exercice suivant de la supersérie ; la séance suivante du même type reprend les liens ; les séries de chauffe n'enchaînent pas ; identifiant de supersérie facultatif sur l'exercice de la séance, sans migration | lien = deux exercices voisins au même `supersetId` ; lier rejoint ou fond les superséries, délier sort l'exercice (les voisins restés liés gardent leur lien), le lien suit les voisins au glisser-déposer et au retrait d'un exercice, jamais lié à l'ajout ; trait de 2 `textTertiary` sur la colonne des numéros, de « + Série » au titre suivant, « Supersérie » `caption` `textSecondary`, lu par TalkBack ; ordre d'enchaînement tour par tour (rang absent sauté) ; transition = un exercice suivant de la supersérie a ce rang non validé → repos en cours arrêté, repos de transition s'il est réglé ; sinon fin du tour → repos normal ; le repos porte le nom de l'exercice suivant de la supersérie ; pavé ouvert sur la série suivante de la supersérie dans cet ordre ; case : le repos seul ; bandeau de repos et prochaine série de la notification (« Valider la série » compris) dans l'ordre d'enchaînement ; puces 0, 10, 15, 20, 30, 45, 60 s ; une série de chauffe (🔄 D47) n'enchaîne jamais et ne compte pas dans les tours ; liens repris au pré-remplissage, pas à l'ajout d'un exercice ; éditeur, résumé, Journal et fiche sans superséries ; `WorkoutExercise.supersetId` et `Preferences.supersetRestSeconds` facultatifs, omis au défaut, lus sans refuser, remis en forme ; composant nouveau `SupersetLink` (§ 3.1, 3.2, 3.14, 4.1, 5.3, 7.2, 15.5, 15.6, 15.7.1, 15.7.4, 15.10.3, 15.20) |
+| D47 | Séries de chauffe (demandées avec les superséries : « les séries de chauffe ne déclenchent pas l'enchaînement », l'app n'en avait pas) | une série peut être marquée « chauffe » : hors des statistiques, sans enchaînement dans une supersérie ; champ facultatif sur la série, sans migration | puce « Chauffe » dans l'en-tête du pavé (séance en cours et éditeur), bascule de la série ouverte ; « C » dans la colonne « # », séries de travail numérotées sans les chauffes, « chauffe k » ailleurs (pavé, notification, TalkBack) ; série comptée = validée et pas de chauffe, pour toutes les statistiques et le CSV (chauffes non exportées) ; progression de la séance, fin ou abandon, série hebdo, temps en salle et Health Connect inchangés ; « Préc. » par rangs séparés, séance de référence = dernière avec une série comptée, suggestion sur les séries de travail ; chauffe validée → repos normal, jamais de transition, placée avant la première série de travail de l'exercice dans l'ordre d'enchaînement ; marquage repris au pré-remplissage ; `Set.warmup` facultatif, omis à `false`, lu sans refuser ; variantes de `KeypadHeader` (puce) et de `SetRow` (numéro « C ») (§ 2.5, 3.1, 3.3, 3.16, 4.1, 5.3, 8, 15.5, 15.7, 15.12, 15.20, 15.21) |
 
 **Détail de D15 (corrections)** :
 | bizarrerie de l'app Expo | correction |
@@ -1982,7 +1997,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 737 tests JVM (55 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 790 tests JVM (58 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2362,6 +2377,48 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   confirmation, retour), TalkBack (action « Retirer de Mes types »), retour d'un type réutilisé après une
   séance terminée, une ancienne séance perso « Haut du corps » affichée « Upper body » en anglais et
   renvoyée une fois à Health Connect.
+- **Superséries** (🔄 D46, § 15.20), branche `feat/superseries` : `WorkoutExercise.supersetId` (lecture
+  tolérante `SupersetIdSerializer`, `BackupNormalizer`) et `Preferences.supersetRestSeconds` (0 à 60 s,
+  `SupersetRestSerializer`) ; règles pures `data/workout/SupersetRules.kt` (`link`, `unlink`, `normalized`,
+  `groups`, `chainOrder`, `afterCompleting` → `ChainNext`) ; prochaine série de la notification et place du
+  repos dans l'ordre d'enchaînement (`WorkoutNotificationRules.nextSet`, `SessionInsights.restAnchor`) ;
+  `WorkoutRules` (liens repris au pré-remplissage, jamais à l'ajout, remis en forme par `patch`) ;
+  `WorkoutRepository.linkToNext` / `unlink` / `afterCompleting`, remise en forme au chargement, au retrait
+  et au glisser-déposer ; repos de transition `RestTimerRepository.start(nom, secondes)` et
+  `AppContainer.completeSet` / `toggleSetCompleted` / `completeNextSet` / `stopSetTimer` (une seule règle,
+  `restAfterCompleting`) ; `PreferencesRepository.setSupersetRestSeconds`. Interface : boutons « Lier à
+  l'exercice suivant » / « Délier » et « Supersérie avec … » dans `ExerciseOptionsSheetContent`, trait sous
+  « + Série » (`LiveExerciseBlock(linkToNext)`), pavé ouvert sur la série suivante de la supersérie
+  (`WorkoutScreen`), ligne et sheet « Repos dans une supersérie » (`SettingsScreen`, `SupersetRestSheet`,
+  `RestTimerRules.SUPERSET_PRESETS`). Design system : composant `SupersetLink`. Tests JVM
+  `SupersetRulesTest` (lier, rejoindre, fondre, délier premier / milieu / dernier, remise en forme,
+  glisser-déposer, exercice retiré, exercice masqué, ordre d'enchaînement à 2, circuit de 3, nombres de
+  séries différents, chauffes, transition ou fin du tour, pavé, notification, place du repos),
+  `SupersetTest` (par `AppContainer` : aucun repos et repos en cours arrêté, repos de transition au nom de
+  l'exercice suivant, repos normal en fin de tour et hors supersérie, case, notification, circuit de trois
+  aux séries inégales, chrono d'une série au temps, chauffe, lier / délier / retirer / réordonner, reprise
+  et ajout, réglage borné et relu, anciens fichiers et valeurs invalides sans fichier mis de côté),
+  `WorkoutNotificationRulesTest`, `BackupV2Test`. Aperçus : `SupersetLinkPreview`,
+  `LiveExerciseBlockSupersetPreview`, `ExerciseOptionsSupersetPreview`, `WorkoutScreenSupersetPreview`
+  (jeu `PreviewDataSet.WithSuperset`), `SupersetRestSheetPreview`, Paramètres. À vérifier **sur
+  l'appareil** : lier puis valider au pavé (passage à l'exercice suivant), repos de transition puis repos
+  normal, « Valider la série » depuis la notification et la montre dans une supersérie, glisser-déposer
+  d'un exercice lié, TalkBack sur le trait.
+- **Séries de chauffe** (🔄 D47, § 15.21), même branche : `WorkoutSet.warmup` (lecture tolérante
+  `LenientFlagSerializer`, `BackupNormalizer`) et `WorkoutSet.counted` ; statistiques sur les séries
+  comptées (`WorkoutStats`, `ProgressStats`, `WorkoutSummaryRules`, `JournalRules` par `completedSetCount`,
+  `CsvExport` sans les chauffes, rang parmi les séries de travail) ; numéros `data/workout/SetNumbering.kt`
+  (`SetNumber`) ; « Préc. » par rangs séparés, séance de référence avec une série comptée et suggestion sur
+  les séries de travail (`SessionInsights`) ; « Chauffe k » de la notification (`WorkoutNotificationTexts`).
+  Interface : puce « Chauffe » du pavé (`WorkoutKeypad`, séance en cours et éditeur), « C » et textes
+  TalkBack des lignes (`LiveExerciseBlock`, `EditWorkoutScreen`), confirmation « Supprimer la chauffe 1 ? ».
+  Design system : variante de `KeypadHeader` (`KeypadToggle`). Tests JVM `WarmupSetsTest`
+  (statistiques, historique, résumé, Journal, fin de séance, numéros, « Préc. », suggestion, reprise),
+  `CsvExportTest`, `WorkoutNotificationRulesTest`, `BackupV2Test`, `SupersetRulesTest`, `SupersetTest`.
+  Aperçus : `KeypadHeaderTogglePreview`, `WorkoutKeypadWarmupPreview`, pavés de la séance (puce),
+  `SupersetLinkPreview`, `WorkoutScreenSupersetPreview`. À vérifier **sur l'appareil** : marquer une série
+  au pavé (TalkBack « Série de chauffe »), numéros après le marquage, « Préc. » d'une chauffe à la séance
+  suivante.
 
 ---
 
@@ -2555,7 +2612,13 @@ résumé ; deux champs facultatifs (durée d'une série, type d'un exercice) ; u
 **Types de séance** (🔄 D45, § 15.19) : quatre préréglages (Haut du corps, Bas du corps, Abdos,
 Fessiers), les anciennes séances de ces noms rattachées ; la rangée « Mes types » (noms personnalisés
 déjà utilisés, appui long pour en retirer un) ; une même comparaison des noms partout ; un champ
-facultatif dans les préférences ; une variante de `FilterChip` (appui long).
+facultatif dans les préférences ; une variante de `FilterChip` (appui long). **Superséries** (🔄 D46,
+§ 15.20) : lier un exercice au suivant depuis son menu ⋮, un trait fin entre les blocs liés, l'enchaînement
+des séries sans repos (ou avec un repos de transition réglable) et le repos normal en fin de tour, suivi
+par la notification et repris à la séance suivante ; deux champs facultatifs (séance, préférences) ; un
+composant nouveau (`SupersetLink`). **Séries de chauffe** (🔄 D47, § 15.21) : une série marquée « chauffe »
+depuis le pavé, numérotée « C », hors des statistiques et sans enchaînement ; un champ facultatif sur la
+série ; des variantes de l'en-tête du pavé et de la ligne de série.
 
 ### 15.1 Notes de version (🔄 D27)
 
@@ -2875,7 +2938,9 @@ cours : elle revient au changement suivant de la séance ou du repos.
 - **Prochaine série** : dans l'ordre de la séance, la première série non validée **après la
   dernière série validée** ; s'il n'y en a pas, la première non validée depuis le début (une série
   sautée plus haut). Un exercice absent de l'écran de séance (inconnu) est ignoré. {n} = rang de
-  la série dans son exercice (à partir de 1).
+  la série dans son exercice (à partir de 1 ; 🔄 D47 : parmi les séries de travail, une série de chauffe
+  se nomme « Chauffe k », § 15.21.2). 🔄 D46 : « dans l'ordre de la séance » devient l'**ordre
+  d'enchaînement** (superséries tour par tour, § 15.20.3, § 15.20.5) ; identique sans supersérie.
 - **Détail** : force « {reps} × {poids} kg » (poids à la locale, `82,5` en français), ou
   « {reps} reps » à 0 kg ; cardio : durée et distance renseignées, « 30 min · 5 km », rien sans
   l'une ni l'autre.
@@ -2948,6 +3013,10 @@ cours : elle revient au changement suivant de la séance ou du repos.
   compte vers le haut et seule la notification le montre écran verrouillé (§ 15.18.4).
 - **Muscles dans l'export CSV** (🔄 D43) : l'export ne décrit pas les exercices (§ 8) ; les muscles n'y
   entrent pas.
+- **Superséries ailleurs que dans la séance en cours** (🔄 D46) : les montrer et les régler dans
+  l'éditeur d'une séance terminée, le résumé et le Journal, une colonne dans l'export CSV ; un repos de
+  transition propre à chaque supersérie ; des tours de circuit comptés. Aujourd'hui les liens ne se
+  voient et ne se règlent que dans la séance en cours (§ 15.20.2).
 
 **Maquettes disponibles** (🔄 D40) — la maquette Claude Design « v2 listes groupées » (15/11/2026,
 `design/claude-design/`) dessine des fonctions que l'app n'a pas ; elles ne sont pas codées et
@@ -2991,17 +3060,18 @@ migration.
   deux blocs, sans carte :
   - titre — **appui long** pour réordonner (glisser-déposer, 🔄 D14) —, bouton « fiche »
     (→ historique de l'exercice, § 2.8), bouton ⋮ (bottom sheet : note de l'exercice, enregistrée
-    à chaque frappe, et « Retirer de la séance » avec confirmation). La note s'affiche sous le titre ;
+    à chaque frappe, et « Retirer de la séance » avec confirmation ; 🔄 D46 : « Lier à l'exercice
+    suivant » / « Délier », § 15.20.1). La note s'affiche sous le titre ;
   - puces : **dernière fois** (date de la séance de référence, § 15.7.2) et **suggestion**
     (§ 15.7.3) ;
   - colonnes **# · Préc. · Kg · Reps** (cardio : **# · Préc. · Min · Km**) ;
   - **lignes de série** de 56 dp : valeurs d'une série à faire en gris (`textTertiary`), d'une
     série validée en `textPrimary` ; case de 48 dp (validée : inverse avec ✓). Toucher une valeur
     ouvre le pavé (§ 15.7.4) ; toucher la case bascule la validation (§ 2.6) ;
-  - le **repos** (§ 7.2), en jaune, juste après la **dernière série validée** dans l'ordre de la
-    séance (tout en haut s'il n'y en a pas) : « REPOS », temps restant, « sur 2:30 », barre du temps
-    écoulé, « −30 s », « +30 s », « Passer » (mêmes effets que les actions de la notification,
-    § 15.5). Il disparaît à la fin du repos, comme avant ;
+  - le **repos** (§ 7.2), en jaune, juste après la **dernière série validée** dans l'ordre de la séance
+    (tout en haut s'il n'y en a pas ; 🔄 D46 : dans l'ordre d'enchaînement, § 15.20.3) : « REPOS », temps
+    restant, « sur 2:30 », barre du temps écoulé, « −30 s », « +30 s », « Passer » (mêmes effets que les
+    actions de la notification, § 15.5). Il disparaît à la fin du repos, comme avant ;
   - la ligne **« + Série »**, toujours visible sous la dernière série du bloc : ajoute une série
     (règles du § 2.5).
 - Fin de liste : « Ajouter un exercice » (→ sélecteur, § 2.7). Sans exercice : état vide « Aucun
@@ -3022,6 +3092,8 @@ migration.
 
 - **Séance de référence** d'un exercice : la séance **terminée** la plus récente où il a **au moins
   une série validée**, quelle que soit sa clé de séance (la séance en cours n'en fait pas partie).
+  🔄 D47 : une série comptée (pas de chauffe) ; rangs séparés pour les chauffes et les séries de travail
+  (§ 15.21.4).
 - La ligne de rang n (n-ième série de l'exercice dans la séance en cours) montre la **n-ième série
   validée** de l'exercice dans la séance de référence (les séries non validées y sont sautées) :
   - force : « 80 × 8 » (charge × reps, charge à la locale : `82,5`) ; « 12 reps » à 0 kg ;
@@ -3080,11 +3152,12 @@ Remplace le clavier du système pour les séries de la séance en cours.
     arrondi au centième (demi vers +∞, § 3.5) ; sans effet s'il dépasserait la longueur maximale ;
   - affichage des valeurs (lignes et pavé) : 2 décimales au plus, sans zéro final ni séparateur de
     milliers (`82,5`, `80`, `81,25`) ; une valeur 0 s'affiche `0`.
-- **Touche principale** : « **Suivant** » passe au champ suivant de la série (Kg → Reps ; Min → Km
-  → Km/h → %) ; sur le dernier, « **✓ Valider la série** » valide la série (le repos démarre) puis
-  ouvre la **série non validée suivante du même exercice** (premier champ, neuf), ou ferme le pavé
-  s'il n'y en a plus. Sur une série déjà validée, la touche du dernier champ est « OK » et ferme le
-  pavé.
+- **Touche principale** : « **Suivant** » passe au champ suivant de la série (Kg → Reps ; Min → Km →
+  Km/h → %) ; sur le dernier, « **✓ Valider la série** » valide la série (le repos démarre) puis ouvre
+  la **série non validée suivante du même exercice** (premier champ, neuf), ou ferme le pavé s'il n'y en
+  a plus. 🔄 D46 : dans une supersérie, la série non validée suivante de la supersérie dans l'ordre
+  d'enchaînement (même série de l'exercice suivant, puis le tour suivant, § 15.20.3). Sur une série déjà
+  validée, la touche du dernier champ est « OK » et ferme le pavé.
 
 #### 15.7.5 Textes (FR et EN)
 
@@ -3774,6 +3847,8 @@ bottom sheet, ou lance l'action. De haut en bas :
      Système » ; appliqué tout de suite (§ 15.10.4), sheet fermée ;
    - **Minuteur de repos** — valeur « 3 min » → sheet « Minuteur de repos », aide « Durée par défaut
      du repos entre les séries », puces de filtre 1 min … 5 min (§ 2.12) ; appliqué, sheet fermée ;
+   - 🔄 D46 — **Repos dans une supersérie** — valeur « 0 s » → sheet du même nom, puces 0 … 60 s
+     (§ 15.20.4) ; appliqué, sheet fermée ;
    - **Notifications désactivées** (seulement si `POST_NOTIFICATIONS` est refusée ou les
      notifications de l'app coupées, revérifié au retour sur l'écran, 🔄 D6) — sous-titre
      « Minuteur et rappels silencieux », chevron → réglages de notification de l'app. 🔄 D39 :
@@ -5745,3 +5820,274 @@ Clés Android (`strings.xml`) ; « Annuler » est repris (`common_cancel`).
 | `start_workout_my_type_remove_title` | Retirer « {{nom}} » ? | Remove “{{name}}”? |
 | `start_workout_my_type_remove_message` | Il disparaît de Mes types. Les séances passées gardent leur nom ; il reviendra si tu le réutilises. | It leaves My types. Past workouts keep their name; it comes back if you use it again. |
 | `start_workout_my_type_remove` | Retirer | Remove |
+
+### 15.20 Superséries (🔄 D46)
+
+Enchaîner deux exercices sans repos entre eux (une **supersérie** ; à trois ou plus, un **circuit**,
+mêmes règles), en version légère : **aucun écran nouveau**. Le lien se fait depuis le menu ⋮ du bloc
+exercice (§ 15.20.1) et se voit à un trait fin entre les blocs (§ 15.20.2) ; valider une série enchaîne
+sur la même série de l'exercice suivant, sans repos ou avec un **repos de transition** réglable, le repos
+normal venant à la fin du tour (§ 15.20.3, § 15.20.4) ; la notification de séance suit cet enchaînement
+(§ 15.20.5) ; la séance suivante du même type reprend les liens (§ 15.20.6). Le format gagne un **champ
+facultatif** sur l'exercice de la séance et un dans les préférences, sans nouvelle version ni migration
+(§ 15.20.7). Un composant nouveau : le trait de supersérie (§ 15.20.9).
+
+#### 15.20.1 Lier et délier
+
+- **Supersérie** = une suite d'exercices **voisins** de la séance en cours (ordre de la séance, exercices
+  affichés seulement, § 10.5) liés deux à deux. Pas de limite de taille.
+- **Menu ⋮ du bloc** (sheet des options, § 15.7.1), entre la note et « Retirer de la séance », en boutons
+  secondaires ; l'action s'applique et ferme la sheet :
+  - **« Lier à l'exercice suivant »** — quand un exercice le suit et qu'ils ne sont pas déjà liés. Les deux
+    entrent dans la même supersérie ; si l'un des deux est déjà dans une supersérie, l'autre la rejoint,
+    et deux superséries se fondent en une (A–B, lier B à C → A–B–C ; A–B et C–D, lier B à C → A–B–C–D).
+  - **« Délier »** — quand l'exercice est dans une supersérie : il en sort. Les voisins qui restent liés
+    deux à deux gardent leur lien, un exercice resté seul n'est plus lié : A–B–C, délier C → A–B ; délier
+    A → B–C ; délier B → plus aucun lien (A et C ne sont pas voisins).
+  - Le dernier exercice d'une supersérie a les deux boutons s'il est suivi d'un autre exercice ; le
+    dernier exercice de la séance n'a jamais « Lier à l'exercice suivant ».
+  - Sous le titre de la sheet, pour un exercice lié : « Supersérie avec Tractions » (les autres exercices
+    de sa supersérie, dans l'ordre, séparés par des virgules).
+- **Le lien suit les voisins** :
+  - **Glisser-déposer** (§ 2.4) : réordonner à l'intérieur d'une supersérie la garde ; sortir un exercice
+    de sa supersérie l'en retire (ses anciens voisins, devenus voisins, restent liés) ; poser un exercice
+    non lié entre deux exercices liés coupe le lien à cet endroit (A–B–C, X posé entre A et B → A, X, B–C).
+  - **Retirer de la séance** : la supersérie se referme sans lui (A–B–C, retirer B → A–C ; A–B, retirer B
+    → A seul, plus lié).
+  - **Ajouter un exercice** (§ 3.2) : en fin de liste, jamais lié d'office.
+
+#### 15.20.2 Affichage
+
+- Entre deux blocs liés, à la place de l'écart de 24 : un **trait vertical fin** (2, bouts arrondis,
+  `textTertiary`) aligné sur la colonne des numéros — il part sous l'icône de « + Série » du premier bloc
+  et descend jusqu'au titre du suivant —, et à sa droite le libellé **« Supersérie »** en petit, gris
+  (`caption`, `textSecondary`). **Pas de couleur** (DESIGN.md § 1 : le jaune reste au direct, le vert à la
+  progression). Un circuit de trois exercices montre deux traits.
+- Les traits suivent l'ordre affiché, glisser-déposer compris. Rien d'autre ne change dans les blocs
+  (colonnes, « Préc. », suggestion, repos, « + Série »).
+- TalkBack lit le trait : « Supersérie : Développé couché, puis Tractions ».
+- Version légère : l'éditeur d'une séance terminée, le résumé, le Journal et la fiche exercice ne montrent
+  pas les superséries. L'éditeur garde les liens tels quels ; y retirer un exercice suit la règle du
+  § 15.20.1.
+
+#### 15.20.3 Enchaînement des séries
+
+- **Ordre d'enchaînement** de la séance : les exercices dans l'ordre de la séance ; ceux d'une
+  supersérie **tour par tour** — la série de travail 1 de chaque exercice de la supersérie dans son
+  ordre, puis la série 2, etc., un exercice qui n'a pas ce rang étant sauté (nombres de séries
+  différents) ; hors supersérie, les séries d'un exercice à la suite, comme avant. Ex. A (3 séries) – B
+  (2), puis C (2) : A1 B1 A2 B2 A3 C1 C2. Sans supersérie, c'est l'ordre de la séance : rien ne change.
+- **Valider une série de travail** de rang n d'un exercice E d'une supersérie — case, pavé, notification ou
+  « Arrêter » d'un chrono (§ 15.18.4), non validée → validée :
+  - **transition** : un exercice **placé après E dans la supersérie** a une série de travail de rang n
+    **non validée** → le repos en cours s'arrête, puis le **repos de transition** démarre s'il est réglé
+    (§ 15.20.4), sinon **aucun repos** ;
+  - **fin du tour** : sinon (E est le dernier de la supersérie, ou les exercices suivants n'ont pas de
+    rang n ou l'ont déjà validé) → **repos normal** (§ 7.2) ;
+  - le repos porte le nom de l'exercice de la **série suivante de la supersérie** dans l'ordre
+    d'enchaînement (« C'est parti pour Tractions ! »), celui de E s'il n'y en a plus.
+  - Hors supersérie : inchangé (repos normal au nom de l'exercice). Dévalider ne fait toujours rien.
+- **Pavé** (§ 15.7.4) : après « ✓ Valider la série » d'une série d'une supersérie, il s'ouvre sur la
+  **série non validée suivante de la supersérie dans l'ordre d'enchaînement** (premier champ, neuf) : en
+  transition, la même série de l'exercice suivant (A1 → B1) ; en fin de tour, la série suivante du premier
+  exercice qui l'a (B1 → A2) ; aucune → le pavé se ferme. Hors supersérie : inchangé (série non validée
+  suivante du même exercice).
+- **Case** (pavé fermé) : seul le repos suit ces règles ; rien ne s'ouvre, comme avant.
+- **Séries de chauffe** (🔄 D47, § 15.21.4) : les tours ne comptent que les séries de travail (le rang n
+  est celui parmi les séries de travail) ; les chauffes d'un exercice viennent juste avant sa première
+  série de travail ; valider une chauffe n'enchaîne jamais (repos normal). L'échauffement en tête de
+  séance (liste à cocher, § 15.7.1) n'est pas fait de séries : il ne déclenche rien.
+- Le **bandeau de repos** (§ 15.7.1) se place après la dernière série validée **dans l'ordre
+  d'enchaînement** (après A2 plutôt qu'après B1 quand A2 vient d'être validée).
+
+#### 15.20.4 Repos de transition
+
+- **Paramètres**, section « Préférences », juste après « Minuteur de repos » : **« Repos dans une
+  supersérie »**, valeur « 0 s » (défaut), « 15 s »… → sheet « Repos dans une supersérie », aide « Entre
+  deux exercices liés. 0 s : on enchaîne sans repos. », puces de filtre **0, 10, 15, 20, 30, 45, 60 s** (la
+  dernière libellée « 1 min », comme le minuteur) ; le toucher applique le choix et ferme la sheet, comme
+  le minuteur (§ 15.10.3).
+- Un repos de transition est un repos comme les autres (bandeau, notification, « −30 s », « +30 s »,
+  « Passer », alarme de fin et alerte « Repos terminé », § 7.2), de cette durée. Le réglage vaut pour les
+  repos démarrés ensuite.
+
+#### 15.20.5 Notification de séance
+
+- **Prochaine série** (§ 15.5) : la même règle, sur l'**ordre d'enchaînement** — la première série non
+  validée après la dernière série validée dans cet ordre, sinon la première non validée depuis le début.
+  Après A1, la notification montre « Tractions · Série 1 · 10 reps » (pendant un repos de transition :
+  « Prochaine : Tractions · Série 1 · … ») ; après B1, « Développé couché · Série 2 · … ». Sans
+  supersérie, identique à avant.
+- **« Valider la série »** (notification et alerte « Repos terminé ») valide cette série et applique les
+  repos du § 15.20.3.
+
+#### 15.20.6 Reprise d'une séance
+
+- **Pré-remplissage** (§ 3.1) : la nouvelle séance reprend les liens de la séance de même clé, avec ses
+  exercices.
+- **Ajout d'un exercice** (§ 3.2) : ses séries viennent de la dernière séance qui le contient, **pas son
+  lien** (son partenaire peut manquer).
+- « Préc. », la suggestion de charge et les statistiques restent par exercice : un lien n'y change rien.
+
+#### 15.20.7 Format des données
+
+- **`WorkoutExercise.supersetId`** : texte, **facultatif**, omis s'il est absent. Deux exercices
+  **voisins** d'une séance qui ont le même `supersetId` sont liés ; l'identifiant est opaque (UUID v4,
+  § 3.15) et ne vaut que dans sa séance. Écrit dans `current_workout.json`, `workouts.json` et la
+  sauvegarde (`@gymtracker_workouts`).
+  ```json
+  { "exerciseId": "bench", "supersetId": "6f1c…", "sets": [ … ] },
+  { "exerciseId": "pullup", "supersetId": "6f1c…", "sets": [ … ] }
+  ```
+- Lu dans les fichiers et à l'import **sans jamais refuser** : absent, `null`, pas un texte ou vide → pas
+  de lien. **Remis en forme** au chargement de la séance en cours, au démarrage (pré-remplissage), à chaque
+  changement des exercices de la séance (lier, délier, réordonner, retirer) et à l'enregistrement de
+  l'éditeur : une suite de voisins au même identifiant est une supersérie ; un exercice sans voisin au même
+  identifiant le perd ; deux suites séparées au même identifiant → la seconde en reçoit un nouveau.
+- **`Preferences.supersetRestSeconds`** : entier, secondes, **facultatif**, omis à 0 (défaut) ; dans
+  `preferences.json` et la sauvegarde (`@gymtracker_preferences`). Absent, pas un entier ou hors de 0 – 60
+  → 0.
+- Pas de nouvelle version du format, pas de migration : un ancien fichier se relit à l'identique, sans
+  lien. Les versions précédentes ignorent ces champs (et les perdent si elles réécrivent le fichier),
+  comme `intakes` (§ 15.15.4). Export CSV inchangé.
+
+#### 15.20.8 Règles (pures, testées en JVM)
+
+- **Liens** : lier (seul, rejoindre, fondre deux superséries), délier (premier, milieu, dernier), remise en
+  forme (exercice isolé, suites séparées au même identifiant), glisser-déposer (dans la supersérie, hors
+  d'elle, exercice posé entre deux liés), exercice retiré (A–B–C → A–C ; A–B → A seul), exercice masqué.
+- **Enchaînement** : ordre d'enchaînement (2 exercices, circuit de 3, nombres de séries différents) ;
+  transition ou fin du tour (série suivante déjà validée, exercice sans ce rang) ; série ouverte au pavé
+  après validation ; nom porté par le repos ; place du bandeau de repos.
+- **Repos de transition** : 0 s → aucun repos et repos en cours arrêté ; réglé → repos de cette durée ;
+  fin du tour → repos normal ; par la case, le pavé, la notification et « Arrêter » d'un chrono.
+- **Notification** : prochaine série dans l'ordre d'enchaînement, « Valider la série » qui enchaîne.
+- **Reprise** : liens repris au pré-remplissage, pas à l'ajout d'un exercice.
+- **Format** : ancien fichier relu à l'identique, champs omis à l'écriture, valeurs invalides (séance et
+  préférences), aller-retour de la sauvegarde.
+
+#### 15.20.9 Design system
+
+- **Composant nouveau** `SupersetLink` (DESIGN.md § 9.2) : le trait et son libellé entre deux blocs liés
+  (§ 15.20.2) ; hauteur minimale 24, il grandit avec le libellé (texte agrandi) ; son trait couvre aussi
+  l'écart de la liste jusqu'au bloc suivant ; décoratif hors de sa description TalkBack.
+- Le reste : `StudioButton` secondaire (sheet des options), `ListRow` et `FilterChip` (Paramètres).
+
+#### 15.20.10 Textes (FR et EN)
+
+Clés Android (`strings.xml`).
+
+| clé | FR | EN |
+|---|---|---|
+| `superset_label` | Supersérie | Superset |
+| `superset_link_next` | Lier à l'exercice suivant | Link to next exercise |
+| `superset_unlink` | Délier | Unlink |
+| `superset_with` | Supersérie avec {{exercices}} | Superset with {{exercises}} |
+| `superset_link_description` (accessibilité) | Supersérie : {{exercice}}, puis {{suivant}} | Superset: {{exercise}}, then {{next}} |
+| `settings_superset_rest_title` | Repos dans une supersérie | Rest within a superset |
+| `settings_superset_rest_desc` | Entre deux exercices liés. 0 s : on enchaîne sans repos. | Between two linked exercises. 0 s: go straight on, no rest. |
+
+### 15.21 Séries de chauffe (🔄 D47)
+
+Une série peut être marquée **« chauffe »** : elle se fait et se valide comme les autres, mais **ne compte
+dans aucune statistique** et **n'enchaîne pas** dans une supersérie (§ 15.20). Elle se marque depuis le
+pavé (§ 15.21.1) et se reconnaît à son numéro « C » (§ 15.21.2). Le format gagne un **champ facultatif**
+sur la série, sans nouvelle version ni migration (§ 15.21.6). Pas de composant nouveau : des variantes de
+l'en-tête du pavé et de la ligne de série (§ 15.21.8).
+
+#### 15.21.1 Marquer une série
+
+- **En-tête du pavé** (§ 15.7.4), séance en cours et éditeur d'une séance terminée : une puce de filtre
+  **« Chauffe »** entre le segmenté des champs et les boutons. Sélectionnée = la série ouverte est une
+  série de chauffe ; le toucher bascule le marquage (série validée ou non), le pavé reste ouvert sur le
+  même champ. TalkBack : case à cocher « Série de chauffe ».
+- Marquer ne déplace rien : les séries gardent leur place dans le bloc (la chauffe se met d'habitude en
+  tête). « + Série » ajoute une série de travail (valeurs de la dernière série, § 2.5) ; un chrono de série
+  au temps (§ 15.18.4) marche de même sur une série de chauffe.
+
+#### 15.21.2 Affichage et numéros
+
+- **Colonne « # »** : **« C »** (EN « W ») pour une série de chauffe ; les séries de travail sont
+  numérotées **sans elles** : C, 1, 2, 3. Valeurs, case et validation inchangées.
+- Ailleurs, une série de chauffe se nomme **« chauffe k »** (k = son rang parmi les séries de chauffe de
+  l'exercice) et une série de travail garde « série n » (n = son rang parmi les séries de travail) :
+  segment du pavé « Kg · chauffe 1 », confirmation « Supprimer la chauffe 1 ? », notification « Squat ·
+  Chauffe 1 · 10 × 40 kg » (pastille de la Live Update « Chauffe 1 »), TalkBack « Chauffe 1, Kg : 40 »,
+  « Valider la chauffe 1 », chrono « Démarrer le chrono, chauffe 1 ».
+- La progression de la séance en cours (« 2 / 16 séries », segments, § 15.7.1) et le message de fin
+  (« 12 séries validées… ») comptent **toutes** les séries, chauffe comprise : c'est ce qui reste à faire.
+
+#### 15.21.3 Hors des statistiques
+
+- **Série comptée** = série **validée** et **pas de chauffe** : elle remplace « série validée » dans la
+  règle du § 3.16 pour toutes les statistiques — volume (§ 3.8), records et 1RM (§ 3.5), fiche exercice et
+  Progrès (§ 15.9), résumé de séance (séries, meilleure série, records, temps sous tension, § 15.12,
+  § 15.18.7), séries et volume du Journal (§ 15.8.4), export CSV (§ 8 : les séries de chauffe ne sont pas
+  exportées, « Série n° » est le rang parmi les séries de travail).
+- Ne changent pas : la fin ou l'abandon d'une séance (§ 3.3 : une séance dont seule une chauffe est validée
+  est enregistrée), la série hebdomadaire et le temps en salle (des séances), Health Connect (durée des
+  séances).
+
+#### 15.21.4 Dans la séance en cours
+
+- **« Préc. »** (§ 15.7.2) : une série de travail de rang n montre la n-ième série de travail validée de la
+  séance de référence, une série de chauffe de rang k la k-ième série de chauffe validée. La séance de
+  référence devient la dernière séance terminée où l'exercice a **au moins une série comptée**.
+- **Suggestion** (§ 15.7.3, § 15.18.2) : calculée sur les séries de travail de la séance de référence,
+  appliquée aux seules séries de travail non validées ; les séries de chauffe ne bougent pas.
+- **Repos** : valider une série de chauffe lance le **repos normal** (§ 7.2), même dans une supersérie
+  (jamais de transition).
+- **Supersérie** (§ 15.20.3) : les tours ne comptent que les séries de travail ; dans l'ordre
+  d'enchaînement, les séries de chauffe d'un exercice viennent juste avant sa première série de travail.
+  A (C, 1, 2) – B (C, 1, 2) : A-C, A1, B-C, B1, A2, B2. Une série de chauffe validée n'enchaîne pas : le
+  pavé s'ouvre ensuite sur la série suivante dans cet ordre, qui est celle du même exercice (A-C → A1).
+- **Notification** (§ 15.5) : une série de chauffe est une série à faire comme les autres (prochaine
+  série, « Valider la série »), nommée « Chauffe k ».
+
+#### 15.21.5 Reprise d'une séance
+
+- Pré-remplissage (§ 3.1) et ajout d'un exercice (§ 3.2) : les séries reprises gardent leur marquage
+  (c'est le plan de la séance).
+
+#### 15.21.6 Format des données
+
+- **`Set.warmup`** : booléen, **facultatif**, omis à `false` ; `true` = série de chauffe. Lu dans les
+  fichiers et à l'import **sans jamais refuser** : absent, `null` ou pas un booléen → `false`.
+- Pas de nouvelle version, pas de migration : un ancien fichier se relit à l'identique, sans série de
+  chauffe. Les versions précédentes ignorent ce champ (et le perdent si elles réécrivent le fichier) : une
+  série de chauffe y compte comme une série de travail.
+
+#### 15.21.7 Règles (pures, testées en JVM)
+
+- **Statistiques** : chauffe validée hors du volume, des records, du 1RM, de la fiche, de Progrès, du
+  résumé, du Journal et du CSV ; séance dont seule une chauffe est validée enregistrée.
+- **Numéros** : C, 1, 2 ; « chauffe k » / « série n » (pavé, notification).
+- **« Préc. » et suggestion** : rangs séparés, séance de référence sans série comptée écartée, suggestion
+  sur les séries de travail, chauffes non modifiées.
+- **Enchaînement** : place des chauffes dans l'ordre d'enchaînement, chauffe validée sans transition
+  (repos normal), pavé sur le même exercice.
+- **Format** : ancien fichier relu à l'identique, champ omis à `false`, valeurs invalides, reprise du
+  marquage au pré-remplissage.
+
+#### 15.21.8 Design system
+
+- **Variante** de l'en-tête du pavé `KeypadHeader` (DESIGN.md § 9.2) : une puce de filtre facultative
+  avant les boutons icône, lue comme case à cocher.
+- `SetRow` reçoit « C » comme numéro (texte du numéro déjà libre) ; le reste : `FilterChip`.
+
+#### 15.21.9 Textes (FR et EN)
+
+Clés Android (`strings.xml`).
+
+| clé | FR | EN |
+|---|---|---|
+| `workout_warmup_short` | C | W |
+| `workout_warmup_chip` | Chauffe | Warm-up |
+| `workout_warmup_toggle` (accessibilité) | Série de chauffe | Warm-up set |
+| `workout_keypad_first_warmup` | {{champ}} · chauffe {{n}} | {{field}} · warm-up {{n}} |
+| `workout_warmup_value_description` (accessibilité) | Chauffe {{n}}, {{colonne}} : {{valeur}} | Warm-up {{n}}, {{column}}: {{value}} |
+| `workout_warmup_check` / `_checked` (accessibilité) | Valider la chauffe {{n}} / Chauffe {{n}} validée | Complete warm-up {{n}} / Warm-up {{n}} completed |
+| `workout_warmup_timer_start` / `_stop` (accessibilité) | Démarrer le chrono, chauffe {{n}} / Arrêter le chrono, chauffe {{n}} | Start timer, warm-up {{n}} / Stop timer, warm-up {{n}} |
+| `workout_delete_warmup_title` | Supprimer la chauffe {{n}} ? | Delete warm-up {{n}}? |
+| `workout_notif_warmup` / `_only` | Chauffe {{n}} · {{détail}} / Chauffe {{n}} | Warm-up {{n}} · {{detail}} / Warm-up {{n}} |
+| `workout_notif_warmup_running` | Chauffe {{n}} · en cours | Warm-up {{n}} · running |

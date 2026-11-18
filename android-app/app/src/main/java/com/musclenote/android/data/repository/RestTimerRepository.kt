@@ -82,10 +82,13 @@ class RestTimerRepository(
         }
     }
 
-    /** Démarre un repos de `restSeconds` (préférence du moment) ; remplace le repos en cours. */
-    suspend fun start(exerciseName: String) {
+    /**
+     * Démarre un repos de [seconds] — par défaut `restSeconds` (préférence du moment) ; le repos de
+     * transition d'une supersérie passe sa durée (§ 15.20.4) — ; remplace le repos en cours.
+     */
+    suspend fun start(exerciseName: String, seconds: Int? = null) {
         mutex.withLock {
-            val next = RestTimerRules.start(now(), restSeconds(), exerciseName)
+            val next = RestTimerRules.start(now(), seconds ?: restSeconds(), exerciseName)
             _state.value = next
             document.saveNow(next)
             effects.show(next)

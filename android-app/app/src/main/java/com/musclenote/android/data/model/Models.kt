@@ -6,13 +6,18 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.descriptors.PrimitiveKind
+import kotlinx.serialization.descriptors.PrimitiveSerialDescriptor
 import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.descriptors.nullable
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonDecoder
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.intOrNull
 
 // Modèle de données (SPEC § 4.1). La forme JSON est celle du format de sauvegarde v2 (§ 5.2) :
 // les champs requis n'ont pas de valeur par défaut (toujours écrits) ; les champs optionnels
@@ -39,7 +44,8 @@ data class Exercise(
 /**
  * Série. Les champs cardio sont en minutes, km, km/h et %. [durationSeconds] : durée d'une série au
  * temps, en secondes (§ 15.18.8, 🔄 D44) — une série qui en a une est une « série au temps » ; omise
- * absente, lue sans jamais refuser le fichier.
+ * absente, lue sans jamais refuser le fichier. [warmup] : série de chauffe (§ 15.21.6, 🔄 D47), hors
+ * des statistiques ; omise à `false`, lue sans jamais refuser le fichier.
  */
 @Serializable
 data class WorkoutSet(
@@ -53,13 +59,28 @@ data class WorkoutSet(
     val incline: Double? = null,
     @Serializable(with = HoldSecondsSerializer::class)
     val durationSeconds: Int? = null,
+    @Serializable(with = LenientFlagSerializer::class)
+    val warmup: Boolean = false,
 )
 
+/**
+ * Série **comptée** (§ 3.16, § 15.21.3, 🔄 D47) : validée et pas de chauffe. Seules ces séries entrent
+ * dans les statistiques (volume, records, 1RM, fiche, Progrès, résumé, Journal, CSV).
+ */
+val WorkoutSet.counted: Boolean get() = completed && !warmup
+
+/**
+ * Exercice d'une séance. [supersetId] (§ 15.20.7, 🔄 D46) : deux exercices **voisins** au même
+ * identifiant sont liés en supersérie ; facultatif, omis absent, lu sans jamais refuser le fichier (pas
+ * un texte ou vide → aucun lien).
+ */
 @Serializable
 data class WorkoutExercise(
     val exerciseId: String,
     val note: String? = null,
     val sets: List<WorkoutSet>,
+    @Serializable(with = SupersetIdSerializer::class)
+    val supersetId: String? = null,
 )
 
 /** Séance. `date` = début de séance, instant ISO 8601 UTC avec millisecondes. */
@@ -272,6 +293,52 @@ object RemovedWorkoutTypesSerializer : KSerializer<List<RemovedWorkoutType>> {
     }
 }
 
+/** Identifiant de supersérie (§ 15.20.7) : texte non vide, sinon aucun lien. */
+object SupersetIdSerializer : KSerializer<String?> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("SupersetId", PrimitiveKind.STRING).nullable
+
+    override fun serialize(encoder: Encoder, value: String?) {
+        if (value == null) encoder.encodeNull() else encoder.encodeString(value)
+    }
+
+    override fun deserialize(decoder: Decoder): String? {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return decoder.decodeString().ifEmpty { null }
+        return of(element as? JsonPrimitive)
+    }
+
+    /** Texte JSON non vide, sinon `null`. */
+    fun of(primitive: JsonPrimitive?): String? = primitive?.takeIf { it.isString }?.content?.ifEmpty { null }
+}
+
+/** Booléen facultatif (série de chauffe, § 15.21.6) : seul `true` vaut vrai, tout le reste faux. */
+object LenientFlagSerializer : KSerializer<Boolean> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("LenientFlag", PrimitiveKind.BOOLEAN)
+
+    override fun serialize(encoder: Encoder, value: Boolean) = encoder.encodeBoolean(value)
+
+    override fun deserialize(decoder: Decoder): Boolean {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return decoder.decodeBoolean()
+        return of(element as? JsonPrimitive)
+    }
+
+    fun of(primitive: JsonPrimitive?): Boolean = primitive != null && !primitive.isString && primitive.booleanOrNull == true
+}
+
+/** Repos de transition (§ 15.20.7) : entier de 0 à 60, sinon 0. */
+object SupersetRestSerializer : KSerializer<Int> {
+    override val descriptor: SerialDescriptor = PrimitiveSerialDescriptor("SupersetRest", PrimitiveKind.INT)
+
+    override fun serialize(encoder: Encoder, value: Int) = encoder.encodeInt(value)
+
+    override fun deserialize(decoder: Decoder): Int {
+        val element = (decoder as? JsonDecoder)?.decodeJsonElement() ?: return Preferences.supersetRestOrDefault(decoder.decodeInt())
+        return of(element as? JsonPrimitive)
+    }
+
+    fun of(primitive: JsonPrimitive?): Int =
+        Preferences.supersetRestOrDefault(primitive?.takeIf { !it.isString }?.intOrNull)
+}
+
 @Serializable
 data class Preferences(
     val restSeconds: Int,
@@ -281,9 +348,22 @@ data class Preferences(
     /** Types retirés de « Mes types » (§ 15.19.5, 🔄 D45) ; facultatif, omis vide. */
     @Serializable(with = RemovedWorkoutTypesSerializer::class)
     val removedWorkoutTypes: List<RemovedWorkoutType> = emptyList(),
+    /**
+     * Repos de transition dans une supersérie, en secondes (§ 15.20.4, 🔄 D46) : 0 (défaut, omis) = aucun
+     * repos ; lu de 0 à [MAX_SUPERSET_REST_SECONDS], autre valeur → 0.
+     */
+    @Serializable(with = SupersetRestSerializer::class)
+    val supersetRestSeconds: Int = 0,
 ) {
     companion object {
         const val DEFAULT_REST_SECONDS = 180
+
+        /** Repos de transition le plus long (§ 15.20.4). */
+        const val MAX_SUPERSET_REST_SECONDS = 60
+
+        /** Repos de transition lisible : 0 à 60 s, sinon 0 (aucun repos). */
+        fun supersetRestOrDefault(seconds: Int?): Int = seconds?.takeIf { it in 0..MAX_SUPERSET_REST_SECONDS } ?: 0
+
         /** Thème sombre par défaut (🔄 D35, § 15.10.4) ; un choix enregistré est toujours gardé. */
         val DEFAULT_THEME = ThemeMode.Dark
         val DEFAULT = Preferences(restSeconds = DEFAULT_REST_SECONDS, theme = DEFAULT_THEME)

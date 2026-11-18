@@ -16,9 +16,11 @@ import com.musclenote.android.data.util.TimeSource
 import com.musclenote.android.data.util.formatInstant
 import com.musclenote.android.data.util.newId
 import com.musclenote.android.data.util.parseInstantOrNull
+import com.musclenote.android.data.workout.ChainNext
 import com.musclenote.android.data.workout.CustomExerciseDeletion
 import com.musclenote.android.data.workout.HoldDuration
 import com.musclenote.android.data.workout.SetTimerRules
+import com.musclenote.android.data.workout.SupersetRules
 import com.musclenote.android.data.workout.WorkoutEnd
 import com.musclenote.android.data.workout.WorkoutNotificationRules
 import com.musclenote.android.data.workout.WorkoutRules
@@ -79,7 +81,8 @@ class WorkoutRepository(
             // § 3.9 : un exercice stocké dont l'id est un id intégré est ignoré.
             // § 15.17.8 : muscles remis en forme (ordre, doublons, un muscle des deux reste principal).
             _customExercises.value = exercisesDoc.read().orEmpty().filterNot { ExerciseCatalog.isBuiltIn(it.id) }.map(MuscleRules::normalized)
-            _currentWorkout.value = currentWorkoutDoc.read()?.let(WorkoutRules::withPresetFromName)
+            // 🔄 D46 (§ 15.20.7) : liens de supersérie remis en forme (un exercice lié resté seul perd son lien).
+            _currentWorkout.value = currentWorkoutDoc.read()?.let(WorkoutRules::withPresetFromName)?.let(::withNormalizedLinks)
             finalizeStaleLocked()
         }
     }
@@ -160,7 +163,7 @@ class WorkoutRepository(
         name: String,
         preset: PresetId?,
     ) = updateHistory { list ->
-        list.map { if (it.id == workoutId) WorkoutRules.patch(it, exercises, bodyWeight, name, preset) else it }
+        list.map { if (it.id == workoutId) WorkoutRules.patch(it, exercises, bodyWeight, name, preset, idGenerator) else it }
     }
 
     private suspend fun updateHistory(transform: (List<Workout>) -> List<Workout>) {
@@ -177,11 +180,20 @@ class WorkoutRepository(
     suspend fun addExerciseToWorkout(exerciseId: String) =
         updateCurrent { WorkoutRules.addExercise(it, _workouts.value, exerciseId, idGenerator) }
 
+    /** Retrait d'un exercice : sa supersérie se referme sans lui (🔄 D46, § 15.20.1). */
     suspend fun removeExerciseFromWorkout(exerciseId: String) =
-        updateCurrent { w -> w.copy(exercises = w.exercises.filterNot { it.exerciseId == exerciseId }) }
+        updateCurrent { w -> withNormalizedLinks(w.copy(exercises = w.exercises.filterNot { it.exerciseId == exerciseId })) }
 
-    /** Glisser-déposer (§ 2.4) : nouvel ordre des exercices. */
-    suspend fun reorderExercises(exerciseIds: List<String>) = updateCurrent { WorkoutRules.reorder(it, exerciseIds) }
+    /** Glisser-déposer (§ 2.4) : nouvel ordre des exercices ; les liens de supersérie suivent les voisins (§ 15.20.1). */
+    suspend fun reorderExercises(exerciseIds: List<String>) = updateCurrent { withNormalizedLinks(WorkoutRules.reorder(it, exerciseIds)) }
+
+    /** « Lier à l'exercice suivant » (🔄 D46, § 15.20.1) : exercices affichés seulement. */
+    suspend fun linkToNext(exerciseId: String) =
+        updateCurrent { w -> w.copy(exercises = SupersetRules.link(w.exercises, exerciseId, idGenerator, ::isShown)) }
+
+    /** « Délier » (§ 15.20.1) : l'exercice sort de sa supersérie. */
+    suspend fun unlink(exerciseId: String) =
+        updateCurrent { w -> w.copy(exercises = SupersetRules.unlink(w.exercises, exerciseId, idGenerator, ::isShown)) }
 
     /** Note libre, enregistrée à chaque frappe ; une note vidée est retirée. */
     suspend fun updateExerciseNote(exerciseId: String, note: String) =
@@ -252,20 +264,32 @@ class WorkoutRepository(
 
     /**
      * « Valider la série » de la notification de séance (§ 15.5) : valide la prochaine série
-     * ([WorkoutNotificationRules.nextSet], exercices connus seulement) et renvoie l'id de son
-     * exercice, pour lancer le repos ; `null` sans séance en cours ou si tout est validé.
+     * ([WorkoutNotificationRules.nextSet], exercices connus seulement, ordre d'enchaînement) et renvoie
+     * l'id de son exercice, pour lancer le repos ; `null` sans séance en cours ou si tout est validé.
      */
-    suspend fun completeNextSet(): String? {
+    suspend fun completeNextSet(): String? = completeNext()?.first
+
+    /** Comme [completeNextSet], avec l'id de la série validée : (exercice, série). */
+    suspend fun completeNext(): Pair<String, String>? {
         return mutex.withLock {
             val current = _currentWorkout.value ?: return null
-            val next = WorkoutNotificationRules.nextSet(current) { muscleGroupOf(it) != null } ?: return null
+            val next = WorkoutNotificationRules.nextSet(current, ::isShown) ?: return null
             commitCurrent(current.mapSet(next.exercise.exerciseId, next.set.id) { it.copy(completed = true) })
-            next.exercise.exerciseId
+            next.exercise.exerciseId to next.set.id
         }
     }
 
     /** Une série de la séance en cours reste à valider (exercices connus seulement, § 15.5). */
-    fun hasNextSet(): Boolean = _currentWorkout.value?.let { w -> WorkoutNotificationRules.nextSet(w) { muscleGroupOf(it) != null } } != null
+    fun hasNextSet(): Boolean = _currentWorkout.value?.let { w -> WorkoutNotificationRules.nextSet(w, ::isShown) } != null
+
+    /**
+     * Après la validation de la série [setId] de [exerciseId] (§ 15.20.3) : transition dans une supersérie
+     * ou non, et la série suivante, parmi les exercices affichés.
+     */
+    fun afterCompleting(exerciseId: String, setId: String): ChainNext? {
+        val current = _currentWorkout.value ?: return null
+        return SupersetRules.afterCompleting(current.exercises.filter { isShown(it.exerciseId) }, exerciseId, setId)
+    }
 
     private suspend fun updateCurrent(transform: (Workout) -> Workout) {
         mutex.withLock {
@@ -365,6 +389,14 @@ class WorkoutRepository(
         _currentWorkout.value = next
         // Fin de séance : effacement immédiat, qui rend caduque une écriture différée en attente.
         if (next == null) currentWorkoutDoc.save(null) else currentWorkoutDoc.saveDebounced(next, CURRENT_WRITE_DELAY_MS)
+    }
+
+    /** Exercice affiché dans la séance (§ 10.5) : sa définition est connue. */
+    private fun isShown(exerciseId: String): Boolean = muscleGroupOf(exerciseId) != null
+
+    private fun withNormalizedLinks(workout: Workout): Workout {
+        val exercises = SupersetRules.normalized(workout.exercises, idGenerator, ::isShown)
+        return if (exercises === workout.exercises) workout else workout.copy(exercises = exercises)
     }
 
     private fun muscleGroupOf(exerciseId: String): MuscleGroup? =

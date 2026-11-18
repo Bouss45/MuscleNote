@@ -7,6 +7,7 @@ import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Exercise
 import com.musclenote.android.data.model.ExerciseType
 import com.musclenote.android.data.model.HoldSecondsSerializer
+import com.musclenote.android.data.model.LenientFlagSerializer
 import com.musclenote.android.data.model.Muscle
 import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.Preferences
@@ -17,6 +18,8 @@ import com.musclenote.android.data.model.ProteinGoalMode
 import com.musclenote.android.data.model.Reminder
 import com.musclenote.android.data.model.Supplement
 import com.musclenote.android.data.model.SupplementStock
+import com.musclenote.android.data.model.SupersetIdSerializer
+import com.musclenote.android.data.model.SupersetRestSerializer
 import com.musclenote.android.data.model.TakenRecord
 import com.musclenote.android.data.model.ThemeMode
 import com.musclenote.android.data.model.WeighInReminder
@@ -92,6 +95,8 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         exerciseId = e["exerciseId"].stringOrNull()!!,
         note = e["note"].stringOrNull(),
         sets = (e["sets"] as JsonArray).map { workoutSet(it as JsonObject) },
+        // 🔄 D46 : texte non vide, sinon aucun lien (§ 15.20.7) ; remis en forme au chargement.
+        supersetId = SupersetIdSerializer.of(e["supersetId"] as? JsonPrimitive),
     )
 
     private fun workoutSet(s: JsonObject) = WorkoutSet(
@@ -105,6 +110,8 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         incline = s["incline"].numberOrNull(),
         // 🔄 D44 : lue sans refuser l'import, arrondie à l'entier, négative → 0 (§ 15.18.8).
         durationSeconds = HoldSecondsSerializer.secondsOf(s["durationSeconds"] as? JsonPrimitive),
+        // 🔄 D47 : seul `true` marque une série de chauffe (§ 15.21.6).
+        warmup = LenientFlagSerializer.of(s["warmup"] as? JsonPrimitive),
     )
 
     // ─── Exercices perso ────────────────────────────────────────────────────────
@@ -279,6 +286,8 @@ internal class BackupNormalizer(private val ctx: MigrationContext, private val z
         },
         weighInReminder = weighInReminder(p["weighInReminder"]),
         removedWorkoutTypes = removedWorkoutTypes(p["removedWorkoutTypes"]),
+        // 🔄 D46 : 0 à 60 s, sinon 0 (§ 15.20.7).
+        supersetRestSeconds = SupersetRestSerializer.of(p["supersetRestSeconds"] as? JsonPrimitive),
     )
 
     /**
