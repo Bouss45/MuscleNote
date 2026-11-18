@@ -220,6 +220,41 @@ class WorkoutNotificationRulesTest {
         assertEquals(content(planks), content(planks, setTimer = SetTimerState("absente", now - 5_000)))
     }
 
+    // ─── Superséries et séries de chauffe (§ 15.20.5, § 15.21.2, 🔄 D46, D47) ──────
+
+    @Test
+    fun `dans une supersérie, la notification annonce l'exercice suivant`() {
+        val linked = workout(
+            WorkoutExercise("bench", sets = listOf(set("b1", completed = true), set("b2")), supersetId = "s"),
+            WorkoutExercise("pullup", sets = listOf(set("p1", weight = 0.0), set("p2", weight = 0.0)), supersetId = "s"),
+        )
+        assertEquals("Tractions · Série 1 · 8 reps", content(linked).text)
+        assertEquals("Série 1", content(linked).chipText)
+        val rest = RestTimerState(endsAt = now + 15_000, total = 15, exerciseName = "Tractions")
+        assertEquals("Prochaine : Tractions · Série 1 · 8 reps", content(linked, rest).text)
+    }
+
+    @Test
+    fun `une série de chauffe se nomme Chauffe k, les séries de travail sont numérotées sans elle`() {
+        val warm = workout(exercise("bench", set("w1", reps = 10, weight = 40.0).copy(warmup = true), set("b1"), set("b2")))
+        assertEquals("Développé couché · Chauffe 1 · 10 × 40 kg", content(warm).text)
+        assertEquals("Chauffe 1", content(warm).chipText)
+        val warmDone = warm.copy(exercises = listOf(exercise("bench", set("w1", reps = 10, weight = 40.0, completed = true).copy(warmup = true), set("b1"), set("b2"))))
+        assertEquals("Développé couché · Série 1 · 8 × 80 kg", content(warmDone).text)
+        val en = mapOf("bench" to NotificationExercise("Bench press", SetKind.Strength))
+        assertEquals("Bench press · Warm-up 1 · 10 × 40 kg", content(warm, texts = EN, exercises = en).text)
+        assertEquals("Warm-up 1", content(warm, texts = EN, exercises = en).chipText)
+        val runEmpty = workout(exercise("run", set("r1", reps = 0, weight = 0.0).copy(warmup = true)))
+        assertEquals("Course · Chauffe 1", content(runEmpty).text)
+    }
+
+    @Test
+    fun `le chrono d'une série de chauffe au temps`() {
+        val planks = workout(exercise("plank", hold("h1").copy(warmup = true), hold("h2")))
+        val c = content(planks, setTimer = SetTimerState(setId = "h1", startedAt = now - 10_000))
+        assertEquals("Planche · Chauffe 1 · en cours", c.text)
+    }
+
     private companion object {
         val FR = texts("src/main/res/values/strings.xml", Locale.FRENCH)
         val EN = texts("src/main/res/values-en/strings.xml", Locale.ENGLISH)
@@ -244,6 +279,9 @@ class WorkoutNotificationRulesTest {
                 allDone = strings.getValue("workout_notif_all_done"),
                 holdWeight = strings.getValue("workout_notif_hold_weight"),
                 running = strings.getValue("workout_notif_running"),
+                warmupWithDetail = strings.getValue("workout_notif_warmup"),
+                warmupOnly = strings.getValue("workout_notif_warmup_only"),
+                warmupRunning = strings.getValue("workout_notif_warmup_running"),
             )
         }
     }

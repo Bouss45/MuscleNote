@@ -571,4 +571,70 @@ class BackupV2Test {
         assertEquals(listOf(workout), reread.workouts)
         assertEquals(listOf(timed, plain), reread.exercises)
     }
+
+    // ─── Superséries et séries de chauffe (§ 15.20.7, § 15.21.6, 🔄 D46, D47) ─────
+
+    private fun exercisesOfWorkout(exercises: String) = readV2(
+        """"@gymtracker_workouts": [ { "id": "w1", "name": "Push", "date": "2026-11-12T17:00:00.000Z", "bodyWeight": 0, "exercises": [ $exercises ] } ]""",
+    ).workouts!!.single().exercises
+
+    @Test
+    fun `l'exemple de la SPEC, sans les champs nouveaux, se relit sans lien, sans chauffe ni repos de transition`() {
+        assertTrue(specData.workouts!!.flatMap { it.exercises }.all { it.supersetId == null })
+        assertTrue(specData.workouts!!.flatMap { w -> w.exercises.flatMap { it.sets } }.none { it.warmup })
+        assertEquals(0, specData.preferences!!.supersetRestSeconds)
+    }
+
+    @Test
+    fun `l'identifiant de supersérie et la chauffe sont lus sans faire échouer l'import`() {
+        val exercises = exercisesOfWorkout(
+            """{ "exerciseId": "bench", "supersetId": "s1", "sets": [ { "id": "a", "reps": 8, "weight": 80, "completed": true, "warmup": true } ] },
+               { "exerciseId": "pullup", "supersetId": "s1", "sets": [ { "id": "b", "reps": 8, "weight": 0, "completed": true, "warmup": "oui" } ] },
+               { "exerciseId": "dips", "supersetId": 12, "sets": [ { "id": "c", "reps": 8, "weight": 0, "completed": true, "warmup": 1 } ] },
+               { "exerciseId": "squat", "supersetId": "", "sets": [ { "id": "d", "reps": 5, "weight": 100, "completed": true, "warmup": null } ] },
+               { "exerciseId": "row", "supersetId": null, "sets": [] }""",
+        )
+        assertEquals(listOf("s1", "s1", null, null, null), exercises.map { it.supersetId })
+        assertEquals(listOf(true, false, false, false), exercises.flatMap { it.sets }.map { it.warmup })
+    }
+
+    private fun supersetRestOf(json: String) =
+        readV2(""""@gymtracker_preferences": { "restSeconds": 90, "theme": "dark"$json }""").preferences!!.supersetRestSeconds
+
+    @Test
+    fun `le repos de transition est lu de 0 à 60 s, sinon 0`() {
+        assertEquals(0, supersetRestOf(""))
+        assertEquals(30, supersetRestOf(""", "supersetRestSeconds": 30"""))
+        assertEquals(60, supersetRestOf(""", "supersetRestSeconds": 60"""))
+        assertEquals(0, supersetRestOf(""", "supersetRestSeconds": 75"""))
+        assertEquals(0, supersetRestOf(""", "supersetRestSeconds": -5"""))
+        assertEquals(0, supersetRestOf(""", "supersetRestSeconds": "15""""))
+        assertEquals(0, success(reader().read(resource("v1_sample.json"))).data.preferences!!.supersetRestSeconds)
+    }
+
+    @Test
+    fun `l'export omet le lien absent, la chauffe à faux et le repos de transition à 0, et relit le reste à l'identique`() {
+        val warm = WorkoutSet("w1", 10, 40.0, true, warmup = true)
+        val work = WorkoutSet("s1", 8, 80.0, true)
+        val workout = Workout(
+            "w1", "Push", null, "2026-11-12T17:00:00.000Z", 0.0,
+            listOf(WorkoutExercise("bench", sets = listOf(warm, work), supersetId = "s"), WorkoutExercise("pullup", sets = listOf(work.copy(id = "p1")), supersetId = "s"), WorkoutExercise("dips", sets = emptyList())),
+            45,
+        )
+        val preferences = Preferences.DEFAULT.copy(supersetRestSeconds = 20)
+        val text = BackupWriter.write(BackupData(workouts = listOf(workout), preferences = preferences), exportedAt)
+        val root = Json.parseToJsonElement(text).jsonObject
+        val exercises = root.getValue(BackupKeys.WORKOUTS).jsonArray[0].jsonObject.getValue("exercises").jsonArray
+        assertEquals("s", exercises[0].jsonObject.getValue("supersetId").jsonPrimitive.content)
+        assertFalse("supersetId" in exercises[2].jsonObject)
+        val sets = exercises[0].jsonObject.getValue("sets").jsonArray
+        assertEquals("true", sets[0].jsonObject.getValue("warmup").jsonPrimitive.content)
+        assertFalse("warmup" in sets[1].jsonObject)
+        assertEquals("20", root.getValue(BackupKeys.PREFERENCES).jsonObject.getValue("supersetRestSeconds").jsonPrimitive.content)
+        val plain = Json.parseToJsonElement(BackupWriter.write(BackupData(preferences = Preferences.DEFAULT), exportedAt)).jsonObject
+        assertFalse("supersetRestSeconds" in plain.getValue(BackupKeys.PREFERENCES).jsonObject)
+        val reread = success(reader().read(text)).data
+        assertEquals(listOf(workout), reread.workouts)
+        assertEquals(preferences, reread.preferences)
+    }
 }
