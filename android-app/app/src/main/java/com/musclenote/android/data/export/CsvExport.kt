@@ -3,8 +3,10 @@ package com.musclenote.android.data.export
 import com.musclenote.android.data.model.BodyWeightEntry
 import com.musclenote.android.data.model.DailyTracker
 import com.musclenote.android.data.model.Workout
+import com.musclenote.android.data.model.counted
 import com.musclenote.android.data.util.isDayKey
 import com.musclenote.android.data.util.parseInstantOrNull
+import com.musclenote.android.data.workout.SetNumbering
 import com.musclenote.android.data.workout.WorkoutStats
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -107,7 +109,8 @@ object CsvExport {
      * des séries. Colonnes fixes : force → reps et poids (vides si 0) ; cardio → durée, distance,
      * vitesse, inclinaison ; série au temps → durée en secondes dans la dernière colonne, le lest
      * dans le poids, reps vides (§ 15.18.8). « Série n° » = rang de la série dans l'exercice, comme
-     * dans l'app.
+     * dans l'app. 🔄 D47 : les séries de chauffe ne sont pas exportées, et le rang est celui parmi les
+     * séries de travail (§ 15.21.3).
      */
     fun sets(workouts: List<Workout>, texts: CsvTexts, format: CsvFormat, zone: ZoneId): String? {
         val header = listOf(
@@ -121,14 +124,15 @@ object CsvExport {
             val name = texts.workoutName(workout)
             for (exercise in workout.exercises) {
                 val cardio = texts.isCardio(exercise.exerciseId)
+                val numbers = SetNumbering.of(exercise.sets)
                 exercise.sets.forEachIndexed { index, set ->
-                    if (!set.completed) return@forEachIndexed
+                    if (!set.counted) return@forEachIndexed
                     rows += listOf(
                         day,
                         name,
                         texts.exerciseName(exercise.exerciseId),
                         texts.muscleGroupName(exercise.exerciseId),
-                        (index + 1).toString(),
+                        numbers[index].rank.toString(),
                         if (cardio || set.reps == 0) "" else set.reps.toString(),
                         if (cardio || set.weight == 0.0) "" else number(set.weight, format),
                         if (cardio) set.duration?.let { number(it, format) }.orEmpty() else "",

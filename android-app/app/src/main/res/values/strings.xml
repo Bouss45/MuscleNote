@@ -895,4 +895,28 @@
     <string name="exercise_fiche_hold_set_weight">%1$s · %2$s kg</string>
     <string name="summary_stat_tension">sous tension</string>
     <string name="excel_col_duration_seconds">Durée (s)</string>
+
+    <!-- Superséries (SPEC § 15.20, 🔄 D46) -->
+    <string name="superset_label">Supersérie</string>
+    <string name="superset_link_next">Lier à l\'exercice suivant</string>
+    <string name="superset_unlink">Délier</string>
+    <string name="superset_with">Supersérie avec %1$s</string>
+    <string name="superset_link_description">Supersérie : %1$s, puis %2$s</string>
+    <string name="settings_superset_rest_title">Repos dans une supersérie</string>
+    <string name="settings_superset_rest_desc">Entre deux exercices liés. 0 s : on enchaîne sans repos.</string>
+
+    <!-- Séries de chauffe (SPEC § 15.21, 🔄 D47) -->
+    <string name="workout_warmup_short">C</string>
+    <string name="workout_warmup_chip">Chauffe</string>
+    <string name="workout_warmup_toggle">Série de chauffe</string>
+    <string name="workout_keypad_first_warmup">%1$s · chauffe %2$d</string>
+    <string name="workout_warmup_value_description">Chauffe %1$d, %2$s : %3$s</string>
+    <string name="workout_warmup_check">Valider la chauffe %1$d</string>
+    <string name="workout_warmup_checked">Chauffe %1$d validée</string>
+    <string name="workout_warmup_timer_start">Démarrer le chrono, chauffe %1$d</string>
+    <string name="workout_warmup_timer_stop">Arrêter le chrono, chauffe %1$d</string>
+    <string name="workout_delete_warmup_title">Supprimer la chauffe %1$d ?</string>
+    <string name="workout_notif_warmup">Chauffe %1$d · %2$s</string>
+    <string name="workout_notif_warmup_only">Chauffe %1$d</string>
+    <string name="workout_notif_warmup_running">Chauffe %1$d · en cours</string>
 </resources>

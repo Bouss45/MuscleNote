@@ -61,6 +61,9 @@ class WorkoutNotifier(context: Context) : WorkoutNotifications {
                 allDone = localized.getString(R.string.workout_notif_all_done),
                 holdWeight = localized.getString(R.string.workout_notif_hold_weight),
                 running = localized.getString(R.string.workout_notif_running),
+                warmupWithDetail = localized.getString(R.string.workout_notif_warmup),
+                warmupOnly = localized.getString(R.string.workout_notif_warmup_only),
+                warmupRunning = localized.getString(R.string.workout_notif_warmup_running),
             ),
             setTimer = setTimer,
         )

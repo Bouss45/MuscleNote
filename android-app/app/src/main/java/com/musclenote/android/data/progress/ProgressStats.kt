@@ -7,6 +7,7 @@ import com.musclenote.android.data.model.MuscleGroup
 import com.musclenote.android.data.model.SetKind
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.model.counted
 import com.musclenote.android.data.nutrition.BodyWeightRules
 import com.musclenote.android.data.util.isDayKey
 import com.musclenote.android.data.workout.ExerciseSession
@@ -162,7 +163,7 @@ object ProgressStats {
         val counts = MuscleGroup.entries.associateWithTo(LinkedHashMap()) { 0 }
         for (workout in workouts) {
             workout.exercises
-                .filter { e -> e.sets.any { it.completed } }
+                .filter { e -> e.sets.any { it.counted } }
                 .mapNotNullTo(HashSet()) { groupOf[it.exerciseId] }
                 .forEach { counts[it] = counts.getValue(it) + 1 }
         }
@@ -263,7 +264,7 @@ object ProgressStats {
                 .filter { it.exerciseId in groupIds }
                 .sumOf { e ->
                     // Les séries au temps n'ont pas de volume (§ 15.18.7).
-                    if (isCardio) e.sets.filter { it.completed }.sumOf { it.distance ?: 0.0 } else WorkoutStats.volume(e.sets)
+                    if (isCardio) e.sets.filter { it.counted }.sumOf { it.distance ?: 0.0 } else WorkoutStats.volume(e.sets)
                 }
         } ?: 0.0
 

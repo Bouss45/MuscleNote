@@ -25,6 +25,9 @@ object RestTimerRules {
     /** Préréglages proposés dans Paramètres (§ 2.12). */
     val PRESETS = listOf(60, 90, 120, 150, 180, 240, 300)
 
+    /** Repos de transition d'une supersérie (🔄 D46, § 15.20.4), 0 = aucun repos. */
+    val SUPERSET_PRESETS = listOf(0, 10, 15, 20, 30, 45, 60)
+
     /**
      * Un état resté sur disque plus longtemps que ça après sa fin n'attend plus d'alarme (elle a
      * été perdue, par exemple au redémarrage du téléphone) : il est effacé au chargement.

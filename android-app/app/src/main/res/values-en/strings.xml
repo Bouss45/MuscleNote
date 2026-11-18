@@ -893,4 +893,28 @@
     <string name="exercise_fiche_hold_set_weight">%1$s · %2$s kg</string>
     <string name="summary_stat_tension">under tension</string>
     <string name="excel_col_duration_seconds">Duration (s)</string>
+
+    <!-- Supersets (SPEC § 15.20, D46) -->
+    <string name="superset_label">Superset</string>
+    <string name="superset_link_next">Link to next exercise</string>
+    <string name="superset_unlink">Unlink</string>
+    <string name="superset_with">Superset with %1$s</string>
+    <string name="superset_link_description">Superset: %1$s, then %2$s</string>
+    <string name="settings_superset_rest_title">Rest within a superset</string>
+    <string name="settings_superset_rest_desc">Between two linked exercises. 0 s: go straight on, no rest.</string>
+
+    <!-- Warm-up sets (SPEC § 15.21, D47) -->
+    <string name="workout_warmup_short">W</string>
+    <string name="workout_warmup_chip">Warm-up</string>
+    <string name="workout_warmup_toggle">Warm-up set</string>
+    <string name="workout_keypad_first_warmup">%1$s · warm-up %2$d</string>
+    <string name="workout_warmup_value_description">Warm-up %1$d, %2$s: %3$s</string>
+    <string name="workout_warmup_check">Complete warm-up %1$d</string>
+    <string name="workout_warmup_checked">Warm-up %1$d completed</string>
+    <string name="workout_warmup_timer_start">Start timer, warm-up %1$d</string>
+    <string name="workout_warmup_timer_stop">Stop timer, warm-up %1$d</string>
+    <string name="workout_delete_warmup_title">Delete warm-up %1$d?</string>
+    <string name="workout_notif_warmup">Warm-up %1$d · %2$s</string>
+    <string name="workout_notif_warmup_only">Warm-up %1$d</string>
+    <string name="workout_notif_warmup_running">Warm-up %1$d · running</string>
 </resources>

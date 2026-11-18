@@ -72,21 +72,25 @@ object WorkoutRules {
 
     /**
      * Séries reprises dans une nouvelle séance : nouvel id, non validées ; reps, poids, champs
-     * cardio et durée d'une série au temps conservés (un champ absent reste absent, § 3.1).
+     * cardio, durée d'une série au temps et marquage de chauffe (🔄 D47) conservés (un champ absent
+     * reste absent, § 3.1).
      */
     fun cloneSetsForReuse(sets: List<WorkoutSet>, newId: () -> String): List<WorkoutSet> =
         sets.map { it.copy(id = newId(), completed = false) }
 
-    private fun cloneExercise(exercise: WorkoutExercise, newId: () -> String) = WorkoutExercise(
+    /** Exercice repris avec sa note, ses séries clonées et, si [keepLink], son lien de supersérie (🔄 D46). */
+    private fun cloneExercise(exercise: WorkoutExercise, newId: () -> String, keepLink: Boolean) = WorkoutExercise(
         exerciseId = exercise.exerciseId,
         note = exercise.note,
         sets = cloneSetsForReuse(exercise.sets, newId),
+        supersetId = exercise.supersetId.takeIf { keepLink },
     )
 
     /**
      * Nouvelle séance (§ 3.1). [name] = libellé du préréglage dans la langue courante, ou nom
      * perso. Si une séance terminée a la même clé, la plus récente sert de plan : ses exercices
-     * dans le même ordre, avec leur note et **toutes** leurs séries (validées ou non) clonées.
+     * dans le même ordre, avec leur note, **toutes** leurs séries (validées ou non) clonées et leurs
+     * liens de supersérie (🔄 D46, § 15.20.6, remis en forme).
      */
     fun newWorkout(
         history: List<Workout>,
@@ -105,19 +109,19 @@ object WorkoutRules {
             preset = presetFor(preset, name),
             date = formatInstant(now),
             bodyWeight = bodyWeight,
-            exercises = template?.exercises.orEmpty().map { cloneExercise(it, newId) },
+            exercises = SupersetRules.normalized(template?.exercises.orEmpty().map { cloneExercise(it, newId, keepLink = true) }, newId),
         )
     }
 
     /**
      * Ajout d'un exercice à la séance en cours (§ 3.2) : sans effet s'il y est déjà ; sinon ajouté
      * en fin de liste avec la note et les séries clonées de la séance terminée la plus récente
-     * qui le contient (même sans série), ou sans série.
+     * qui le contient (même sans série), ou sans série. Jamais lié à une supersérie (🔄 D46, § 15.20.6).
      */
     fun addExercise(current: Workout, history: List<Workout>, exerciseId: String, newId: () -> String): Workout {
         if (current.exercises.any { it.exerciseId == exerciseId }) return current
         val previous = history.firstNotNullOfOrNull { workout -> workout.exercises.firstOrNull { it.exerciseId == exerciseId } }
-        val added = previous?.let { cloneExercise(it, newId) } ?: WorkoutExercise(exerciseId, sets = emptyList())
+        val added = previous?.let { cloneExercise(it, newId, keepLink = false) } ?: WorkoutExercise(exerciseId, sets = emptyList())
         return current.copy(exercises = current.exercises + added)
     }
 
@@ -186,10 +190,18 @@ object WorkoutRules {
      * Enregistrement de l'éditeur de séance terminée (§ 2.9) : exercices, nom et préréglage
      * remplacés ; un poids de corps ≤ 0 (champ vide ou illisible) garde l'ancien. L'id, la date et
      * la durée ne changent pas. 🔄 D45 : un nom perso qui est celui d'un préréglage y est rattaché.
+     * 🔄 D46 : liens de supersérie remis en forme (un exercice retiré referme sa supersérie, § 15.20.2).
      */
-    fun patch(workout: Workout, exercises: List<WorkoutExercise>, bodyWeight: Double, name: String, preset: PresetId?): Workout =
+    fun patch(
+        workout: Workout,
+        exercises: List<WorkoutExercise>,
+        bodyWeight: Double,
+        name: String,
+        preset: PresetId?,
+        newId: () -> String = { com.musclenote.android.data.util.newId() },
+    ): Workout =
         workout.copy(
-            exercises = exercises,
+            exercises = SupersetRules.normalized(exercises, newId),
             bodyWeight = if (bodyWeight > 0) bodyWeight else workout.bodyWeight,
             name = name.trim(),
             preset = presetFor(preset, name),

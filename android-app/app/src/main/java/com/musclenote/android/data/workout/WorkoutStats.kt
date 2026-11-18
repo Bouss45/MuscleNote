@@ -2,6 +2,7 @@ package com.musclenote.android.data.workout
 
 import com.musclenote.android.data.model.Workout
 import com.musclenote.android.data.model.WorkoutSet
+import com.musclenote.android.data.model.counted
 import com.musclenote.android.data.util.parseInstantOrNull
 import java.time.DayOfWeek
 import java.time.Instant
@@ -51,7 +52,7 @@ data class ExerciseSession(val workoutId: String, val date: Instant, val sets: L
 
 /**
  * Statistiques des séances terminées (SPEC § 2.2, § 2.8, § 3.5 – 3.8), en fonctions pures
- * testables sur la JVM. Seules les **séries validées** comptent (§ 3.16). Les historiques passés
+ * testables sur la JVM. Seules les **séries comptées** comptent (§ 3.16 : validées, 🔄 D47 : pas de chauffe). Les historiques passés
  * en paramètre sont triés de la séance la plus récente à la plus ancienne (invariant du dépôt).
  */
 object WorkoutStats {
@@ -79,7 +80,7 @@ object WorkoutStats {
 
     /** Meilleur 1RM estimé des séries **validées** (0 s'il n'y en a pas). */
     fun bestOneRepMax(sets: List<WorkoutSet>): Double =
-        sets.filter { it.completed }.maxOfOrNull { estimateOneRepMax(it.weight, it.reps) }?.coerceAtLeast(0.0) ?: 0.0
+        sets.filter { it.counted }.maxOfOrNull { estimateOneRepMax(it.weight, it.reps) }?.coerceAtLeast(0.0) ?: 0.0
 
     // ─── § 3.8 : volume et compteurs ──────────────────────────────────────────────
 
@@ -87,19 +88,19 @@ object WorkoutStats {
      * Σ reps × poids des séries **validées**, en kg (le cardio, à 0 × 0, vaut 0) ; les séries au
      * temps n'y comptent pas, lest compris (§ 3.8, § 15.18.7, 🔄 D44).
      */
-    fun volume(sets: List<WorkoutSet>): Double = sets.filter { it.completed && it.durationSeconds == null }.sumOf { it.reps * it.weight }
+    fun volume(sets: List<WorkoutSet>): Double = sets.filter { it.counted && it.durationSeconds == null }.sumOf { it.reps * it.weight }
 
     fun volume(workout: Workout): Double = workout.exercises.sumOf { volume(it.sets) }
 
     /** Temps sous tension (s, § 15.18.7) : somme des durées des séries au temps **validées**. */
     fun timeUnderTension(workout: Workout): Int =
-        workout.exercises.sumOf { e -> e.sets.filter { it.completed }.sumOf { it.durationSeconds ?: 0 } }
+        workout.exercises.sumOf { e -> e.sets.filter { it.counted }.sumOf { it.durationSeconds ?: 0 } }
 
     /** Nombre de séries validées de la séance. */
-    fun completedSetCount(workout: Workout): Int = workout.exercises.sumOf { e -> e.sets.count { it.completed } }
+    fun completedSetCount(workout: Workout): Int = workout.exercises.sumOf { e -> e.sets.count { it.counted } }
 
     /** Nombre d'exercices ayant au moins une série validée. */
-    fun exercisesWithCompletedSets(workout: Workout): Int = workout.exercises.count { e -> e.sets.any { it.completed } }
+    fun exercisesWithCompletedSets(workout: Workout): Int = workout.exercises.count { e -> e.sets.any { it.counted } }
 
     // ─── § 3.6 : série hebdomadaire ───────────────────────────────────────────────
 
@@ -243,7 +244,7 @@ object WorkoutStats {
     fun exerciseHistory(workouts: List<Workout>, exerciseId: String, zone: ZoneId, timed: Boolean = false): List<ExerciseSession> =
         workouts.mapNotNull { workout ->
             val sets = workout.exercises.firstOrNull { it.exerciseId == exerciseId }?.sets.orEmpty()
-                .filter { it.completed && (!timed || it.durationSeconds != null) }
+                .filter { it.counted && (!timed || it.durationSeconds != null) }
             if (sets.isEmpty()) return@mapNotNull null
             val date = parseInstantOrNull(workout.date, zone) ?: return@mapNotNull null
             ExerciseSession(workout.id, date, sets)

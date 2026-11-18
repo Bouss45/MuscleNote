@@ -12,8 +12,11 @@ import com.musclenote.android.data.util.parseInstantOrNull
 import java.time.ZoneId
 import java.util.Locale
 
-/** Prochaine série à faire : [set], [number]-ième série (à partir de 1) de [exercise]. */
-data class NextSet(val exercise: WorkoutExercise, val set: WorkoutSet, val number: Int)
+/**
+ * Prochaine série à faire : [set] de [exercise], son numéro [number] (à partir de 1) parmi les séries de
+ * travail, ou parmi les séries de chauffe si [warmup] (§ 15.21.2).
+ */
+data class NextSet(val exercise: WorkoutExercise, val set: WorkoutSet, val number: Int, val warmup: Boolean = false)
 
 /** Action d'une notification de séance (§ 15.5) ; [StopTimer] = « Arrêter » le chrono d'une série (§ 15.18.5). */
 enum class WorkoutAction { CompleteSet, RestMinus, RestPlus, SkipRest, StopTimer }
@@ -62,6 +65,12 @@ data class WorkoutNotificationTexts(
     val holdWeight: String,
     /** `%1$d` = numéro de la série dont le chrono tourne. */
     val running: String,
+    /** Série de chauffe (§ 15.21.2) : `%1$d` = son numéro, `%2$s` = détail. */
+    val warmupWithDetail: String,
+    /** `%1$d` = numéro de la série de chauffe. */
+    val warmupOnly: String,
+    /** `%1$d` = numéro de la série de chauffe dont le chrono tourne. */
+    val warmupRunning: String,
 )
 
 /**
@@ -76,15 +85,14 @@ object WorkoutNotificationRules {
     const val ADJUST_SECONDS = 30
 
     /**
-     * Prochaine série (§ 15.5) : dans l'ordre de la séance, la première série non validée **après
-     * la dernière série validée** ; s'il n'y en a pas, la première non validée depuis le début (une
-     * série sautée plus haut). `null` quand tout est validé. Les exercices pour lesquels [isShown]
-     * est faux (inconnus, donc absents de l'écran de séance) sont ignorés.
+     * Prochaine série (§ 15.5) : dans l'ordre d'enchaînement (🔄 D46, § 15.20.5 : superséries tour par
+     * tour ; sans supersérie, l'ordre de la séance), la première série non validée **après la dernière
+     * série validée** ; s'il n'y en a pas, la première non validée depuis le début (une série sautée plus
+     * haut). `null` quand tout est validé. Les exercices pour lesquels [isShown] est faux (inconnus, donc
+     * absents de l'écran de séance) sont ignorés.
      */
     fun nextSet(workout: Workout, isShown: (String) -> Boolean = { true }): NextSet? {
-        val positions = workout.exercises
-            .filter { isShown(it.exerciseId) }
-            .flatMap { exercise -> exercise.sets.mapIndexed { index, set -> NextSet(exercise, set, index + 1) } }
+        val positions = SupersetRules.chainOrder(workout.exercises.filter { isShown(it.exerciseId) })
         val lastCompleted = positions.indexOfLast { it.set.completed }
         return positions.drop(lastCompleted + 1).firstOrNull { !it.set.completed }
             ?: positions.firstOrNull { !it.set.completed }
@@ -131,7 +139,7 @@ object WorkoutNotificationRules {
                 text = nextLine ?: texts.allDone,
                 chronometerBase = parseInstantOrNull(workout.date, zone)?.toEpochMilli() ?: nowMillis,
                 countDown = false,
-                chipText = next?.let { texts.setOnly.format(texts.locale, it.number) },
+                chipText = next?.let { (if (it.warmup) texts.warmupOnly else texts.setOnly).format(texts.locale, it.number) },
                 actions = if (next != null) listOf(WorkoutAction.CompleteSet) else emptyList(),
             )
         }
@@ -148,10 +156,11 @@ object WorkoutNotificationRules {
         val timer = SetTimerRules.activeOn(setTimer, workout) ?: return null
         val located = SetTimerRules.locate(workout, timer.setId) ?: return null
         val exercise = exercises(located.exercise.exerciseId) ?: return null
-        val number = located.exercise.sets.indexOfFirst { it.id == timer.setId } + 1
+        val number = SetNumbering.of(located.exercise.sets, timer.setId) ?: return null
+        val running = if (number.warmup) texts.warmupRunning else texts.running
         return WorkoutNotificationContent(
             title = workoutName,
-            text = exercise.name + SEPARATOR + texts.running.format(texts.locale, number),
+            text = exercise.name + SEPARATOR + running.format(texts.locale, number.rank),
             chronometerBase = timer.startedAt,
             countDown = false,
             chipText = null,
@@ -159,11 +168,14 @@ object WorkoutNotificationRules {
         )
     }
 
-    /** « Développé couché · Série 3 · 8 × 80 kg ». */
+    /** « Développé couché · Série 3 · 8 × 80 kg », « Squat · Chauffe 1 · 10 × 40 kg » (§ 15.21.2). */
     fun line(next: NextSet, exercise: NotificationExercise, texts: WorkoutNotificationTexts): String {
         val detail = detail(next.set, exercise.kind, texts)
-        val set = if (detail == null) texts.setOnly.format(texts.locale, next.number)
-        else texts.setWithDetail.format(texts.locale, next.number, detail)
+        val set = when {
+            detail == null -> (if (next.warmup) texts.warmupOnly else texts.setOnly).format(texts.locale, next.number)
+            next.warmup -> texts.warmupWithDetail.format(texts.locale, next.number, detail)
+            else -> texts.setWithDetail.format(texts.locale, next.number, detail)
+        }
         return exercise.name + SEPARATOR + set
     }
 
