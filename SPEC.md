@@ -1997,7 +1997,7 @@ Les chemins ci-dessous sont relatifs à `android-app/app/src/main/java/com/muscl
 ### 13.1 Fait
 
 Tout ce que décrivent les § 1 à 10 est implémenté, avec les remplacements de la refonte (§ 15.7 –
-15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 737 tests JVM (55 classes, `app/src/test/`),
+15.11, § 15.12, § 15.13). Les règles métier pures sont couvertes par 790 tests JVM (58 classes, `app/src/test/`),
 plus 10 pour les notes de version (`release-notes/src/test/`), lancés par la CI avant la
 construction de l'APK (à la bascule : 245 tests, 23 classes).
 
@@ -2377,20 +2377,48 @@ du dépôt (conservée au tag `expo-final`), Releases GitHub `v1.0.<n>` publiée
   confirmation, retour), TalkBack (action « Retirer de Mes types »), retour d'un type réutilisé après une
   séance terminée, une ancienne séance perso « Haut du corps » affichée « Upper body » en anglais et
   renvoyée une fois à Health Connect.
-- **Superséries** (🔄 D46, § 15.20), branche `feat/superseries` — **en cours** : `WorkoutExercise.supersetId`
-  et `Preferences.supersetRestSeconds` (facultatifs, lecture tolérante, `BackupNormalizer`) ; règles pures
-  `data/workout/SupersetRules.kt` (liens, remise en forme, ordre d'enchaînement, transition ou fin du tour,
-  série suivante) ; prochaine série de la notification et place du repos dans l'ordre d'enchaînement
-  (`WorkoutNotificationRules`, `SessionInsights`) ; `WorkoutRepository` (lier, délier, remise en forme au
-  chargement, au démarrage, au retrait et au glisser-déposer) ; repos de transition dans
-  `RestTimerRepository` et `AppContainer` (case, pavé, notification, chrono) ; réglage dans Paramètres ;
-  composant `SupersetLink`. Tests JVM : enchaînement (2 exercices, circuit de 3, nombres de séries
-  différents), repos de transition, lien retiré, reprise de séance, exercice lié retiré, ancien fichier
-  relu.
-- **Séries de chauffe** (🔄 D47, § 15.21), même branche — **en cours** : `WorkoutSet.warmup` (facultatif,
-  lecture tolérante) ; « série comptée » dans les statistiques (`WorkoutStats`, `ProgressStats`,
-  `WorkoutSummaryRules`, `JournalRules`, `CsvExport`), rangs séparés de « Préc. » et de la suggestion
-  (`SessionInsights`), numéros et noms (« C », « chauffe k ») ; puce « Chauffe » de l'en-tête du pavé.
+- **Superséries** (🔄 D46, § 15.20), branche `feat/superseries` : `WorkoutExercise.supersetId` (lecture
+  tolérante `SupersetIdSerializer`, `BackupNormalizer`) et `Preferences.supersetRestSeconds` (0 à 60 s,
+  `SupersetRestSerializer`) ; règles pures `data/workout/SupersetRules.kt` (`link`, `unlink`, `normalized`,
+  `groups`, `chainOrder`, `afterCompleting` → `ChainNext`) ; prochaine série de la notification et place du
+  repos dans l'ordre d'enchaînement (`WorkoutNotificationRules.nextSet`, `SessionInsights.restAnchor`) ;
+  `WorkoutRules` (liens repris au pré-remplissage, jamais à l'ajout, remis en forme par `patch`) ;
+  `WorkoutRepository.linkToNext` / `unlink` / `afterCompleting`, remise en forme au chargement, au retrait
+  et au glisser-déposer ; repos de transition `RestTimerRepository.start(nom, secondes)` et
+  `AppContainer.completeSet` / `toggleSetCompleted` / `completeNextSet` / `stopSetTimer` (une seule règle,
+  `restAfterCompleting`) ; `PreferencesRepository.setSupersetRestSeconds`. Interface : boutons « Lier à
+  l'exercice suivant » / « Délier » et « Supersérie avec … » dans `ExerciseOptionsSheetContent`, trait sous
+  « + Série » (`LiveExerciseBlock(linkToNext)`), pavé ouvert sur la série suivante de la supersérie
+  (`WorkoutScreen`), ligne et sheet « Repos dans une supersérie » (`SettingsScreen`, `SupersetRestSheet`,
+  `RestTimerRules.SUPERSET_PRESETS`). Design system : composant `SupersetLink`. Tests JVM
+  `SupersetRulesTest` (lier, rejoindre, fondre, délier premier / milieu / dernier, remise en forme,
+  glisser-déposer, exercice retiré, exercice masqué, ordre d'enchaînement à 2, circuit de 3, nombres de
+  séries différents, chauffes, transition ou fin du tour, pavé, notification, place du repos),
+  `SupersetTest` (par `AppContainer` : aucun repos et repos en cours arrêté, repos de transition au nom de
+  l'exercice suivant, repos normal en fin de tour et hors supersérie, case, notification, circuit de trois
+  aux séries inégales, chrono d'une série au temps, chauffe, lier / délier / retirer / réordonner, reprise
+  et ajout, réglage borné et relu, anciens fichiers et valeurs invalides sans fichier mis de côté),
+  `WorkoutNotificationRulesTest`, `BackupV2Test`. Aperçus : `SupersetLinkPreview`,
+  `LiveExerciseBlockSupersetPreview`, `ExerciseOptionsSupersetPreview`, `WorkoutScreenSupersetPreview`
+  (jeu `PreviewDataSet.WithSuperset`), `SupersetRestSheetPreview`, Paramètres. À vérifier **sur
+  l'appareil** : lier puis valider au pavé (passage à l'exercice suivant), repos de transition puis repos
+  normal, « Valider la série » depuis la notification et la montre dans une supersérie, glisser-déposer
+  d'un exercice lié, TalkBack sur le trait.
+- **Séries de chauffe** (🔄 D47, § 15.21), même branche : `WorkoutSet.warmup` (lecture tolérante
+  `LenientFlagSerializer`, `BackupNormalizer`) et `WorkoutSet.counted` ; statistiques sur les séries
+  comptées (`WorkoutStats`, `ProgressStats`, `WorkoutSummaryRules`, `JournalRules` par `completedSetCount`,
+  `CsvExport` sans les chauffes, rang parmi les séries de travail) ; numéros `data/workout/SetNumbering.kt`
+  (`SetNumber`) ; « Préc. » par rangs séparés, séance de référence avec une série comptée et suggestion sur
+  les séries de travail (`SessionInsights`) ; « Chauffe k » de la notification (`WorkoutNotificationTexts`).
+  Interface : puce « Chauffe » du pavé (`WorkoutKeypad`, séance en cours et éditeur), « C » et textes
+  TalkBack des lignes (`LiveExerciseBlock`, `EditWorkoutScreen`), confirmation « Supprimer la chauffe 1 ? ».
+  Design system : variante de `KeypadHeader` (`KeypadToggle`). Tests JVM `WarmupSetsTest`
+  (statistiques, historique, résumé, Journal, fin de séance, numéros, « Préc. », suggestion, reprise),
+  `CsvExportTest`, `WorkoutNotificationRulesTest`, `BackupV2Test`, `SupersetRulesTest`, `SupersetTest`.
+  Aperçus : `KeypadHeaderTogglePreview`, `WorkoutKeypadWarmupPreview`, pavés de la séance (puce),
+  `SupersetLinkPreview`, `WorkoutScreenSupersetPreview`. À vérifier **sur l'appareil** : marquer une série
+  au pavé (TalkBack « Série de chauffe »), numéros après le marquage, « Préc. » d'une chauffe à la séance
+  suivante.
 
 ---
 
@@ -5876,8 +5904,9 @@ facultatif** sur l'exercice de la séance et un dans les préférences, sans nou
 
 - **Paramètres**, section « Préférences », juste après « Minuteur de repos » : **« Repos dans une
   supersérie »**, valeur « 0 s » (défaut), « 15 s »… → sheet « Repos dans une supersérie », aide « Entre
-  deux exercices liés. 0 s : on enchaîne sans repos. », puces de filtre **0, 10, 15, 20, 30, 45, 60 s** ;
-  le toucher applique le choix et ferme la sheet, comme le minuteur (§ 15.10.3).
+  deux exercices liés. 0 s : on enchaîne sans repos. », puces de filtre **0, 10, 15, 20, 30, 45, 60 s** (la
+  dernière libellée « 1 min », comme le minuteur) ; le toucher applique le choix et ferme la sheet, comme
+  le minuteur (§ 15.10.3).
 - Un repos de transition est un repos comme les autres (bandeau, notification, « −30 s », « +30 s »,
   « Passer », alarme de fin et alerte « Repos terminé », § 7.2), de cette durée. Le réglage vaut pour les
   repos démarrés ensuite.
