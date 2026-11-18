@@ -2651,6 +2651,9 @@ Tous les commits : https://github.com/Bouss45/MuscleNote/compare/v1.0.11...v1.0.
 - **Pas de Release précédente**, ou tag introuvable dans l'historique : « Liste des changements
   indisponible. », sans lien de comparaison.
 - **Relance d'un run** dont la Release existe déjà : l'APK est remplacé, le texte ne change pas.
+  Relance d'un ancien run dont le commit est déjà dans la dernière Release (une release échouée
+  relancée après une plus récente) : aucune Release, pour qu'une version plus ancienne ne passe
+  jamais « Latest » devant elle.
 - **Calcul** : la sélection et la mise en forme sont du Kotlin pur, dans un petit module JVM
   `android-app/release-notes/` (sans Android), couvert par des tests JVM lancés à l'étape « Tests
   unitaires ». Le workflow lui passe la sortie de `git log` (parents, titre et fichiers de chaque

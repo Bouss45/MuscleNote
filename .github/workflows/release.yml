@@ -133,6 +133,14 @@ jobs:
             # Relance d'un même run : on remplace l'APK de la release existante, texte inchangé.
             gh release upload "$TAG" "$RUNNER_TEMP/$APK_NAME" --repo "$GITHUB_REPOSITORY" --clobber
           else
+            # Relance d'un ancien run alors qu'une Release plus récente contient déjà son commit :
+            # rien à publier, sinon cette version plus ancienne passerait « Latest » devant elle
+            # (proposée par Obtainium et la vérification de mise à jour).
+            LATEST="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName --jq .tagName 2> /dev/null || true)"
+            if [ -n "$LATEST" ] && git merge-base --is-ancestor "$GITHUB_SHA" "refs/tags/$LATEST" 2> /dev/null; then
+              echo "::notice::$LATEST contient déjà le commit ${GITHUB_SHA::7} : pas de Release $TAG"
+              exit 0
+            fi
             gh release create "$TAG" "$RUNNER_TEMP/$APK_NAME" \
               --repo "$GITHUB_REPOSITORY" \
               --target "$GITHUB_SHA" \
